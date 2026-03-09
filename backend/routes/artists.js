@@ -1,16 +1,15 @@
 const express = require("express");
 const router = express.Router();
-const db = require("../db");
+const db = require("../db"); // import the connection
 
+// GET all artists
 router.get("/", (req, res) => {
-  const sql = "SELECT * FROM Artist";
-
-  db.query(sql, (err, result) => {
+  db.query("SELECT * FROM artist", (err, results) => {
     if (err) {
-      res.status(500).send(err);
-    } else {
-      res.json(result);
+      console.error("Query failed:", err);
+      return res.status(500).json({ fatal: true });
     }
+    res.json(results);
   });
 });
 
