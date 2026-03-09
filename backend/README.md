@@ -38,6 +38,7 @@ backend/
 
 3. test backend connection on vscode
 - make sure to cd into backend folder (if not already there)
-- node server.js
+- change the "123456" password in the db.js file to the one you made when setting up mysql
+- in vscode terminal: node server.js
 - if you see "Server running on port 5000 Connected to MySQL!" you won!!
 
