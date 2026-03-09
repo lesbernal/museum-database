@@ -1,12 +1,13 @@
+// routes/artworks.js
 const express = require("express");
 const router = express.Router();
-const db = require("../db"); // your MySQL connection
+const db = require("../db");
 
 // GET all artworks
 router.get("/", (req, res) => {
   db.query("SELECT * FROM artwork", (err, results) => {
     if (err) {
-      console.error(err);
+      console.error("Query failed:", err);
       return res.status(500).json({ fatal: true });
     }
     res.json(results);
