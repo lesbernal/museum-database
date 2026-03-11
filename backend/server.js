@@ -4,7 +4,10 @@ const url = require("url");
 const handleArtists = require("./handlers/artists");
 const handleCafeitem = require("./handlers/cafeitems");
 const handleCafetransaction = require("./handlers/cafetransactions");
-const handleCafetransactionitem = require("./handlers/cafetransactionitems"); // make sure this file exists
+const handleCafetransactionitem = require("./handlers/cafetransactionitems");
+const handleGiftshopitem = require("./handlers/giftshopitems");
+const handleGiftshoptransaction = require("./handlers/giftshoptransactions");
+const handleGiftshoptransactionitem = require("./handlers/giftshoptransactionitems");
 
 const server = http.createServer((req, res) => {
   const parsedUrl = url.parse(req.url, true);
@@ -29,10 +32,19 @@ const server = http.createServer((req, res) => {
   }
   if (parsedUrl.pathname === "/cafetransactions") {
   return handleCafetransaction(req, res);
-}
-if (parsedUrl.pathname === "/cafetransactionitems") {
+  }
+  if (parsedUrl.pathname === "/cafetransactionitems") {
   return handleCafetransactionitem(req, res);
-}
+  }
+  if (parsedUrl.pathname === "/giftshopitems") {
+    return handleCafeitem(req, res);
+  }
+  if (parsedUrl.pathname === "/giftshoptransactions") {
+  return handleCafetransaction(req, res);
+  }
+  if (parsedUrl.pathname === "/giftshoptransactionitems") {
+  return handleCafetransactionitem(req, res);
+  }
 
   res.writeHead(404, { "Content-Type": "application/json" });
   res.end(JSON.stringify({ message: "Route not found" }));
