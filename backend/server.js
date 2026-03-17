@@ -2,6 +2,9 @@ const http = require("http");
 const url = require("url");
 
 const handleArtists = require("./handlers/artists");
+const handleTickets = require("./handlers/tickets");
+const handleEvents = require("./handlers/events");
+const handleDonations = require("./handlers/donations");
 
 const server = http.createServer((req, res) => {
   const parsedUrl = url.parse(req.url, true);
@@ -20,6 +23,18 @@ const server = http.createServer((req, res) => {
   if (parsedUrl.pathname === "/artists") {
     return handleArtists(req, res);
   }
+
+  if (parsedUrl.pathname === "/tickets") {
+    return handleTickets(req, res);
+  }
+
+  if (parsedUrl.pathname === "/events") {
+    return handleEvents(req, res);
+  }
+
+if (parsedUrl.pathname === "/donations") {
+  return handleDonations(req, res);
+}
 
   res.writeHead(404, { "Content-Type": "application/json" });
   res.end(JSON.stringify({ message: "Route not found" }));
