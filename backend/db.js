@@ -2,10 +2,14 @@ require('dotenv').config();
 const mysql = require("mysql2");
 
 const db = mysql.createConnection({
-  host: process.env.DB_HOST || "localhost",
-  user: process.env.DB_USER || "root",
+  host: process.env.DB_HOST || "museumdb.mysql.database.azure.com",
+  user: process.env.DB_USER || "museumadmin",
   password: process.env.DB_PASSWORD || "123456", // fallback to default
-  database: process.env.DB_NAME || "museum"
+  database: process.env.DB_NAME || "museum",
+  port: process.env.DB_PORT || 3306,
+  ssl: {
+    rejectUnauthorized: true // ensures secure SSL
+  }
 });
 
 db.connect((err) => {
