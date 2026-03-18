@@ -1,2 +1,4 @@
+node_modules/
+frontend/public/test-layout.html
 frontend/public/test-layout.css
-frontend/public/test-layout.htmlnode_modules/
+.DS_Store
