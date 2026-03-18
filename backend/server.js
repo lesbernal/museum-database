@@ -3,8 +3,12 @@ const url = require("url");
 
 const handleArtists = require("./handlers/artists");
 const handleTickets = require("./handlers/tickets");
-const handleEvents = require("./handlers/events");
 const handleDonations = require("./handlers/donations");
+const handleUsers = require("./handlers/users");
+const handleDepartments = require("./handlers/departments");
+const handleGiftshop = require("./handlers/giftshop");
+const handleCafe = require("./handlers/cafe");
+const handleExhibitions = require("./handlers/exhibitions");
 
 const server = http.createServer((req, res) => {
   const parsedUrl = url.parse(req.url, true);
@@ -20,22 +24,39 @@ const server = http.createServer((req, res) => {
   }
 
   // ROUTING
-  if (parsedUrl.pathname === "/artists") {
+  if (parsedUrl.pathname.startsWith("/artists")) {
     return handleArtists(req, res);
   }
 
-  if (parsedUrl.pathname === "/tickets") {
+  if (parsedUrl.pathname.startsWith("/tickets")) {
     return handleTickets(req, res);
   }
 
-  if (parsedUrl.pathname === "/events") {
-    return handleEvents(req, res);
+  if (parsedUrl.pathname.startsWith("/donations")) {
+    return handleDonations(req, res);
   }
 
-if (parsedUrl.pathname === "/donations") {
-  return handleDonations(req, res);
-}
+  if (parsedUrl.pathname.startsWith("/users")) {
+    return handleUsers(req, res);
+  }
 
+  if (parsedUrl.pathname.startsWith("/departments")) {
+    return handleDepartments(req, res);
+  }
+
+  if (parsedUrl.pathname.startsWith("/giftshop")) {
+    return handleGiftshop(req, res);
+  }
+
+  if (parsedUrl.pathname.startsWith("/cafe")) {
+    return handleCafe(req, res);
+  }
+
+  if (parsedUrl.pathname.startsWith("/exhibitions")) {
+    return handleExhibitions(req, res);
+  }
+
+  // 404 for unmatched routes
   res.writeHead(404, { "Content-Type": "application/json" });
   res.end(JSON.stringify({ message: "Route not found" }));
 });

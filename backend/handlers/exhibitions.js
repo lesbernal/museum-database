@@ -1,0 +1,1 @@
+//exhibition, exhibitionartwork, gallery, museumbuilding
