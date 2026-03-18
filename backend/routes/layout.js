@@ -33,7 +33,7 @@ app.get('/api/reports/exhibitions', (req, res) => {
 
     // 1. Your SQL Query (Joining Tables for your Layout Role)
     const sql = `
-        SELECT e.exhibition_name, e.start_date, e.end_date, g.gallery_name 
+        SELECT e.exhibition_name, e.start_date, e.end_date, g.gallery_name, m.building_name  
         FROM exhibition AS e
         JOIN gallery AS g ON e.gallery_id = g.gallery_id
         ORDER BY e.start_date ASC`;
@@ -43,6 +43,8 @@ app.get('/api/reports/exhibitions', (req, res) => {
 
         // Header
         doc.fontSize(20).text('Museum Exhibition Schedule', { align: 'center' });
+        doc.moveDown();
+        doc.fontSize(15).text(`${row.building_name}`, { align: 'center' });
         doc.moveDown();
         doc.fontSize(12).text(`Generated on: ${new Date().toLocaleDateString()}`);
         doc.moveDown();
@@ -72,8 +74,8 @@ app.get('/api/reports/exhibitions', (req, res) => {
 
     // 1. Your SQL Query (Joining Tables for your Layout Role)
     const sql = `
-        SELECT e.exhibition_name, e.start_date, e.end_date, g.gallery_name, m.building_name  
-        FROM exhibition AS e, museumbuilding AS m
+        SELECT g  
+        FROM gallery AS g
         JOIN gallery AS g ON e.gallery_id = g.gallery_id
         ORDER BY e.start_date ASC`;
 
