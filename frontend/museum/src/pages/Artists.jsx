@@ -1,24 +1,38 @@
 import { useEffect, useState } from "react";
+import { getArtists, createArtist } from "../services/api";
+import ArtistForm from "../components/ArtistForm";
 
-function Artists() {
+export default function Artists() {
   const [artists, setArtists] = useState([]);
 
+  async function loadArtists() {
+    const data = await getArtists();
+    setArtists(data);
+  }
+
   useEffect(() => {
-    fetch("http://localhost:5000/artists")
-      .then(res => res.json())
-      .then(data => setArtists(data));
+    loadArtists();
   }, []);
+
+  async function handleAddArtist(artist) {
+    await createArtist(artist);
+    loadArtists(); // refresh list
+  }
 
   return (
     <div>
-      <h2>Artists</h2>
-      {artists.map(artist => (
-        <p key={artist.artist_id}>
-          {artist.first_name} {artist.last_name}
-        </p>
-      ))}
+      <h1>Artists</h1>
+
+      <ArtistForm onAdd={handleAddArtist} />
+
+      <h3>Artist List</h3>
+      <ul>
+        {artists.map((a) => (
+          <li key={a.artist_id}>
+            {a.first_name} {a.last_name} ({a.nationality})
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
-
-export default Artists;
