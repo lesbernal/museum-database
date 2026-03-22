@@ -1,0 +1,43 @@
+.home-container {
+  font-family: Arial, sans-serif;
+  text-align: center;
+  padding: 2rem;
+}
+
+.home-header h1 {
+  font-size: 3rem;
+  margin-bottom: 0.5rem;
+  color: #2c3e50;
+}
+
+.home-header p {
+  font-size: 1.2rem;
+  color: #555;
+}
+
+.home-links {
+  margin-top: 2rem;
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+}
+
+.home-link {
+  padding: 1rem 2rem;
+  background-color: #b22222; /* deep red like museum branding */
+  color: white;
+  text-decoration: none;
+  border-radius: 8px;
+  font-weight: bold;
+  transition: 0.3s;
+}
+
+.home-link:hover {
+  background-color: #8b0000;
+}
+
+.home-footer {
+  margin-top: 4rem;
+  font-size: 0.9rem;
+  color: #777;
+}
