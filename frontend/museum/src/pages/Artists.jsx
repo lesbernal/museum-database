@@ -6,8 +6,12 @@ export default function Artists() {
   const [artists, setArtists] = useState([]);
 
   async function loadArtists() {
-    const data = await getArtists();
-    setArtists(data);
+    try {
+      const data = await getArtists();
+      setArtists(data);
+    } catch (err) {
+      console.error("Failed to load artists:", err);
+    }
   }
 
   useEffect(() => {
@@ -15,16 +19,20 @@ export default function Artists() {
   }, []);
 
   async function handleAddArtist(artist) {
-    await createArtist(artist);
-    loadArtists(); // refresh list
+    console.log("Submitting artist:", artist);
+    try {
+      const result = await createArtist(artist);
+      console.log("Backend response:", result);
+      loadArtists(); // refresh list after adding
+    } catch (err) {
+      console.error("Error adding artist:", err);
+    }
   }
 
   return (
     <div>
       <h1>Artists</h1>
-
       <ArtistForm onAdd={handleAddArtist} />
-
       <h3>Artist List</h3>
       <ul>
         {artists.map((a) => (

@@ -1,5 +1,30 @@
 const http = require("http");
 const url = require("url");
+const handleArtists = require("./handlers/artists");
+
+const server = http.createServer((req, res) => {
+  // CORS
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+
+  if (req.method === "OPTIONS") return res.end();
+
+  const parsedUrl = url.parse(req.url, true);
+
+  // Pass parsedUrl to the handler
+  if (parsedUrl.pathname.startsWith("/artists")) {
+    return handleArtists(req, res, parsedUrl);
+  }
+
+  res.writeHead(404, { "Content-Type": "application/json" });
+  res.end(JSON.stringify({ message: "Route not found" }));
+});
+
+server.listen(5000, () => console.log("Server running on port 5000"));
+
+/* const http = require("http");
+const url = require("url");
 
 const handleArtists = require("./handlers/artists");
 const handleTickets = require("./handlers/tickets");
@@ -64,3 +89,4 @@ const server = http.createServer((req, res) => {
 server.listen(5000, () => {
   console.log("Server running on port 5000");
 });
+*/
