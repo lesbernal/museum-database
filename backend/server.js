@@ -1,9 +1,9 @@
 const http = require("http");
 const url = require("url");
-const handleArtists = require("./handlers/artists");
+const handleArtists = require("./handlers/artists"); // handles artists + artwork + provenance
 
 const server = http.createServer((req, res) => {
-  // CORS
+  // Enable CORS
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
@@ -12,17 +12,24 @@ const server = http.createServer((req, res) => {
 
   const parsedUrl = url.parse(req.url, true);
 
-  // Pass parsedUrl to the handler
-  if (parsedUrl.pathname.startsWith("/artists")) {
+  // ------------------ ROUTING ------------------
+  // Artists, Artwork, Provenance all go to same handler
+  if (
+    parsedUrl.pathname.startsWith("/artists") ||
+    parsedUrl.pathname.startsWith("/artwork") ||
+    parsedUrl.pathname.startsWith("/provenance")
+  ) {
     return handleArtists(req, res, parsedUrl);
   }
 
+  // 404 for all other routes
   res.writeHead(404, { "Content-Type": "application/json" });
   res.end(JSON.stringify({ message: "Route not found" }));
 });
 
-server.listen(5000, () => console.log("Server running on port 5000"));
-
+server.listen(5000, () =>
+  console.log("Server running on http://localhost:5000")
+);
 /* const http = require("http");
 const url = require("url");
 

@@ -1,43 +1,134 @@
 .home-container {
   font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+  color: #333;
+}
+
+/* Banner */
+.home-banner {
+  background: url('https://images.unsplash.com/photo-1558959357-4f3ff1e6f332?auto=format&fit=crop&w=1400&q=80') no-repeat center center/cover;
+  color: white;
   text-align: center;
-  padding: 2rem;
+  padding: 6rem 2rem;
 }
 
-.home-header h1 {
-  font-size: 3rem;
+/* Small screens / half-screen */
+@media (max-width: 768px) {
+  .home-banner {
+    padding: 4rem 1rem;
+  }
+  .home-banner h1 {
+    font-size: 2rem;
+  }
+  .home-banner p {
+    font-size: 1rem;
+  }
+}
+
+/* Cards Section */
+.home-cards {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 2rem;
+  padding: 3rem 1rem;
+}
+
+.home-card {
+  flex: 1 1 250px;
+  max-width: 300px;
+  background-color: #f8f8f8;
+  border-radius: 10px;
+  padding: 2rem 1.5rem;
+  text-decoration: none;
+  color: #333;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+@media (max-width: 768px) {
+  .home-card {
+    flex: 1 1 100%; /* full width on small screens */
+    max-width: 100%;
+  }
+}
+
+.home-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+}
+
+.home-card h2 {
+  margin-top: 0;
   margin-bottom: 0.5rem;
-  color: #2c3e50;
 }
 
-.home-header p {
-  font-size: 1.2rem;
+.home-card p {
+  font-size: 0.95rem;
   color: #555;
 }
 
-.home-links {
-  margin-top: 2rem;
-  display: flex;
-  justify-content: center;
-  gap: 2rem;
-}
-
-.home-link {
-  padding: 1rem 2rem;
-  background-color: #b22222; /* deep red like museum branding */
-  color: white;
-  text-decoration: none;
-  border-radius: 8px;
-  font-weight: bold;
-  transition: 0.3s;
-}
-
-.home-link:hover {
-  background-color: #8b0000;
-}
-
+/* Footer */
 .home-footer {
-  margin-top: 4rem;
+  background-color: #222;
+  color: #aaa;
+  text-align: center;
+  padding: 1rem 0;
   font-size: 0.9rem;
-  color: #777;
+}
+
+/* Featured Artists Carousel */
+.home-featured-artists {
+  padding: 3rem 1rem;
+  text-align: center;
+}
+
+.home-featured-artists h2 {
+  font-size: 2rem;
+  margin-bottom: 1.5rem;
+  color: #2c3e50;
+}
+
+.carousel {
+  display: flex;
+  overflow-x: auto;
+  gap: 1.5rem;
+  padding-bottom: 1rem;
+}
+
+.carousel-card {
+  flex: 0 0 200px;
+  background-color: #f4f4f4;
+  border-radius: 10px;
+  padding: 1rem;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+  transition: transform 0.2s;
+}
+
+@media (max-width: 768px) {
+  .carousel-card {
+    flex: 0 0 150px;
+    padding: 0.8rem;
+  }
+}
+
+.carousel-card:hover {
+  transform: translateY(-5px);
+}
+
+.carousel-card h3 {
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+}
+
+.carousel-card p {
+  margin: 0.25rem 0;
+  color: #555;
+  font-size: 0.9rem;
+}
+
+.carousel-card .biography {
+  font-style: italic;
+  font-size: 0.85rem;
 }
