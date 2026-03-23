@@ -1,46 +1,13 @@
 const http = require("http");
 const url = require("url");
-const handleArtists = require("./handlers/artists"); // handles artists + artwork + provenance
-const handleLogin = require("./handlers/auth");
 
-const server = http.createServer((req, res) => {
-  // Enable CORS
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
-
-  if (req.method === "OPTIONS") return res.end();
-
-  const parsedUrl = url.parse(req.url, true);
-
-  // ------------------ ROUTING ------------------
-
-  if (parsedUrl.pathname === "/login") {
-    return handleLogin(req, res);
-  }
-
-  // Artists, Artwork, Provenance all go to same handler
-  if (
-    parsedUrl.pathname.startsWith("/artists") ||
-    parsedUrl.pathname.startsWith("/artwork") ||
-    parsedUrl.pathname.startsWith("/provenance")
-  ) {
-    return handleArtists(req, res, parsedUrl);
-  }
-
-  // 404 for all other routes
-  res.writeHead(404, { "Content-Type": "application/json" });
-  res.end(JSON.stringify({ message: "Route not found" }));
-});
-
-server.listen(5000, () =>
-  console.log("Server running on http://localhost:5000")
-);
-/* const http = require("http");
-const url = require("url");
-
-// Handlers from both files
-const handleArtists = require("./handlers/artists");
+// Handlers
+const handleCafeitem = require("./handlers/cafeitems");
+const handleCafetransaction = require("./handlers/cafetransactions");
+const handleCafetransactionitem = require("./handlers/cafetransactionitems");
+const handleGiftshopitem = require("./handlers/giftshopitems");
+const handleGiftshoptransaction = require("./handlers/giftshoptransactions");
+const handleGiftshoptransactionitem = require("./handlers/giftshoptransactionitems");
 const handleTickets = require("./handlers/tickets");
 const handleEvents = require("./handlers/events");
 const handleDonations = require("./handlers/donations");
@@ -50,10 +17,11 @@ const handleGiftshop = require("./handlers/giftshop");
 const handleCafe = require("./handlers/cafe");
 const handleExhibitions = require("./handlers/exhibitions");
 
-const server = http.createServer((req, res) => {
-  const parsedUrl = url.parse(req.url, true);
+const handleArtists = require("./handlers/artists"); // handles artists + artwork + provenance
+const handleLogin = require("./handlers/auth");
 
-  // Enable CORS manually
+const server = http.createServer((req, res) => {
+  // Enable CORS
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
@@ -63,9 +31,47 @@ const server = http.createServer((req, res) => {
     return res.end();
   }
 
-  // ROUTING
-  if (parsedUrl.pathname.startsWith("/artists")) {
-    return handleArtists(req, res);
+  const parsedUrl = url.parse(req.url, true);
+  
+  
+  // ------------------ ROUTING ------------------
+  
+  //login/auth
+  if (parsedUrl.pathname === "/login") {
+    return handleLogin(req, res);
+  }
+
+  // Artists, Artwork, Provenance 
+  if (
+    parsedUrl.pathname.startsWith("/artists") ||
+    parsedUrl.pathname.startsWith("/artwork") ||
+    parsedUrl.pathname.startsWith("/provenance")
+  ) {
+    return handleArtists(req, res, parsedUrl);
+  }
+
+  if (parsedUrl.pathname === "/cafeitems") {
+    return handleCafeitem(req, res);
+  }
+
+  if (parsedUrl.pathname === "/cafetransactions") {
+    return handleCafetransaction(req, res);
+  }
+
+  if (parsedUrl.pathname === "/cafetransactionitems") {
+    return handleCafetransactionitem(req, res);
+  }
+
+  if (parsedUrl.pathname === "/giftshopitems") {
+    return handleGiftshopitem(req, res);
+  }
+
+  if (parsedUrl.pathname === "/giftshoptransactions") {
+    return handleGiftshoptransaction(req, res);
+  }
+
+  if (parsedUrl.pathname === "/giftshoptransactionitems") {
+    return handleGiftshoptransactionitem(req, res);
   }
 
   if (parsedUrl.pathname.startsWith("/tickets")) {
@@ -100,7 +106,7 @@ const server = http.createServer((req, res) => {
     return handleExhibitions(req, res);
   }
 
-  // 404 for unmatched routes
+  // 404 fallback
   res.writeHead(404, { "Content-Type": "application/json" });
   res.end(JSON.stringify({ message: "Route not found" }));
 });
@@ -108,4 +114,3 @@ const server = http.createServer((req, res) => {
 server.listen(5000, () => {
   console.log("Server running on port 5000");
 });
-*/
