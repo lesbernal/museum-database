@@ -2,7 +2,6 @@ const http = require("http");
 const url = require("url");
 
 // Handlers
-const handleArtists = require("./handlers/artists"); // artists + artwork + provenance
 const handleCafeitem = require("./handlers/cafeitems");
 const handleCafetransaction = require("./handlers/cafetransactions");
 const handleCafetransactionitem = require("./handlers/cafetransactionitems");
@@ -18,6 +17,9 @@ const handleGiftshop = require("./handlers/giftshop");
 const handleCafe = require("./handlers/cafe");
 const handleExhibitions = require("./handlers/exhibitions");
 
+const handleArtists = require("./handlers/artists"); // handles artists + artwork + provenance
+const handleLogin = require("./handlers/auth");
+
 const server = http.createServer((req, res) => {
   // Enable CORS
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -30,8 +32,16 @@ const server = http.createServer((req, res) => {
   }
 
   const parsedUrl = url.parse(req.url, true);
+  
+  
+  // ------------------ ROUTING ------------------
+  
+  //login/auth
+  if (parsedUrl.pathname === "/login") {
+    return handleLogin(req, res);
+  }
 
-  // Artists, Artwork, Provenance
+  // Artists, Artwork, Provenance 
   if (
     parsedUrl.pathname.startsWith("/artists") ||
     parsedUrl.pathname.startsWith("/artwork") ||
@@ -96,7 +106,7 @@ const server = http.createServer((req, res) => {
     return handleExhibitions(req, res);
   }
 
-  // 404 for unmatched routes
+  // 404 fallback
   res.writeHead(404, { "Content-Type": "application/json" });
   res.end(JSON.stringify({ message: "Route not found" }));
 });
