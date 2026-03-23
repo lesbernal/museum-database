@@ -1,5 +1,3 @@
-//ticket
-
 const db = require("../db");
 
 module.exports = (req, res) => {

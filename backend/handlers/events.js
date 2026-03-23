@@ -2,9 +2,9 @@ const db = require("../db");
 
 module.exports = (req, res) => {
 
-  // GET /donations
+  // GET /events
   if (req.method === "GET") {
-    db.query("SELECT * FROM donation", (err, results) => {
+    db.query("SELECT * FROM event", (err, results) => {
       if (err) {
         res.writeHead(500);
         return res.end(JSON.stringify(err));
@@ -15,7 +15,7 @@ module.exports = (req, res) => {
     });
   }
 
-  // POST /donations
+  // POST /events
   else if (req.method === "POST") {
     let body = "";
 
@@ -27,18 +27,21 @@ module.exports = (req, res) => {
       const data = JSON.parse(body);
 
       const sql = `
-        INSERT INTO donation
-        (user_id, donation_date, amount, donation_type)
-        VALUES (?, ?, ?, ?)
+        INSERT INTO event
+        (gallery_id, event_name, description, event_date, capacity, member_only, total_attendees)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
       `;
 
       db.query(
         sql,
         [
-          data.user_id,
-          data.donation_date,
-          data.amount,
-          data.donation_type
+          data.gallery_id,
+          data.event_name,
+          data.description,
+          data.event_date,
+          data.capacity,
+          data.member_only,
+          data.total_attendees
         ],
         (err) => {
           if (err) {
@@ -47,7 +50,7 @@ module.exports = (req, res) => {
           }
 
           res.writeHead(201);
-          res.end(JSON.stringify({ message: "Donation added" }));
+          res.end(JSON.stringify({ message: "Event added" }));
         }
       );
     });

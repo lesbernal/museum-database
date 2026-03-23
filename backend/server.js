@@ -1,8 +1,10 @@
 const http = require("http");
 const url = require("url");
 
+// Handlers from both files
 const handleArtists = require("./handlers/artists");
 const handleTickets = require("./handlers/tickets");
+const handleEvents = require("./handlers/events");
 const handleDonations = require("./handlers/donations");
 const handleUsers = require("./handlers/users");
 const handleDepartments = require("./handlers/departments");
@@ -30,6 +32,10 @@ const server = http.createServer((req, res) => {
 
   if (parsedUrl.pathname.startsWith("/tickets")) {
     return handleTickets(req, res);
+  }
+
+  if (parsedUrl.pathname.startsWith("/events")) {
+    return handleEvents(req, res);
   }
 
   if (parsedUrl.pathname.startsWith("/donations")) {
