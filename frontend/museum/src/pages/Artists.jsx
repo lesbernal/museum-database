@@ -36,7 +36,7 @@ export default function Artists() {
 
   // Delete artist
   async function handleDelete(id) {
-    if (!window.confirm("Are you sure you want to delete this artist?")) return;
+    if (!window.confirm("Are you sure you want to delete this artist? It will be gone forever...")) return;
     try {
       await deleteArtist(id);
       loadArtists();
