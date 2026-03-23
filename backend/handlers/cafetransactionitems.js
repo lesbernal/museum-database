@@ -31,13 +31,14 @@ module.exports = (req, res) => {
 
       const sql = `
         INSERT INTO cafetransactionitem
-        (transaction_id, item_id, quantity, subtotal)
-        VALUES (?, ?, ?, ?)
+        (transaction_item_id, transaction_id, item_id, quantity, subtotal)
+        VALUES (?, ?, ?, ?, ?)
       `;
 
       db.query(
         sql,
         [
+          data.transaction_item_id,
           data.transaction_id,
           data.item_id,
           data.quantity,
