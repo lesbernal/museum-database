@@ -34,13 +34,14 @@ module.exports = (req, res) => {
 
       const sql = `
         INSERT INTO giftshopitem
-        (item_name, category, price, stock_quantity)
-        VALUES (?, ?, ?, ?)
+        (item_id, item_name, category, price, stock_quantity)
+        VALUES (?, ?, ?, ?, ?)
       `;
 
       db.query(
         sql,
         [
+          data.item_id,
           data.item_name,
           data.category,
           data.price,
@@ -55,7 +56,7 @@ module.exports = (req, res) => {
 
           res.writeHead(201, { "Content-Type": "application/json" });
           res.end(JSON.stringify({
-            message: "Cafe item added",
+            message: "Gift shop item added",
             id: result.insertId
           }));
 

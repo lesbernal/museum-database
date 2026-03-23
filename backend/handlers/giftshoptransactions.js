@@ -3,8 +3,8 @@ const db = require("../db");
 module.exports = (req, res) => {
   // GET /giftshoptransactions
   if (req.method === "GET") {
-
     const sql = "SELECT * FROM giftshoptransaction";
+
     db.query(sql, (err, results) => {
       if (err) {
         res.writeHead(500, { "Content-Type": "application/json" });
@@ -29,13 +29,14 @@ module.exports = (req, res) => {
 
       const sql = `
         INSERT INTO giftshoptransaction
-        (user_id, transaction_datetime, total_amount, payment_method)
-        VALUES (?, ?, ?, ?)
+        (transaction_id, user_id, transaction_datetime, total_amount, payment_method)
+        VALUES (?, ?, ?, ?, ?)
       `;
 
       db.query(
         sql,
         [
+          data.transaction_id,
           data.user_id,
           data.transaction_datetime,
           data.total_amount,
@@ -49,7 +50,7 @@ module.exports = (req, res) => {
 
           res.writeHead(201, { "Content-Type": "application/json" });
           res.end(JSON.stringify({
-            message: "Cafe transaction added",
+            message: "Gift shop transaction added",
             id: result.insertId
           }));
         }

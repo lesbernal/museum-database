@@ -8,7 +8,7 @@ const db = mysql.createConnection({
   database: process.env.DB_NAME || "museum",
   port: process.env.DB_PORT || 3306,
   ssl: {
-    rejectUnauthorized: true // ensures secure SSL
+    rejectUnauthorized: false // ensures secure SSL
   }
 });
 
@@ -21,3 +21,7 @@ db.connect((err) => {
 });
 
 module.exports = db;
+
+db.query("SELECT CURRENT_USER() AS user, DATABASE() AS db, @@hostname AS host, @@port AS port", (err, results) => {
+  console.log(results);
+});

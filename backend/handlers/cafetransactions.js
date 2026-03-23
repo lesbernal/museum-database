@@ -29,13 +29,15 @@ module.exports = (req, res) => {
 
       const sql = `
         INSERT INTO cafetransaction
-        (user_id, transaction_datetime, total_amount, payment_method)
-        VALUES (?, ?, ?, ?)
+        (cafe_transaction_id, user_id, transaction_datetime, total_amount, payment_method)
+        VALUES (?, ?, ?, ?, ?)
       `;
+
 
       db.query(
         sql,
         [
+          data.cafe_transaction_id,
           data.user_id,
           data.transaction_datetime,
           data.total_amount,
