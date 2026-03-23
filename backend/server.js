@@ -1,6 +1,7 @@
 const http = require("http");
 const url = require("url");
 const handleArtists = require("./handlers/artists"); // handles artists + artwork + provenance
+const handleLogin = require("./handlers/auth");
 
 const server = http.createServer((req, res) => {
   // Enable CORS
@@ -13,6 +14,11 @@ const server = http.createServer((req, res) => {
   const parsedUrl = url.parse(req.url, true);
 
   // ------------------ ROUTING ------------------
+
+  if (parsedUrl.pathname === "/login") {
+    return handleLogin(req, res);
+  }
+
   // Artists, Artwork, Provenance all go to same handler
   if (
     parsedUrl.pathname.startsWith("/artists") ||
