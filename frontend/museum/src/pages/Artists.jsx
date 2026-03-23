@@ -1,24 +1,69 @@
 import { useEffect, useState } from "react";
+import { getArtists, createArtist, updateArtist, deleteArtist } from "../services/api";
+import ArtistForm from "../components/ArtistForm";
 
-function Artists() {
+export default function Artists() {
   const [artists, setArtists] = useState([]);
+  const [editingArtist, setEditingArtist] = useState(null); // new state for editing
 
-  useEffect(() => {
-    fetch("http://localhost:5000/artists")
-      .then(res => res.json())
-      .then(data => setArtists(data));
-  }, []);
+  async function loadArtists() {
+    try {
+      const data = await getArtists();
+      setArtists(data);
+    } catch (err) {
+      console.error("Failed to load artists:", err);
+    }
+  }
+
+  useEffect(() => { loadArtists(); }, []);
+
+  // Add new artist
+  async function handleAddArtist(artist) {
+    try {
+      await createArtist(artist);
+      loadArtists();
+    } catch (err) { console.error(err); }
+  }
+
+  // Update existing artist
+  async function handleUpdateArtist(artist) {
+    try {
+      await updateArtist(editingArtist.artist_id, artist);
+      setEditingArtist(null); // exit edit mode
+      loadArtists();
+    } catch (err) { console.error(err); }
+  }
+
+  // Delete artist
+  async function handleDelete(id) {
+    if (!window.confirm("Are you sure you want to delete this artist?")) return;
+    try {
+      await deleteArtist(id);
+      loadArtists();
+    } catch (err) { console.error(err); }
+  }
 
   return (
     <div>
-      <h2>Artists</h2>
-      {artists.map(artist => (
-        <p key={artist.artist_id}>
-          {artist.first_name} {artist.last_name}
-        </p>
-      ))}
+      <h1>Artists</h1>
+
+      {/* Add or Edit Form */}
+      <ArtistForm
+        onSubmit={editingArtist ? handleUpdateArtist : handleAddArtist}
+        initialData={editingArtist}
+        onCancel={() => setEditingArtist(null)}
+      />
+
+      <h3>Artist List</h3>
+      <ul>
+        {artists.map((a) => (
+          <li key={a.artist_id}>
+            {a.first_name} {a.last_name} ({a.nationality})
+            <button onClick={() => setEditingArtist(a)}>Edit</button>
+            <button onClick={() => handleDelete(a.artist_id)}>Delete</button>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
-
-export default Artists;
