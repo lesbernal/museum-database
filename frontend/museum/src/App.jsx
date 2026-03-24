@@ -1,10 +1,10 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import ProtectedRoute from "./components/ProtectedRoute";
 import "./App.css";
 
 import Login from "./pages/Login";
 import Home from "./pages/Home";
-import Artists from "./pages/Artists";
+import ArtistsGallery from "./pages/ArtistsGallery";
 import AdminDashboard from "./components/AdminDashboard";
 
 function App() {
@@ -13,8 +13,9 @@ function App() {
       <Routes>
         {/* Public Routes */}
         <Route path="/" element={<Home />} />
+        <Route path="/home" element={<Navigate to="/" replace />} /> {/* Redirect /home to / */}
         <Route path="/login" element={<Login />} />
-        <Route path="/artists" element={<Artists />} />
+        <Route path="/artists" element={<ArtistsGallery />} />
         
         {/* Admin Only Routes */}
         <Route 
