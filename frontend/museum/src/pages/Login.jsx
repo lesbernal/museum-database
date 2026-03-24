@@ -1,4 +1,4 @@
-// src/pages/Login.jsx
+// pages/Login.jsx (updated with small improvements)
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "../styles/Login.css";
@@ -27,13 +27,18 @@ export default function Login() {
         return;
       }
 
-      // Save JWT in localStorage
+      // Save JWT and role in localStorage
       localStorage.setItem("token", data.token);
-      // Optionally, save role for client-side checks
-      localStorage.setItem("role", data.role);
+      localStorage.setItem("role", data.role || "visitor"); // Default to visitor if no role
+      localStorage.setItem("user_id", data.user_id);
+      localStorage.setItem("user_email", email);
 
-      // Redirect to home
-      navigate("/");
+      // Redirect based on role
+      if (data.role === "admin") {
+        navigate("/admin");
+      } else {
+        navigate("/");
+      }
     } catch (err) {
       console.error(err);
       setError("Server error. Try again later.");
