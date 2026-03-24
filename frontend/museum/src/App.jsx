@@ -4,7 +4,7 @@ import "./App.css";
 
 import Login from "./pages/Login";
 import Home from "./pages/Home";
-import Artists from "./pages/Artists";
+import ArtistsGallery from "./pages/ArtistsGallery";
 import AdminDashboard from "./components/AdminDashboard";
 
 function App() {
@@ -14,7 +14,7 @@ function App() {
         {/* Public Routes */}
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
-        <Route path="/artists" element={<Artists />} />
+        <Route path="/artists" element={<ArtistsGallery />} />
         
         {/* Admin Only Routes */}
         <Route 
