@@ -6,12 +6,15 @@ const { verifyToken } = require("./authHelpers");
 module.exports = (req, res, parsedUrl) => {
   const urlParts = parsedUrl.pathname.split("/").filter(Boolean);
 
-  const user = verifyToken(req);
+  /* const user = verifyToken(req);
     if (!user || !['admin', 'employee'].includes(user.role)) {
       res.writeHead(403, { "Content-Type": "application/json" });
       return res.end(JSON.stringify({ error: "Forbidden: insufficient permissions" }));
     }
+      */ 
+     // Uncomment above to require auth for all artist/artwork/provenance routes
 
+     
   // ============================ ARTISTS ============================
   if (urlParts[0] === "artists") {
 
