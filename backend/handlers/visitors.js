@@ -1,104 +1,96 @@
-// users
+// visitors
 
 const db = require("../db");
 //const { verifyToken } = require("./authHelpers");
 
 module.exports = (req, res, parsedUrl) => {
   const urlParts = parsedUrl.pathname.split("/").filter(Boolean);
-  
-//commented out the authentication stuff for now
+
   /*const user = verifyToken(req);
   if (!user || !["admin", "employee"].includes(user.role)) {
     res.writeHead(403, { "Content-Type": "application/json" });
     return res.end(JSON.stringify({ error: "Forbidden: insufficient permissions" }));
   }
 */
-  // ============================ USERS ============================
+  // ============================ VISITORS ============================
 
-  // GET all users
+  // GET all visitors (joined with user for full info)
   if (req.method === "GET" && urlParts.length === 1) {
-    db.query("SELECT * FROM user", (err, results) => {
+    const sql = `
+      SELECT v.user_id, u.first_name, u.last_name, u.email,
+             v.last_visit_date, v.total_visits
+      FROM visitor v
+      JOIN user u ON v.user_id = u.user_id
+    `;
+    db.query(sql, (err, results) => {
       if (err) return sendError(res, err);
       sendJSON(res, results);
     });
   }
 
-  // GET user by id
+  // GET visitor by id
   else if (req.method === "GET" && urlParts.length === 2) {
-    db.query(
-      "SELECT * FROM user WHERE user_id=?",
-      [urlParts[1]],
-      (err, results) => {
-        if (err) return sendError(res, err);
-        sendJSON(res, results[0] || {});
-      }
-    );
+    const sql = `
+      SELECT v.user_id, u.first_name, u.last_name, u.email,
+             v.last_visit_date, v.total_visits
+      FROM visitor v
+      JOIN user u ON v.user_id = u.user_id
+      WHERE v.user_id=?
+    `;
+    db.query(sql, [urlParts[1]], (err, results) => {
+      if (err) return sendError(res, err);
+      sendJSON(res, results[0] || {});
+    });
   }
 
-  // POST user
+  // POST visitor (user must already exist)
   else if (req.method === "POST") {
     parseBody(req, data => {
       const sql = `
-        INSERT INTO user
-        (user_id, first_name, last_name, email, phone_number,
-         street_address, city, state, zip_code, date_of_birth)
-        VALUES (?,?,?,?,?,?,?,?,?,?)
+        INSERT INTO visitor
+        (user_id, last_visit_date, total_visits)
+        VALUES (?,?,?)
       `;
 
       db.query(sql, [
         data.user_id || null,
-        data.first_name || "",
-        data.last_name || "",
-        data.email || "",
-        data.phone_number || "",
-        data.street_address || "",
-        data.city || "",
-        data.state || "",
-        data.zip_code || "",
-        data.date_of_birth || null
+        data.last_visit_date || null,
+        data.total_visits || 0
       ], err => {
         if (err) return sendError(res, err);
-        sendJSON(res, { message: "User added" }, 201);
+        sendJSON(res, { message: "Visitor added" }, 201);
       });
     });
   }
 
-  // PUT user
+  // PUT visitor
   else if (req.method === "PUT" && urlParts.length === 2) {
     parseBody(req, data => {
       const sql = `
-        UPDATE user SET
-        first_name=?, last_name=?, email=?, phone_number=?,
-        street_address=?, city=?, state=?, zip_code=?, date_of_birth=?
+        UPDATE visitor SET
+        last_visit_date=?, total_visits=?
         WHERE user_id=?
       `;
 
       db.query(sql, [
-        data.first_name || "",
-        data.last_name || "",
-        data.email || "",
-        data.phone_number || "",
-        data.street_address || "",
-        data.city || "",
-        data.state || "",
-        data.zip_code || "",
-        data.date_of_birth || null,
+        data.last_visit_date || null,
+        data.total_visits || 0,
         urlParts[1]
       ], err => {
         if (err) return sendError(res, err);
-        sendJSON(res, { message: "User updated" });
+        sendJSON(res, { message: "Visitor updated" });
       });
     });
   }
 
-  // DELETE user
+  // DELETE visitor
   else if (req.method === "DELETE" && urlParts.length === 2) {
     db.query(
-      "DELETE FROM user WHERE user_id=?",
+      "DELETE FROM visitor WHERE user_id=?",
       [urlParts[1]],
       err => {
         if (err) return sendError(res, err);
-        sendJSON(res, { message: "User deleted" });
+        sendJSON(res, { message: "Visitor deleted" });
       }
     );
   }

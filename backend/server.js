@@ -13,6 +13,9 @@ const handleTickets = require("./handlers/tickets");
 const handleEvents = require("./handlers/events");
 const handleDonations = require("./handlers/donations");
 const handleUsers = require("./handlers/users");
+const handleEmployees = require("./handlers/employees");
+const handleVisitors  = require("./handlers/visitors");
+const handleMembers   = require("./handlers/members");
 const handleDepartments = require("./handlers/departments");
 const handleGiftshop = require("./handlers/giftshop");
 const handleCafe = require("./handlers/cafe");
@@ -84,6 +87,18 @@ const server = http.createServer((req, res) => {
 
   if (parsedUrl.pathname.startsWith("/users")) {
     return handleUsers(req, res, parsedUrl);
+  }
+  
+  if (parsedUrl.pathname.startsWith("/employees")) {
+    return handleEmployees(req, res, parsedUrl);
+  }
+ 
+  if (parsedUrl.pathname.startsWith("/visitors")) {
+    return handleVisitors(req, res, parsedUrl);
+  }
+ 
+  if (parsedUrl.pathname.startsWith("/members")) {
+    return handleMembers(req, res, parsedUrl);
   }
 
   if (parsedUrl.pathname.startsWith("/departments")) {

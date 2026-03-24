@@ -1,104 +1,104 @@
-// users
+// employees
 
 const db = require("../db");
 //const { verifyToken } = require("./authHelpers");
 
 module.exports = (req, res, parsedUrl) => {
   const urlParts = parsedUrl.pathname.split("/").filter(Boolean);
-  
-//commented out the authentication stuff for now
+
   /*const user = verifyToken(req);
   if (!user || !["admin", "employee"].includes(user.role)) {
     res.writeHead(403, { "Content-Type": "application/json" });
     return res.end(JSON.stringify({ error: "Forbidden: insufficient permissions" }));
   }
-*/
-  // ============================ USERS ============================
+  */
+  // ============================ EMPLOYEES ============================
 
-  // GET all users
+  // GET all employees (joined with user for full info)
   if (req.method === "GET" && urlParts.length === 1) {
-    db.query("SELECT * FROM user", (err, results) => {
+    const sql = `
+      SELECT e.user_id, u.first_name, u.last_name, u.email, u.phone_number,
+             u.city, u.state, e.department_id, e.job_title, e.hire_date,
+             e.salary, e.employment_type
+      FROM employee e
+      JOIN user u ON e.user_id = u.user_id
+    `;
+    db.query(sql, (err, results) => {
       if (err) return sendError(res, err);
       sendJSON(res, results);
     });
   }
 
-  // GET user by id
+  // GET employee by id
   else if (req.method === "GET" && urlParts.length === 2) {
-    db.query(
-      "SELECT * FROM user WHERE user_id=?",
-      [urlParts[1]],
-      (err, results) => {
-        if (err) return sendError(res, err);
-        sendJSON(res, results[0] || {});
-      }
-    );
+    const sql = `
+      SELECT e.user_id, u.first_name, u.last_name, u.email, u.phone_number,
+             u.city, u.state, e.department_id, e.job_title, e.hire_date,
+             e.salary, e.employment_type
+      FROM employee e
+      JOIN user u ON e.user_id = u.user_id
+      WHERE e.user_id=?
+    `;
+    db.query(sql, [urlParts[1]], (err, results) => {
+      if (err) return sendError(res, err);
+      sendJSON(res, results[0] || {});
+    });
   }
 
-  // POST user
+  // POST employee (user must already exist)
   else if (req.method === "POST") {
     parseBody(req, data => {
       const sql = `
-        INSERT INTO user
-        (user_id, first_name, last_name, email, phone_number,
-         street_address, city, state, zip_code, date_of_birth)
-        VALUES (?,?,?,?,?,?,?,?,?,?)
+        INSERT INTO employee
+        (user_id, department_id, job_title, hire_date, salary, employment_type)
+        VALUES (?,?,?,?,?,?)
       `;
 
       db.query(sql, [
         data.user_id || null,
-        data.first_name || "",
-        data.last_name || "",
-        data.email || "",
-        data.phone_number || "",
-        data.street_address || "",
-        data.city || "",
-        data.state || "",
-        data.zip_code || "",
-        data.date_of_birth || null
+        data.department_id || null,
+        data.job_title || "",
+        data.hire_date || null,
+        data.salary || null,
+        data.employment_type || ""
       ], err => {
         if (err) return sendError(res, err);
-        sendJSON(res, { message: "User added" }, 201);
+        sendJSON(res, { message: "Employee added" }, 201);
       });
     });
   }
 
-  // PUT user
+  // PUT employee
   else if (req.method === "PUT" && urlParts.length === 2) {
     parseBody(req, data => {
       const sql = `
-        UPDATE user SET
-        first_name=?, last_name=?, email=?, phone_number=?,
-        street_address=?, city=?, state=?, zip_code=?, date_of_birth=?
+        UPDATE employee SET
+        department_id=?, job_title=?, hire_date=?, salary=?, employment_type=?
         WHERE user_id=?
       `;
 
       db.query(sql, [
-        data.first_name || "",
-        data.last_name || "",
-        data.email || "",
-        data.phone_number || "",
-        data.street_address || "",
-        data.city || "",
-        data.state || "",
-        data.zip_code || "",
-        data.date_of_birth || null,
+        data.department_id || null,
+        data.job_title || "",
+        data.hire_date || null,
+        data.salary || null,
+        data.employment_type || "",
         urlParts[1]
       ], err => {
         if (err) return sendError(res, err);
-        sendJSON(res, { message: "User updated" });
+        sendJSON(res, { message: "Employee updated" });
       });
     });
   }
 
-  // DELETE user
+  // DELETE employee
   else if (req.method === "DELETE" && urlParts.length === 2) {
     db.query(
-      "DELETE FROM user WHERE user_id=?",
+      "DELETE FROM employee WHERE user_id=?",
       [urlParts[1]],
       err => {
         if (err) return sendError(res, err);
-        sendJSON(res, { message: "User deleted" });
+        sendJSON(res, { message: "Employee deleted" });
       }
     );
   }
