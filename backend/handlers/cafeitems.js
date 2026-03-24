@@ -1,6 +1,7 @@
 const db = require("../db");
 
-module.exports = (req, res) => {
+module.exports = (req, res, parsedUrl) => {
+
   // GET /cafeitems
   if (req.method === "GET") {
     const sql = "SELECT * FROM cafeitem";

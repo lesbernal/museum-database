@@ -1,6 +1,6 @@
 const db = require("../db");
+module.exports = (req, res, parsedUrl) => {
 
-module.exports = (req, res) => {
   // GET /cafetransactions
   if (req.method === "GET") {
 
@@ -58,6 +58,25 @@ module.exports = (req, res) => {
       );
     });
   }
+
+else if (req.method === "DELETE") {
+  const id = parsedUrl.pathname.split("/")[2];
+
+  const sql = "DELETE FROM cafetransaction WHERE cafe_transaction_id = ?";
+
+  db.query(sql, [id], (err, result) => {
+    if (err) {
+      res.writeHead(500, { "Content-Type": "application/json" });
+      return res.end(JSON.stringify(err));
+    }
+
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({
+      message: "Cafe transaction deleted"
+    }));
+  });
+}
+
 
   else {
     res.writeHead(405, { "Content-Type": "application/json" });
