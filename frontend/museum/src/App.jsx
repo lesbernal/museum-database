@@ -1,5 +1,7 @@
+// App.jsx
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import ProtectedRoute from "./components/ProtectedRoute";
+import Navbar from "./components/Navbar";  // Add this import
 import "./App.css";
 
 import Login from "./pages/Login";
@@ -10,10 +12,11 @@ import AdminDashboard from "./components/AdminDashboard";
 function App() {
   return (
     <BrowserRouter>
+      <Navbar />  {/* Add Navbar here - it will show on all pages */}
       <Routes>
         {/* Public Routes */}
         <Route path="/" element={<Home />} />
-        <Route path="/home" element={<Navigate to="/" replace />} /> {/* Redirect /home to / */}
+        <Route path="/home" element={<Navigate to="/" replace />} />
         <Route path="/login" element={<Login />} />
         <Route path="/artists" element={<ArtistsGallery />} />
         
