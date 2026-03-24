@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import ProtectedRoute from "./components/ProtectedRoute";
 import "./App.css";
 
@@ -13,6 +13,7 @@ function App() {
       <Routes>
         {/* Public Routes */}
         <Route path="/" element={<Home />} />
+        <Route path="/home" element={<Navigate to="/" replace />} /> {/* Redirect /home to / */}
         <Route path="/login" element={<Login />} />
         <Route path="/artists" element={<ArtistsGallery />} />
         

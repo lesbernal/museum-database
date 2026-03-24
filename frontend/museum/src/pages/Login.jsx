@@ -1,4 +1,3 @@
-// pages/Login.jsx (updated with small improvements)
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "../styles/Login.css";
@@ -27,14 +26,21 @@ export default function Login() {
         return;
       }
 
-      // Save JWT and role in localStorage
+      console.log("Login response:", data); // Debug: see what comes back
+
+      // IMPORTANT: Use the role from the response, NOT a default
+      const userRole = data.role || "visitor";
+      
+      // Save to localStorage
       localStorage.setItem("token", data.token);
-      localStorage.setItem("role", data.role || "visitor"); // Default to visitor if no role
+      localStorage.setItem("role", userRole);  // Use the actual role from response
       localStorage.setItem("user_id", data.user_id);
       localStorage.setItem("user_email", email);
 
+      console.log("Stored role:", localStorage.getItem("role")); // Debug: verify
+
       // Redirect based on role
-      if (data.role === "admin") {
+      if (userRole === "admin") {
         navigate("/admin");
       } else {
         navigate("/");

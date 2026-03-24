@@ -17,6 +17,7 @@ const handleDepartments = require("./handlers/departments");
 const handleGiftshop = require("./handlers/giftshop");
 const handleCafe = require("./handlers/cafe");
 const handleExhibitions = require("./handlers/exhibitions");
+const handleLogin = require("./handlers/auth"); // ADD THIS LINE
 
 const server = http.createServer((req, res) => {
   // Enable CORS
@@ -30,6 +31,11 @@ const server = http.createServer((req, res) => {
   }
 
   const parsedUrl = url.parse(req.url, true);
+
+  // ADD LOGIN ROUTE HERE - BEFORE OTHER ROUTES
+  if (parsedUrl.pathname === "/login") {
+    return handleLogin(req, res);
+  }
 
   // Artists, Artwork, Provenance
   if (
