@@ -1,8 +1,14 @@
 const http = require("http");
 const url = require("url");
 
-// Handlers from both files
-const handleArtists = require("./handlers/artists");
+// Handlers
+const handleArtists = require("./handlers/artists"); // artists + artwork + provenance
+const handleCafeitem = require("./handlers/cafeitems");
+const handleCafetransaction = require("./handlers/cafetransactions");
+const handleCafetransactionitem = require("./handlers/cafetransactionitems");
+const handleGiftshopitem = require("./handlers/giftshopitems");
+const handleGiftshoptransaction = require("./handlers/giftshoptransactions");
+const handleGiftshoptransactionitem = require("./handlers/giftshoptransactionitems");
 const handleTickets = require("./handlers/tickets");
 const handleEvents = require("./handlers/events");
 const handleDonations = require("./handlers/donations");
@@ -11,11 +17,10 @@ const handleDepartments = require("./handlers/departments");
 const handleGiftshop = require("./handlers/giftshop");
 const handleCafe = require("./handlers/cafe");
 const handleExhibitions = require("./handlers/exhibitions");
+const handleLogin = require("./handlers/auth"); // ADD THIS LINE
 
 const server = http.createServer((req, res) => {
-  const parsedUrl = url.parse(req.url, true);
-
-  // Enable CORS manually
+  // Enable CORS
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
@@ -25,21 +30,56 @@ const server = http.createServer((req, res) => {
     return res.end();
   }
 
-  // ROUTING
-  if (parsedUrl.pathname.startsWith("/artists")) {
-    return handleArtists(req, res);
+  const parsedUrl = url.parse(req.url, true);
+
+  // ADD LOGIN ROUTE HERE - BEFORE OTHER ROUTES
+  if (parsedUrl.pathname === "/login") {
+    return handleLogin(req, res);
+  }
+
+  // Artists, Artwork, Provenance
+  if (
+    parsedUrl.pathname.startsWith("/artists") ||
+    parsedUrl.pathname.startsWith("/artwork") ||
+    parsedUrl.pathname.startsWith("/provenance")
+  ) {
+    return handleArtists(req, res, parsedUrl);
+  }
+
+  if (parsedUrl.pathname.startsWith("/cafeitems")) {
+    return handleCafeitem(req, res, parsedUrl);
+  }
+
+  if (parsedUrl.pathname.startsWith("/cafetransactions")) {
+    return handleCafetransaction(req, res, parsedUrl);
+  }
+
+  if (parsedUrl.pathname.startsWith("/cafetransactionitems")) {
+    return handleCafetransactionitem(req, res, parsedUrl);
+  }
+
+  if (parsedUrl.pathname.startsWith("/giftshopitems")) {
+    return handleGiftshopitem(req, res, parsedUrl);
+  }
+
+  if (parsedUrl.pathname.startsWith("/giftshoptransactions")) {
+    return handleGiftshoptransaction(req, res, parsedUrl);
+  }
+
+  if (parsedUrl.pathname.startsWith("/giftshoptransactionitems")) {
+    return handleGiftshoptransactionitem(req, res, parsedUrl);
   }
 
   if (parsedUrl.pathname.startsWith("/tickets")) {
-    return handleTickets(req, res);
+    return handleTickets(req, res, parsedUrl);
   }
 
   if (parsedUrl.pathname.startsWith("/events")) {
-    return handleEvents(req, res);
+    return handleEvents(req, res, parsedUrl);
   }
 
   if (parsedUrl.pathname.startsWith("/donations")) {
-    return handleDonations(req, res);
+    return handleDonations(req, res, parsedUrl);
   }
 
   if (parsedUrl.pathname.startsWith("/users")) {
@@ -47,19 +87,19 @@ const server = http.createServer((req, res) => {
   }
 
   if (parsedUrl.pathname.startsWith("/departments")) {
-    return handleDepartments(req, res);
+    return handleDepartments(req, res, parsedUrl);
   }
 
   if (parsedUrl.pathname.startsWith("/giftshop")) {
-    return handleGiftshop(req, res);
+    return handleGiftshop(req, res, parsedUrl);
   }
 
   if (parsedUrl.pathname.startsWith("/cafe")) {
-    return handleCafe(req, res);
+    return handleCafe(req, res, parsedUrl);
   }
 
   if (parsedUrl.pathname.startsWith("/exhibitions")) {
-    return handleExhibitions(req, res);
+    return handleExhibitions(req, res, parsedUrl);
   }
 
   // 404 for unmatched routes

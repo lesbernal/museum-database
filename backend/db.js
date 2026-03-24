@@ -21,3 +21,7 @@ db.connect((err) => {
 });
 
 module.exports = db;
+
+db.query("SELECT CURRENT_USER() AS user, DATABASE() AS db, @@hostname AS host, @@port AS port", (err, results) => {
+  console.log(results);
+});
