@@ -15,18 +15,18 @@ module.exports = (req, res, parsedUrl) => {
 */
   // ============================ USERS ============================
 
-  // GET all users
+  // GET all users (exclude password for security)
   if (req.method === "GET" && urlParts.length === 1) {
-    db.query("SELECT * FROM user", (err, results) => {
+    db.query("SELECT user_id, first_name, last_name, email, role, phone_number, street_address, city, state, zip_code, date_of_birth FROM user", (err, results) => {
       if (err) return sendError(res, err);
       sendJSON(res, results);
     });
   }
 
-  // GET user by id
+  // GET user by id (exclude password)
   else if (req.method === "GET" && urlParts.length === 2) {
     db.query(
-      "SELECT * FROM user WHERE user_id=?",
+      "SELECT user_id, first_name, last_name, email, role, phone_number, street_address, city, state, zip_code, date_of_birth FROM user WHERE user_id=?",
       [urlParts[1]],
       (err, results) => {
         if (err) return sendError(res, err);
@@ -35,56 +35,100 @@ module.exports = (req, res, parsedUrl) => {
     );
   }
 
-  // POST user
+  // POST user (create new user with password and role)
   else if (req.method === "POST") {
     parseBody(req, data => {
       const sql = `
         INSERT INTO user
-        (user_id, first_name, last_name, email, phone_number,
+        (first_name, last_name, email, password, role, phone_number,
          street_address, city, state, zip_code, date_of_birth)
-        VALUES (?,?,?,?,?,?,?,?,?,?)
+        VALUES (?,?,?,?,?,?,?,?,?,?,?)
       `;
 
       db.query(sql, [
-        data.user_id || null,
         data.first_name || "",
         data.last_name || "",
         data.email || "",
+        data.password || "",
+        data.role || "visitor",
         data.phone_number || "",
         data.street_address || "",
         data.city || "",
         data.state || "",
         data.zip_code || "",
         data.date_of_birth || null
-      ], err => {
-        if (err) return sendError(res, err);
-        sendJSON(res, { message: "User added" }, 201);
+      ], (err, result) => {
+        if (err) {
+          if (err.code === "ER_DUP_ENTRY") {
+            return sendJSON(res, { error: "Email already exists" }, 409);
+          }
+          return sendError(res, err);
+        }
+        sendJSON(res, { message: "User added", user_id: result.insertId }, 201);
       });
     });
   }
 
-  // PUT user
+  // PUT user (update user)
   else if (req.method === "PUT" && urlParts.length === 2) {
     parseBody(req, data => {
-      const sql = `
-        UPDATE user SET
-        first_name=?, last_name=?, email=?, phone_number=?,
-        street_address=?, city=?, state=?, zip_code=?, date_of_birth=?
-        WHERE user_id=?
-      `;
-
-      db.query(sql, [
-        data.first_name || "",
-        data.last_name || "",
-        data.email || "",
-        data.phone_number || "",
-        data.street_address || "",
-        data.city || "",
-        data.state || "",
-        data.zip_code || "",
-        data.date_of_birth || null,
-        urlParts[1]
-      ], err => {
+      // Build dynamic update query to handle optional fields
+      const fields = [];
+      const values = [];
+      
+      if (data.first_name !== undefined) {
+        fields.push("first_name=?");
+        values.push(data.first_name);
+      }
+      if (data.last_name !== undefined) {
+        fields.push("last_name=?");
+        values.push(data.last_name);
+      }
+      if (data.email !== undefined) {
+        fields.push("email=?");
+        values.push(data.email);
+      }
+      if (data.password !== undefined) {
+        fields.push("password=?");
+        values.push(data.password);
+      }
+      if (data.role !== undefined) {
+        fields.push("role=?");
+        values.push(data.role);
+      }
+      if (data.phone_number !== undefined) {
+        fields.push("phone_number=?");
+        values.push(data.phone_number);
+      }
+      if (data.street_address !== undefined) {
+        fields.push("street_address=?");
+        values.push(data.street_address);
+      }
+      if (data.city !== undefined) {
+        fields.push("city=?");
+        values.push(data.city);
+      }
+      if (data.state !== undefined) {
+        fields.push("state=?");
+        values.push(data.state);
+      }
+      if (data.zip_code !== undefined) {
+        fields.push("zip_code=?");
+        values.push(data.zip_code);
+      }
+      if (data.date_of_birth !== undefined) {
+        fields.push("date_of_birth=?");
+        values.push(data.date_of_birth);
+      }
+      
+      if (fields.length === 0) {
+        return sendJSON(res, { error: "No fields to update" }, 400);
+      }
+      
+      values.push(urlParts[1]);
+      const sql = `UPDATE user SET ${fields.join(", ")} WHERE user_id=?`;
+      
+      db.query(sql, values, err => {
         if (err) return sendError(res, err);
         sendJSON(res, { message: "User updated" });
       });
