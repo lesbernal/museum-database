@@ -43,7 +43,7 @@ const server = http.createServer((req, res) => {
   }
 
   if (parsedUrl.pathname.startsWith("/users")) {
-    return handleUsers(req, res);
+    return handleUsers(req, res, parsedUrl);
   }
 
   if (parsedUrl.pathname.startsWith("/departments")) {

@@ -3,12 +3,12 @@ const mysql = require("mysql2");
 
 const db = mysql.createConnection({
   host: process.env.DB_HOST || "museumdb.mysql.database.azure.com",
-  user: process.env.DB_USER || "museumadmin",
-  password: process.env.DB_PASSWORD || "123456", // fallback to default
+  user: process.env.DB_USER || "jackson", // fallback to default
+  password: process.env.DB_PASSWORD || "jacksonteam12", // fallback to default
   database: process.env.DB_NAME || "museum",
   port: process.env.DB_PORT || 3306,
   ssl: {
-    rejectUnauthorized: true // ensures secure SSL
+    rejectUnauthorized: false // ensures secure SSL
   }
 });
 
