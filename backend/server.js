@@ -2,7 +2,7 @@ const http = require("http");
 const url = require("url");
 
 // Handlers
-const handleArtists = require("./handlers/artists"); // artists + artwork + provenance
+const handleArtists = require("./handlers/artists");
 const handleCafeitem = require("./handlers/cafeitems");
 const handleCafetransaction = require("./handlers/cafetransactions");
 const handleCafetransactionitem = require("./handlers/cafetransactionitems");
@@ -14,28 +14,31 @@ const handleEvents = require("./handlers/events");
 const handleDonations = require("./handlers/donations");
 const handleUsers = require("./handlers/users");
 const handleEmployees = require("./handlers/employees");
-const handleVisitors  = require("./handlers/visitors");
-const handleMembers   = require("./handlers/members");
+const handleVisitors = require("./handlers/visitors");
+const handleMembers = require("./handlers/members");
 const handleDepartments = require("./handlers/departments");
 const handleGiftshop = require("./handlers/giftshop");
 const handleCafe = require("./handlers/cafe");
 const handleExhibitions = require("./handlers/exhibitions");
-const handleLogin = require("./handlers/auth"); // ADD THIS LINE
+const handleLogin = require("./handlers/auth");
 
 const server = http.createServer((req, res) => {
-  // Enable CORS
+  // Enable CORS (allow all origins for deployment)
   res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
 
+  // Handle preflight requests
   if (req.method === "OPTIONS") {
     res.writeHead(200);
     return res.end();
   }
 
   const parsedUrl = url.parse(req.url, true);
+  
+  console.log(`${req.method} ${parsedUrl.pathname}`); // Log all requests
 
-  // ADD LOGIN ROUTE HERE - BEFORE OTHER ROUTES
+  // Login route
   if (parsedUrl.pathname === "/login") {
     return handleLogin(req, res);
   }
@@ -122,6 +125,7 @@ const server = http.createServer((req, res) => {
   res.end(JSON.stringify({ message: "Route not found" }));
 });
 
-server.listen(5000, () => {
-  console.log("Server running on port 5000");
+const PORT = process.env.PORT || 5000;
+server.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });
