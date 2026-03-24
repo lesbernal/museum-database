@@ -2,6 +2,7 @@ const http = require("http");
 const url = require("url");
 
 // Handlers
+const handleArtists = require("./handlers/artists"); // artists + artwork + provenance
 const handleCafeitem = require("./handlers/cafeitems");
 const handleCafetransaction = require("./handlers/cafetransactions");
 const handleCafetransactionitem = require("./handlers/cafetransactionitems");
@@ -17,9 +18,6 @@ const handleGiftshop = require("./handlers/giftshop");
 const handleCafe = require("./handlers/cafe");
 const handleExhibitions = require("./handlers/exhibitions");
 
-const handleArtists = require("./handlers/artists"); // handles artists + artwork + provenance
-const handleLogin = require("./handlers/auth");
-
 const server = http.createServer((req, res) => {
   // Enable CORS
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -32,16 +30,8 @@ const server = http.createServer((req, res) => {
   }
 
   const parsedUrl = url.parse(req.url, true);
-  
-  
-  // ------------------ ROUTING ------------------
-  
-  //login/auth
-  if (parsedUrl.pathname === "/login") {
-    return handleLogin(req, res);
-  }
 
-  // Artists, Artwork, Provenance 
+  // Artists, Artwork, Provenance
   if (
     parsedUrl.pathname.startsWith("/artists") ||
     parsedUrl.pathname.startsWith("/artwork") ||
@@ -50,63 +40,63 @@ const server = http.createServer((req, res) => {
     return handleArtists(req, res, parsedUrl);
   }
 
-  if (parsedUrl.pathname === "/cafeitems") {
-    return handleCafeitem(req, res);
+  if (parsedUrl.pathname.startsWith("/cafeitems")) {
+    return handleCafeitem(req, res, parsedUrl);
   }
 
-  if (parsedUrl.pathname === "/cafetransactions") {
-    return handleCafetransaction(req, res);
+  if (parsedUrl.pathname.startsWith("/cafetransactions")) {
+    return handleCafetransaction(req, res, parsedUrl);
   }
 
-  if (parsedUrl.pathname === "/cafetransactionitems") {
-    return handleCafetransactionitem(req, res);
+  if (parsedUrl.pathname.startsWith("/cafetransactionitems")) {
+    return handleCafetransactionitem(req, res, parsedUrl);
   }
 
-  if (parsedUrl.pathname === "/giftshopitems") {
-    return handleGiftshopitem(req, res);
+  if (parsedUrl.pathname.startsWith("/giftshopitems")) {
+    return handleGiftshopitem(req, res, parsedUrl);
   }
 
-  if (parsedUrl.pathname === "/giftshoptransactions") {
-    return handleGiftshoptransaction(req, res);
+  if (parsedUrl.pathname.startsWith("/giftshoptransactions")) {
+    return handleGiftshoptransaction(req, res, parsedUrl);
   }
 
-  if (parsedUrl.pathname === "/giftshoptransactionitems") {
-    return handleGiftshoptransactionitem(req, res);
+  if (parsedUrl.pathname.startsWith("/giftshoptransactionitems")) {
+    return handleGiftshoptransactionitem(req, res, parsedUrl);
   }
 
   if (parsedUrl.pathname.startsWith("/tickets")) {
-    return handleTickets(req, res);
+    return handleTickets(req, res, parsedUrl);
   }
 
   if (parsedUrl.pathname.startsWith("/events")) {
-    return handleEvents(req, res);
+    return handleEvents(req, res, parsedUrl);
   }
 
   if (parsedUrl.pathname.startsWith("/donations")) {
-    return handleDonations(req, res);
+    return handleDonations(req, res, parsedUrl);
   }
 
   if (parsedUrl.pathname.startsWith("/users")) {
-    return handleUsers(req, res);
+    return handleUsers(req, res, parsedUrl);
   }
 
   if (parsedUrl.pathname.startsWith("/departments")) {
-    return handleDepartments(req, res);
+    return handleDepartments(req, res, parsedUrl);
   }
 
   if (parsedUrl.pathname.startsWith("/giftshop")) {
-    return handleGiftshop(req, res);
+    return handleGiftshop(req, res, parsedUrl);
   }
 
   if (parsedUrl.pathname.startsWith("/cafe")) {
-    return handleCafe(req, res);
+    return handleCafe(req, res, parsedUrl);
   }
 
   if (parsedUrl.pathname.startsWith("/exhibitions")) {
-    return handleExhibitions(req, res);
+    return handleExhibitions(req, res, parsedUrl);
   }
 
-  // 404 fallback
+  // 404 for unmatched routes
   res.writeHead(404, { "Content-Type": "application/json" });
   res.end(JSON.stringify({ message: "Route not found" }));
 });
