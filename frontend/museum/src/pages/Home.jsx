@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { getArtists } from "../services/api";
 import "../styles/Home.css";
 
+
 export default function Home() {
   const [artists, setArtists] = useState([]);
   const [loading, setLoading] = useState(true);

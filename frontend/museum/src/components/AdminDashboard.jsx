@@ -1,6 +1,7 @@
 // components/AdminDashboard.jsx
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import ArtistForm from "./ArtistForm";
 import ArtistTable from "./ArtistTable";
 import { getArtists, createArtist, updateArtist, deleteArtist } from "../services/api";
@@ -98,6 +99,9 @@ export default function AdminDashboard() {
       <aside className="admin-sidebar">
         <div className="sidebar-header">
           <h2>🎨 MFAH Admin</h2>
+            <Link to="/" className="back-to-site">
+            ← Back to Home
+            </Link>
         </div>
         <nav className="sidebar-nav">
           {tabs.map(tab => (

@@ -1,0 +1,101 @@
+/* ArtistTable.css */
+.artist-table-container {
+  overflow-x: auto;
+}
+
+.artist-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.artist-table thead {
+  background: #f9fafb;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.artist-table th {
+  text-align: left;
+  padding: 1rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.artist-table td {
+  padding: 0.875rem 1rem;
+  border-bottom: 1px solid #f3f4f6;
+  color: #1f2937;
+}
+
+.artist-table tbody tr:hover {
+  background: #f9fafb;
+}
+
+.artist-name {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.artist-avatar {
+  font-size: 1.5rem;
+}
+
+.actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.edit-btn,
+.delete-btn {
+  padding: 0.375rem 0.75rem;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+}
+
+.edit-btn {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.edit-btn:hover {
+  background: #e5e7eb;
+  transform: scale(1.05);
+}
+
+.delete-btn {
+  background: #fee2e2;
+  color: #ef4444;
+}
+
+.delete-btn:hover {
+  background: #fecaca;
+  transform: scale(1.05);
+}
+
+.empty-state {
+  text-align: center;
+  padding: 3rem;
+  color: #6b7280;
+  font-size: 0.875rem;
+}
+
+@media (max-width: 768px) {
+  .artist-table th,
+  .artist-table td {
+    padding: 0.75rem;
+  }
+  
+  .actions {
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+  
+  .edit-btn,
+  .delete-btn {
+    padding: 0.25rem 0.5rem;
+  }
+}
