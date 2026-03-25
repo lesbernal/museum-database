@@ -209,3 +209,11 @@ export async function deleteGallery(id) {
   if (!res.ok) throw new Error("Failed to delete gallery");
   return res.json();
 }
+
+// EVENTS PLACEHOLDER
+
+export async function getEvents() {
+  const res = await fetch(`${BASE_URL}/events`);
+  if (!res.ok) throw new Error("Failed to fetch events");
+  return res.json();
+}
