@@ -1,6 +1,28 @@
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { getGiftShopItems } from "../services/api";
+import { readGiftShopCart, writeGiftShopCart } from "../utils/giftShopCart";
 import "../styles/GiftShopPage.css";
+
+function SignInPrompt({ onClose }) {
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content shop-auth-modal" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-header">
+          <h2>Sign In Required</h2>
+          <button className="close-btn" onClick={onClose}>&times;</button>
+        </div>
+        <div className="shop-auth-body">
+          <p>Please sign in or sign up before adding museum shop items to your cart.</p>
+          <div className="shop-auth-actions">
+            <Link to="/login" className="btn btn-primary">Sign In</Link>
+            <button type="button" className="btn btn-outline">Sign Up</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function GiftShopPage() {
   const [items, setItems] = useState([]);
@@ -8,6 +30,11 @@ export default function GiftShopPage() {
   const [error, setError] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
+  const [cartCount, setCartCount] = useState(() =>
+    readGiftShopCart().reduce((sum, item) => sum + item.quantity, 0)
+  );
+  const [showAuthPrompt, setShowAuthPrompt] = useState(false);
+  const [cartToast, setCartToast] = useState("");
 
   useEffect(() => {
     async function loadItems() {
@@ -25,6 +52,18 @@ export default function GiftShopPage() {
     loadItems();
   }, []);
 
+  useEffect(() => {
+    if (!cartToast) {
+      return undefined;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setCartToast("");
+    }, 2200);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [cartToast]);
+
   const categories = useMemo(
     () => [...new Set(items.map((item) => item.category).filter(Boolean))],
     [items]
@@ -40,6 +79,45 @@ export default function GiftShopPage() {
     });
   }, [items, searchTerm, selectedCategory]);
 
+  function handleAddToCart(item) {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      setShowAuthPrompt(true);
+      return;
+    }
+
+    const currentCart = readGiftShopCart();
+    const existing = currentCart.find((entry) => entry.item_id === item.item_id);
+    let nextCart;
+
+    if (existing) {
+      nextCart = currentCart.map((entry) =>
+        entry.item_id === item.item_id
+          ? {
+              ...entry,
+              quantity: Math.min(entry.quantity + 1, Number(item.stock_quantity)),
+            }
+          : entry
+      );
+    } else {
+      nextCart = [
+        ...currentCart,
+        {
+          item_id: item.item_id,
+          item_name: item.item_name,
+          category: item.category,
+          price: Number(item.price),
+          stock_quantity: Number(item.stock_quantity),
+          quantity: 1,
+        },
+      ];
+    }
+
+    writeGiftShopCart(nextCart);
+    setCartCount(nextCart.reduce((sum, entry) => sum + entry.quantity, 0));
+    setCartToast(`${item.item_name} added to cart`);
+  }
+
   return (
     <div className="giftshop-page">
       <section className="giftshop-hero">
@@ -48,7 +126,8 @@ export default function GiftShopPage() {
           <h1>Artful Gifts, Prints, Jewelry, Books, and More</h1>
           <p>
             Inspired by the Museum of Fine Arts, Houston shop experience, this page
-            highlights museum merchandise available for in-store pickup.
+            now supports a pickup cart and checkout flow tied to your gift shop
+            inventory data.
           </p>
           <div className="giftshop-badges">
             <span>Free to Visit</span>
@@ -63,6 +142,9 @@ export default function GiftShopPage() {
           <p><strong>Location:</strong> Beck Building street level</p>
           <p><strong>Phone:</strong> 713.639.7360</p>
           <p><strong>Member Benefit:</strong> Discounts available in store</p>
+          <Link to="/gift-shop/cart" className="btn btn-primary giftshop-cart-link">
+            View Cart ({cartCount})
+          </Link>
         </div>
       </section>
 
@@ -109,8 +191,13 @@ export default function GiftShopPage() {
                     : "Currently unavailable"}
                 </p>
                 <div className="giftshop-actions">
-                  <button className="btn btn-primary" type="button">
-                    Pick Up In Store
+                  <button
+                    className="btn btn-primary"
+                    type="button"
+                    disabled={Number(item.stock_quantity) <= 0}
+                    onClick={() => handleAddToCart(item)}
+                  >
+                    {Number(item.stock_quantity) > 0 ? "Add to Cart" : "Sold Out"}
                   </button>
                 </div>
               </div>
@@ -118,6 +205,9 @@ export default function GiftShopPage() {
           ))}
         </section>
       )}
+
+      {showAuthPrompt && <SignInPrompt onClose={() => setShowAuthPrompt(false)} />}
+      {cartToast && <div className="shop-cart-toast">{cartToast}</div>}
     </div>
   );
 }

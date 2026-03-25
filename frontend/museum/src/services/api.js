@@ -346,3 +346,7 @@ export async function deleteGiftShopTransactionItem(id) {
     method: "DELETE",
   }, "Failed to delete gift shop transaction item");
 }
+
+export async function getUserById(id) {
+  return request(`/users/${id}`, {}, "Failed to fetch user");
+}

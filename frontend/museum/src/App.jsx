@@ -12,6 +12,8 @@ import Artworks from "./pages/Artworks";
 import Exhibitions from "./pages/Exhibitions";
 import Events from "./pages/Events";
 import GiftShopPage from "./pages/GiftShopPage";
+import GiftShopCartPage from "./pages/GiftShopCartPage";
+import GiftShopCheckoutPage from "./pages/GiftShopCheckoutPage";
 import AdminDashboard from "./components/AdminDashboard";
 
 function App() {
@@ -28,6 +30,8 @@ function App() {
         <Route path="/exhibitions" element={<Exhibitions />} />
         <Route path="/events" element={<Events />} />
         <Route path="/gift-shop" element={<GiftShopPage />} />
+        <Route path="/gift-shop/cart" element={<GiftShopCartPage />} />
+        <Route path="/gift-shop/checkout" element={<GiftShopCheckoutPage />} />
         
         {/* Admin Only Routes */}
         <Route

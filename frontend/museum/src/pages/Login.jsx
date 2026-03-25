@@ -3,7 +3,8 @@ import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import "../styles/Login.css";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5001";
+const API_URL =
+  import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 export default function Login() {
   const [email, setEmail] = useState("");
