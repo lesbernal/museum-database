@@ -15,31 +15,38 @@ export default function Navbar() {
   };
 
   return (
-    <nav className="navbar">
-      <Link to="/" className="logo">🎨 MFAH Museum</Link>
-      
-      <div className="nav-links">
-        <Link to="/artists">Artists</Link>
-        <Link to="/artworks">Artworks</Link>
-        <Link to="/exhibitions">Exhibitions</Link>
-        
-        {/* Show Admin Dashboard link ONLY when logged in as admin */}
-        {isLoggedIn && isAdmin && (
-          <Link to="/admin" className="admin-link">
-            ⚙️ Admin Dashboard
-          </Link>
-        )}
-        
-        {isLoggedIn ? (
-          <button onClick={handleLogout} className="logout-btn">
-            Logout
-          </button>
-        ) : (
-          <Link to="/login" className="login-link">
-            Login
-          </Link>
-        )}
-      </div>
-    </nav>
+    <div className="navbar-container">
+      {/* Main Navbar */}
+      <nav className="main-navbar">
+        <div className="logo-large">
+          <Link to="/">MFAH</Link>
+        </div>
+        <div className="nav-actions">
+          {isLoggedIn && isAdmin && (
+            <Link to="/admin" className="nav-btn dashboard-btn">
+              Dashboard
+            </Link>
+          )}
+          {isLoggedIn ? (
+            <button onClick={handleLogout} className="nav-btn logout-btn">
+              Logout
+            </button>
+          ) : (
+            <Link to="/login" className="nav-btn login-btn">
+              Login
+            </Link>
+          )}
+        </div>
+      </nav>
+
+      {/* Secondary Navbar - Categories */}
+      <nav className="category-navbar">
+        <div className="category-links">
+          <Link to="/artworks" className="category-link">ARTWORK</Link>
+          <Link to="/exhibitions" className="category-link">EXHIBITIONS</Link>
+          <Link to="/events" className="category-link">EVENTS</Link>
+        </div>
+      </nav>
+    </div>
   );
 }
