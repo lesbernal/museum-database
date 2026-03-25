@@ -1,8 +1,4 @@
-<<<<<<< HEAD
 const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5001";
-=======
-const BASE_URL = "https://museum-backend-lck5.onrender.com";
->>>>>>> 661faf11a5620b87a94b0a1a382651296de9bf57
 
 async function request(path, options = {}, fallbackMessage = "Request failed") {
   try {
