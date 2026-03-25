@@ -1,0 +1,169 @@
+.giftshop-page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.giftshop-hero {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.giftshop-hero-copy,
+.giftshop-info-card {
+  border: 1px solid var(--color-border);
+  background: var(--color-white);
+  padding: 2rem;
+}
+
+.giftshop-hero-copy {
+  background:
+    linear-gradient(135deg, rgba(197, 160, 40, 0.14), rgba(250, 249, 248, 0.96)),
+    radial-gradient(circle at top right, rgba(0, 0, 0, 0.06), transparent 35%);
+}
+
+.giftshop-kicker {
+  margin-bottom: 0.5rem;
+  font-size: var(--font-size-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--color-gray-light);
+}
+
+.giftshop-hero-copy h1 {
+  margin-bottom: 1rem;
+  font-size: clamp(2.4rem, 5vw, 4.2rem);
+}
+
+.giftshop-hero-copy p {
+  max-width: 58ch;
+}
+
+.giftshop-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
+
+.giftshop-badges span {
+  padding: 0.65rem 0.9rem;
+  border: 1px solid var(--color-border);
+  background: rgba(255, 255, 255, 0.8);
+  font-size: var(--font-size-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.giftshop-info-card h2 {
+  margin-bottom: 1rem;
+  font-size: var(--font-size-xl);
+}
+
+.giftshop-info-card p + p {
+  margin-top: 0.65rem;
+}
+
+.giftshop-toolbar {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+}
+
+.giftshop-toolbar input,
+.giftshop-toolbar select {
+  flex: 1 1 280px;
+}
+
+.giftshop-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1.5rem;
+}
+
+.giftshop-card {
+  display: grid;
+  grid-template-rows: 190px 1fr;
+  border: 1px solid var(--color-border);
+  background: var(--color-white);
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.giftshop-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+}
+
+.giftshop-card-art {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #111827, #c5a028);
+  color: var(--color-white);
+  font-size: 4rem;
+}
+
+.giftshop-card-body {
+  display: grid;
+  gap: 0.75rem;
+  padding: 1.25rem;
+}
+
+.giftshop-card-body h2 {
+  font-size: 1.35rem;
+}
+
+.giftshop-category {
+  font-size: var(--font-size-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--color-gray-light);
+}
+
+.giftshop-price {
+  color: var(--color-black);
+  font-size: 1.2rem;
+}
+
+.giftshop-stock {
+  font-size: var(--font-size-sm);
+  color: var(--color-gray);
+}
+
+.giftshop-actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-top: 0.5rem;
+}
+
+.giftshop-message {
+  padding: 2rem;
+  border: 1px solid var(--color-border);
+  background: var(--color-white);
+  text-align: center;
+}
+
+.giftshop-message.error {
+  color: #b91c1c;
+}
+
+@media (max-width: 900px) {
+  .giftshop-hero {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .giftshop-page {
+    padding: 1rem;
+  }
+
+  .giftshop-hero-copy,
+  .giftshop-info-card {
+    padding: 1.5rem;
+  }
+}
