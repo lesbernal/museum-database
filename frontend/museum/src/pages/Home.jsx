@@ -47,7 +47,7 @@ export default function Home() {
         <div className="hero-overlay"></div>
         <div className="hero-content">
           <h1 className="hero-title">
-            Museum of Fine Arts
+            Museum of Fine Art
             <span className="hero-subtitle">Houston</span>
           </h1>
           <p className="hero-description">
