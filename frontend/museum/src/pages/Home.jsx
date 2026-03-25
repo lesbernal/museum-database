@@ -147,7 +147,7 @@ export default function Home() {
         </section>
       )}
 
-      {/* Quick Links Section */}
+      {/* Plan Your Visit Section */}
       <section className="quick-links-section">
         <div className="section-header">
           <h2>Plan Your Visit</h2>
@@ -167,10 +167,41 @@ export default function Home() {
             <p>Join today for exclusive benefits and support the arts</p>
           </Link>
           
-          <Link to="/calendar" className="link-card">
-            <div className="link-icon">📅</div>
-            <h3>Calendar</h3>
-            <p>View all upcoming events and exhibitions</p>
+          <Link to="/events" className="link-card">
+            <div className="link-icon">🎉</div>
+            <h3>Events</h3>
+            <p>Special exhibitions, lectures, workshops, and family programs</p>
+          </Link>
+        </div>
+      </section>
+
+      {/* More to Explore Section */}
+      <section className="extras-section">
+        <div className="section-header">
+          <h2>More to Explore</h2>
+          <p>Enhance your museum experience</p>
+        </div>
+        
+        <div className="extras-grid">
+          <Link to="/gift-shop" className="extras-card">
+            <div className="extras-icon">🛍️</div>
+            <h3>Gift Shop</h3>
+            <p>Unique art-inspired gifts, books, jewelry, and museum merchandise</p>
+            <span className="extras-link">Shop Now →</span>
+          </Link>
+          
+          <Link to="/cafe" className="extras-card">
+            <div className="extras-icon">☕</div>
+            <h3>Café</h3>
+            <p>Enjoy coffee, pastries, and light meals in a beautiful setting</p>
+            <span className="extras-link">View Menu →</span>
+          </Link>
+          
+          <Link to="/donate" className="extras-card">
+            <div className="extras-icon">💝</div>
+            <h3>Donation</h3>
+            <p>Support exhibitions, education programs, and art conservation efforts</p>
+            <span className="extras-link">Donate Now →</span>
           </Link>
         </div>
       </section>
