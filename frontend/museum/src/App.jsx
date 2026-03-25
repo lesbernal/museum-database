@@ -2,6 +2,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Navbar from "./components/Navbar";  // Add this import
+import "./styles/theme.css"; 
 import "./App.css";
 
 import Login from "./pages/Login";
