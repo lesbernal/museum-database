@@ -8,6 +8,7 @@ import "./App.css";
 import Login from "./pages/Login";
 import Home from "./pages/Home";
 import ArtistsGallery from "./pages/ArtistsGallery";
+import GiftShopPage from "./pages/GiftShopPage";
 import AdminDashboard from "./components/AdminDashboard";
 
 function App() {
@@ -20,6 +21,7 @@ function App() {
         <Route path="/home" element={<Navigate to="/" replace />} />
         <Route path="/login" element={<Login />} />
         <Route path="/artists" element={<ArtistsGallery />} />
+        <Route path="/gift-shop" element={<GiftShopPage />} />
         
         {/* Admin Only Routes */}
         <Route 
