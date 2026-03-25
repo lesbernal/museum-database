@@ -1,4 +1,3 @@
-// components/AdminDashboard.jsx
 import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import ArtistForm from "./ArtistForm";
@@ -11,6 +10,8 @@ import ExhibitionForm from "./ExhibitionForm";
 import ExhibitionTable from "./ExhibitionTable";
 import GalleryForm from "./GalleryForm";
 import GalleryTable from "./GalleryTable";
+import CafeAdminPanel from "./CafeAdminPanel";
+import GiftShopAdminPanel from "./GiftShopAdminPanel";
 import {
   getArtists,
   createArtist,
@@ -73,16 +74,17 @@ export default function AdminDashboard() {
   const navigate = useNavigate();
 
   const tabs = [
-    { id: "artists",     name: "Artists",     icon: "🎨" },
-    { id: "artwork",     name: "Artwork",      icon: "🖼️" },
-    { id: "provenance",  name: "Provenance",   icon: "📜" },
-    { id: "exhibitions", name: "Exhibitions",  icon: "🏛️" },
-    { id: "galleries",   name: "Galleries",    icon: "🗺️" },
-    { id: "users",       name: "Users",        icon: "👥" },
+    { id: "artists", name: "Artists", icon: "🎨" },
+    { id: "artwork", name: "Artwork", icon: "🖼️" },
+    { id: "provenance", name: "Provenance", icon: "📜" },
+    { id: "exhibitions", name: "Exhibitions", icon: "🏛️" },
+    { id: "galleries", name: "Galleries", icon: "🗺️" },
+    { id: "cafe", name: "Cafe", icon: "☕" },
+    { id: "giftshop", name: "Gift Shop", icon: "🛍️" },
+    { id: "users", name: "Users", icon: "👥" },
   ];
 
-  // ── Load all data on mount ───────────────────────────────────────────────────
-
+  // Load all data on mount
   useEffect(() => {
     loadArtists();
     loadArtworks();
@@ -141,8 +143,7 @@ export default function AdminDashboard() {
     }
   };
 
-  // ── Artist handlers ──────────────────────────────────────────────────────────
-
+  // Artist handlers
   const handleAddArtist = () => {
     setEditingArtist(null);
     setIsArtistFormOpen(true);
@@ -180,8 +181,7 @@ export default function AdminDashboard() {
     }
   };
 
-  // ── Artwork handlers ─────────────────────────────────────────────────────────
-
+  // Artwork handlers
   const handleAddArtwork = () => {
     setEditingArtwork(null);
     setIsArtworkFormOpen(true);
@@ -219,8 +219,7 @@ export default function AdminDashboard() {
     }
   };
 
-  // ── Provenance handlers ──────────────────────────────────────────────────────
-
+  // Provenance handlers
   const handleAddProvenance = () => {
     setEditingProvenance(null);
     setIsProvenanceFormOpen(true);
@@ -258,8 +257,7 @@ export default function AdminDashboard() {
     }
   };
 
-  // ── Exhibition handlers ──────────────────────────────────────────────────────
-
+  // Exhibition handlers
   const handleAddExhibition = () => {
     setEditingExhibition(null);
     setIsExhibitionFormOpen(true);
@@ -297,8 +295,7 @@ export default function AdminDashboard() {
     }
   };
 
-  // ── Gallery handlers ─────────────────────────────────────────────────────────
-
+  // Gallery handlers
   const handleAddGallery = () => {
     setEditingGallery(null);
     setIsGalleryFormOpen(true);
@@ -336,15 +333,15 @@ export default function AdminDashboard() {
     }
   };
 
-  // ── General dispatcher ───────────────────────────────────────────────────────
-
+  // General dispatcher
   const handleAdd = () => {
     switch (activeTab) {
-      case "artists":     return handleAddArtist();
-      case "artwork":     return handleAddArtwork();
-      case "provenance":  return handleAddProvenance();
+      case "artists": return handleAddArtist();
+      case "artwork": return handleAddArtwork();
+      case "provenance": return handleAddProvenance();
       case "exhibitions": return handleAddExhibition();
-      case "galleries":   return handleAddGallery();
+      case "galleries": return handleAddGallery();
+      default: return;
     }
   };
 
@@ -356,8 +353,7 @@ export default function AdminDashboard() {
     navigate("/login");
   };
 
-  // ── Filtered data ────────────────────────────────────────────────────────────
-
+  // Filtered data
   const filteredArtists = artists.filter(artist =>
     `${artist.first_name} ${artist.last_name}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
     artist.nationality?.toLowerCase().includes(searchTerm.toLowerCase())
@@ -384,46 +380,43 @@ export default function AdminDashboard() {
     gallery.building_name?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // ── Add button label ─────────────────────────────────────────────────────────
-
+  // Add button label
   const getAddLabel = () => {
     switch (activeTab) {
-      case "artists":     return "Artist";
-      case "artwork":     return "Artwork";
-      case "provenance":  return "Provenance Record";
+      case "artists": return "Artist";
+      case "artwork": return "Artwork";
+      case "provenance": return "Provenance Record";
       case "exhibitions": return "Exhibition";
-      case "galleries":   return "Gallery";
-      default:            return "";
+      case "galleries": return "Gallery";
+      default: return "";
     }
   };
 
-  // ── Subtitle ─────────────────────────────────────────────────────────────────
+  const usesCustomManager = activeTab === "cafe" || activeTab === "giftshop";
 
+  // Subtitle
   const getSubtitle = () => {
     switch (activeTab) {
-      case "artists":     return "Add, edit, or remove artists";
-      case "artwork":     return "Add, edit, or remove artworks and link them to artists";
-      case "provenance":  return "Track ownership history of artworks";
+      case "artists": return "Add, edit, or remove artists";
+      case "artwork": return "Add, edit, or remove artworks and link them to artists";
+      case "provenance": return "Track ownership history of artworks";
       case "exhibitions": return "Manage exhibitions and their associated artworks";
-      case "galleries":   return "Manage gallery spaces and their climate settings";
-      default:            return "";
+      case "galleries": return "Manage gallery spaces and their climate settings";
+      default: return "";
     }
   };
-
-  // ────────────────────────────────────────────────────────────────────────────
 
   return (
     <div className="admin-dashboard">
-      {/* Sidebar */}
       <aside className="admin-sidebar">
         <div className="sidebar-header">
-          <h2>🎨 MFAH Admin</h2>
+          <h2>MFAH Admin</h2>
           <Link to="/" className="back-to-site">
-            ← Back to Home
+            Back to Home
           </Link>
         </div>
         <nav className="sidebar-nav">
-          {tabs.map(tab => (
+          {tabs.map((tab) => (
             <button
               key={tab.id}
               className={`nav-item ${activeTab === tab.id ? "active" : ""}`}
@@ -439,38 +432,44 @@ export default function AdminDashboard() {
         </nav>
         <div className="sidebar-footer">
           <button className="logout-btn" onClick={handleLogout}>
-            🚪 Logout
+            Logout
           </button>
         </div>
       </aside>
 
-      {/* Main Content */}
       <main className="admin-main">
         <header className="admin-header">
           <div>
-            <h1>{tabs.find(t => t.id === activeTab)?.name}</h1>
+            <h1>{tabs.find((t) => t.id === activeTab)?.name}</h1>
             <p className="admin-subtitle">
-              Manage {activeTab} in the museum database — {getSubtitle()}
+              Manage {activeTab} in the museum database
+              {activeTab === "artists" && " - Add, edit, or remove artists"}
+              {activeTab === "artwork" && " - Add, edit, or remove artworks and link them to artists"}
+              {activeTab === "provenance" && " - Track ownership history of artworks"}
+              {activeTab === "exhibitions" && " - Manage exhibitions and their associated artworks"}
+              {activeTab === "galleries" && " - Manage gallery spaces and their climate settings"}
+              {activeTab === "cafe" && " - Manage cafe items, transactions, and line items"}
+              {activeTab === "giftshop" && " - Manage gift shop items, transactions, and line items"}
             </p>
           </div>
-          {activeTab !== "users" && (
+          {!usesCustomManager && activeTab !== "users" && (
             <button className="add-btn" onClick={handleAdd}>
               + Add New {getAddLabel()}
             </button>
           )}
         </header>
 
-        {/* Search Bar */}
-        <div className="search-bar">
-          <input
-            type="text"
-            placeholder={`Search ${activeTab}...`}
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
+        {!usesCustomManager && (
+          <div className="search-bar">
+            <input
+              type="text"
+              placeholder={`Search ${activeTab}...`}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+        )}
 
-        {/* Content Area */}
         <div className="content-area">
           {loading && activeTab === "artists" ? (
             <div className="loading-spinner">Loading artists...</div>
@@ -506,16 +505,19 @@ export default function AdminDashboard() {
               onEdit={handleEditGallery}
               onDelete={handleDeleteGallery}
             />
+          ) : activeTab === "cafe" ? (
+            <CafeAdminPanel />
+          ) : activeTab === "giftshop" ? (
+            <GiftShopAdminPanel />
           ) : (
             <div className="coming-soon">
-              <p>👥 User Management Coming Soon</p>
+              <p>User Management Coming Soon</p>
               <small>Manage museum staff and visitor accounts</small>
             </div>
           )}
         </div>
       </main>
 
-      {/* Artist Form Modal */}
       {isArtistFormOpen && (
         <ArtistForm
           onSubmit={handleSaveArtist}
@@ -524,7 +526,6 @@ export default function AdminDashboard() {
         />
       )}
 
-      {/* Artwork Form Modal */}
       {isArtworkFormOpen && (
         <ArtworkForm
           onSubmit={handleSaveArtwork}
@@ -533,7 +534,6 @@ export default function AdminDashboard() {
         />
       )}
 
-      {/* Provenance Form Modal */}
       {isProvenanceFormOpen && (
         <ProvenanceForm
           onSubmit={handleSaveProvenance}

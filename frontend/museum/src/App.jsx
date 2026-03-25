@@ -11,6 +11,7 @@ import ArtistsGallery from "./pages/ArtistsGallery";
 import Artworks from "./pages/Artworks";
 import Exhibitions from "./pages/Exhibitions";
 import Events from "./pages/Events";
+import GiftShopPage from "./pages/GiftShopPage";
 import AdminDashboard from "./components/AdminDashboard";
 
 function App() {
@@ -26,7 +27,8 @@ function App() {
         <Route path="/artworks" element={<Artworks />} />
         <Route path="/exhibitions" element={<Exhibitions />} />
         <Route path="/events" element={<Events />} />
-
+        <Route path="/gift-shop" element={<GiftShopPage />} />
+        
         {/* Admin Only Routes */}
         <Route
           path="/admin"
