@@ -7,6 +7,7 @@ import ArtworkForm from "./ArtworkForm";
 import ArtworkTable from "./ArtworkTable";
 import ProvenanceForm from "./ProvenanceForm";
 import ProvenanceTable from "./ProvenanceTable";
+import "../styles/AdminDashboard.css";
 import {
   getArtists,
   createArtist,
@@ -19,31 +20,37 @@ import {
   getProvenance,
   createProvenance,
   updateProvenance,
-  deleteProvenance
+  deleteProvenance,
+  getRevenueReport,
+  getEvents,
+  getAttendanceReport,
 } from "../services/api";
-import "../styles/AdminDashboard.css";
 
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState("artists");
   const [artists, setArtists] = useState([]);
   const [artworks, setArtworks] = useState([]);
   const [provenance, setProvenance] = useState([]);
-  
+  const [events, setEvents] = useState([]);
+  const [revenueReport, setRevenueReport] = useState(null);
+  const [attendanceReport, setAttendanceReport] = useState([]);
+
   // Artist states
   const [isArtistFormOpen, setIsArtistFormOpen] = useState(false);
   const [editingArtist, setEditingArtist] = useState(null);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  
+
   // Artwork states
   const [isArtworkFormOpen, setIsArtworkFormOpen] = useState(false);
   const [editingArtwork, setEditingArtwork] = useState(null);
-  
+
   // Provenance states
   const [isProvenanceFormOpen, setIsProvenanceFormOpen] = useState(false);
   const [editingProvenance, setEditingProvenance] = useState(null);
-  
+
+  const [searchTerm, setSearchTerm] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
   const navigate = useNavigate();
 
   const tabs = [
@@ -51,6 +58,8 @@ export default function AdminDashboard() {
     { id: "artwork", name: "Artwork", icon: "🖼️" },
     { id: "provenance", name: "Provenance", icon: "📜" },
     { id: "users", name: "Users", icon: "👥" },
+    { id: "revenue", name: "Revenue", icon: "💰" },
+    { id: "events", name: "Events", icon: "🎉" },
   ];
 
   // Load all data on mount
@@ -58,6 +67,7 @@ export default function AdminDashboard() {
     loadArtists();
     loadArtworks();
     loadProvenance();
+    loadEvents();
   }, []);
 
   // Load Artists
@@ -95,6 +105,16 @@ export default function AdminDashboard() {
     }
   };
 
+  // Load Events
+  const loadEvents = async () => {
+    try {
+      const data = await getEvents();
+      setEvents(data);
+    } catch (err) {
+      console.error("Failed to load events:", err);
+    }
+  };
+
   // ========== ARTIST HANDLERS ==========
   const handleAddArtist = () => {
     setEditingArtist(null);
@@ -122,7 +142,11 @@ export default function AdminDashboard() {
   };
 
   const handleDeleteArtist = async (artistId) => {
-    if (window.confirm("Are you sure you want to delete this artist? This will also delete their artworks and provenance records.")) {
+    if (
+      window.confirm(
+        "Are you sure you want to delete this artist? This will also delete their artworks and provenance records."
+      )
+    ) {
       try {
         await deleteArtist(artistId);
         await loadArtists();
@@ -160,7 +184,11 @@ export default function AdminDashboard() {
   };
 
   const handleDeleteArtwork = async (id) => {
-    if (window.confirm("Are you sure you want to delete this artwork? This will also delete its provenance records.")) {
+    if (
+      window.confirm(
+        "Are you sure you want to delete this artwork? This will also delete its provenance records."
+      )
+    ) {
       try {
         await deleteArtwork(id);
         await loadArtworks();
@@ -211,13 +239,9 @@ export default function AdminDashboard() {
 
   // ========== GENERAL HANDLERS ==========
   const handleAdd = () => {
-    if (activeTab === "artists") {
-      handleAddArtist();
-    } else if (activeTab === "artwork") {
-      handleAddArtwork();
-    } else if (activeTab === "provenance") {
-      handleAddProvenance();
-    }
+    if (activeTab === "artists") handleAddArtist();
+    else if (activeTab === "artwork") handleAddArtwork();
+    else if (activeTab === "provenance") handleAddProvenance();
   };
 
   const handleLogout = () => {
@@ -228,35 +252,46 @@ export default function AdminDashboard() {
     navigate("/login");
   };
 
-  // Filter artists based on search term
-  const filteredArtists = artists.filter(artist =>
-    `${artist.first_name} ${artist.last_name}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    artist.nationality?.toLowerCase().includes(searchTerm.toLowerCase())
+  // Filtered data
+  const filteredArtists = artists.filter(
+    (artist) =>
+      `${artist.first_name} ${artist.last_name}`
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase()) ||
+      artist.nationality?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Filter artworks based on search term
-  const filteredArtworks = artworks.filter(artwork =>
-    artwork.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    artwork.medium?.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredArtworks = artworks.filter(
+    (artwork) =>
+      artwork.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      artwork.medium?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Filter provenance based on search term
-  const filteredProvenance = provenance.filter(record =>
-    record.owner_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    record.acquisition_method?.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredProvenance = provenance.filter(
+    (record) =>
+      record.owner_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      record.acquisition_method?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Get the current data based on active tab
-  const getCurrentData = () => {
-    switch (activeTab) {
-      case "artists":
-        return filteredArtists;
-      case "artwork":
-        return filteredArtworks;
-      case "provenance":
-        return filteredProvenance;
-      default:
-        return [];
+  // Revenue Report
+  const handleGenerateRevenueReport = async () => {
+    try {
+      const report = await getRevenueReport();
+      setRevenueReport(report);
+    } catch (err) {
+      console.error("Failed to generate revenue report:", err);
+      alert("Failed to generate revenue report");
+    }
+  };
+
+  // Attendance Report
+  const handleGenerateAttendanceReport = async () => {
+    try {
+      const report = await getAttendanceReport();
+      setAttendanceReport(report);
+    } catch (err) {
+      console.error("Failed to generate attendance report:", err);
+      alert("Failed to generate attendance report");
     }
   };
 
@@ -271,7 +306,7 @@ export default function AdminDashboard() {
           </Link>
         </div>
         <nav className="sidebar-nav">
-          {tabs.map(tab => (
+          {tabs.map((tab) => (
             <button
               key={tab.id}
               className={`nav-item ${activeTab === tab.id ? "active" : ""}`}
@@ -296,17 +331,41 @@ export default function AdminDashboard() {
       <main className="admin-main">
         <header className="admin-header">
           <div>
-            <h1>{tabs.find(t => t.id === activeTab)?.name}</h1>
+            <h1>{tabs.find((t) => t.id === activeTab)?.name}</h1>
             <p className="admin-subtitle">
               Manage {activeTab} in the museum database
               {activeTab === "artists" && " — Add, edit, or remove artists"}
-              {activeTab === "artwork" && " — Add, edit, or remove artworks and link them to artists"}
-              {activeTab === "provenance" && " — Track ownership history of artworks"}
+              {activeTab === "artwork" &&
+                " — Add, edit, or remove artworks and link them to artists"}
+              {activeTab === "provenance" &&
+                " — Track ownership history of artworks"}
+              {activeTab === "revenue" && " — Generate museum revenue report"}
+              {activeTab === "events" && " — View events and attendance report"}
             </p>
           </div>
-          <button className="add-btn" onClick={handleAdd}>
-            + Add New {activeTab === "artists" ? "Artist" : activeTab === "artwork" ? "Artwork" : "Provenance Record"}
-          </button>
+
+          {activeTab !== "revenue" && activeTab !== "events" && (
+            <button className="add-btn" onClick={handleAdd}>
+              + Add New{" "}
+              {activeTab === "artists"
+                ? "Artist"
+                : activeTab === "artwork"
+                ? "Artwork"
+                : "Provenance Record"}
+            </button>
+          )}
+
+          {activeTab === "revenue" && (
+            <button className="add-btn" onClick={handleGenerateRevenueReport}>
+              📊 Generate Revenue Report
+            </button>
+          )}
+
+          {activeTab === "events" && (
+            <button className="add-btn" onClick={handleGenerateAttendanceReport}>
+              📊 Generate Attendance Report
+            </button>
+          )}
         </header>
 
         {/* Search Bar */}
@@ -343,6 +402,63 @@ export default function AdminDashboard() {
               onEdit={handleEditProvenance}
               onDelete={handleDeleteProvenance}
             />
+          ) : activeTab === "revenue" ? (
+            revenueReport ? (
+              <div className="report">
+                <p>Donation Revenue: ${revenueReport.donation_revenue}</p>
+                <p>Ticket Revenue: ${revenueReport.ticket_revenue}</p>
+                <p>Total Revenue: ${revenueReport.total_revenue}</p>
+              </div>
+            ) : (
+              <p>Click "Generate Revenue Report" to load data</p>
+            )
+          ) : activeTab === "events" ? (
+            <div>
+              {/* Event List */}
+              <h3>Events</h3>
+              {events.length > 0 ? (
+                <ul>
+                  {events.map((event) => (
+                    <li key={event.event_id}>
+                      {event.event_name} —{" "}
+                      {new Date(event.event_date).toLocaleDateString()} —{" "}
+                      {event.total_attendees}/{event.capacity}{" "}
+                      {event.capacity && event.total_attendees >= event.capacity
+                        ? "(FULL)"
+                        : ""}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p>No events found</p>
+              )}
+
+              <hr />
+
+              {/* Attendance Report */}
+              {attendanceReport.length > 0 ? (
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Event Name</th>
+                      <th>Date</th>
+                      <th>Total Attendees</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {attendanceReport.map((r) => (
+                      <tr key={r.event_name + r.event_date}>
+                        <td>{r.event_name}</td>
+                        <td>{new Date(r.event_date).toLocaleDateString()}</td>
+                        <td>{r.total_attendees}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              ) : (
+                <p>Click "Generate Attendance Report" to load data</p>
+              )}
+            </div>
           ) : (
             <div className="coming-soon">
               <p>👥 User Management Coming Soon</p>

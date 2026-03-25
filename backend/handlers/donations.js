@@ -1,6 +1,19 @@
 const db = require("../db");
 
+// Check logged-in user
+function verifyUser(req) {
+  const authHeader = req.headers["authorization"];
+  if (!authHeader) return null;
+
+  const parts = authHeader.split(" ");
+  if (parts.length !== 2 || parts[0] !== "Bearer") return null;
+
+  return parts[1]; // user_id
+}
+
 module.exports = (req, res) => {
+  const userId = verifyUser(req);
+
   if (req.method === "GET") {
     return db.query("SELECT * FROM donation", (err, results) => {
       if (err) {
@@ -14,8 +27,12 @@ module.exports = (req, res) => {
   }
 
   else if (req.method === "POST") {
-    let body = "";
+    if (!userId) {
+      res.writeHead(401, { "Content-Type": "application/json" });
+      return res.end(JSON.stringify({ error: "Unauthorized. Please log in." }));
+    }
 
+    let body = "";
     req.on("data", chunk => { body += chunk.toString(); });
 
     req.on("end", () => {
@@ -27,12 +44,15 @@ module.exports = (req, res) => {
         return res.end(JSON.stringify({ error: "Invalid JSON" }));
       }
 
+      // Override user_id with logged-in user
+      data.user_id = userId;
+
       const sql = `
         INSERT INTO donation (user_id, donation_date, amount, donation_type)
         VALUES (?, ?, ?, ?)
       `;
 
-      return db.query(sql,
+      db.query(sql,
         [data.user_id, data.donation_date, data.amount, data.donation_type],
         (err) => {
           if (err) {

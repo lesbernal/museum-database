@@ -2,7 +2,7 @@ const db = require("../db");
 
 module.exports = (req, res, parsedUrl) => {
 
-  //Attendance per event
+  // Attendance per event
   if (req.method === "GET" && parsedUrl.pathname === "/reports/attendance") {
 
     const query = `
@@ -25,16 +25,14 @@ module.exports = (req, res, parsedUrl) => {
     });
   }
 
-  //Total museum revenue
+  // Total museum revenue
   if (req.method === "GET" && parsedUrl.pathname === "/reports/revenue") {
 
     const query = `
       SELECT 
-        COALESCE(SUM(d.amount), 0) AS donation_revenue,
-        COALESCE(SUM(t.final_price), 0) AS ticket_revenue,
-        COALESCE(SUM(d.amount), 0) + COALESCE(SUM(t.final_price), 0) AS total_revenue
-      FROM donation d
-      LEFT JOIN ticket t ON 1=1
+        (SELECT COALESCE(SUM(amount), 0) FROM donation) AS donation_revenue,
+        (SELECT COALESCE(SUM(final_price), 0) FROM ticket) AS ticket_revenue,
+        (SELECT COALESCE(SUM(amount), 0) FROM donation) + (SELECT COALESCE(SUM(final_price), 0) FROM ticket) AS total_revenue
     `;
 
     db.query(query, (err, results) => {

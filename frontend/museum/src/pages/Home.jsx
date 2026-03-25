@@ -155,7 +155,7 @@ export default function Home() {
         </div>
         
         <div className="links-grid">
-          <Link to="/visit" className="link-card">
+          <Link to="/tickets" className="link-card">
             <div className="link-icon">📍</div>
             <h3>Hours & Admission</h3>
             <p>Plan your visit with hours, tickets, and directions</p>
@@ -197,7 +197,7 @@ export default function Home() {
             <span className="extras-link">View Menu →</span>
           </Link>
           
-          <Link to="/donate" className="extras-card">
+          <Link to="/donations" className="extras-card">
             <div className="extras-icon">💝</div>
             <h3>Donation</h3>
             <p>Support exhibitions, education programs, and art conservation efforts</p>

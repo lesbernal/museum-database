@@ -1,6 +1,22 @@
+// backend/routes/tickets.js
 const db = require("../db");
 
+// Simple middleware to check user is "logged in"
+function verifyUser(req) {
+  const authHeader = req.headers["authorization"];
+  if (!authHeader) return null;
+
+  // Expect header: "Bearer <user_id>"
+  const parts = authHeader.split(" ");
+  if (parts.length !== 2 || parts[0] !== "Bearer") return null;
+
+  const userId = parts[1];
+  return userId;
+}
+
 module.exports = (req, res) => {
+  const userId = verifyUser(req);
+
   // GET /tickets
   if (req.method === "GET") {
     return db.query("SELECT * FROM ticket", (err, results) => {
@@ -16,8 +32,12 @@ module.exports = (req, res) => {
 
   // POST /tickets
   else if (req.method === "POST") {
-    let body = "";
+    if (!userId) {
+      res.writeHead(401, { "Content-Type": "application/json" });
+      return res.end(JSON.stringify({ error: "Unauthorized. Please log in." }));
+    }
 
+    let body = "";
     req.on("data", chunk => { body += chunk.toString(); });
 
     req.on("end", () => {
@@ -29,13 +49,17 @@ module.exports = (req, res) => {
         return res.end(JSON.stringify({ error: "Invalid JSON" }));
       }
 
+      // Override user_id from token/header
+      data.user_id = userId;
+
       const sql = `
         INSERT INTO ticket
         (user_id, purchase_date, visit_date, ticket_type, base_price, discount_type, final_price, payment_method)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
       `;
 
-      return db.query(sql,
+      db.query(
+        sql,
         [
           data.user_id,
           data.purchase_date,

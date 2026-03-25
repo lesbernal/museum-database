@@ -21,6 +21,7 @@ const handleGiftshop = require("./handlers/giftshop");
 const handleCafe = require("./handlers/cafe");
 const handleExhibitions = require("./handlers/exhibitions");
 const handleLogin = require("./handlers/auth");
+const handleReports = require("./handlers/reports");
 
 const server = http.createServer((req, res) => {
   // Enable CORS (allow all origins for deployment)
@@ -118,6 +119,10 @@ const server = http.createServer((req, res) => {
 
   if (parsedUrl.pathname.startsWith("/exhibitions")) {
     return handleExhibitions(req, res, parsedUrl);
+  }
+
+  if (parsedUrl.pathname.startsWith("/reports")) {
+  return handleReports(req, res, parsedUrl);
   }
 
   // 404 for unmatched routes
