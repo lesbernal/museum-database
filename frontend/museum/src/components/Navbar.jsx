@@ -1,13 +1,22 @@
 // components/Navbar.jsx
-import { NavLink, Link, useNavigate } from "react-router-dom";
+import { NavLink, Link, useNavigate, useLocation } from "react-router-dom";
 import "../styles/Navbar.css";
 
 export default function Navbar() {
   const navigate = useNavigate();
+  const location = useLocation();
   const token = localStorage.getItem("token");
   const role = localStorage.getItem("role");
   const isLoggedIn = !!token;
   const isAdmin = role === "admin";
+  
+  // Check if we're on an admin page
+  const isAdminPage = location.pathname.startsWith("/admin");
+
+  // Don't render navbar on admin pages
+  if (isAdminPage) {
+    return null;
+  }
 
   const handleLogout = () => {
     localStorage.clear();
