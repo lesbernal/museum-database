@@ -20,30 +20,28 @@ const handleDepartments = require("./handlers/departments");
 const handleGiftshop = require("./handlers/giftshop");
 const handleCafe = require("./handlers/cafe");
 const handleExhibitions = require("./handlers/exhibitions");
+const handleGalleries = require("./handlers/galleries");
+const handleBuildings = require("./handlers/buildings");
 const handleLogin = require("./handlers/auth");
 
 const server = http.createServer((req, res) => {
-  // Enable CORS (allow all origins for deployment)
+  // Enable CORS
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
 
-  // Handle preflight requests
   if (req.method === "OPTIONS") {
     res.writeHead(200);
     return res.end();
   }
 
   const parsedUrl = url.parse(req.url, true);
+  console.log(`${req.method} ${parsedUrl.pathname}`);
 
-  console.log(`${req.method} ${parsedUrl.pathname}`); // Log all requests
-
-  // Login route
   if (parsedUrl.pathname === "/login") {
     return handleLogin(req, res);
   }
 
-  // Artists, Artwork, Provenance
   if (
     parsedUrl.pathname.startsWith("/artists") ||
     parsedUrl.pathname.startsWith("/artwork") ||
@@ -116,15 +114,18 @@ const server = http.createServer((req, res) => {
     return handleCafe(req, res, parsedUrl);
   }
 
-  if (
-    parsedUrl.pathname.startsWith("/exhibitions") ||
-    parsedUrl.pathname.startsWith("/galleries") ||
-    parsedUrl.pathname.startsWith("/buildings")
-  ) {
+  if (parsedUrl.pathname.startsWith("/exhibitions")) {
     return handleExhibitions(req, res, parsedUrl);
   }
 
-  // 404 for unmatched routes
+  if (parsedUrl.pathname.startsWith("/galleries")) {
+    return handleGalleries(req, res, parsedUrl);
+  }
+
+  if (parsedUrl.pathname.startsWith("/buildings")) {
+    return handleBuildings(req, res, parsedUrl);
+  }
+
   res.writeHead(404, { "Content-Type": "application/json" });
   res.end(JSON.stringify({ message: "Route not found" }));
 });
