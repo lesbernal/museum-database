@@ -15,6 +15,26 @@ function nowSqlDateTime() {
   return new Date().toISOString().slice(0, 19).replace("T", " ");
 }
 
+function OrderCompleteModal({ onContinue }) {
+  return (
+    <div className="modal-overlay">
+      <div className="modal-content shop-order-modal">
+        <div className="modal-header">
+          <h2>Order Complete</h2>
+        </div>
+        <div className="shop-auth-body">
+          <p>Your museum shop order has been placed successfully.</p>
+          <div className="shop-auth-actions">
+            <button type="button" className="btn btn-primary" onClick={onContinue}>
+              Continue Shopping
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function GiftShopCheckoutPage() {
   const navigate = useNavigate();
   const [cart] = useState(readGiftShopCart());
@@ -22,6 +42,7 @@ export default function GiftShopCheckoutPage() {
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [checkoutMessage, setCheckoutMessage] = useState("");
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [userInfo, setUserInfo] = useState(null);
   const [form, setForm] = useState({
     full_name: "",
@@ -119,8 +140,8 @@ export default function GiftShopCheckoutPage() {
 
       await getGiftShopItems();
       clearGiftShopCart();
-      setCheckoutMessage("Order placed. Payment fields were captured for display only.");
-      setTimeout(() => navigate("/gift-shop"), 1500);
+      setCheckoutMessage("");
+      setShowSuccessModal(true);
     } catch (err) {
       setCheckoutMessage(err.message);
     } finally {
@@ -157,7 +178,6 @@ export default function GiftShopCheckoutPage() {
               <input value={form.zip_code} placeholder="ZIP" readOnly />
             </div>
             <div className="checkout-row checkout-row-two">
-              <input type="date" value={form.pickup_day} onChange={(e) => setForm({ ...form, pickup_day: e.target.value })} required />
               <select
                 value={form.fulfillment_type}
                 onChange={(e) => setForm({ ...form, fulfillment_type: e.target.value })}
@@ -166,6 +186,19 @@ export default function GiftShopCheckoutPage() {
                 <option value="pickup">Pick Up In Store</option>
                 <option value="shipping">Ship to Address</option>
               </select>
+              {form.fulfillment_type === "pickup" ? (
+                <input
+                  type="text"
+                  value={form.pickup_day}
+                  onChange={(e) => setForm({ ...form, pickup_day: e.target.value })}
+                  placeholder="MM/DD/YYYY"
+                  required
+                />
+              ) : (
+                <div className="checkout-fulfillment-note">
+                  Orders marked for shipping will use the address on your account.
+                </div>
+              )}
             </div>
 
             <h2>Payment</h2>
@@ -235,6 +268,15 @@ export default function GiftShopCheckoutPage() {
             </div>
           </aside>
         </div>
+      )}
+
+      {showSuccessModal && (
+        <OrderCompleteModal
+          onContinue={() => {
+            setShowSuccessModal(false);
+            navigate("/gift-shop");
+          }}
+        />
       )}
     </div>
   );

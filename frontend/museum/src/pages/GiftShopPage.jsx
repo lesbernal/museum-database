@@ -15,7 +15,7 @@ function SignInPrompt({ onClose }) {
         <div className="shop-auth-body">
           <p>Please sign in or sign up before adding museum shop items to your cart.</p>
           <div className="shop-auth-actions">
-            <button type="button" className="btn btn-primary">Sign In</button>
+            <Link to="/login" className="btn btn-primary">Sign In</Link>
             <button type="button" className="btn btn-outline">Sign Up</button>
           </div>
         </div>
@@ -34,6 +34,7 @@ export default function GiftShopPage() {
     readGiftShopCart().reduce((sum, item) => sum + item.quantity, 0)
   );
   const [showAuthPrompt, setShowAuthPrompt] = useState(false);
+  const [cartToast, setCartToast] = useState("");
 
   useEffect(() => {
     async function loadItems() {
@@ -50,6 +51,18 @@ export default function GiftShopPage() {
 
     loadItems();
   }, []);
+
+  useEffect(() => {
+    if (!cartToast) {
+      return undefined;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setCartToast("");
+    }, 2200);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [cartToast]);
 
   const categories = useMemo(
     () => [...new Set(items.map((item) => item.category).filter(Boolean))],
@@ -102,6 +115,7 @@ export default function GiftShopPage() {
 
     writeGiftShopCart(nextCart);
     setCartCount(nextCart.reduce((sum, entry) => sum + entry.quantity, 0));
+    setCartToast(`${item.item_name} added to cart`);
   }
 
   return (
@@ -193,6 +207,7 @@ export default function GiftShopPage() {
       )}
 
       {showAuthPrompt && <SignInPrompt onClose={() => setShowAuthPrompt(false)} />}
+      {cartToast && <div className="shop-cart-toast">{cartToast}</div>}
     </div>
   );
 }
