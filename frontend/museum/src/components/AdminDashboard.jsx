@@ -69,7 +69,11 @@ export default function AdminDashboard() {
   // UI states
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [artistsError, setArtistsError] = useState("");
+  const [artworksError, setArtworksError] = useState("");
+  const [provenanceError, setProvenanceError] = useState("");
+  const [exhibitionsError, setExhibitionsError] = useState("");
+  const [galleriesError, setGalleriesError] = useState("");
 
   const navigate = useNavigate();
 
@@ -98,10 +102,10 @@ export default function AdminDashboard() {
     try {
       const data = await getArtists();
       setArtists(data);
-      setError("");
+      setArtistsError("");
     } catch (err) {
-      setError("Failed to load artists");
-      console.error(err);
+      setArtistsError("Failed to load artists");
+      console.error("Artists error:", err);
     } finally {
       setLoading(false);
     }
@@ -111,8 +115,10 @@ export default function AdminDashboard() {
     try {
       const data = await getArtworks();
       setArtworks(data);
+      setArtworksError("");
     } catch (err) {
-      console.error("Failed to load artworks:", err);
+      setArtworksError("Failed to load artworks");
+      console.error("Artworks error:", err);
     }
   };
 
@@ -120,8 +126,10 @@ export default function AdminDashboard() {
     try {
       const data = await getProvenance();
       setProvenance(data);
+      setProvenanceError("");
     } catch (err) {
-      console.error("Failed to load provenance:", err);
+      setProvenanceError("Failed to load provenance");
+      console.error("Provenance error:", err);
     }
   };
 
@@ -129,8 +137,10 @@ export default function AdminDashboard() {
     try {
       const data = await getExhibitions();
       setExhibitions(data);
+      setExhibitionsError("");
     } catch (err) {
-      console.error("Failed to load exhibitions:", err);
+      setExhibitionsError("Failed to load exhibitions");
+      console.error("Exhibitions error:", err);
     }
   };
 
@@ -138,8 +148,10 @@ export default function AdminDashboard() {
     try {
       const data = await getGalleries();
       setGalleries(data);
+      setGalleriesError("");
     } catch (err) {
-      console.error("Failed to load galleries:", err);
+      setGalleriesError("Failed to load galleries");
+      console.error("Galleries error:", err);
     }
   };
 
@@ -394,18 +406,6 @@ export default function AdminDashboard() {
 
   const usesCustomManager = activeTab === "cafe" || activeTab === "giftshop";
 
-  // Subtitle
-  const getSubtitle = () => {
-    switch (activeTab) {
-      case "artists": return "Add, edit, or remove artists";
-      case "artwork": return "Add, edit, or remove artworks and link them to artists";
-      case "provenance": return "Track ownership history of artworks";
-      case "exhibitions": return "Manage exhibitions and their associated artworks";
-      case "galleries": return "Manage gallery spaces and their climate settings";
-      default: return "";
-    }
-  };
-
   return (
     <div className="admin-dashboard">
       <aside className="admin-sidebar">
@@ -471,45 +471,101 @@ export default function AdminDashboard() {
         )}
 
         <div className="content-area">
-          {loading && activeTab === "artists" ? (
-            <div className="loading-spinner">Loading artists...</div>
-          ) : error ? (
-            <div className="error-message">{error}</div>
-          ) : activeTab === "artists" ? (
-            <ArtistTable
-              artists={filteredArtists}
-              onEdit={handleEditArtist}
-              onDelete={handleDeleteArtist}
-            />
-          ) : activeTab === "artwork" ? (
-            <ArtworkTable
-              artworks={filteredArtworks}
-              onEdit={handleEditArtwork}
-              onDelete={handleDeleteArtwork}
-            />
-          ) : activeTab === "provenance" ? (
-            <ProvenanceTable
-              provenance={filteredProvenance}
-              onEdit={handleEditProvenance}
-              onDelete={handleDeleteProvenance}
-            />
-          ) : activeTab === "exhibitions" ? (
-            <ExhibitionTable
-              exhibitions={filteredExhibitions}
-              onEdit={handleEditExhibition}
-              onDelete={handleDeleteExhibition}
-            />
-          ) : activeTab === "galleries" ? (
-            <GalleryTable
-              galleries={filteredGalleries}
-              onEdit={handleEditGallery}
-              onDelete={handleDeleteGallery}
-            />
-          ) : activeTab === "cafe" ? (
-            <CafeAdminPanel />
-          ) : activeTab === "giftshop" ? (
-            <GiftShopAdminPanel />
-          ) : (
+          {/* Artists Tab */}
+          {activeTab === "artists" && (
+            <>
+              {loading ? (
+                <div className="loading-spinner">Loading artists...</div>
+              ) : artistsError ? (
+                <div className="error-message">{artistsError}</div>
+              ) : filteredArtists.length === 0 ? (
+                <div className="no-data">No artists found. Click "Add New Artist" to get started.</div>
+              ) : (
+                <ArtistTable
+                  artists={filteredArtists}
+                  onEdit={handleEditArtist}
+                  onDelete={handleDeleteArtist}
+                />
+              )}
+            </>
+          )}
+
+          {/* Artwork Tab */}
+          {activeTab === "artwork" && (
+            <>
+              {artworksError ? (
+                <div className="error-message">{artworksError}</div>
+              ) : filteredArtworks.length === 0 ? (
+                <div className="no-data">No artworks found. Click "Add New Artwork" to get started.</div>
+              ) : (
+                <ArtworkTable
+                  artworks={filteredArtworks}
+                  onEdit={handleEditArtwork}
+                  onDelete={handleDeleteArtwork}
+                />
+              )}
+            </>
+          )}
+
+          {/* Provenance Tab */}
+          {activeTab === "provenance" && (
+            <>
+              {provenanceError ? (
+                <div className="error-message">{provenanceError}</div>
+              ) : filteredProvenance.length === 0 ? (
+                <div className="no-data">No provenance records found. Click "Add New Provenance Record" to get started.</div>
+              ) : (
+                <ProvenanceTable
+                  provenance={filteredProvenance}
+                  onEdit={handleEditProvenance}
+                  onDelete={handleDeleteProvenance}
+                />
+              )}
+            </>
+          )}
+
+          {/* Exhibitions Tab */}
+          {activeTab === "exhibitions" && (
+            <>
+              {exhibitionsError ? (
+                <div className="error-message">{exhibitionsError}</div>
+              ) : filteredExhibitions.length === 0 ? (
+                <div className="no-data">No exhibitions found. Click "Add New Exhibition" to get started.</div>
+              ) : (
+                <ExhibitionTable
+                  exhibitions={filteredExhibitions}
+                  onEdit={handleEditExhibition}
+                  onDelete={handleDeleteExhibition}
+                />
+              )}
+            </>
+          )}
+
+          {/* Galleries Tab */}
+          {activeTab === "galleries" && (
+            <>
+              {galleriesError ? (
+                <div className="error-message">{galleriesError}</div>
+              ) : filteredGalleries.length === 0 ? (
+                <div className="no-data">No galleries found. Click "Add New Gallery" to get started.</div>
+              ) : (
+                <GalleryTable
+                  galleries={filteredGalleries}
+                  onEdit={handleEditGallery}
+                  onDelete={handleDeleteGallery}
+                />
+              )}
+            </>
+          )}
+
+          {/* Cafe Tab */}
+          {activeTab === "cafe" && <CafeAdminPanel />}
+
+          {/* Gift Shop Tab */}
+          {activeTab === "giftshop" && <GiftShopAdminPanel />}
+
+          {/* Users Tab */}
+          {activeTab === "users" && (
             <div className="coming-soon">
               <p>User Management Coming Soon</p>
               <small>Manage museum staff and visitor accounts</small>
