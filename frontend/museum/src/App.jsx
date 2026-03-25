@@ -1,15 +1,17 @@
 // src/App.jsx
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import Navbar from "./components/Navbar";  // optional for now
+import ProtectedRoute from "./components/ProtectedRoute";
+import Navbar from "./components/Navbar";  // Add this import
+import "./styles/theme.css"; 
 import "./App.css";
 
 import Login from "./pages/Login";
 import Home from "./pages/Home";
 import ArtistsGallery from "./pages/ArtistsGallery";
 import AdminDashboard from "./components/AdminDashboard";
-import TicketPage from "./pages/Tickets";      // match filename exactly
-import DonationPage from "./pages/Donations";  // match filename exactly
-import EventsPage from "./pages/Events";      // match filename exactly
+import TicketPage from "./pages/Tickets";
+import DonationPage from "./pages/Donations";
+import EventsPage from "./pages/Events";
 
 function App() {
   return (

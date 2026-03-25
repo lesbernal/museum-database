@@ -100,182 +100,209 @@ module.exports = (req, res, parsedUrl) => {
   }
 
   // ============================ ARTWORK ============================
-  else if (urlParts[0] === "artwork") {
+else if (urlParts[0] === "artwork") {
 
-    // GET all
-    if (req.method === "GET" && urlParts.length === 1) {
-      db.query("SELECT * FROM artwork", (err, results) => {
-        if (err) return sendError(res, err);
-        sendJSON(res, results);
-      });
-    }
-
-    // GET by id
-    else if (req.method === "GET" && urlParts.length === 2) {
-      db.query(
-        "SELECT * FROM artwork WHERE artwork_id=?",
-        [urlParts[1]],
-        (err, results) => {
-          if (err) return sendError(res, err);
-          sendJSON(res, results[0] || {});
-        }
-      );
-    }
-
-    // POST
-    else if (req.method === "POST") {
-      parseBody(req, data => {
-        const sql = `
-          INSERT INTO artwork
-          (artist_id,title,description,creation_year,
-           medium,dimensions,acquisition_date,
-           insurance_value,current_display_status)
-          VALUES (?,?,?,?,?,?,?,?,?)
-        `;
-
-        db.query(sql, [
-          data.artist_id || null,
-          data.title || "",
-          data.description || "",
-          data.creation_year || null,
-          data.medium || "",
-          data.dimensions || "",
-          data.acquisition_date || null,
-          data.insurance_value || null,
-          data.current_display_status || "Display"
-        ], err => {
-          if (err) return sendError(res, err);
-          sendJSON(res, { message: "Artwork added" }, 201);
-        });
-      });
-    }
-
-    // PUT
-    else if (req.method === "PUT" && urlParts.length === 2) {
-      parseBody(req, data => {
-        const sql = `
-          UPDATE artwork SET
-          artist_id=?, title=?, description=?, creation_year=?,
-          medium=?, dimensions=?, acquisition_date=?,
-          insurance_value=?, current_display_status=?
-          WHERE artwork_id=?
-        `;
-
-        db.query(sql, [
-          data.artist_id || null,
-          data.title || "",
-          data.description || "",
-          data.creation_year || null,
-          data.medium || "",
-          data.dimensions || "",
-          data.acquisition_date || null,
-          data.insurance_value || null,
-          data.current_display_status || "Display",
-          urlParts[1]
-        ], err => {
-          if (err) return sendError(res, err);
-          sendJSON(res, { message: "Artwork updated" });
-        });
-      });
-    }
-
-    // DELETE
-    else if (req.method === "DELETE" && urlParts.length === 2) {
-      db.query(
-        "DELETE FROM artwork WHERE artwork_id=?",
-        [urlParts[1]],
-        err => {
-          if (err) return sendError(res, err);
-          sendJSON(res, { message: "Artwork deleted" });
-        }
-      );
-    }
+  // GET all artworks with artist names
+  if (req.method === "GET" && urlParts.length === 1) {
+    const sql = `
+      SELECT a.*, 
+             ar.first_name, 
+             ar.last_name,
+             CONCAT(ar.first_name, ' ', ar.last_name) AS artist_name
+      FROM artwork a
+      LEFT JOIN artist ar ON a.artist_id = ar.artist_id
+      ORDER BY a.artwork_id
+    `;
+    db.query(sql, (err, results) => {
+      if (err) return sendError(res, err);
+      sendJSON(res, results);
+    });
   }
 
+  // GET artwork by id with artist name
+  else if (req.method === "GET" && urlParts.length === 2) {
+    const sql = `
+      SELECT a.*, 
+             ar.first_name, 
+             ar.last_name,
+             CONCAT(ar.first_name, ' ', ar.last_name) AS artist_name
+      FROM artwork a
+      LEFT JOIN artist ar ON a.artist_id = ar.artist_id
+      WHERE a.artwork_id = ?
+    `;
+    db.query(sql, [urlParts[1]], (err, results) => {
+      if (err) return sendError(res, err);
+      sendJSON(res, results[0] || {});
+    });
+  }
+
+  // POST
+  else if (req.method === "POST") {
+    parseBody(req, data => {
+      const sql = `
+        INSERT INTO artwork
+        (artist_id,title,description,creation_year,
+         medium,dimensions,acquisition_date,
+         insurance_value,current_display_status)
+        VALUES (?,?,?,?,?,?,?,?,?)
+      `;
+
+      db.query(sql, [
+        data.artist_id || null,
+        data.title || "",
+        data.description || "",
+        data.creation_year || null,
+        data.medium || "",
+        data.dimensions || "",
+        data.acquisition_date || null,
+        data.insurance_value || null,
+        data.current_display_status || "On Display"
+      ], (err, result) => {
+        if (err) return sendError(res, err);
+        sendJSON(res, { message: "Artwork added", artwork_id: result.insertId }, 201);
+      });
+    });
+  }
+
+  // PUT
+  else if (req.method === "PUT" && urlParts.length === 2) {
+    parseBody(req, data => {
+      const sql = `
+        UPDATE artwork SET
+        artist_id=?, title=?, description=?, creation_year=?,
+        medium=?, dimensions=?, acquisition_date=?,
+        insurance_value=?, current_display_status=?
+        WHERE artwork_id=?
+      `;
+
+      db.query(sql, [
+        data.artist_id || null,
+        data.title || "",
+        data.description || "",
+        data.creation_year || null,
+        data.medium || "",
+        data.dimensions || "",
+        data.acquisition_date || null,
+        data.insurance_value || null,
+        data.current_display_status || "On Display",
+        urlParts[1]
+      ], err => {
+        if (err) return sendError(res, err);
+        sendJSON(res, { message: "Artwork updated" });
+      });
+    });
+  }
+
+  // DELETE
+  else if (req.method === "DELETE" && urlParts.length === 2) {
+    db.query(
+      "DELETE FROM artwork WHERE artwork_id=?",
+      [urlParts[1]],
+      err => {
+        if (err) return sendError(res, err);
+        sendJSON(res, { message: "Artwork deleted" });
+      }
+    );
+  }
+}
   // ============================ PROVENANCE ============================
-  else if (urlParts[0] === "provenance") {
+else if (urlParts[0] === "provenance") {
 
-    // GET all
-    if (req.method === "GET" && urlParts.length === 1) {
-      db.query("SELECT * FROM provenance", (err, results) => {
-        if (err) return sendError(res, err);
-        sendJSON(res, results);
-      });
-    }
-
-    // GET by id
-    else if (req.method === "GET" && urlParts.length === 2) {
-      db.query(
-        "SELECT * FROM provenance WHERE provenance_id=?",
-        [urlParts[1]],
-        (err, results) => {
-          if (err) return sendError(res, err);
-          sendJSON(res, results[0] || {});
-        }
-      );
-    }
-
-    // POST
-    else if (req.method === "POST") {
-      parseBody(req, data => {
-        const sql = `
-          INSERT INTO provenance
-          (artwork_id, owner_name, acquisition_date,
-           acquisition_method, price_paid, transfer_date)
-          VALUES (?,?,?,?,?,?)
-        `;
-
-        db.query(sql, [
-          data.artwork_id || null,
-          data.owner_name || "",
-          data.acquisition_date || null,
-          data.acquisition_method || "",
-          data.price_paid || null,
-          data.transfer_date || null
-        ], err => {
-          if (err) return sendError(res, err);
-          sendJSON(res, { message: "Provenance added" }, 201);
-        });
-      });
-    }
-
-    // PUT
-    else if (req.method === "PUT" && urlParts.length === 2) {
-      parseBody(req, data => {
-        const sql = `
-          UPDATE provenance SET
-          artwork_id=?, owner_name=?, acquisition_date=?,
-          acquisition_method=?, price_paid=?, transfer_date=?
-          WHERE provenance_id=?
-        `;
-
-        db.query(sql, [
-          data.artwork_id || null,
-          data.owner_name || "",
-          data.acquisition_date || null,
-          data.acquisition_method || "",
-          data.price_paid || null,
-          data.transfer_date || null,
-          urlParts[1]
-        ], err => {
-          if (err) return sendError(res, err);
-          sendJSON(res, { message: "Provenance updated" });
-        });
-      });
-    }
-
-    // DELETE
-    else if (req.method === "DELETE" && urlParts.length === 2) {
-      db.query(
-        "DELETE FROM provenance WHERE provenance_id=?",
-        [urlParts[1]],
-        err => {
-          if (err) return sendError(res, err);
-          sendJSON(res, { message: "Provenance deleted" });
-        }
-      );
-    }
+  // GET all provenance with artwork titles
+  if (req.method === "GET" && urlParts.length === 1) {
+    const sql = `
+      SELECT p.*, 
+             a.title AS artwork_title,
+             CONCAT(ar.first_name, ' ', ar.last_name) AS artist_name
+      FROM provenance p
+      LEFT JOIN artwork a ON p.artwork_id = a.artwork_id
+      LEFT JOIN artist ar ON a.artist_id = ar.artist_id
+      ORDER BY p.provenance_id
+    `;
+    db.query(sql, (err, results) => {
+      if (err) return sendError(res, err);
+      sendJSON(res, results);
+    });
   }
+
+  // GET provenance by id with artwork title
+  else if (req.method === "GET" && urlParts.length === 2) {
+    const sql = `
+      SELECT p.*, 
+             a.title AS artwork_title,
+             CONCAT(ar.first_name, ' ', ar.last_name) AS artist_name
+      FROM provenance p
+      LEFT JOIN artwork a ON p.artwork_id = a.artwork_id
+      LEFT JOIN artist ar ON a.artist_id = ar.artist_id
+      WHERE p.provenance_id = ?
+    `;
+    db.query(sql, [urlParts[1]], (err, results) => {
+      if (err) return sendError(res, err);
+      sendJSON(res, results[0] || {});
+    });
+  }
+
+  // POST
+  else if (req.method === "POST") {
+    parseBody(req, data => {
+      const sql = `
+        INSERT INTO provenance
+        (artwork_id, owner_name, acquisition_date,
+         acquisition_method, price_paid, transfer_date)
+        VALUES (?,?,?,?,?,?)
+      `;
+
+      db.query(sql, [
+        data.artwork_id || null,
+        data.owner_name || "",
+        data.acquisition_date || null,
+        data.acquisition_method || "",
+        data.price_paid || null,
+        data.transfer_date || null
+      ], err => {
+        if (err) return sendError(res, err);
+        sendJSON(res, { message: "Provenance added" }, 201);
+      });
+    });
+  }
+
+  // PUT
+  else if (req.method === "PUT" && urlParts.length === 2) {
+    parseBody(req, data => {
+      const sql = `
+        UPDATE provenance SET
+        artwork_id=?, owner_name=?, acquisition_date=?,
+        acquisition_method=?, price_paid=?, transfer_date=?
+        WHERE provenance_id=?
+      `;
+
+      db.query(sql, [
+        data.artwork_id || null,
+        data.owner_name || "",
+        data.acquisition_date || null,
+        data.acquisition_method || "",
+        data.price_paid || null,
+        data.transfer_date || null,
+        urlParts[1]
+      ], err => {
+        if (err) return sendError(res, err);
+        sendJSON(res, { message: "Provenance updated" });
+      });
+    });
+  }
+
+  // DELETE
+  else if (req.method === "DELETE" && urlParts.length === 2) {
+    db.query(
+      "DELETE FROM provenance WHERE provenance_id=?",
+      [urlParts[1]],
+      err => {
+        if (err) return sendError(res, err);
+        sendJSON(res, { message: "Provenance deleted" });
+      }
+    );
+  }
+}
 
   // ============================ NOT FOUND ============================
   else {

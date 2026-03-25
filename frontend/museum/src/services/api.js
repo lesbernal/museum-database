@@ -1,5 +1,5 @@
 
-const BASE_URL = "http://localhost:5000";
+const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 //ARTISTS
 
@@ -44,14 +44,13 @@ export async function deleteArtist(id) {
 
 //ARTWORKS
 
-// get artworks
+// ARTWORKS
 export async function getArtworks() {
   const res = await fetch(`${BASE_URL}/artwork`);
   if (!res.ok) throw new Error("Failed to fetch artworks");
   return res.json();
 }
 
-// create artwork
 export async function createArtwork(artwork) {
   const res = await fetch(`${BASE_URL}/artwork`, {
     method: "POST",
@@ -62,7 +61,6 @@ export async function createArtwork(artwork) {
   return res.json();
 }
 
-// update artwork
 export async function updateArtwork(id, artwork) {
   const res = await fetch(`${BASE_URL}/artwork/${id}`, {
     method: "PUT",
@@ -73,7 +71,6 @@ export async function updateArtwork(id, artwork) {
   return res.json();
 }
 
-// delete artwork
 export async function deleteArtwork(id) {
   const res = await fetch(`${BASE_URL}/artwork/${id}`, {
     method: "DELETE",
@@ -82,16 +79,13 @@ export async function deleteArtwork(id) {
   return res.json();
 }
 
-//PROVENANCE
-
-// get provenance records
+// PROVENANCE
 export async function getProvenance() {
   const res = await fetch(`${BASE_URL}/provenance`);
   if (!res.ok) throw new Error("Failed to fetch provenance");
   return res.json();
 }
 
-// create provenance
 export async function createProvenance(record) {
   const res = await fetch(`${BASE_URL}/provenance`, {
     method: "POST",
@@ -102,7 +96,6 @@ export async function createProvenance(record) {
   return res.json();
 }
 
-// update provenance
 export async function updateProvenance(id, record) {
   const res = await fetch(`${BASE_URL}/provenance/${id}`, {
     method: "PUT",
@@ -113,7 +106,6 @@ export async function updateProvenance(id, record) {
   return res.json();
 }
 
-// delete provenance
 export async function deleteProvenance(id) {
   const res = await fetch(`${BASE_URL}/provenance/${id}`, {
     method: "DELETE",

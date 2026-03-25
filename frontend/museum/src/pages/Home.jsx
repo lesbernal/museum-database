@@ -1,43 +1,84 @@
 // src/pages/Home.jsx
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { getArtists } from "../services/api";
 import "../styles/Home.css";
 
-
 export default function Home() {
-  const [artists, setArtists] = useState([]);
+  const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentSlide, setCurrentSlide] = useState(0);
 
-  useEffect(() => {
-    async function loadArtists() {
-      try {
-        const data = await getArtists();
-        setArtists(data.slice(0, 8)); // Show first 8 artists
-      } catch (err) {
-        console.error("Failed to load artists:", err);
-      } finally {
-        setLoading(false);
-      }
+  // Sample events data
+  const sampleEvents = [
+    {
+      id: 1,
+      title: "Monet: The Water Lilies",
+      date: "March 15 - June 30, 2026",
+      description: "Experience the iconic water lily paintings in an immersive exhibition.",
+      image: "🎨",
+      location: "East Gallery"
+    },
+    {
+      id: 2,
+      title: "Modern Masters: Picasso to Warhol",
+      date: "April 1 - August 15, 2026",
+      description: "A journey through 20th century art with works from the world's greatest artists.",
+      image: "🖼️",
+      location: "West Gallery"
+    },
+    {
+      id: 3,
+      title: "Texas Contemporary",
+      date: "May 10 - July 20, 2026",
+      description: "Celebrating the vibrant contemporary art scene across Texas.",
+      image: "🎭",
+      location: "Contemporary Wing"
+    },
+    {
+      id: 4,
+      title: "Ancient Treasures of Egypt",
+      date: "June 5 - September 12, 2026",
+      description: "Rare artifacts and artworks from ancient Egyptian civilization.",
+      image: "🏺",
+      location: "Special Exhibitions Hall"
+    },
+    {
+      id: 5,
+      title: "Photography Now",
+      date: "July 1 - October 15, 2026",
+      description: "Cutting-edge photography from emerging and established artists.",
+      image: "📷",
+      location: "Photo Gallery"
+    },
+    {
+      id: 6,
+      title: "Sculpture Garden Installation",
+      date: "August 1 - November 30, 2026",
+      description: "Large-scale contemporary sculptures in the museum gardens.",
+      image: "🗿",
+      location: "Sculpture Garden"
     }
-    loadArtists();
+  ];
+
+  useEffect(() => {
+    setEvents(sampleEvents);
+    setLoading(false);
   }, []);
 
-  // Auto-rotate carousel
   useEffect(() => {
+    if (events.length === 0) return;
     const interval = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % Math.ceil(artists.length / 4));
+      setCurrentSlide((prev) => (prev + 1) % Math.ceil(events.length / 4));
     }, 5000);
     return () => clearInterval(interval);
-  }, [artists.length]);
+  }, [events.length]);
 
   const handlePrevSlide = () => {
-    setCurrentSlide((prev) => (prev - 1 + Math.ceil(artists.length / 4)) % Math.ceil(artists.length / 4));
+    setCurrentSlide((prev) => (prev - 1 + Math.ceil(events.length / 4)) % Math.ceil(events.length / 4));
   };
 
   const handleNextSlide = () => {
-    setCurrentSlide((prev) => (prev + 1) % Math.ceil(artists.length / 4));
+    setCurrentSlide((prev) => (prev + 1) % Math.ceil(events.length / 4));
   };
 
   return (
@@ -54,33 +95,15 @@ export default function Home() {
             Discover masterpieces from around the world, immerse yourself in art history,
             and experience the vibrant cultural heart of Houston.
           </p>
-          <div className="hero-buttons">
-            <Link to="/artists" className="btn btn-primary">Explore Artists</Link>
-            <Link to="/exhibitions" className="btn btn-secondary">Current Exhibitions</Link>
-          </div>
-        </div>
-        <div className="hero-stats">
-          <div className="stat">
-            <span className="stat-number">15+</span>
-            <span className="stat-label">Artists</span>
-          </div>
-          <div className="stat">
-            <span className="stat-number">20+</span>
-            <span className="stat-label">Artworks</span>
-          </div>
-          <div className="stat">
-            <span className="stat-number">5</span>
-            <span className="stat-label">Galleries</span>
-          </div>
         </div>
       </section>
 
-      {/* Featured Artists Carousel */}
-      {!loading && artists.length > 0 && (
-        <section className="featured-section">
+      {/* Events Carousel */}
+      {!loading && events.length > 0 && (
+        <section className="events-section">
           <div className="section-header">
-            <h2>Featured Artists</h2>
-            <p>Explore works from renowned masters and emerging talents</p>
+            <h2>Current & Upcoming Events</h2>
+            <p>Explore exhibitions, lectures, and special programs</p>
           </div>
           
           <div className="carousel-container">
@@ -89,24 +112,18 @@ export default function Home() {
             </button>
             
             <div className="carousel-track">
-              {artists.slice(currentSlide * 4, (currentSlide + 1) * 4).map((artist) => (
-                <div className="artist-card" key={artist.artist_id}>
-                  <div className="artist-card-image">
-                    <div className="artist-avatar">🎨</div>
+              {events.slice(currentSlide * 4, (currentSlide + 1) * 4).map((event) => (
+                <div className="event-card" key={event.id}>
+                  <div className="event-card-image">
+                    <div className="event-icon">{event.image}</div>
                   </div>
-                  <div className="artist-card-content">
-                    <h3>{artist.first_name} {artist.last_name}</h3>
-                    <p className="artist-nationality">{artist.nationality}</p>
-                    {artist.birth_year && (
-                      <p className="artist-years">
-                        {artist.birth_year}{artist.death_year ? ` - ${artist.death_year}` : ' - Present'}
-                      </p>
-                    )}
-                    {artist.biography && (
-                      <p className="artist-bio">{artist.biography.substring(0, 80)}...</p>
-                    )}
-                    <Link to={`/artists/${artist.artist_id}`} className="artist-link">
-                      View Works →
+                  <div className="event-card-content">
+                    <h3>{event.title}</h3>
+                    <p className="event-date">{event.date}</p>
+                    <p className="event-location">{event.location}</p>
+                    <p className="event-description">{event.description}</p>
+                    <Link to={`/events/${event.id}`} className="event-link">
+                      Learn More →
                     </Link>
                   </div>
                 </div>
@@ -119,7 +136,7 @@ export default function Home() {
           </div>
           
           <div className="carousel-dots">
-            {[...Array(Math.ceil(artists.length / 4))].map((_, idx) => (
+            {[...Array(Math.ceil(events.length / 4))].map((_, idx) => (
               <button
                 key={idx}
                 className={`dot ${currentSlide === idx ? 'active' : ''}`}
@@ -130,7 +147,7 @@ export default function Home() {
         </section>
       )}
 
-      {/* Quick Links Section */}
+      {/* Plan Your Visit Section */}
       <section className="quick-links-section">
         <div className="section-header">
           <h2>Plan Your Visit</h2>
@@ -138,40 +155,53 @@ export default function Home() {
         </div>
         
         <div className="links-grid">
-          <Link to="/artists" className="link-card">
-            <div className="link-icon">🎨</div>
-            <h3>Artists</h3>
-            <p>Browse our collection of artists</p>
-          </Link>
-          
-          <Link to="/artworks" className="link-card">
-            <div className="link-icon">🖼️</div>
-            <h3>Artworks</h3>
-            <p>Explore masterpieces and collections</p>
-          </Link>
-          
-          <Link to="/exhibitions" className="link-card">
-            <div className="link-icon">🏛️</div>
-            <h3>Exhibitions</h3>
-            <p>Current and upcoming exhibitions</p>
-          </Link>
-          
-          <Link to="/events" className="link-card">
-            <div className="link-icon">📅</div>
-            <h3>Events</h3>
-            <p>Workshops, talks, and special events</p>
-          </Link>
-          
           <Link to="/visit" className="link-card">
             <div className="link-icon">📍</div>
-            <h3>Visit</h3>
-            <p>Hours, tickets, and directions</p>
+            <h3>Hours & Admission</h3>
+            <p>Plan your visit with hours, tickets, and directions</p>
           </Link>
           
           <Link to="/membership" className="link-card">
             <div className="link-icon">⭐</div>
             <h3>Membership</h3>
-            <p>Join today for exclusive benefits</p>
+            <p>Join today for exclusive benefits and support the arts</p>
+          </Link>
+          
+          <Link to="/events" className="link-card">
+            <div className="link-icon">🎉</div>
+            <h3>Events</h3>
+            <p>Special exhibitions, lectures, workshops, and family programs</p>
+          </Link>
+        </div>
+      </section>
+
+      {/* More to Explore Section */}
+      <section className="extras-section">
+        <div className="section-header">
+          <h2>More to Explore</h2>
+          <p>Enhance your museum experience</p>
+        </div>
+        
+        <div className="extras-grid">
+          <Link to="/gift-shop" className="extras-card">
+            <div className="extras-icon">🛍️</div>
+            <h3>Gift Shop</h3>
+            <p>Unique art-inspired gifts, books, jewelry, and museum merchandise</p>
+            <span className="extras-link">Shop Now →</span>
+          </Link>
+          
+          <Link to="/cafe" className="extras-card">
+            <div className="extras-icon">☕</div>
+            <h3>Café</h3>
+            <p>Enjoy coffee, pastries, and light meals in a beautiful setting</p>
+            <span className="extras-link">View Menu →</span>
+          </Link>
+          
+          <Link to="/donate" className="extras-card">
+            <div className="extras-icon">💝</div>
+            <h3>Donation</h3>
+            <p>Support exhibitions, education programs, and art conservation efforts</p>
+            <span className="extras-link">Donate Now →</span>
           </Link>
         </div>
       </section>
