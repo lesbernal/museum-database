@@ -19,7 +19,17 @@ const handleMembers = require("./handlers/members");
 const handleDepartments = require("./handlers/departments");
 const handleGiftshop = require("./handlers/giftshop");
 const handleCafe = require("./handlers/cafe");
-const handleExhibitions = require("./handlers/exhibitions");
+
+// Load exhibitions handler with error handling
+let handleExhibitions;
+try {
+  handleExhibitions = require("./handlers/exhibitions");
+  console.log("✅ exhibitions.js loaded successfully, type:", typeof handleExhibitions);
+} catch (err) {
+  console.error("❌ Failed to load exhibitions.js:", err.message);
+  handleExhibitions = null;
+}
+
 const handleLogin = require("./handlers/auth");
 
 console.log("✅ handleExhibitions type:", typeof handleExhibitions);
@@ -258,12 +268,12 @@ const server = http.createServer((req, res) => {
     parsedUrl.pathname.startsWith("/galleries") ||
     parsedUrl.pathname.startsWith("/buildings")
   ) {
-    if (typeof handleExhibitions === 'function') {
+    if (handleExhibitions && typeof handleExhibitions === 'function') {
       return handleExhibitions(req, res, parsedUrl);
     } else {
-      console.error("❌ handleExhibitions is not a function!");
+      console.error("❌ handleExhibitions is not available!");
       res.writeHead(500, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({ error: "Exhibitions handler not configured properly" }));
+      res.end(JSON.stringify({ error: "Exhibitions handler not available" }));
       return;
     }
   }
