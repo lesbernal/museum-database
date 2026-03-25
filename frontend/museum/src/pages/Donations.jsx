@@ -1,89 +1,49 @@
 // src/pages/Donations.jsx
 import { useState } from "react";
-import "../styles/Donations.css";
+import "../styles/theme.css";
 
 export default function Donations() {
   const [amount, setAmount] = useState("");
-  const [donationType, setDonationType] = useState("General");
-  const [loading, setLoading] = useState(false);
-  const [successMsg, setSuccessMsg] = useState("");
-  const [errorMsg, setErrorMsg] = useState("");
+  const [method, setMethod] = useState("Credit Card");
+  const [msg, setMsg] = useState("");
 
-  const userId = localStorage.getItem("user_id");
-
-  async function handleSubmit(e) {
+  async function handleDonate(e) {
     e.preventDefault();
-    if (!userId) {
-      setErrorMsg("You must be logged in to donate.");
-      return;
-    }
-    if (!amount || amount <= 0) {
-      setErrorMsg("Please enter a valid amount.");
-      return;
-    }
 
-    setLoading(true);
-    setErrorMsg("");
-    setSuccessMsg("");
+    await fetch("http://localhost:5000/donations", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ amount, method })
+    });
 
-    try {
-      const donation = {
-        user_id: userId,
-        donation_date: new Date().toISOString().split("T")[0],
-        amount: parseFloat(amount),
-        donation_type: donationType
-      };
-
-      const res = await fetch("http://localhost:5000/donations", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(donation)
-      });
-
-      if (!res.ok) throw new Error("Donation failed");
-
-      setSuccessMsg(`Thank you for donating $${amount}!`);
-      setAmount("");
-      setDonationType("General");
-    } catch (err) {
-      console.error(err);
-      setErrorMsg("Failed to submit donation.");
-    } finally {
-      setLoading(false);
-    }
+    setMsg("Thank you for your donation!");
   }
 
   return (
-    <div className="donations-page">
-      <h1>Donate</h1>
+    <div style={{ padding: "var(--spacing-3xl)" }}>
+      <h1>Support the Museum</h1>
 
-      {errorMsg && <p className="error">{errorMsg}</p>}
-      {successMsg && <p className="success">{successMsg}</p>}
+      <form className="card" style={{ padding: "var(--spacing-xl)", maxWidth: "400px" }} onSubmit={handleDonate}>
+        
+        <div>
+          <label>Donation Amount</label>
+          <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} />
+        </div>
 
-      <form className="donation-form" onSubmit={handleSubmit}>
-        <label>
-          Amount ($):
-          <input
-            type="number"
-            min="1"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-            required
-          />
-        </label>
-
-        <label>
-          Donation Type:
-          <select value={donationType} onChange={(e) => setDonationType(e.target.value)}>
-            <option>General</option>
-            <option>Membership</option>
-            <option>Special Campaign</option>
+        <div>
+          <label>Payment Method</label>
+          <select value={method} onChange={(e) => setMethod(e.target.value)}>
+            <option>Credit Card</option>
+            <option>Debit Card</option>
+            <option>Cash</option>
           </select>
-        </label>
+        </div>
 
-        <button type="submit" disabled={loading}>
-          {loading ? "Processing..." : "Donate"}
-        </button>
+        {msg && <p className="success-message">{msg}</p>}
+
+        <button className="btn btn-primary">Donate</button>
       </form>
     </div>
   );

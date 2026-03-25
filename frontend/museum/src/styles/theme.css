@@ -147,6 +147,7 @@ input, select, textarea {
   font-family: var(--font-primary);
   transition: all var(--transition-fast);
   background: var(--color-white);
+  color: var(--color-black);
 }
 
 input:focus, select:focus, textarea:focus {

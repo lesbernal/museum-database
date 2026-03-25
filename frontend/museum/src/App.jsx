@@ -16,7 +16,7 @@ import EventsPage from "./pages/Events";
 function App() {
   return (
     <BrowserRouter>
-      {/* Navbar can be added later */}
+      <Navbar />
       <Routes>
         {/* Public Routes */}
         <Route path="/" element={<Home />} />

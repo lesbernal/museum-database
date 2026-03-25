@@ -1,7 +1,6 @@
 // src/pages/Tickets.jsx
 import { useEffect, useState } from "react";
-import { getEvents, postTicket } from "../services/api";
-import "../styles/Tickets.css";
+import "../styles/theme.css";
 
 export default function Tickets() {
   const [events, setEvents] = useState([]);
@@ -9,8 +8,6 @@ export default function Tickets() {
   const [visitDate, setVisitDate] = useState("");
   const [ticketType, setTicketType] = useState("Adult");
   const [quantity, setQuantity] = useState(1);
-  const [basePrice, setBasePrice] = useState(20); // example default
-  const [discountType, setDiscountType] = useState("None");
   const [paymentMethod, setPaymentMethod] = useState("Credit Card");
   const [loading, setLoading] = useState(false);
   const [successMsg, setSuccessMsg] = useState("");
@@ -19,36 +16,24 @@ export default function Tickets() {
   const userId = localStorage.getItem("user_id");
 
   useEffect(() => {
-    async function loadEvents() {
-      try {
-        const res = await fetch("http://localhost:5000/events");
-        const data = await res.json();
-        setEvents(data);
-      } catch (err) {
-        console.error(err);
-        setErrorMsg("Failed to load events.");
-      }
-    }
-    loadEvents();
+    fetch("http://localhost:5000/events")
+      .then(res => res.json())
+      .then(data => setEvents(data))
+      .catch(() => setErrorMsg("Failed to load events."));
   }, []);
 
-  function calculateFinalPrice(base, type) {
-    let discount = 0;
-    if (type === "Student") discount = 0.2;
-    if (type === "Senior") discount = 0.15;
-    return base * (1 - discount);
+  function calculatePrice(type) {
+    let base = 20;
+    if (type === "Student") return base * 0.8;
+    if (type === "Senior") return base * 0.85;
+    return base;
   }
 
   async function handleSubmit(e) {
     e.preventDefault();
-    if (!userId) {
-      setErrorMsg("You must be logged in to buy tickets.");
-      return;
-    }
-    if (!selectedEvent || !visitDate || quantity < 1) {
-      setErrorMsg("Please fill all fields.");
-      return;
-    }
+
+    if (!userId) return setErrorMsg("Please log in first.");
+    if (!visitDate) return setErrorMsg("Select a visit date.");
 
     setLoading(true);
     setErrorMsg("");
@@ -56,86 +41,80 @@ export default function Tickets() {
 
     try {
       for (let i = 0; i < quantity; i++) {
-        const ticket = {
-          user_id: userId,
-          purchase_date: new Date().toISOString().split("T")[0],
-          visit_date: visitDate,
-          ticket_type: ticketType,
-          base_price: basePrice,
-          discount_type: discountType,
-          final_price: calculateFinalPrice(basePrice, ticketType),
-          payment_method: paymentMethod
-        };
-
         await fetch("http://localhost:5000/tickets", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(ticket)
+          body: JSON.stringify({
+            user_id: userId,
+            purchase_date: new Date().toISOString().split("T")[0],
+            visit_date: visitDate,
+            ticket_type: ticketType,
+            base_price: 20,
+            discount_type: ticketType,
+            final_price: calculatePrice(ticketType),
+            payment_method: paymentMethod
+          })
         });
       }
-      setSuccessMsg(`Successfully purchased ${quantity} ticket(s)!`);
-    } catch (err) {
-      console.error(err);
-      setErrorMsg("Failed to purchase tickets.");
+
+      setSuccessMsg(`Purchased ${quantity} ticket(s)!`);
+    } catch {
+      setErrorMsg("Purchase failed.");
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <div className="tickets-page">
+    <div style={{ padding: "var(--spacing-3xl)" }}>
       <h1>Buy Tickets</h1>
 
-      {errorMsg && <p className="error">{errorMsg}</p>}
-      {successMsg && <p className="success">{successMsg}</p>}
-
-      <form className="ticket-form" onSubmit={handleSubmit}>
-        <label>
-          Event:
+      <form className="card" style={{ padding: "var(--spacing-xl)", maxWidth: "500px" }} onSubmit={handleSubmit}>
+        
+        <div>
+          <label>Event</label>
           <select value={selectedEvent} onChange={(e) => setSelectedEvent(e.target.value)}>
             <option value="">Select Event</option>
-            {events.map((e) => (
+            {events.map(e => (
               <option key={e.event_id} value={e.event_id}>
-                {e.event_name} ({e.event_date})
+                {e.event_name}
               </option>
             ))}
           </select>
-        </label>
+        </div>
 
-        <label>
-          Visit Date:
-          <input type="date" value={visitDate} onChange={(e) => setVisitDate(e.target.value)} required />
-        </label>
+        <div>
+          <label>Visit Date</label>
+          <input type="date" value={visitDate} onChange={(e) => setVisitDate(e.target.value)} />
+        </div>
 
-        <label>
-          Ticket Type:
+        <div>
+          <label>Ticket Type</label>
           <select value={ticketType} onChange={(e) => setTicketType(e.target.value)}>
-            <option value="Adult">Adult</option>
-            <option value="Student">Student</option>
-            <option value="Senior">Senior</option>
+            <option>Adult</option>
+            <option>Student</option>
+            <option>Senior</option>
           </select>
-        </label>
+        </div>
 
-        <label>
-          Quantity:
-          <input
-            type="number"
-            value={quantity}
-            min={1}
-            onChange={(e) => setQuantity(parseInt(e.target.value))}
-          />
-        </label>
+        <div>
+          <label>Quantity</label>
+          <input type="number" min="1" value={quantity} onChange={(e) => setQuantity(e.target.value)} />
+        </div>
 
-        <label>
-          Payment Method:
+        <div>
+          <label>Payment Method</label>
           <select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)}>
             <option>Credit Card</option>
             <option>Debit Card</option>
             <option>Cash</option>
           </select>
-        </label>
+        </div>
 
-        <button type="submit" disabled={loading}>
+        {errorMsg && <p className="error-message">{errorMsg}</p>}
+        {successMsg && <p className="success-message">{successMsg}</p>}
+
+        <button className="btn btn-primary" disabled={loading}>
           {loading ? "Processing..." : "Buy Tickets"}
         </button>
       </form>
