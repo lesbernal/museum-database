@@ -36,12 +36,14 @@ console.log("✅ handleExhibitions type:", typeof handleExhibitions);
 console.log("✅ handleArtists type:", typeof handleArtists);
 console.log("✅ handleLogin type:", typeof handleLogin);
 
-// Helper function to set CORS headers
+// Helper function to set CORS headers (only if headers not sent)
 function setCorsHeaders(res) {
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
-  res.setHeader("Access-Control-Max-Age", "86400"); // Cache preflight for 24 hours
+  if (!res.headersSent) {
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+    res.setHeader("Access-Control-Max-Age", "86400");
+  }
 }
 
 const server = http.createServer((req, res) => {
@@ -54,16 +56,8 @@ const server = http.createServer((req, res) => {
     return res.end();
   }
 
-  // Wrap the end method to ensure CORS headers are always present
-  const originalEnd = res.end;
-  res.end = function(...args) {
-    setCorsHeaders(res);
-    originalEnd.apply(this, args);
-  };
-
   const parsedUrl = url.parse(req.url, true);
-
-  console.log(`${req.method} ${parsedUrl.pathname}`); // Log all requests
+  console.log(`${req.method} ${parsedUrl.pathname}`);
 
   // TEST ENDPOINT - to verify CORS is working
   if (parsedUrl.pathname === "/test-cors") {
