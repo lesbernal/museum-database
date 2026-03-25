@@ -22,11 +22,17 @@ const handleCafe = require("./handlers/cafe");
 const handleExhibitions = require("./handlers/exhibitions");
 const handleLogin = require("./handlers/auth");
 
-const server = http.createServer((req, res) => {
-  // Enable CORS (allow all origins for deployment)
+// Helper function to set CORS headers
+function setCorsHeaders(res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  res.setHeader("Access-Control-Max-Age", "86400"); // Cache preflight for 24 hours
+}
+
+const server = http.createServer((req, res) => {
+  // Set CORS headers for every request
+  setCorsHeaders(res);
 
   // Handle preflight requests
   if (req.method === "OPTIONS") {
@@ -34,9 +40,27 @@ const server = http.createServer((req, res) => {
     return res.end();
   }
 
+  // Wrap the end method to ensure CORS headers are always present
+  const originalEnd = res.end;
+  res.end = function(...args) {
+    setCorsHeaders(res);
+    originalEnd.apply(this, args);
+  };
+
   const parsedUrl = url.parse(req.url, true);
 
   console.log(`${req.method} ${parsedUrl.pathname}`); // Log all requests
+
+  // TEST ENDPOINT - to verify CORS is working
+  if (parsedUrl.pathname === "/test-cors") {
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ 
+      message: "CORS is working!", 
+      timestamp: Date.now(),
+      cors: "Headers should be present"
+    }));
+    return;
+  }
 
   // Login route
   if (parsedUrl.pathname === "/login") {
