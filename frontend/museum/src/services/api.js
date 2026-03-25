@@ -1,6 +1,29 @@
-
 const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
+// ── Shared request helper (from main branch) ──────────────────────────────────
+async function request(path, options = {}, fallbackMessage = "Request failed") {
+  try {
+    const res = await fetch(`${BASE_URL}${path}`, options);
+
+    if (!res.ok) {
+      let message = fallbackMessage;
+      try {
+        const error = await res.json();
+        message = error?.sqlMessage || error?.error || error?.message || fallbackMessage;
+      } catch {
+        // Ignore JSON parsing failures for non-JSON error bodies.
+      }
+      throw new Error(message);
+    }
+
+    return res.json();
+  } catch (error) {
+    console.error(`API Error (${path}):`, error);
+    throw error;
+  }
+}
+
+// ── Auth headers helper (for protected routes) ────────────────────────────────
 function authHeaders() {
   const token = localStorage.getItem("token");
   return {
@@ -8,235 +31,254 @@ function authHeaders() {
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
   };
 }
-//ARTISTS
 
-//get artists
+// Authenticated version of request helper
+function authRequest(path, options = {}, fallbackMessage = "Request failed") {
+  return request(path, { ...options, headers: { ...authHeaders(), ...options.headers } }, fallbackMessage);
+}
+
+// ── ARTISTS ───────────────────────────────────────────────────────────────────
 export async function getArtists() {
-  const res = await fetch(`${BASE_URL}/artists`);
-  if (!res.ok) throw new Error("Failed to fetch artists");
-  return res.json();
+  return request("/artists", {}, "Failed to fetch artists");
 }
-
-
-//create artists
 export async function createArtist(artist) {
-  const res = await fetch(`${BASE_URL}/artists`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(artist),
-  });
-  if (!res.ok) throw new Error("Failed to create artist");
-  return res.json();
+  return request("/artists", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(artist) }, "Failed to create artist");
 }
-
-// update artist
 export async function updateArtist(id, artist) {
-  const res = await fetch(`${BASE_URL}/artists/${id}`, {
-    method: "PUT", 
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(artist),
-  });
-  if (!res.ok) throw new Error("Failed to update artist");
-  return res.json();
+  return request(`/artists/${id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(artist) }, "Failed to update artist");
 }
-
-// delete artist
 export async function deleteArtist(id) {
-  const res = await fetch(`${BASE_URL}/artists/${id}`, {
-    method: "DELETE",
-  });
-  if (!res.ok) throw new Error("Failed to delete artist");
-  return res.json();
+  return request(`/artists/${id}`, { method: "DELETE" }, "Failed to delete artist");
 }
 
-//ARTWORKS
-
-// ARTWORKS
+// ── ARTWORKS ──────────────────────────────────────────────────────────────────
 export async function getArtworks() {
-  const res = await fetch(`${BASE_URL}/artwork`);
-  if (!res.ok) throw new Error("Failed to fetch artworks");
-  return res.json();
+  return request("/artwork", {}, "Failed to fetch artworks");
 }
-
 export async function createArtwork(artwork) {
-  const res = await fetch(`${BASE_URL}/artwork`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(artwork),
-  });
-  if (!res.ok) throw new Error("Failed to create artwork");
-  return res.json();
+  return request("/artwork", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(artwork) }, "Failed to create artwork");
 }
-
 export async function updateArtwork(id, artwork) {
-  const res = await fetch(`${BASE_URL}/artwork/${id}`, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(artwork),
-  });
-  if (!res.ok) throw new Error("Failed to update artwork");
-  return res.json();
+  return request(`/artwork/${id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(artwork) }, "Failed to update artwork");
 }
-
 export async function deleteArtwork(id) {
-  const res = await fetch(`${BASE_URL}/artwork/${id}`, {
-    method: "DELETE",
-  });
-  if (!res.ok) throw new Error("Failed to delete artwork");
-  return res.json();
+  return request(`/artwork/${id}`, { method: "DELETE" }, "Failed to delete artwork");
 }
 
-// PROVENANCE
+// ── PROVENANCE ────────────────────────────────────────────────────────────────
 export async function getProvenance() {
-  const res = await fetch(`${BASE_URL}/provenance`);
-  if (!res.ok) throw new Error("Failed to fetch provenance");
-  return res.json();
+  return request("/provenance", {}, "Failed to fetch provenance");
 }
-
 export async function createProvenance(record) {
-  const res = await fetch(`${BASE_URL}/provenance`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(record),
-  });
-  if (!res.ok) throw new Error("Failed to create provenance");
-  return res.json();
+  return request("/provenance", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(record) }, "Failed to create provenance");
 }
-
 export async function updateProvenance(id, record) {
-  const res = await fetch(`${BASE_URL}/provenance/${id}`, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(record),
-  });
-  if (!res.ok) throw new Error("Failed to update provenance");
-  return res.json();
+  return request(`/provenance/${id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(record) }, "Failed to update provenance");
 }
-
 export async function deleteProvenance(id) {
-  const res = await fetch(`${BASE_URL}/provenance/${id}`, {
-    method: "DELETE",
-  });
-  if (!res.ok) throw new Error("Failed to delete provenance");
-  return res.json();
+  return request(`/provenance/${id}`, { method: "DELETE" }, "Failed to delete provenance");
 }
 
-// ── USERS ─────────────────────────────────────────────────────────────────────
+// ── MUSEUM BUILDINGS ──────────────────────────────────────────────────────────
+export async function getBuildings() {
+  return request("/buildings", {}, "Failed to fetch buildings");
+}
+export async function createBuilding(data) {
+  return request("/buildings", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }, "Failed to create building");
+}
+export async function updateBuilding(id, data) {
+  return request(`/buildings/${id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }, "Failed to update building");
+}
+export async function deleteBuilding(id) {
+  return request(`/buildings/${id}`, { method: "DELETE" }, "Failed to delete building");
+}
+
+// ── EXHIBITIONS ───────────────────────────────────────────────────────────────
+export async function getExhibitions() {
+  return request("/exhibitions", {}, "Failed to fetch exhibitions");
+}
+export async function createExhibition(data) {
+  return request("/exhibitions", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }, "Failed to create exhibition");
+}
+export async function updateExhibition(id, data) {
+  return request(`/exhibitions/${id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }, "Failed to update exhibition");
+}
+export async function deleteExhibition(id) {
+  return request(`/exhibitions/${id}`, { method: "DELETE" }, "Failed to delete exhibition");
+}
+
+// ── GALLERIES ─────────────────────────────────────────────────────────────────
+export async function getGalleries() {
+  return request("/galleries", {}, "Failed to fetch galleries");
+}
+export async function createGallery(data) {
+  return request("/galleries", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }, "Failed to create gallery");
+}
+export async function updateGallery(id, data) {
+  return request(`/galleries/${id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }, "Failed to update gallery");
+}
+export async function deleteGallery(id) {
+  return request(`/galleries/${id}`, { method: "DELETE" }, "Failed to delete gallery");
+}
+
+// ── EVENTS ────────────────────────────────────────────────────────────────────
+export async function getEvents() {
+  return request("/events", {}, "Failed to fetch events");
+}
+
+// ── CAFE ──────────────────────────────────────────────────────────────────────
+export async function getCafeItems() {
+  return request("/cafeitems", {}, "Failed to fetch cafe items");
+}
+export async function createCafeItem(item) {
+  return request("/cafeitems", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(item) }, "Failed to create cafe item");
+}
+export async function updateCafeItem(id, item) {
+  return request(`/cafeitems/${id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(item) }, "Failed to update cafe item");
+}
+export async function deleteCafeItem(id) {
+  return request(`/cafeitems/${id}`, { method: "DELETE" }, "Failed to delete cafe item");
+}
+export async function getCafeTransactions() {
+  return request("/cafetransactions", {}, "Failed to fetch cafe transactions");
+}
+export async function createCafeTransaction(transaction) {
+  return request("/cafetransactions", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(transaction) }, "Failed to create cafe transaction");
+}
+export async function updateCafeTransaction(id, transaction) {
+  return request(`/cafetransactions/${id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(transaction) }, "Failed to update cafe transaction");
+}
+export async function deleteCafeTransaction(id) {
+  return request(`/cafetransactions/${id}`, { method: "DELETE" }, "Failed to delete cafe transaction");
+}
+export async function getCafeTransactionItems() {
+  return request("/cafetransactionitems", {}, "Failed to fetch cafe transaction items");
+}
+export async function createCafeTransactionItem(item) {
+  return request("/cafetransactionitems", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(item) }, "Failed to create cafe transaction item");
+}
+export async function updateCafeTransactionItem(id, item) {
+  return request(`/cafetransactionitems/${id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(item) }, "Failed to update cafe transaction item");
+}
+export async function deleteCafeTransactionItem(id) {
+  return request(`/cafetransactionitems/${id}`, { method: "DELETE" }, "Failed to delete cafe transaction item");
+}
+
+// ── GIFT SHOP ─────────────────────────────────────────────────────────────────
+export async function getGiftShopItems() {
+  return request("/giftshopitems", {}, "Failed to fetch gift shop items");
+}
+export async function createGiftShopItem(item) {
+  return request("/giftshopitems", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(item) }, "Failed to create gift shop item");
+}
+export async function updateGiftShopItem(id, item) {
+  return request(`/giftshopitems/${id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(item) }, "Failed to update gift shop item");
+}
+export async function deleteGiftShopItem(id) {
+  return request(`/giftshopitems/${id}`, { method: "DELETE" }, "Failed to delete gift shop item");
+}
+export async function getGiftShopTransactions() {
+  return request("/giftshoptransactions", {}, "Failed to fetch gift shop transactions");
+}
+export async function createGiftShopTransaction(transaction) {
+  return request("/giftshoptransactions", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(transaction) }, "Failed to create gift shop transaction");
+}
+export async function updateGiftShopTransaction(id, transaction) {
+  return request(`/giftshoptransactions/${id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(transaction) }, "Failed to update gift shop transaction");
+}
+export async function deleteGiftShopTransaction(id) {
+  return request(`/giftshoptransactions/${id}`, { method: "DELETE" }, "Failed to delete gift shop transaction");
+}
+export async function getGiftShopTransactionItems() {
+  return request("/giftshoptransactionitems", {}, "Failed to fetch gift shop transaction items");
+}
+export async function createGiftShopTransactionItem(item) {
+  return request("/giftshoptransactionitems", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(item) }, "Failed to create gift shop transaction item");
+}
+export async function updateGiftShopTransactionItem(id, item) {
+  return request(`/giftshoptransactionitems/${id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(item) }, "Failed to update gift shop transaction item");
+}
+export async function deleteGiftShopTransactionItem(id) {
+  return request(`/giftshoptransactionitems/${id}`, { method: "DELETE" }, "Failed to delete gift shop transaction item");
+}
+
+// ── USERS (auth-protected) ────────────────────────────────────────────────────
+export async function getUserById(id) {
+  return authRequest(`/users/${id}`, {}, "Failed to fetch user");
+}
 export async function getUsers() {
-  const res = await fetch(`${BASE_URL}/users`, { headers: authHeaders() });
-  if (!res.ok) throw new Error("Failed to fetch users");
-  return res.json();
+  return authRequest("/users", {}, "Failed to fetch users");
 }
 export async function createUser(data) {
-  const res = await fetch(`${BASE_URL}/users`, { method: "POST", headers: authHeaders(), body: JSON.stringify(data) });
-  if (!res.ok) throw new Error("Failed to create user");
-  return res.json();
+  return authRequest("/users", { method: "POST", body: JSON.stringify(data) }, "Failed to create user");
 }
 export async function updateUser(id, data) {
-  const res = await fetch(`${BASE_URL}/users/${id}`, { method: "PUT", headers: authHeaders(), body: JSON.stringify(data) });
-  if (!res.ok) throw new Error("Failed to update user");
-  return res.json();
+  return authRequest(`/users/${id}`, { method: "PUT", body: JSON.stringify(data) }, "Failed to update user");
 }
 export async function deleteUser(id) {
-  const res = await fetch(`${BASE_URL}/users/${id}`, { method: "DELETE", headers: authHeaders() });
-  if (!res.ok) throw new Error("Failed to delete user");
-  return res.json();
+  return authRequest(`/users/${id}`, { method: "DELETE" }, "Failed to delete user");
 }
 
-// ── EMPLOYEES ─────────────────────────────────────────────────────────────────
+// ── EMPLOYEES (auth-protected) ────────────────────────────────────────────────
 export async function getEmployees() {
-  const res = await fetch(`${BASE_URL}/employees`, { headers: authHeaders() });
-  if (!res.ok) throw new Error("Failed to fetch employees");
-  return res.json();
+  return authRequest("/employees", {}, "Failed to fetch employees");
 }
 export async function createEmployee(data) {
-  const res = await fetch(`${BASE_URL}/employees`, { method: "POST", headers: authHeaders(), body: JSON.stringify(data) });
-  if (!res.ok) throw new Error("Failed to create employee");
-  return res.json();
+  return authRequest("/employees", { method: "POST", body: JSON.stringify(data) }, "Failed to create employee");
 }
 export async function updateEmployee(id, data) {
-  const res = await fetch(`${BASE_URL}/employees/${id}`, { method: "PUT", headers: authHeaders(), body: JSON.stringify(data) });
-  if (!res.ok) throw new Error("Failed to update employee");
-  return res.json();
+  return authRequest(`/employees/${id}`, { method: "PUT", body: JSON.stringify(data) }, "Failed to update employee");
 }
 export async function deleteEmployee(id) {
-  const res = await fetch(`${BASE_URL}/employees/${id}`, { method: "DELETE", headers: authHeaders() });
-  if (!res.ok) throw new Error("Failed to delete employee");
-  return res.json();
+  return authRequest(`/employees/${id}`, { method: "DELETE" }, "Failed to delete employee");
 }
 
-// ── VISITORS ──────────────────────────────────────────────────────────────────
+// ── VISITORS (auth-protected) ─────────────────────────────────────────────────
 export async function getVisitors() {
-  const res = await fetch(`${BASE_URL}/visitors`, { headers: authHeaders() });
-  if (!res.ok) throw new Error("Failed to fetch visitors");
-  return res.json();
+  return authRequest("/visitors", {}, "Failed to fetch visitors");
 }
 export async function createVisitor(data) {
-  const res = await fetch(`${BASE_URL}/visitors`, { method: "POST", headers: authHeaders(), body: JSON.stringify(data) });
-  if (!res.ok) throw new Error("Failed to create visitor");
-  return res.json();
+  return authRequest("/visitors", { method: "POST", body: JSON.stringify(data) }, "Failed to create visitor");
 }
 export async function updateVisitor(id, data) {
-  const res = await fetch(`${BASE_URL}/visitors/${id}`, { method: "PUT", headers: authHeaders(), body: JSON.stringify(data) });
-  if (!res.ok) throw new Error("Failed to update visitor");
-  return res.json();
+  return authRequest(`/visitors/${id}`, { method: "PUT", body: JSON.stringify(data) }, "Failed to update visitor");
 }
 export async function deleteVisitor(id) {
-  const res = await fetch(`${BASE_URL}/visitors/${id}`, { method: "DELETE", headers: authHeaders() });
-  if (!res.ok) throw new Error("Failed to delete visitor");
-  return res.json();
+  return authRequest(`/visitors/${id}`, { method: "DELETE" }, "Failed to delete visitor");
 }
 
-// ── MEMBERS ───────────────────────────────────────────────────────────────────
+// ── MEMBERS (auth-protected) ──────────────────────────────────────────────────
 export async function getMembers() {
-  const res = await fetch(`${BASE_URL}/members`, { headers: authHeaders() });
-  if (!res.ok) throw new Error("Failed to fetch members");
-  return res.json();
+  return authRequest("/members", {}, "Failed to fetch members");
 }
 export async function createMember(data) {
-  const res = await fetch(`${BASE_URL}/members`, { method: "POST", headers: authHeaders(), body: JSON.stringify(data) });
-  if (!res.ok) throw new Error("Failed to create member");
-  return res.json();
+  return authRequest("/members", { method: "POST", body: JSON.stringify(data) }, "Failed to create member");
 }
 export async function updateMember(id, data) {
-  const res = await fetch(`${BASE_URL}/members/${id}`, { method: "PUT", headers: authHeaders(), body: JSON.stringify(data) });
-  if (!res.ok) throw new Error("Failed to update member");
-  return res.json();
+  return authRequest(`/members/${id}`, { method: "PUT", body: JSON.stringify(data) }, "Failed to update member");
 }
 export async function deleteMember(id) {
-  const res = await fetch(`${BASE_URL}/members/${id}`, { method: "DELETE", headers: authHeaders() });
-  if (!res.ok) throw new Error("Failed to delete member");
-  return res.json();
+  return authRequest(`/members/${id}`, { method: "DELETE" }, "Failed to delete member");
 }
 
 // ── SELF-SERVICE (logged-in user managing their OWN record) ───────────────────
 export async function getMyProfile() {
   const user_id = localStorage.getItem("user_id");
-  const res = await fetch(`${BASE_URL}/users/${user_id}`, { headers: authHeaders() });
-  if (!res.ok) throw new Error("Failed to fetch profile");
-  return res.json();
+  return authRequest(`/users/${user_id}`, {}, "Failed to fetch profile");
 }
 export async function updateMyProfile(data) {
   const user_id = localStorage.getItem("user_id");
-  const res = await fetch(`${BASE_URL}/users/${user_id}`, { method: "PUT", headers: authHeaders(), body: JSON.stringify(data) });
-  if (!res.ok) throw new Error("Failed to update profile");
-  return res.json();
+  return authRequest(`/users/${user_id}`, { method: "PUT", body: JSON.stringify(data) }, "Failed to update profile");
 }
 export async function changeMyPassword(newPassword) {
   const user_id = localStorage.getItem("user_id");
-  const res = await fetch(`${BASE_URL}/users/${user_id}`, { method: "PUT", headers: authHeaders(), body: JSON.stringify({ password: newPassword }) });
-  if (!res.ok) throw new Error("Failed to change password");
-  return res.json();
+  return authRequest(`/users/${user_id}`, { method: "PUT", body: JSON.stringify({ password: newPassword }) }, "Failed to change password");
 }
 export async function getMyVisitorRecord() {
   const user_id = localStorage.getItem("user_id");
-  const res = await fetch(`${BASE_URL}/visitors/${user_id}`, { headers: authHeaders() });
-  if (!res.ok) throw new Error("Failed to fetch visitor record");
-  return res.json();
+  return authRequest(`/visitors/${user_id}`, {}, "Failed to fetch visitor record");
 }
 export async function getMyMemberRecord() {
   const user_id = localStorage.getItem("user_id");
-  const res = await fetch(`${BASE_URL}/members/${user_id}`, { headers: authHeaders() });
-  if (!res.ok) throw new Error("Failed to fetch membership record");
-  return res.json();
+  return authRequest(`/members/${user_id}`, {}, "Failed to fetch membership record");
 }
