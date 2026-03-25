@@ -61,6 +61,45 @@ module.exports = (req, res, parsedUrl) => {
     });
   }
 
+  else if (req.method === "PUT" && parsedUrl.pathname.split("/")[2]) {
+    const id = parsedUrl.pathname.split("/")[2];
+    let body = "";
+
+    req.on("data", chunk => {
+      body += chunk.toString();
+    });
+
+    req.on("end", () => {
+      const data = JSON.parse(body);
+
+      const sql = `
+        UPDATE cafeitem
+        SET item_name = ?, category = ?, price = ?, stock_quantity = ?
+        WHERE item_id = ?
+      `;
+
+      db.query(
+        sql,
+        [
+          data.item_name,
+          data.category,
+          data.price,
+          data.stock_quantity,
+          id
+        ],
+        (err) => {
+          if (err) {
+            res.writeHead(500, { "Content-Type": "application/json" });
+            return res.end(JSON.stringify(err));
+          }
+
+          res.writeHead(200, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ message: "Cafe item updated" }));
+        }
+      );
+    });
+  }
+
   else if (req.method === "DELETE") {
   const id = parsedUrl.pathname.split("/")[2];
 
