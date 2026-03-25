@@ -10,18 +10,20 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1.5rem 3rem;
+  padding: 1.5rem 4rem;
   background: #ffffff;
   border-bottom: 1px solid #e5e5e5;
 }
 
 .logo-large a {
-  font-size: 2rem;
+  font-size: 2.5rem;
   font-weight: 500;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.08em;
   text-decoration: none;
   color: #000000;
   transition: color 0.2s ease;
+  display: inline-block;
+  padding: 0.5rem 0;
 }
 
 .logo-large a:hover {
@@ -31,10 +33,11 @@
 .nav-actions {
   display: flex;
   gap: 1rem;
+  align-items: center;
 }
 
 .nav-btn {
-  padding: 0.5rem 1.25rem;
+  padding: 0.625rem 1.5rem;
   text-decoration: none;
   font-size: 0.75rem;
   font-weight: 500;
@@ -44,6 +47,11 @@
   cursor: pointer;
   border: none;
   background: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  min-width: 100px;
 }
 
 .dashboard-btn {
@@ -70,6 +78,7 @@
   border: 1px solid #e5e5e5;
   color: #666666;
   background: transparent;
+  border-radius: 0;
 }
 
 .logout-btn:hover {
@@ -77,33 +86,82 @@
   color: #c5a028;
 }
 
-/* Secondary Navbar - Categories */
+/* Secondary Navbar - Large Category Buttons */
 .category-navbar {
   background: #ffffff;
-  border-bottom: 1px solid #e5e5e5;
   padding: 0;
+  margin: 0;
 }
 
 .category-links {
-  display: flex;
-  justify-content: center;
-  gap: 3rem;
-  padding: 1rem 2rem;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0;
+  margin: 0;
+  padding: 0;
 }
 
 .category-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   text-decoration: none;
-  font-size: 0.75rem;
+  font-size: 1.25rem;
   font-weight: 500;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: #666666;
-  transition: color 0.2s ease;
-  padding: 0.5rem 0;
+  color: #ffffff;
+  background: #000000;
+  transition: all 0.3s ease;
+  padding: 2rem 1rem;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
 }
 
-.category-link:hover {
-  color: #c5a028;
+/* Washdown/Cascade shadow effect on hover */
+.category-link::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, 
+    transparent 0%, 
+    rgba(197, 160, 40, 0.3) 50%, 
+    transparent 100%);
+  transition: left 0.5s ease;
+  z-index: 0;
+}
+
+.category-link:hover::before {
+  left: 100%;
+}
+
+/* Different hover effects per button */
+.category-link:nth-child(1):hover {
+  background: #c5a028;
+  color: #000000;
+  box-shadow: 0 -4px 15px rgba(197, 160, 40, 0.4);
+}
+
+.category-link:nth-child(2):hover {
+  background: #c5a028;
+  color: #000000;
+  box-shadow: 0 -4px 15px rgba(197, 160, 40, 0.4);
+}
+
+.category-link:nth-child(3):hover {
+  background: #c5a028;
+  color: #000000;
+  box-shadow: 0 -4px 15px rgba(197, 160, 40, 0.4);
+}
+
+/* Ensure text stays above the animation */
+.category-link span {
+  position: relative;
+  z-index: 1;
 }
 
 /* Responsive */
@@ -115,16 +173,20 @@
   }
   
   .logo-large a {
-    font-size: 1.5rem;
+    font-size: 1.75rem;
+  }
+  
+  .nav-btn {
+    min-width: 80px;
+    padding: 0.5rem 1rem;
   }
   
   .category-links {
-    gap: 1.5rem;
-    flex-wrap: wrap;
-    padding: 0.75rem 1rem;
+    grid-template-columns: 1fr;
   }
   
   .category-link {
-    font-size: 0.7rem;
+    padding: 1.25rem;
+    font-size: 1rem;
   }
 }
