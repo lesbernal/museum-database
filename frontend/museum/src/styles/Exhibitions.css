@@ -1,0 +1,179 @@
+/* styles/Exhibitions.css */
+
+.exhibitions-page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem 2rem 4rem;
+}
+
+/* ── Hero ── */
+.exhibitions-hero {
+  padding: 3rem 0 2rem;
+  border-bottom: 1px solid #e5e7eb;
+  margin-bottom: 2rem;
+}
+
+.exhibitions-eyebrow {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #9ca3af;
+  margin: 0 0 0.5rem;
+}
+
+.exhibitions-title {
+  font-size: 3rem;
+  font-weight: 300;
+  letter-spacing: -0.03em;
+  margin: 0 0 0.75rem;
+  color: #111827;
+}
+
+.exhibitions-subtitle {
+  font-size: 1rem;
+  color: #6b7280;
+  margin: 0;
+}
+
+/* ── Filters ── */
+.exhibitions-filters {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.filter-btn {
+  padding: 0.4rem 1.1rem;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 999px;
+  background: transparent;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  letter-spacing: 0.02em;
+}
+
+.filter-btn:hover {
+  border-color: #111827;
+  color: #111827;
+}
+
+.filter-active {
+  background: #111827;
+  border-color: #111827;
+  color: #fff;
+}
+
+/* ── Count ── */
+.exhibitions-count {
+  font-size: 0.82rem;
+  color: #9ca3af;
+  margin: 0 0 1.5rem;
+}
+
+.exhibitions-empty {
+  color: #9ca3af;
+  text-align: center;
+  padding: 4rem 0;
+}
+
+.exhibitions-loading {
+  padding: 4rem 2rem;
+  text-align: center;
+  color: #9ca3af;
+}
+
+/* ── Grid ── */
+.exhibitions-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem;
+}
+
+/* ── Card ── */
+.exhibition-card {
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.exhibition-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.1);
+}
+
+/* Colored top block */
+.card-visual {
+  background: var(--card-accent, #1a1a2e);
+  height: 120px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 1rem;
+}
+
+/* ── Type badges on card ── */
+.card-type-badge {
+  display: inline-block;
+  padding: 0.2rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.badge-temporary { background: #fef3c7; color: #92400e; }
+.badge-permanent { background: #111827; color: #ffffff; border: 1px solid rgba(255,255,255,0.2); }
+.badge-traveling { background: #fee2e2; color: #991b1b; }
+
+/* ── Status dot ── */
+.card-status {
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.2rem 0.65rem;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.status-active   { background: #d1fae5; color: #065f46; }
+.status-upcoming { background: #fef3c7; color: #92400e; }
+.status-ended    { background: rgba(255,255,255,0.15); color: rgba(255,255,255,0.7); }
+
+/* ── Card body ── */
+.card-body {
+  padding: 1.25rem;
+}
+
+.card-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 0 0 0.5rem;
+  line-height: 1.4;
+}
+
+.card-gallery {
+  font-size: 0.78rem;
+  color: #9ca3af;
+  margin: 0 0 0.75rem;
+}
+
+.card-dates {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.78rem;
+  color: #6b7280;
+  flex-wrap: wrap;
+}
+
+.card-dates-sep {
+  color: #d1d5db;
+}
