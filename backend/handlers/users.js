@@ -1,15 +1,7 @@
-// handlers/users.js — UPDATED with bcrypt hashing
-// Changes from previous version:
-//   1. require bcrypt at top
-//   2. POST: hash password before inserting
-//   3. PUT: if password field is included, hash it before updating
-// Run: npm install bcrypt  (in your backend folder)
+// users
 
-const db     = require("../db");
-const bcrypt = require("bcrypt");
+const db = require("../db");
 const { verifyToken } = require("./authHelpers");
-
-const SALT_ROUNDS = 10;
 
 module.exports = (req, res, parsedUrl) => {
   const urlParts = parsedUrl.pathname.split("/").filter(Boolean);
@@ -42,85 +34,65 @@ module.exports = (req, res, parsedUrl) => {
     );
   }
 
-  // POST user — hash password before insert
+  // POST user
   else if (req.method === "POST") {
-    parseBody(req, async data => {
-      try {
-        const hashedPassword = await bcrypt.hash(data.password || "", SALT_ROUNDS);
+    parseBody(req, data => {
+      const sql = `
+        INSERT INTO user
+        (first_name, last_name, email, password, role, phone_number,
+         street_address, city, state, zip_code, date_of_birth)
+        VALUES (?,?,?,?,?,?,?,?,?,?,?)
+      `;
 
-        const sql = `
-          INSERT INTO user
-          (first_name, last_name, email, password, role, phone_number,
-           street_address, city, state, zip_code, date_of_birth)
-          VALUES (?,?,?,?,?,?,?,?,?,?,?)
-        `;
-
-        db.query(sql, [
-          data.first_name     || "",
-          data.last_name      || "",
-          data.email          || "",
-          hashedPassword,              // hashed
-          data.role           || "visitor",
-          data.phone_number   || "",
-          data.street_address || "",
-          data.city           || "",
-          data.state          || "",
-          data.zip_code       || "",
-          data.date_of_birth  || null
-        ], (err, result) => {
-          if (err) {
-            if (err.code === "ER_DUP_ENTRY") {
-              return sendJSON(res, { error: "Email already exists" }, 409);
-            }
-            return sendError(res, err);
+      db.query(sql, [
+        data.first_name     || "",
+        data.last_name      || "",
+        data.email          || "",
+        data.password       || "",
+        data.role           || "visitor",
+        data.phone_number   || "",
+        data.street_address || "",
+        data.city           || "",
+        data.state          || "",
+        data.zip_code       || "",
+        data.date_of_birth  || null
+      ], (err, result) => {
+        if (err) {
+          if (err.code === "ER_DUP_ENTRY") {
+            return sendJSON(res, { error: "Email already exists" }, 409);
           }
-          sendJSON(res, { message: "User added", user_id: result.insertId }, 201);
-        });
-      } catch (err) {
-        sendError(res, err);
-      }
+          return sendError(res, err);
+        }
+        sendJSON(res, { message: "User added", user_id: result.insertId }, 201);
+      });
     });
   }
 
-  // PUT user — hash password only if it's being updated
+  // PUT user
   else if (req.method === "PUT" && urlParts.length === 2) {
-    parseBody(req, async data => {
-      try {
-        // If password is being changed, hash it first
-        if (data.password) {
-          data.password = await bcrypt.hash(data.password, SALT_ROUNDS);
-        }
+    parseBody(req, data => {
+      const sql = `
+        UPDATE user SET
+        first_name=?, last_name=?, email=?, phone_number=?,
+        street_address=?, city=?, state=?, zip_code=?, date_of_birth=?
+        WHERE user_id=?
+      `;
 
-        const sql = `
-          UPDATE user SET
-          first_name=?, last_name=?, email=?, phone_number=?,
-          street_address=?, city=?, state=?, zip_code=?, date_of_birth=?
-          ${data.password ? ", password=?" : ""}
-          WHERE user_id=?
-        `;
-
-        const values = [
-          data.first_name     || "",
-          data.last_name      || "",
-          data.email          || "",
-          data.phone_number   || "",
-          data.street_address || "",
-          data.city           || "",
-          data.state          || "",
-          data.zip_code       || "",
-          data.date_of_birth  || null,
-        ];
-
-        if (data.password) values.push(data.password);
-        values.push(urlParts[1]);
-
-        db.query(sql, values, err => {
-          if (err) return sendError(res, err);
-          sendJSON(res, { message: "User updated" });
-        });
-      } catch (err) {
-        sendError(res, err);
-      }
+      db.query(sql, [
+        data.first_name     || "",
+        data.last_name      || "",
+        data.email          || "",
+        data.phone_number   || "",
+        data.street_address || "",
+        data.city           || "",
+        data.state          || "",
+        data.zip_code       || "",
+        data.date_of_birth  || null,
+        urlParts[1]
+      ], err => {
+        if (err) return sendError(res, err);
+        sendJSON(res, { message: "User updated" });
+      });
     });
   }
 
