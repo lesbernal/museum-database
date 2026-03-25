@@ -1,17 +1,13 @@
-
 const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
-//ARTISTS
+// ARTISTS
 
-//get artists
 export async function getArtists() {
   const res = await fetch(`${BASE_URL}/artists`);
   if (!res.ok) throw new Error("Failed to fetch artists");
   return res.json();
 }
 
-
-//create artists
 export async function createArtist(artist) {
   const res = await fetch(`${BASE_URL}/artists`, {
     method: "POST",
@@ -22,10 +18,9 @@ export async function createArtist(artist) {
   return res.json();
 }
 
-// update artist
 export async function updateArtist(id, artist) {
   const res = await fetch(`${BASE_URL}/artists/${id}`, {
-    method: "PUT", 
+    method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(artist),
   });
@@ -33,7 +28,6 @@ export async function updateArtist(id, artist) {
   return res.json();
 }
 
-// delete artist
 export async function deleteArtist(id) {
   const res = await fetch(`${BASE_URL}/artists/${id}`, {
     method: "DELETE",
@@ -42,9 +36,8 @@ export async function deleteArtist(id) {
   return res.json();
 }
 
-//ARTWORKS
-
 // ARTWORKS
+
 export async function getArtworks() {
   const res = await fetch(`${BASE_URL}/artwork`);
   if (!res.ok) throw new Error("Failed to fetch artworks");
@@ -80,6 +73,7 @@ export async function deleteArtwork(id) {
 }
 
 // PROVENANCE
+
 export async function getProvenance() {
   const res = await fetch(`${BASE_URL}/provenance`);
   if (!res.ok) throw new Error("Failed to fetch provenance");
@@ -115,6 +109,7 @@ export async function deleteProvenance(id) {
 }
 
 // MUSEUM BUILDINGS
+
 export async function getBuildings() {
   const res = await fetch(`${BASE_URL}/buildings`);
   if (!res.ok) throw new Error("Failed to fetch buildings");
@@ -178,5 +173,39 @@ export async function updateExhibition(id, data) {
 export async function deleteExhibition(id) {
   const res = await fetch(`${BASE_URL}/exhibitions/${id}`, { method: "DELETE" });
   if (!res.ok) throw new Error("Failed to delete exhibition");
+  return res.json();
+}
+
+// GALLERIES
+
+export async function getGalleries() {
+  const res = await fetch(`${BASE_URL}/galleries`);
+  if (!res.ok) throw new Error("Failed to fetch galleries");
+  return res.json();
+}
+
+export async function createGallery(data) {
+  const res = await fetch(`${BASE_URL}/galleries`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error("Failed to create gallery");
+  return res.json();
+}
+
+export async function updateGallery(id, data) {
+  const res = await fetch(`${BASE_URL}/galleries/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error("Failed to update gallery");
+  return res.json();
+}
+
+export async function deleteGallery(id) {
+  const res = await fetch(`${BASE_URL}/galleries/${id}`, { method: "DELETE" });
+  if (!res.ok) throw new Error("Failed to delete gallery");
   return res.json();
 }

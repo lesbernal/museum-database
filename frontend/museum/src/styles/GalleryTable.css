@@ -1,0 +1,102 @@
+/* styles/GalleryTable.css */
+
+.gallery-table-container {
+  overflow-x: auto;
+  border-radius: 10px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+
+.gallery-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+  background: #fff;
+}
+
+.gallery-table thead {
+  background: #f3f4f6;
+}
+
+.gallery-table th {
+  padding: 12px 16px;
+  text-align: left;
+  font-weight: 600;
+  color: #374151;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-bottom: 2px solid #e5e7eb;
+  white-space: nowrap;
+}
+
+.gallery-table td {
+  padding: 12px 16px;
+  border-bottom: 1px solid #f0f0f0;
+  color: #374151;
+  vertical-align: middle;
+}
+
+.gallery-table tbody tr:hover {
+  background: #faf9ff;
+}
+
+.gallery-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.title-cell {
+  font-weight: 500;
+  color: #111827;
+  max-width: 220px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Climate control badges ── */
+
+.status-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.badge-cold     { background: #dbeafe; color: #1d4ed8; } /* Cold Storage  */
+.badge-cool     { background: #e0f2fe; color: #0369a1; } /* Cool          */
+.badge-standard { background: #dcfce7; color: #15803d; } /* Standard      */
+.badge-warm     { background: #ffedd5; color: #9a3412; } /* Warm          */
+.badge-none     { background: #f3f4f6; color: #6b7280; } /* Not Controlled*/
+
+/* ── Action buttons ── */
+
+.actions {
+  display: flex;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.edit-btn,
+.delete-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 5px 8px;
+  border-radius: 6px;
+  font-size: 1rem;
+  transition: background 0.15s;
+}
+
+.edit-btn:hover   { background: #ede9fe; }
+.delete-btn:hover { background: #fee2e2; }
+
+/* ── Empty state ── */
+
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: #9ca3af;
+  font-size: 0.95rem;
+}
