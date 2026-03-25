@@ -38,13 +38,13 @@ module.exports = (req, res, parsedUrl) => {
       );
     }
 
-    // POST artist
+    // POST artist - updated with image_url
     else if (req.method === "POST") {
       parseBody(req, data => {
         const sql = `
           INSERT INTO artist
-          (first_name,last_name,birth_year,death_year,nationality,biography)
-          VALUES (?,?,?,?,?,?)
+          (first_name, last_name, birth_year, death_year, nationality, biography, image_url)
+          VALUES (?, ?, ?, ?, ?, ?, ?)
         `;
 
         db.query(sql, [
@@ -53,7 +53,8 @@ module.exports = (req, res, parsedUrl) => {
           data.birth_year || null,
           data.death_year || null,
           data.nationality || "",
-          data.biography || ""
+          data.biography || "",
+          data.image_url || null
         ], err => {
           if (err) return sendError(res, err);
           sendJSON(res, { message: "Artist added" }, 201);
@@ -61,13 +62,13 @@ module.exports = (req, res, parsedUrl) => {
       });
     }
 
-    // PUT artist
+    // PUT artist - updated with image_url
     else if (req.method === "PUT" && urlParts.length === 2) {
       parseBody(req, data => {
         const sql = `
           UPDATE artist SET
           first_name=?, last_name=?, birth_year=?, death_year=?,
-          nationality=?, biography=?
+          nationality=?, biography=?, image_url=?
           WHERE artist_id=?
         `;
 
@@ -78,6 +79,7 @@ module.exports = (req, res, parsedUrl) => {
           data.death_year || null,
           data.nationality || "",
           data.biography || "",
+          data.image_url || null,
           urlParts[1]
         ], err => {
           if (err) return sendError(res, err);
@@ -102,7 +104,7 @@ module.exports = (req, res, parsedUrl) => {
   // ============================ ARTWORK ============================
 else if (urlParts[0] === "artwork") {
 
-  // GET all artworks with artist names
+  // GET all artworks with artist names - updated to include image_url
   if (req.method === "GET" && urlParts.length === 1) {
     const sql = `
       SELECT a.*, 
@@ -136,15 +138,15 @@ else if (urlParts[0] === "artwork") {
     });
   }
 
-  // POST
+  // POST artwork - updated with image_url
   else if (req.method === "POST") {
     parseBody(req, data => {
       const sql = `
         INSERT INTO artwork
-        (artist_id,title,description,creation_year,
-         medium,dimensions,acquisition_date,
-         insurance_value,current_display_status)
-        VALUES (?,?,?,?,?,?,?,?,?)
+        (artist_id, title, description, creation_year,
+         medium, dimensions, acquisition_date,
+         insurance_value, current_display_status, image_url)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `;
 
       db.query(sql, [
@@ -156,7 +158,8 @@ else if (urlParts[0] === "artwork") {
         data.dimensions || "",
         data.acquisition_date || null,
         data.insurance_value || null,
-        data.current_display_status || "On Display"
+        data.current_display_status || "On Display",
+        data.image_url || null
       ], (err, result) => {
         if (err) return sendError(res, err);
         sendJSON(res, { message: "Artwork added", artwork_id: result.insertId }, 201);
@@ -164,14 +167,14 @@ else if (urlParts[0] === "artwork") {
     });
   }
 
-  // PUT
+  // PUT artwork - updated with image_url
   else if (req.method === "PUT" && urlParts.length === 2) {
     parseBody(req, data => {
       const sql = `
         UPDATE artwork SET
         artist_id=?, title=?, description=?, creation_year=?,
         medium=?, dimensions=?, acquisition_date=?,
-        insurance_value=?, current_display_status=?
+        insurance_value=?, current_display_status=?, image_url=?
         WHERE artwork_id=?
       `;
 
@@ -185,6 +188,7 @@ else if (urlParts[0] === "artwork") {
         data.acquisition_date || null,
         data.insurance_value || null,
         data.current_display_status || "On Display",
+        data.image_url || null,
         urlParts[1]
       ], err => {
         if (err) return sendError(res, err);
