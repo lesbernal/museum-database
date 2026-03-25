@@ -272,3 +272,9 @@
 .admin-sidebar::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.5);
 }
+
+.content-area {
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+}

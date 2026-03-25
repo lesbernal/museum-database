@@ -101,3 +101,70 @@
   color: #ef4444;
   background: #fee2e2;
 }
+
+/* Modal shape */
+.exhibition-modal {
+  border-radius: 16px;
+  padding: 32px;
+}
+
+/* Input & select styling */
+.exhibition-form input,
+.exhibition-form select,
+.exhibition-form textarea {
+  border: 1.5px solid #d1d5db;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 0.95rem;
+  width: 100%;
+  box-sizing: border-box;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.exhibition-form input:focus,
+.exhibition-form select:focus,
+.exhibition-form textarea:focus {
+  border-color: #f97316;
+}
+
+.exhibition-form input.error,
+.exhibition-form select.error {
+  border-color: #ef4444;
+}
+
+/* Buttons */
+.exhibition-form .cancel-btn {
+  background: #fff;
+  color: #374151;
+  border: 1.5px solid #d1d5db;
+  border-radius: 8px;
+  padding: 10px 24px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.exhibition-form .cancel-btn:hover {
+  background: #f9fafb;
+}
+
+.exhibition-form .submit-btn {
+  background: #f97316;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 24px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.exhibition-form .submit-btn:hover {
+  background: #ea6c0a;
+}
+
+.exhibition-form .submit-btn:disabled {
+  background: #fdba74;
+  cursor: not-allowed;
+}

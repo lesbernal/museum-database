@@ -2,51 +2,41 @@
 
 .gallery-table-container {
   overflow-x: auto;
-  border-radius: 10px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  background: white;
+  border-radius: 12px;
 }
 
 .gallery-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.9rem;
-  background: #fff;
+  font-size: 0.875rem;
 }
 
 .gallery-table thead {
-  background: #f3f4f6;
+  background: #f9fafb;
+  border-bottom: 2px solid #e5e7eb;
 }
 
 .gallery-table th {
-  padding: 12px 16px;
   text-align: left;
+  padding: 1rem;
   font-weight: 600;
   color: #374151;
-  font-size: 0.8rem;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  border-bottom: 2px solid #e5e7eb;
-  white-space: nowrap;
 }
 
 .gallery-table td {
-  padding: 12px 16px;
-  border-bottom: 1px solid #f0f0f0;
-  color: #374151;
+  padding: 0.875rem 1rem;
+  border-bottom: 1px solid #f3f4f6;
+  color: #1f2937;
   vertical-align: middle;
 }
 
 .gallery-table tbody tr:hover {
-  background: #faf9ff;
-}
-
-.gallery-table tbody tr:last-child td {
-  border-bottom: none;
+  background: #f9fafb;
 }
 
 .title-cell {
   font-weight: 500;
-  color: #111827;
   max-width: 220px;
   white-space: nowrap;
   overflow: hidden;
@@ -57,46 +47,58 @@
 
 .status-badge {
   display: inline-block;
-  padding: 3px 10px;
-  border-radius: 999px;
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
   font-size: 0.75rem;
-  font-weight: 600;
-  white-space: nowrap;
+  font-weight: 500;
 }
 
-.badge-cold     { background: #dbeafe; color: #1d4ed8; } /* Cold Storage  */
-.badge-cool     { background: #e0f2fe; color: #0369a1; } /* Cool          */
-.badge-standard { background: #dcfce7; color: #15803d; } /* Standard      */
-.badge-warm     { background: #ffedd5; color: #9a3412; } /* Warm          */
-.badge-none     { background: #f3f4f6; color: #6b7280; } /* Not Controlled*/
+.badge-cold     { background: #dbeafe; color: #1d4ed8; }
+.badge-cool     { background: #e0f2fe; color: #0369a1; }
+.badge-standard { background: #d1fae5; color: #065f46; }
+.badge-warm     { background: #ffedd5; color: #9a3412; }
+.badge-none     { background: #e5e7eb; color: #374151; }
 
 /* ── Action buttons ── */
 
 .actions {
   display: flex;
-  gap: 6px;
-  white-space: nowrap;
+  gap: 0.5rem;
 }
 
 .edit-btn,
 .delete-btn {
-  background: none;
+  padding: 0.375rem 0.75rem;
   border: none;
+  border-radius: 8px;
   cursor: pointer;
-  padding: 5px 8px;
-  border-radius: 6px;
-  font-size: 1rem;
-  transition: background 0.15s;
+  transition: all 0.2s ease;
 }
 
-.edit-btn:hover   { background: #ede9fe; }
-.delete-btn:hover { background: #fee2e2; }
+.edit-btn {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.edit-btn:hover {
+  background: #e5e7eb;
+  transform: scale(1.05);
+}
+
+.delete-btn {
+  background: #fee2e2;
+  color: #ef4444;
+}
+
+.delete-btn:hover {
+  background: #fecaca;
+  transform: scale(1.05);
+}
 
 /* ── Empty state ── */
 
 .empty-state {
   text-align: center;
-  padding: 60px 20px;
-  color: #9ca3af;
-  font-size: 0.95rem;
+  padding: 3rem;
+  color: #6b7280;
 }

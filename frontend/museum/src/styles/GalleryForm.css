@@ -5,6 +5,8 @@
 .gallery-modal {
   max-width: 640px;
   width: 100%;
+  border-radius: 16px;
+  padding: 32px;
 }
 
 .gallery-form .field-hint {
@@ -20,6 +22,67 @@
   padding: 8px 0;
 }
 
+/* Input & select styling */
+.gallery-form input,
+.gallery-form select,
+.gallery-form textarea {
+  border: 1.5px solid #d1d5db;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 0.95rem;
+  width: 100%;
+  box-sizing: border-box;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.gallery-form input:focus,
+.gallery-form select:focus,
+.gallery-form textarea:focus {
+  border-color: #f97316;
+}
+
+.gallery-form input.error,
+.gallery-form select.error {
+  border-color: #ef4444;
+}
+
+/* Buttons */
+.gallery-form .cancel-btn {
+  background: #fff;
+  color: #374151;
+  border: 1.5px solid #d1d5db;
+  border-radius: 8px;
+  padding: 10px 24px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.gallery-form .cancel-btn:hover {
+  background: #f9fafb;
+}
+
+.gallery-form .submit-btn {
+  background: #f97316;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 24px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.gallery-form .submit-btn:hover {
+  background: #ea6c0a;
+}
+
+.gallery-form .submit-btn:disabled {
+  background: #fdba74;
+  cursor: not-allowed;
+}
+
 /* Exhibition checkbox list */
 .checkbox-list {
   display: flex;
@@ -27,8 +90,8 @@
   gap: 6px;
   max-height: 220px;
   overflow-y: auto;
-  border: 1px solid #ddd;
-  border-radius: 6px;
+  border: 1.5px solid #d1d5db;
+  border-radius: 8px;
   padding: 10px 12px;
   background: #fafafa;
 }
@@ -43,7 +106,7 @@
 
 .checkbox-item input[type="checkbox"] {
   margin-top: 3px;
-  accent-color: #4f46e5;
+  accent-color: #f97316;
   width: 15px;
   height: 15px;
   flex-shrink: 0;
@@ -68,5 +131,5 @@
 }
 
 .checkbox-item:hover .exhibition-name {
-  color: #4f46e5;
+  color: #f97316;
 }
