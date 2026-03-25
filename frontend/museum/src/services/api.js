@@ -1,20 +1,25 @@
 const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 async function request(path, options = {}, fallbackMessage = "Request failed") {
-  const res = await fetch(`${BASE_URL}${path}`, options);
+  try {
+    const res = await fetch(`${BASE_URL}${path}`, options);
 
-  if (!res.ok) {
-    let message = fallbackMessage;
-    try {
-      const error = await res.json();
-      message = error?.sqlMessage || error?.error || error?.message || fallbackMessage;
-    } catch {
-      // Ignore JSON parsing failures for non-JSON error bodies.
+    if (!res.ok) {
+      let message = fallbackMessage;
+      try {
+        const error = await res.json();
+        message = error?.sqlMessage || error?.error || error?.message || fallbackMessage;
+      } catch {
+        // Ignore JSON parsing failures for non-JSON error bodies.
+      }
+      throw new Error(message);
     }
-    throw new Error(message);
-  }
 
-  return res.json();
+    return res.json();
+  } catch (error) {
+    console.error(`API Error (${path}):`, error);
+    throw error;
+  }
 }
 
 // ARTISTS
@@ -100,108 +105,88 @@ export async function deleteProvenance(id) {
 
 // MUSEUM BUILDINGS
 export async function getBuildings() {
-  const res = await fetch(`${BASE_URL}/buildings`);
-  if (!res.ok) throw new Error("Failed to fetch buildings");
-  return res.json();
+  return request("/buildings", {}, "Failed to fetch buildings");
 }
 
 export async function createBuilding(data) {
-  const res = await fetch(`${BASE_URL}/buildings`, {
+  return request("/buildings", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
-  });
-  if (!res.ok) throw new Error("Failed to create building");
-  return res.json();
+  }, "Failed to create building");
 }
 
 export async function updateBuilding(id, data) {
-  const res = await fetch(`${BASE_URL}/buildings/${id}`, {
+  return request(`/buildings/${id}`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
-  });
-  if (!res.ok) throw new Error("Failed to update building");
-  return res.json();
+  }, "Failed to update building");
 }
 
 export async function deleteBuilding(id) {
-  const res = await fetch(`${BASE_URL}/buildings/${id}`, { method: "DELETE" });
-  if (!res.ok) throw new Error("Failed to delete building");
-  return res.json();
+  return request(`/buildings/${id}`, {
+    method: "DELETE",
+  }, "Failed to delete building");
 }
 
 // EXHIBITIONS
 export async function getExhibitions() {
-  const res = await fetch(`${BASE_URL}/exhibitions`);
-  if (!res.ok) throw new Error("Failed to fetch exhibitions");
-  return res.json();
+  return request("/exhibitions", {}, "Failed to fetch exhibitions");
 }
 
 export async function createExhibition(data) {
-  const res = await fetch(`${BASE_URL}/exhibitions`, {
+  return request("/exhibitions", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
-  });
-  if (!res.ok) throw new Error("Failed to create exhibition");
-  return res.json();
+  }, "Failed to create exhibition");
 }
 
 export async function updateExhibition(id, data) {
-  const res = await fetch(`${BASE_URL}/exhibitions/${id}`, {
+  return request(`/exhibitions/${id}`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
-  });
-  if (!res.ok) throw new Error("Failed to update exhibition");
-  return res.json();
+  }, "Failed to update exhibition");
 }
 
 export async function deleteExhibition(id) {
-  const res = await fetch(`${BASE_URL}/exhibitions/${id}`, { method: "DELETE" });
-  if (!res.ok) throw new Error("Failed to delete exhibition");
-  return res.json();
+  return request(`/exhibitions/${id}`, {
+    method: "DELETE",
+  }, "Failed to delete exhibition");
 }
 
 // GALLERIES
 export async function getGalleries() {
-  const res = await fetch(`${BASE_URL}/galleries`);
-  if (!res.ok) throw new Error("Failed to fetch galleries");
-  return res.json();
+  return request("/galleries", {}, "Failed to fetch galleries");
 }
 
 export async function createGallery(data) {
-  const res = await fetch(`${BASE_URL}/galleries`, {
+  return request("/galleries", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
-  });
-  if (!res.ok) throw new Error("Failed to create gallery");
-  return res.json();
+  }, "Failed to create gallery");
 }
 
 export async function updateGallery(id, data) {
-  const res = await fetch(`${BASE_URL}/galleries/${id}`, {
+  return request(`/galleries/${id}`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data),
-  });
-  if (!res.ok) throw new Error("Failed to update gallery");
-  return res.json();
+  }, "Failed to update gallery");
 }
 
 export async function deleteGallery(id) {
-  const res = await fetch(`${BASE_URL}/galleries/${id}`, { method: "DELETE" });
-  if (!res.ok) throw new Error("Failed to delete gallery");
-  return res.json();
+  return request(`/galleries/${id}`, {
+    method: "DELETE",
+  }, "Failed to delete gallery");
 }
 
 // EVENTS
 export async function getEvents() {
-  const res = await fetch(`${BASE_URL}/events`);
-  if (!res.ok) throw new Error("Failed to fetch events");
-  return res.json();
+  return request("/events", {}, "Failed to fetch events");
 }
 
 // CAFE
