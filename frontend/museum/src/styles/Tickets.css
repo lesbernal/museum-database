@@ -1,0 +1,65 @@
+/* Tickets Page */
+.tickets-page {
+  font-family: 'Inter', sans-serif;
+  padding: 2rem;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.ticket-form {
+  background: #f8f9fa;
+  padding: 2rem;
+  border-radius: 16px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.tickets-page label {
+  color: black;
+  font-weight: 500;
+  display: block;
+  margin-bottom: 5px;
+}
+
+.ticket-form label {
+  display: block;
+  margin-bottom: 1rem;
+  font-weight: 500;
+}
+
+.ticket-form input,
+.ticket-form select {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  margin-top: 0.25rem;
+  font-size: 1rem;
+}
+
+.ticket-form button {
+  margin-top: 1.5rem;
+  width: 100%;
+  padding: 0.875rem;
+  border-radius: 50px;
+  background: #e67e22;
+  color: white;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.ticket-form button:hover {
+  background: #d35400;
+  transform: translateY(-2px);
+  box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+}
+
+.error {
+  color: #e74c3c;
+  margin-bottom: 1rem;
+}
+
+.success {
+  color: #27ae60;
+  margin-bottom: 1rem;
+}

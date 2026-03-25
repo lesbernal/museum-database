@@ -121,3 +121,21 @@ export async function deleteProvenance(id) {
   if (!res.ok) throw new Error("Failed to delete provenance");
   return res.json();
 }
+
+// get events
+export async function getEvents() {
+  const res = await fetch(`${BASE_URL}/events`);
+  if (!res.ok) throw new Error("Failed to fetch events");
+  return res.json();
+}
+
+// post tickets
+export async function postTicket(ticket) {
+  const res = await fetch(`${BASE_URL}/tickets`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(ticket)
+  });
+  if (!res.ok) throw new Error("Failed to post ticket");
+  return res.json();
+}
