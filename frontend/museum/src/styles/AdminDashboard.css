@@ -196,9 +196,7 @@
     width: 100%;
     text-align: center;
   }
-<<<<<<< HEAD
-  
-  .search-bar input {
+.search-bar input {
     max-width: 100%;
   }
 }
@@ -225,6 +223,4 @@
   width: 100%;
   min-width: 0;
   overflow: hidden;
-=======
->>>>>>> 800cf2f26778e6f97b01d91fd1ded73d6c9590ae
 }
