@@ -38,7 +38,7 @@ module.exports = (req, res) => {
           console.log("User found - ID:", user.user_id, "Role:", user.role); // DEBUG
           
           if (user.password !== password) {
-            console.log("Password mismatch"); // DEBUG
+            console.log("Password mismatch");
             res.writeHead(401, { "Content-Type": "application/json" });
             return res.end(JSON.stringify({ error: "Invalid credentials" }));
           }
