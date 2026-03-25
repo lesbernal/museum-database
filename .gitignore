@@ -3,5 +3,3 @@ frontend/public/test-layout.html
 frontend/public/test-layout.css
 .DS_Store
 .env
-vite.config.js
-server.js
