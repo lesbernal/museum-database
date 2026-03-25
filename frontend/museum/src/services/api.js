@@ -113,3 +113,70 @@ export async function deleteProvenance(id) {
   if (!res.ok) throw new Error("Failed to delete provenance");
   return res.json();
 }
+
+// MUSEUM BUILDINGS
+export async function getBuildings() {
+  const res = await fetch(`${BASE_URL}/buildings`);
+  if (!res.ok) throw new Error("Failed to fetch buildings");
+  return res.json();
+}
+
+export async function createBuilding(data) {
+  const res = await fetch(`${BASE_URL}/buildings`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error("Failed to create building");
+  return res.json();
+}
+
+export async function updateBuilding(id, data) {
+  const res = await fetch(`${BASE_URL}/buildings/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error("Failed to update building");
+  return res.json();
+}
+
+export async function deleteBuilding(id) {
+  const res = await fetch(`${BASE_URL}/buildings/${id}`, { method: "DELETE" });
+  if (!res.ok) throw new Error("Failed to delete building");
+  return res.json();
+}
+
+// EXHIBITIONS
+
+export async function getExhibitions() {
+  const res = await fetch(`${BASE_URL}/exhibitions`);
+  if (!res.ok) throw new Error("Failed to fetch exhibitions");
+  return res.json();
+}
+
+export async function createExhibition(data) {
+  const res = await fetch(`${BASE_URL}/exhibitions`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error("Failed to create exhibition");
+  return res.json();
+}
+
+export async function updateExhibition(id, data) {
+  const res = await fetch(`${BASE_URL}/exhibitions/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) throw new Error("Failed to update exhibition");
+  return res.json();
+}
+
+export async function deleteExhibition(id) {
+  const res = await fetch(`${BASE_URL}/exhibitions/${id}`, { method: "DELETE" });
+  if (!res.ok) throw new Error("Failed to delete exhibition");
+  return res.json();
+}

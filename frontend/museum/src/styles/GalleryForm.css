@@ -1,0 +1,72 @@
+/* styles/GalleryForm.css */
+
+/* Reuses your existing modal/form patterns — only gallery-specific additions here */
+
+.gallery-modal {
+  max-width: 640px;
+  width: 100%;
+}
+
+.gallery-form .field-hint {
+  font-size: 0.78rem;
+  color: #888;
+  margin: 2px 0 8px;
+}
+
+.gallery-form .empty-hint {
+  font-size: 0.85rem;
+  color: #aaa;
+  font-style: italic;
+  padding: 8px 0;
+}
+
+/* Exhibition checkbox list */
+.checkbox-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 220px;
+  overflow-y: auto;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 10px 12px;
+  background: #fafafa;
+}
+
+.checkbox-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  cursor: pointer;
+  padding: 4px 0;
+}
+
+.checkbox-item input[type="checkbox"] {
+  margin-top: 3px;
+  accent-color: #4f46e5;
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.checkbox-label {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.exhibition-name {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #222;
+}
+
+.exhibition-dates {
+  font-size: 0.75rem;
+  color: #888;
+}
+
+.checkbox-item:hover .exhibition-name {
+  color: #4f46e5;
+}
