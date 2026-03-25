@@ -3,7 +3,8 @@ import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import "../styles/Login.css";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5001";
+const API_URL =
+  import.meta.env.VITE_API_URL || "https://museum-backend-lck5.onrender.com";
 
 export default function Login() {
   const [email, setEmail] = useState("");
