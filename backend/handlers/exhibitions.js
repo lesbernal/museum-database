@@ -175,6 +175,7 @@ module.exports = (req, res, parsedUrl) => {
       `;
       db.query(sql, (err, results) => {
         if (err) return sendError(res, err);
+        console.log("Gallery results:", err, results); // add this
         sendJSON(res, results);
       });
     }

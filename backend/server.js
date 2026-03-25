@@ -35,7 +35,7 @@ const server = http.createServer((req, res) => {
   }
 
   const parsedUrl = url.parse(req.url, true);
-  
+
   console.log(`${req.method} ${parsedUrl.pathname}`); // Log all requests
 
   // Login route
@@ -91,15 +91,15 @@ const server = http.createServer((req, res) => {
   if (parsedUrl.pathname.startsWith("/users")) {
     return handleUsers(req, res, parsedUrl);
   }
-  
+
   if (parsedUrl.pathname.startsWith("/employees")) {
     return handleEmployees(req, res, parsedUrl);
   }
- 
+
   if (parsedUrl.pathname.startsWith("/visitors")) {
     return handleVisitors(req, res, parsedUrl);
   }
- 
+
   if (parsedUrl.pathname.startsWith("/members")) {
     return handleMembers(req, res, parsedUrl);
   }
@@ -116,7 +116,11 @@ const server = http.createServer((req, res) => {
     return handleCafe(req, res, parsedUrl);
   }
 
-  if (parsedUrl.pathname.startsWith("/exhibitions")) {
+  if (
+    parsedUrl.pathname.startsWith("/exhibitions") ||
+    parsedUrl.pathname.startsWith("/galleries") ||
+    parsedUrl.pathname.startsWith("/buildings")
+  ) {
     return handleExhibitions(req, res, parsedUrl);
   }
 
