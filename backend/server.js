@@ -22,6 +22,10 @@ const handleCafe = require("./handlers/cafe");
 const handleExhibitions = require("./handlers/exhibitions");
 const handleLogin = require("./handlers/auth");
 
+console.log("✅ handleExhibitions type:", typeof handleExhibitions);
+console.log("✅ handleArtists type:", typeof handleArtists);
+console.log("✅ handleLogin type:", typeof handleLogin);
+
 // Helper function to set CORS headers
 function setCorsHeaders(res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -64,7 +68,13 @@ const server = http.createServer((req, res) => {
 
   // Login route
   if (parsedUrl.pathname === "/login") {
-    return handleLogin(req, res);
+    if (typeof handleLogin === 'function') {
+      return handleLogin(req, res);
+    } else {
+      res.writeHead(500, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: "Login handler not configured properly" }));
+      return;
+    }
   }
 
   // Artists, Artwork, Provenance
@@ -73,79 +83,189 @@ const server = http.createServer((req, res) => {
     parsedUrl.pathname.startsWith("/artwork") ||
     parsedUrl.pathname.startsWith("/provenance")
   ) {
-    return handleArtists(req, res, parsedUrl);
+    if (typeof handleArtists === 'function') {
+      return handleArtists(req, res, parsedUrl);
+    } else {
+      res.writeHead(500, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: "Artists handler not configured properly" }));
+      return;
+    }
   }
 
   if (parsedUrl.pathname.startsWith("/cafeitems")) {
-    return handleCafeitem(req, res, parsedUrl);
+    if (typeof handleCafeitem === 'function') {
+      return handleCafeitem(req, res, parsedUrl);
+    } else {
+      res.writeHead(500, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: "Cafe items handler not configured properly" }));
+      return;
+    }
   }
 
   if (parsedUrl.pathname.startsWith("/cafetransactions")) {
-    return handleCafetransaction(req, res, parsedUrl);
+    if (typeof handleCafetransaction === 'function') {
+      return handleCafetransaction(req, res, parsedUrl);
+    } else {
+      res.writeHead(500, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: "Cafe transactions handler not configured properly" }));
+      return;
+    }
   }
 
   if (parsedUrl.pathname.startsWith("/cafetransactionitems")) {
-    return handleCafetransactionitem(req, res, parsedUrl);
+    if (typeof handleCafetransactionitem === 'function') {
+      return handleCafetransactionitem(req, res, parsedUrl);
+    } else {
+      res.writeHead(500, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: "Cafe transaction items handler not configured properly" }));
+      return;
+    }
   }
 
   if (parsedUrl.pathname.startsWith("/giftshopitems")) {
-    return handleGiftshopitem(req, res, parsedUrl);
+    if (typeof handleGiftshopitem === 'function') {
+      return handleGiftshopitem(req, res, parsedUrl);
+    } else {
+      res.writeHead(500, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: "Gift shop items handler not configured properly" }));
+      return;
+    }
   }
 
   if (parsedUrl.pathname.startsWith("/giftshoptransactions")) {
-    return handleGiftshoptransaction(req, res, parsedUrl);
+    if (typeof handleGiftshoptransaction === 'function') {
+      return handleGiftshoptransaction(req, res, parsedUrl);
+    } else {
+      res.writeHead(500, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: "Gift shop transactions handler not configured properly" }));
+      return;
+    }
   }
 
   if (parsedUrl.pathname.startsWith("/giftshoptransactionitems")) {
-    return handleGiftshoptransactionitem(req, res, parsedUrl);
+    if (typeof handleGiftshoptransactionitem === 'function') {
+      return handleGiftshoptransactionitem(req, res, parsedUrl);
+    } else {
+      res.writeHead(500, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: "Gift shop transaction items handler not configured properly" }));
+      return;
+    }
   }
 
   if (parsedUrl.pathname.startsWith("/tickets")) {
-    return handleTickets(req, res, parsedUrl);
+    if (typeof handleTickets === 'function') {
+      return handleTickets(req, res, parsedUrl);
+    } else {
+      res.writeHead(500, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: "Tickets handler not configured properly" }));
+      return;
+    }
   }
 
   if (parsedUrl.pathname.startsWith("/events")) {
-    return handleEvents(req, res, parsedUrl);
+    if (typeof handleEvents === 'function') {
+      return handleEvents(req, res, parsedUrl);
+    } else {
+      res.writeHead(500, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: "Events handler not configured properly" }));
+      return;
+    }
   }
 
   if (parsedUrl.pathname.startsWith("/donations")) {
-    return handleDonations(req, res, parsedUrl);
+    if (typeof handleDonations === 'function') {
+      return handleDonations(req, res, parsedUrl);
+    } else {
+      res.writeHead(500, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: "Donations handler not configured properly" }));
+      return;
+    }
   }
 
   if (parsedUrl.pathname.startsWith("/users")) {
-    return handleUsers(req, res, parsedUrl);
+    if (typeof handleUsers === 'function') {
+      return handleUsers(req, res, parsedUrl);
+    } else {
+      res.writeHead(500, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: "Users handler not configured properly" }));
+      return;
+    }
   }
 
   if (parsedUrl.pathname.startsWith("/employees")) {
-    return handleEmployees(req, res, parsedUrl);
+    if (typeof handleEmployees === 'function') {
+      return handleEmployees(req, res, parsedUrl);
+    } else {
+      res.writeHead(500, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: "Employees handler not configured properly" }));
+      return;
+    }
   }
 
   if (parsedUrl.pathname.startsWith("/visitors")) {
-    return handleVisitors(req, res, parsedUrl);
+    if (typeof handleVisitors === 'function') {
+      return handleVisitors(req, res, parsedUrl);
+    } else {
+      res.writeHead(500, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: "Visitors handler not configured properly" }));
+      return;
+    }
   }
 
   if (parsedUrl.pathname.startsWith("/members")) {
-    return handleMembers(req, res, parsedUrl);
+    if (typeof handleMembers === 'function') {
+      return handleMembers(req, res, parsedUrl);
+    } else {
+      res.writeHead(500, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: "Members handler not configured properly" }));
+      return;
+    }
   }
 
   if (parsedUrl.pathname.startsWith("/departments")) {
-    return handleDepartments(req, res, parsedUrl);
+    if (typeof handleDepartments === 'function') {
+      return handleDepartments(req, res, parsedUrl);
+    } else {
+      res.writeHead(500, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: "Departments handler not configured properly" }));
+      return;
+    }
   }
 
   if (parsedUrl.pathname.startsWith("/giftshop")) {
-    return handleGiftshop(req, res, parsedUrl);
+    if (typeof handleGiftshop === 'function') {
+      return handleGiftshop(req, res, parsedUrl);
+    } else {
+      res.writeHead(500, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: "Gift shop handler not configured properly" }));
+      return;
+    }
   }
 
   if (parsedUrl.pathname.startsWith("/cafe")) {
-    return handleCafe(req, res, parsedUrl);
+    if (typeof handleCafe === 'function') {
+      return handleCafe(req, res, parsedUrl);
+    } else {
+      res.writeHead(500, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: "Cafe handler not configured properly" }));
+      return;
+    }
   }
 
+  // Exhibitions, Galleries, Buildings routes
   if (
     parsedUrl.pathname.startsWith("/exhibitions") ||
     parsedUrl.pathname.startsWith("/galleries") ||
     parsedUrl.pathname.startsWith("/buildings")
   ) {
-    return handleExhibitions(req, res, parsedUrl);
+    if (typeof handleExhibitions === 'function') {
+      return handleExhibitions(req, res, parsedUrl);
+    } else {
+      console.error("❌ handleExhibitions is not a function!");
+      res.writeHead(500, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: "Exhibitions handler not configured properly" }));
+      return;
+    }
   }
 
   // 404 for unmatched routes
