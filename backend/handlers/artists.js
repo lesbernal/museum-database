@@ -327,11 +327,15 @@ function parseBody(req, callback) {
 }
 
 function sendJSON(res, data, status = 200) {
-  res.writeHead(status, { "Content-Type": "application/json" });
+  // Set content type without overwriting existing headers
+  res.setHeader("Content-Type", "application/json");
+  res.writeHead(status);
   res.end(JSON.stringify(data));
 }
 
 function sendError(res, err) {
-  res.writeHead(500, { "Content-Type": "application/json" });
+  // Set content type without overwriting existing headers
+  res.setHeader("Content-Type", "application/json");
+  res.writeHead(500);
   res.end(JSON.stringify({ error: err.message || err }));
 }
