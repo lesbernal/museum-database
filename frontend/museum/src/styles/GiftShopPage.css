@@ -78,6 +78,10 @@
   flex: 1 1 280px;
 }
 
+.giftshop-cart-link {
+  margin-top: 1.25rem;
+}
+
 .giftshop-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
@@ -140,6 +144,112 @@
   margin-top: 0.5rem;
 }
 
+.giftshop-subpage-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.cart-page-layout,
+.checkout-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(320px, 1fr);
+  gap: 1.5rem;
+}
+
+.cart-page-items {
+  display: grid;
+  gap: 1rem;
+}
+
+.cart-page-card {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: center;
+  padding: 1.25rem;
+  border: 1px solid var(--color-border);
+  background: var(--color-white);
+}
+
+.giftshop-cart {
+  display: grid;
+  gap: 1rem;
+  padding: 1.5rem;
+  border: 1px solid var(--color-border);
+  background: var(--color-white);
+  align-self: start;
+}
+
+.checkout-card {
+  border: 1px solid var(--color-border);
+  background: var(--color-white);
+}
+
+.cart-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.cart-controls button {
+  min-width: 36px;
+  min-height: 36px;
+}
+
+.remove-link {
+  border: none;
+  background: transparent;
+  color: #b91c1c;
+  cursor: pointer;
+}
+
+.cart-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--color-border);
+}
+
+.checkout-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.checkout-row-two {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.checkout-summary-block {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.summary-line {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.shop-auth-modal {
+  max-width: 460px;
+}
+
+.shop-auth-body {
+  padding: 1.5rem;
+}
+
+.shop-auth-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
 .giftshop-message {
   padding: 2rem;
   border: 1px solid var(--color-border);
@@ -155,6 +265,11 @@
   .giftshop-hero {
     grid-template-columns: 1fr;
   }
+
+  .cart-page-layout,
+  .checkout-layout {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 768px) {
@@ -165,5 +280,18 @@
   .giftshop-hero-copy,
   .giftshop-info-card {
     padding: 1.5rem;
+  }
+
+  .giftshop-subpage-header,
+  .cart-page-card {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .checkout-row,
+  .checkout-row-two,
+  .shop-auth-actions {
+    grid-template-columns: 1fr;
+    flex-direction: column;
   }
 }
