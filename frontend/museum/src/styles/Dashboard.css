@@ -1,0 +1,149 @@
+/* styles/Dashboard.css
+   Shared styles for VisitorDashboard, MemberDashboard, EmployeeDashboard.
+   Save as src/styles/Dashboard.css                                         */
+
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;600&family=DM+Sans:wght@300;400;500&display=swap');
+
+.dashboard-page {
+  min-height: 100vh;
+  font-family: 'DM Sans', sans-serif;
+  background: #f8f5f0;
+}
+
+/* ── Hero ── */
+.dashboard-hero {
+  position: relative;
+  min-height: 340px;
+  display: flex;
+  align-items: flex-end;
+  padding: 48px;
+  overflow: hidden;
+}
+
+.visitor-hero  { background: linear-gradient(135deg, #2c1810 0%, #8b3a2a 60%, #c9622a 100%); }
+.member-hero   { background: linear-gradient(135deg, #0d2b2b 0%, #1a5c4a 60%, #c9a84c 100%); }
+.employee-hero { background: linear-gradient(135deg, #0f1b2d 0%, #1e3a5f 60%, #4a7fa5 100%); }
+
+.dashboard-hero-overlay {
+  position: absolute;
+  inset: 0;
+  background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+}
+
+.dashboard-hero-content {
+  position: relative;
+  z-index: 1;
+  color: #fff;
+}
+
+.dashboard-role-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border: 1px solid rgba(255,255,255,0.4);
+  border-radius: 20px;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-bottom: 16px;
+  background: rgba(255,255,255,0.1);
+  backdrop-filter: blur(4px);
+}
+
+.member-badge   { border-color: #c9a84c; color: #c9a84c; background: rgba(201,168,76,0.12); }
+.employee-badge { border-color: #4a7fa5; color: #a8d4f0; background: rgba(74,127,165,0.12); }
+
+.dashboard-hero-content h1 {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: clamp(32px, 5vw, 52px);
+  font-weight: 300;
+  letter-spacing: 0.02em;
+  margin-bottom: 10px;
+  line-height: 1.1;
+}
+
+.dashboard-hero-content p {
+  font-size: 15px;
+  opacity: 0.8;
+  margin-bottom: 28px;
+  max-width: 480px;
+  line-height: 1.6;
+}
+
+.dashboard-hero-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.dashboard-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 20px;
+  background: rgba(255,255,255,0.15);
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.35);
+  border-radius: 4px;
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  transition: all 0.2s;
+  backdrop-filter: blur(4px);
+}
+.dashboard-back-btn:hover {
+  background: rgba(255,255,255,0.25);
+  border-color: rgba(255,255,255,0.6);
+}
+
+.dashboard-logout-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 10px 20px;
+  background: transparent;
+  color: rgba(255,255,255,0.7);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 4px;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.dashboard-logout-btn:hover { color: #fff; border-color: rgba(255,255,255,0.5); }
+
+/* ── Body ── */
+.dashboard-body {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 48px;
+}
+
+.dashboard-placeholder {
+  text-align: center;
+  padding: 72px 32px;
+  border: 2px dashed #d4c9b8;
+  border-radius: 8px;
+  background: #fff;
+}
+.placeholder-icon { font-size: 48px; margin-bottom: 20px; opacity: 0.7; }
+.dashboard-placeholder h2 {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 28px;
+  font-weight: 400;
+  color: #1a1a1a;
+  margin-bottom: 12px;
+}
+.dashboard-placeholder p {
+  font-size: 14px;
+  color: #6b7280;
+  max-width: 440px;
+  margin: 0 auto;
+  line-height: 1.7;
+}
+
+@media (max-width: 600px) {
+  .dashboard-hero { padding: 32px 24px; min-height: 260px; }
+  .dashboard-body { padding: 32px 20px; }
+}
