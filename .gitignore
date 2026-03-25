@@ -1,4 +1,5 @@
 node_modules/
-frontend/public/test-layout.html
-frontend/public/test-layout.css
+.env
 .DS_Store
+dist/
+build/

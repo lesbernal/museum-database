@@ -1,5 +1,5 @@
 // components/Navbar.jsx
-import { Link, useNavigate } from "react-router-dom";
+import { NavLink, Link, useNavigate } from "react-router-dom";
 import "../styles/Navbar.css";
 
 export default function Navbar() {
@@ -42,9 +42,30 @@ export default function Navbar() {
       {/* Secondary Navbar - Categories */}
       <nav className="category-navbar">
         <div className="category-links">
-          <Link to="/artworks" className="category-link">ARTWORK</Link>
-          <Link to="/exhibitions" className="category-link">EXHIBITIONS</Link>
-          <Link to="/events" className="category-link">EVENTS</Link>
+          <NavLink
+            to="/artworks"
+            className={({ isActive }) =>
+              isActive ? "category-link active" : "category-link"
+            }
+          >
+            ARTWORK
+          </NavLink>
+          <NavLink
+            to="/exhibitions"
+            className={({ isActive }) =>
+              isActive ? "category-link active" : "category-link"
+            }
+          >
+            EXHIBITIONS
+          </NavLink>
+          <NavLink
+            to="/events"
+            className={({ isActive }) =>
+              isActive ? "category-link active" : "category-link"
+            }
+          >
+            EVENTS
+          </NavLink>
         </div>
       </nav>
     </div>
