@@ -1,4 +1,3 @@
-// components/AdminDashboard.jsx
 import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import ArtistForm from "./ArtistForm";
@@ -7,6 +6,8 @@ import ArtworkForm from "./ArtworkForm";
 import ArtworkTable from "./ArtworkTable";
 import ProvenanceForm from "./ProvenanceForm";
 import ProvenanceTable from "./ProvenanceTable";
+import CafeAdminPanel from "./CafeAdminPanel";
+import GiftShopAdminPanel from "./GiftShopAdminPanel";
 import {
   getArtists,
   createArtist,
@@ -19,7 +20,7 @@ import {
   getProvenance,
   createProvenance,
   updateProvenance,
-  deleteProvenance
+  deleteProvenance,
 } from "../services/api";
 import "../styles/AdminDashboard.css";
 
@@ -28,39 +29,36 @@ export default function AdminDashboard() {
   const [artists, setArtists] = useState([]);
   const [artworks, setArtworks] = useState([]);
   const [provenance, setProvenance] = useState([]);
-  
-  // Artist states
+
   const [isArtistFormOpen, setIsArtistFormOpen] = useState(false);
   const [editingArtist, setEditingArtist] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  
-  // Artwork states
+
   const [isArtworkFormOpen, setIsArtworkFormOpen] = useState(false);
   const [editingArtwork, setEditingArtwork] = useState(null);
-  
-  // Provenance states
+
   const [isProvenanceFormOpen, setIsProvenanceFormOpen] = useState(false);
   const [editingProvenance, setEditingProvenance] = useState(null);
-  
+
   const navigate = useNavigate();
 
   const tabs = [
-    { id: "artists", name: "Artists", icon: "🎨" },
-    { id: "artwork", name: "Artwork", icon: "🖼️" },
-    { id: "provenance", name: "Provenance", icon: "📜" },
-    { id: "users", name: "Users", icon: "👥" },
+    { id: "artists", name: "Artists", icon: "A" },
+    { id: "artwork", name: "Artwork", icon: "W" },
+    { id: "provenance", name: "Provenance", icon: "P" },
+    { id: "cafe", name: "Cafe", icon: "C" },
+    { id: "giftshop", name: "Gift Shop", icon: "G" },
+    { id: "users", name: "Users", icon: "U" },
   ];
 
-  // Load all data on mount
   useEffect(() => {
     loadArtists();
     loadArtworks();
     loadProvenance();
   }, []);
 
-  // Load Artists
   const loadArtists = async () => {
     setLoading(true);
     try {
@@ -75,7 +73,6 @@ export default function AdminDashboard() {
     }
   };
 
-  // Load Artworks
   const loadArtworks = async () => {
     try {
       const data = await getArtworks();
@@ -85,7 +82,6 @@ export default function AdminDashboard() {
     }
   };
 
-  // Load Provenance
   const loadProvenance = async () => {
     try {
       const data = await getProvenance();
@@ -95,7 +91,6 @@ export default function AdminDashboard() {
     }
   };
 
-  // ========== ARTIST HANDLERS ==========
   const handleAddArtist = () => {
     setEditingArtist(null);
     setIsArtistFormOpen(true);
@@ -133,7 +128,6 @@ export default function AdminDashboard() {
     }
   };
 
-  // ========== ARTWORK HANDLERS ==========
   const handleAddArtwork = () => {
     setEditingArtwork(null);
     setIsArtworkFormOpen(true);
@@ -171,7 +165,6 @@ export default function AdminDashboard() {
     }
   };
 
-  // ========== PROVENANCE HANDLERS ==========
   const handleAddProvenance = () => {
     setEditingProvenance(null);
     setIsProvenanceFormOpen(true);
@@ -209,7 +202,6 @@ export default function AdminDashboard() {
     }
   };
 
-  // ========== GENERAL HANDLERS ==========
   const handleAdd = () => {
     if (activeTab === "artists") {
       handleAddArtist();
@@ -228,50 +220,34 @@ export default function AdminDashboard() {
     navigate("/login");
   };
 
-  // Filter artists based on search term
-  const filteredArtists = artists.filter(artist =>
+  const filteredArtists = artists.filter((artist) =>
     `${artist.first_name} ${artist.last_name}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
     artist.nationality?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Filter artworks based on search term
-  const filteredArtworks = artworks.filter(artwork =>
+  const filteredArtworks = artworks.filter((artwork) =>
     artwork.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     artwork.medium?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Filter provenance based on search term
-  const filteredProvenance = provenance.filter(record =>
+  const filteredProvenance = provenance.filter((record) =>
     record.owner_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     record.acquisition_method?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Get the current data based on active tab
-  const getCurrentData = () => {
-    switch (activeTab) {
-      case "artists":
-        return filteredArtists;
-      case "artwork":
-        return filteredArtworks;
-      case "provenance":
-        return filteredProvenance;
-      default:
-        return [];
-    }
-  };
+  const usesCustomManager = activeTab === "cafe" || activeTab === "giftshop";
 
   return (
     <div className="admin-dashboard">
-      {/* Sidebar */}
       <aside className="admin-sidebar">
         <div className="sidebar-header">
-          <h2>🎨 MFAH Admin</h2>
+          <h2>MFAH Admin</h2>
           <Link to="/" className="back-to-site">
-            ← Back to Home
+            Back to Home
           </Link>
         </div>
         <nav className="sidebar-nav">
-          {tabs.map(tab => (
+          {tabs.map((tab) => (
             <button
               key={tab.id}
               className={`nav-item ${activeTab === tab.id ? "active" : ""}`}
@@ -287,39 +263,42 @@ export default function AdminDashboard() {
         </nav>
         <div className="sidebar-footer">
           <button className="logout-btn" onClick={handleLogout}>
-            🚪 Logout
+            Logout
           </button>
         </div>
       </aside>
 
-      {/* Main Content */}
       <main className="admin-main">
         <header className="admin-header">
           <div>
-            <h1>{tabs.find(t => t.id === activeTab)?.name}</h1>
+            <h1>{tabs.find((t) => t.id === activeTab)?.name}</h1>
             <p className="admin-subtitle">
               Manage {activeTab} in the museum database
-              {activeTab === "artists" && " — Add, edit, or remove artists"}
-              {activeTab === "artwork" && " — Add, edit, or remove artworks and link them to artists"}
-              {activeTab === "provenance" && " — Track ownership history of artworks"}
+              {activeTab === "artists" && " - Add, edit, or remove artists"}
+              {activeTab === "artwork" && " - Add, edit, or remove artworks and link them to artists"}
+              {activeTab === "provenance" && " - Track ownership history of artworks"}
+              {activeTab === "cafe" && " - Manage cafe items, transactions, and line items"}
+              {activeTab === "giftshop" && " - Manage gift shop items, transactions, and line items"}
             </p>
           </div>
-          <button className="add-btn" onClick={handleAdd}>
-            + Add New {activeTab === "artists" ? "Artist" : activeTab === "artwork" ? "Artwork" : "Provenance Record"}
-          </button>
+          {!usesCustomManager && (
+            <button className="add-btn" onClick={handleAdd}>
+              + Add New {activeTab === "artists" ? "Artist" : activeTab === "artwork" ? "Artwork" : "Provenance Record"}
+            </button>
+          )}
         </header>
 
-        {/* Search Bar */}
-        <div className="search-bar">
-          <input
-            type="text"
-            placeholder={`Search ${activeTab}...`}
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
+        {!usesCustomManager && (
+          <div className="search-bar">
+            <input
+              type="text"
+              placeholder={`Search ${activeTab}...`}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+        )}
 
-        {/* Content Area */}
         <div className="content-area">
           {loading && activeTab === "artists" ? (
             <div className="loading-spinner">Loading artists...</div>
@@ -343,16 +322,19 @@ export default function AdminDashboard() {
               onEdit={handleEditProvenance}
               onDelete={handleDeleteProvenance}
             />
+          ) : activeTab === "cafe" ? (
+            <CafeAdminPanel />
+          ) : activeTab === "giftshop" ? (
+            <GiftShopAdminPanel />
           ) : (
             <div className="coming-soon">
-              <p>👥 User Management Coming Soon</p>
+              <p>User Management Coming Soon</p>
               <small>Manage museum staff and visitor accounts</small>
             </div>
           )}
         </div>
       </main>
 
-      {/* Artist Form Modal */}
       {isArtistFormOpen && (
         <ArtistForm
           onSubmit={handleSaveArtist}
@@ -361,7 +343,6 @@ export default function AdminDashboard() {
         />
       )}
 
-      {/* Artwork Form Modal */}
       {isArtworkFormOpen && (
         <ArtworkForm
           onSubmit={handleSaveArtwork}
@@ -370,7 +351,6 @@ export default function AdminDashboard() {
         />
       )}
 
-      {/* Provenance Form Modal */}
       {isProvenanceFormOpen && (
         <ProvenanceForm
           onSubmit={handleSaveProvenance}
