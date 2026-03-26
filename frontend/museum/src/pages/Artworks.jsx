@@ -1,8 +1,108 @@
+// pages/Artworks.jsx
 import { useEffect, useState } from "react";
-import { getArtworks } from "../services/api";
-import { getArtists } from "../services/api";
+import { getArtworks, getArtists } from "../services/api";
 import "../styles/Artworks.css";
 
+// ── Artwork Detail Modal ─────────────────────────────────────
+function ArtworkModal({ artwork, artist, onClose }) {
+  const [closing, setClosing] = useState(false);
+
+  const handleClose = () => {
+    setClosing(true);
+    setTimeout(onClose, 200);
+  };
+
+  const statusColors = {
+    "On Display": { bg: "#d1fae5", color: "#065f46" },
+    "In Storage": { bg: "#f3f4f6", color: "#374151" },
+    "On Loan": { bg: "#fef3c7", color: "#92400e" },
+    "Under Restoration": { bg: "#fee2e2", color: "#991b1b" },
+  };
+  const statusStyle = statusColors[artwork.current_display_status] || {};
+
+  return (
+    <div className="artwork-modal-overlay">
+      <div className="artwork-modal" onClick={e => e.stopPropagation()}>
+        <div className="artwork-modal-topbar">
+          <button className="artwork-modal-close-btn" onClick={handleClose}>&times;</button>
+        </div>
+
+        <div className="artwork-modal-inner">
+          {/* Left — image */}
+          <div className="artwork-modal-image-wrap">
+            {artwork.image_url ? (
+              <img
+                src={artwork.image_url}
+                alt={artwork.title}
+                className="artwork-modal-image"
+              />
+            ) : (
+              <div className="artwork-modal-placeholder">🖼️</div>
+            )}
+          </div>
+
+          {/* Right — info */}
+          <div className="artwork-modal-info">
+            <h2 className="artwork-modal-title">{artwork.title}</h2>
+
+            {artwork.current_display_status && (
+              <span
+                className="artwork-modal-status"
+                style={{ background: statusStyle.bg, color: statusStyle.color }}
+              >
+                {artwork.current_display_status}
+              </span>
+            )}
+
+            {artist && (
+              <div className="artwork-modal-section">
+                <h3 className="artwork-modal-section-title">Artist</h3>
+                <p className="artwork-modal-artist-name">
+                  {artist.first_name} {artist.last_name}
+                </p>
+                {artist.nationality && (
+                  <p className="artwork-modal-meta">{artist.nationality}
+                    {artist.birth_year && ` · b. ${artist.birth_year}`}
+                    {artist.death_year && ` – ${artist.death_year}`}
+                  </p>
+                )}
+                {artist.biography && (
+                  <p className="artwork-modal-bio">{artist.biography}</p>
+                )}
+              </div>
+            )}
+
+            <div className="artwork-modal-section">
+              <h3 className="artwork-modal-section-title">Details</h3>
+              <table className="artwork-modal-table">
+                <tbody>
+                  {artwork.creation_year && (
+                    <tr><td className="table-label">Year</td><td>{artwork.creation_year}</td></tr>
+                  )}
+                  {artwork.medium && (
+                    <tr><td className="table-label">Medium</td><td>{artwork.medium}</td></tr>
+                  )}
+                  {artwork.dimensions && (
+                    <tr><td className="table-label">Dimensions</td><td>{artwork.dimensions}</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {artwork.description && (
+              <div className="artwork-modal-section">
+                <h3 className="artwork-modal-section-title">About this Work</h3>
+                <p className="artwork-modal-description">{artwork.description}</p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Main Page ────────────────────────────────────────────────
 export default function Artworks() {
   const [artworks, setArtworks] = useState([]);
   const [artists, setArtists] = useState([]);
@@ -15,16 +115,15 @@ export default function Artworks() {
   const [loading, setLoading] = useState(true);
   const [openDropdown, setOpenDropdown] = useState(null);
   const [imageErrors, setImageErrors] = useState({});
+  const [selectedArtwork, setSelectedArtwork] = useState(null);
 
-  useEffect(() => {
-    loadData();
-  }, []);
+  useEffect(() => { loadData(); }, []);
 
   async function loadData() {
     try {
       const [artworksData, artistsData] = await Promise.all([
         getArtworks(),
-        getArtists()
+        getArtists(),
       ]);
       setArtworks(artworksData);
       setArtists(artistsData);
@@ -37,80 +136,48 @@ export default function Artworks() {
   }
 
   const mediums = [...new Set(artworks.map(a => a.medium).filter(Boolean))];
-  
+
   const centuries = [...new Set(artworks.map(a => {
     if (!a.creation_year) return null;
-    const century = Math.floor((a.creation_year - 1) / 100) + 1;
-    return century;
+    return Math.floor((a.creation_year - 1) / 100) + 1;
   }).filter(Boolean))].sort((a, b) => a - b);
 
-  const toggleArtist = (artistId) => {
-    setSelectedArtists(prev => 
-      prev.includes(artistId) 
-        ? prev.filter(id => id !== artistId)
-        : [...prev, artistId]
-    );
-  };
-
-  const toggleMedium = (medium) => {
-    setSelectedMediums(prev => 
-      prev.includes(medium) 
-        ? prev.filter(m => m !== medium)
-        : [...prev, medium]
-    );
-  };
-
-  const toggleCentury = (century) => {
-    setSelectedCenturies(prev => 
-      prev.includes(century) 
-        ? prev.filter(c => c !== century)
-        : [...prev, century]
-    );
-  };
+  const toggleArtist = id => setSelectedArtists(p => p.includes(id) ? p.filter(x => x !== id) : [...p, id]);
+  const toggleMedium = m => setSelectedMediums(p => p.includes(m) ? p.filter(x => x !== m) : [...p, m]);
+  const toggleCentury = c => setSelectedCenturies(p => p.includes(c) ? p.filter(x => x !== c) : [...p, c]);
 
   useEffect(() => {
     let filtered = [...artworks];
-    
-    if (selectedArtists.length > 0) {
+
+    if (selectedArtists.length > 0)
       filtered = filtered.filter(a => selectedArtists.includes(a.artist_id));
-    }
-    
-    if (selectedMediums.length > 0) {
+
+    if (selectedMediums.length > 0)
       filtered = filtered.filter(a => selectedMediums.includes(a.medium));
-    }
-    
-    if (selectedCenturies.length > 0) {
+
+    if (selectedCenturies.length > 0)
       filtered = filtered.filter(a => {
         if (!a.creation_year) return false;
-        const century = Math.floor((a.creation_year - 1) / 100) + 1;
-        return selectedCenturies.includes(century);
+        return selectedCenturies.includes(Math.floor((a.creation_year - 1) / 100) + 1);
       });
-    }
-    
-    if (searchTerm) {
-      filtered = filtered.filter(a => 
+
+    if (searchTerm)
+      filtered = filtered.filter(a =>
         a.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         a.description?.toLowerCase().includes(searchTerm.toLowerCase())
       );
-    }
-    
+
     filtered.sort((a, b) => {
-      switch(sortBy) {
-        case "title":
-          return (a.title || "").localeCompare(b.title || "");
-        case "title_desc":
-          return (b.title || "").localeCompare(a.title || "");
-        case "year_asc":
-          return (a.creation_year || 0) - (b.creation_year || 0);
-        case "year_desc":
-          return (b.creation_year || 0) - (a.creation_year || 0);
-        case "artist":
-          return (a.artist_name || "").localeCompare(b.artist_name || "");
-        default:
-          return 0;
+      switch (sortBy) {
+        case "title": return (a.title || "").localeCompare(b.title || "");
+        case "title_desc": return (b.title || "").localeCompare(a.title || "");
+        case "year_asc": return (a.creation_year || 0) - (b.creation_year || 0);
+        case "year_desc": return (b.creation_year || 0) - (a.creation_year || 0);
+        case "artist": return (a.artist_name || "").localeCompare(b.artist_name || "");
+        default: return 0;
       }
     });
-    
+
     setFilteredArtworks(filtered);
   }, [selectedArtists, selectedMediums, selectedCenturies, searchTerm, sortBy, artworks]);
 
@@ -122,18 +189,16 @@ export default function Artworks() {
     setSortBy("title");
   };
 
-  const handleImageError = (artworkId) => {
-    setImageErrors(prev => ({ ...prev, [artworkId]: true }));
+  const handleImageError = id => setImageErrors(p => ({ ...p, [id]: true }));
+
+  const getArtistName = id => {
+    const a = artists.find(a => a.artist_id === id);
+    return a ? `${a.first_name} ${a.last_name}` : `Artist #${id}`;
   };
 
-  const getArtistName = (id) => {
-    const artist = artists.find(a => a.artist_id === id);
-    return artist ? `${artist.first_name} ${artist.last_name}` : id;
-  };
+  const getArtistObject = id => artists.find(a => a.artist_id === id) || null;
 
-  if (loading) {
-    return <div className="loading-spinner">Loading artworks...</div>;
-  }
+  if (loading) return <div className="loading-spinner">Loading artworks...</div>;
 
   return (
     <div className="artworks-page">
@@ -142,7 +207,7 @@ export default function Artworks() {
         <p>Explore our museum's collection of fine art from around the world</p>
       </div>
 
-      {/* Search Bar */}
+      {/* Search */}
       <div className="search-section">
         <div className="search-container">
           <div className="search-group">
@@ -151,38 +216,30 @@ export default function Artworks() {
               type="text"
               placeholder="Search by title or description..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={e => setSearchTerm(e.target.value)}
               className="search-input-large"
             />
           </div>
         </div>
       </div>
 
-      {/* Filters Section */}
+      {/* Filters */}
       <div className="filters-section">
         <div className="filters-container">
-          
+
+          {/* Artists dropdown */}
           <div className="filter-group multi-select">
             <label>Artists ({selectedArtists.length})</label>
             <div className="dropdown">
-              <button 
-                className="dropdown-btn"
-                onClick={() => setOpenDropdown(openDropdown === "artists" ? null : "artists")}
-              >
-                {selectedArtists.length === 0 
-                  ? "All Artists" 
-                  : `${selectedArtists.length} artist${selectedArtists.length !== 1 ? 's' : ''} selected`}
+              <button className="dropdown-btn" onClick={() => setOpenDropdown(openDropdown === "artists" ? null : "artists")}>
+                {selectedArtists.length === 0 ? "All Artists" : `${selectedArtists.length} artist${selectedArtists.length !== 1 ? "s" : ""} selected`}
                 <span className="dropdown-arrow">▼</span>
               </button>
               {openDropdown === "artists" && (
                 <div className="dropdown-menu">
                   {artists.map(artist => (
                     <label key={artist.artist_id} className="dropdown-item">
-                      <input
-                        type="checkbox"
-                        checked={selectedArtists.includes(artist.artist_id)}
-                        onChange={() => toggleArtist(artist.artist_id)}
-                      />
+                      <input type="checkbox" checked={selectedArtists.includes(artist.artist_id)} onChange={() => toggleArtist(artist.artist_id)} />
                       <span>{artist.first_name} {artist.last_name}</span>
                     </label>
                   ))}
@@ -190,28 +247,20 @@ export default function Artworks() {
               )}
             </div>
           </div>
-          
+
+          {/* Mediums dropdown */}
           <div className="filter-group multi-select">
             <label>Mediums ({selectedMediums.length})</label>
             <div className="dropdown">
-              <button 
-                className="dropdown-btn"
-                onClick={() => setOpenDropdown(openDropdown === "mediums" ? null : "mediums")}
-              >
-                {selectedMediums.length === 0 
-                  ? "All Mediums" 
-                  : `${selectedMediums.length} medium${selectedMediums.length !== 1 ? 's' : ''} selected`}
+              <button className="dropdown-btn" onClick={() => setOpenDropdown(openDropdown === "mediums" ? null : "mediums")}>
+                {selectedMediums.length === 0 ? "All Mediums" : `${selectedMediums.length} medium${selectedMediums.length !== 1 ? "s" : ""} selected`}
                 <span className="dropdown-arrow">▼</span>
               </button>
               {openDropdown === "mediums" && (
                 <div className="dropdown-menu">
                   {mediums.map(medium => (
                     <label key={medium} className="dropdown-item">
-                      <input
-                        type="checkbox"
-                        checked={selectedMediums.includes(medium)}
-                        onChange={() => toggleMedium(medium)}
-                      />
+                      <input type="checkbox" checked={selectedMediums.includes(medium)} onChange={() => toggleMedium(medium)} />
                       <span>{medium}</span>
                     </label>
                   ))}
@@ -220,27 +269,19 @@ export default function Artworks() {
             </div>
           </div>
 
+          {/* Centuries dropdown */}
           <div className="filter-group multi-select">
             <label>Centuries ({selectedCenturies.length})</label>
             <div className="dropdown">
-              <button 
-                className="dropdown-btn"
-                onClick={() => setOpenDropdown(openDropdown === "centuries" ? null : "centuries")}
-              >
-                {selectedCenturies.length === 0 
-                  ? "All Centuries" 
-                  : `${selectedCenturies.length} centur${selectedCenturies.length !== 1 ? 'ies' : 'y'} selected`}
+              <button className="dropdown-btn" onClick={() => setOpenDropdown(openDropdown === "centuries" ? null : "centuries")}>
+                {selectedCenturies.length === 0 ? "All Centuries" : `${selectedCenturies.length} centur${selectedCenturies.length !== 1 ? "ies" : "y"} selected`}
                 <span className="dropdown-arrow">▼</span>
               </button>
               {openDropdown === "centuries" && (
                 <div className="dropdown-menu">
                   {centuries.map(century => (
                     <label key={century} className="dropdown-item">
-                      <input
-                        type="checkbox"
-                        checked={selectedCenturies.includes(century)}
-                        onChange={() => toggleCentury(century)}
-                      />
+                      <input type="checkbox" checked={selectedCenturies.includes(century)} onChange={() => toggleCentury(century)} />
                       <span>{century}th Century</span>
                     </label>
                   ))}
@@ -249,9 +290,10 @@ export default function Artworks() {
             </div>
           </div>
 
+          {/* Sort */}
           <div className="filter-group">
             <label>Sort By</label>
-            <select value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
+            <select value={sortBy} onChange={e => setSortBy(e.target.value)}>
               <option value="title">Title A-Z</option>
               <option value="title_desc">Title Z-A</option>
               <option value="year_asc">Year (Oldest First)</option>
@@ -259,14 +301,12 @@ export default function Artworks() {
               <option value="artist">Artist Name</option>
             </select>
           </div>
-          
-          <button className="btn-clear" onClick={clearAllFilters}>
-            Clear All Filters
-          </button>
+
+          <button className="btn-clear" onClick={clearAllFilters}>Clear All Filters</button>
         </div>
       </div>
 
-      {/* Active Filters Display */}
+      {/* Active filter tags */}
       {(selectedArtists.length > 0 || selectedMediums.length > 0 || selectedCenturies.length > 0) && (
         <div className="active-filters">
           <span className="active-filters-label">Active filters:</span>
@@ -275,41 +315,45 @@ export default function Artworks() {
               {getArtistName(id)} ✕
             </span>
           ))}
-          {selectedMediums.map(medium => (
-            <span key={`medium-${medium}`} className="filter-tag" onClick={() => toggleMedium(medium)}>
-              {medium} ✕
+          {selectedMediums.map(m => (
+            <span key={`medium-${m}`} className="filter-tag" onClick={() => toggleMedium(m)}>
+              {m} ✕
             </span>
           ))}
-          {selectedCenturies.map(century => (
-            <span key={`century-${century}`} className="filter-tag" onClick={() => toggleCentury(century)}>
-              {century}th Century ✕
+          {selectedCenturies.map(c => (
+            <span key={`century-${c}`} className="filter-tag" onClick={() => toggleCentury(c)}>
+              {c}th Century ✕
             </span>
           ))}
         </div>
       )}
 
       <div className="results-count">
-        {filteredArtworks.length} artwork{filteredArtworks.length !== 1 ? 's' : ''} found
+        {filteredArtworks.length} artwork{filteredArtworks.length !== 1 ? "s" : ""} found
       </div>
 
+      {/* Grid */}
       <div className="artworks-grid">
         {filteredArtworks.length === 0 ? (
           <p className="no-results">No artworks found matching your criteria.</p>
         ) : (
           filteredArtworks.map(artwork => (
-            <div key={artwork.artwork_id} className="artwork-card">
+            <div
+              key={artwork.artwork_id}
+              className="artwork-card"
+              onClick={() => setSelectedArtwork(artwork)}
+              title="Click to view details"
+            >
               <div className="artwork-image">
                 {artwork.image_url && !imageErrors[artwork.artwork_id] ? (
-                  <img 
-                    src={artwork.image_url} 
+                  <img
+                    src={artwork.image_url}
                     alt={artwork.title}
                     className="artwork-image-real"
                     onError={() => handleImageError(artwork.artwork_id)}
                   />
                 ) : (
-                  <div className="artwork-placeholder">
-                    <span>🖼️</span>
-                  </div>
+                  <div className="artwork-placeholder"><span>🖼️</span></div>
                 )}
               </div>
               <div className="artwork-info">
@@ -318,12 +362,8 @@ export default function Artworks() {
                   {artwork.artist_name || `Artist #${artwork.artist_id}`}
                 </p>
                 <div className="artwork-details">
-                  {artwork.creation_year && (
-                    <span className="detail-item">{artwork.creation_year}</span>
-                  )}
-                  {artwork.medium && (
-                    <span className="detail-item">{artwork.medium}</span>
-                  )}
+                  {artwork.creation_year && <span className="detail-item">{artwork.creation_year}</span>}
+                  {artwork.medium && <span className="detail-item">{artwork.medium}</span>}
                 </div>
                 {artwork.description && (
                   <p className="artwork-description">
@@ -335,6 +375,15 @@ export default function Artworks() {
           ))
         )}
       </div>
+
+      {/* Detail modal */}
+      {selectedArtwork && (
+        <ArtworkModal
+          artwork={selectedArtwork}
+          artist={getArtistObject(selectedArtwork.artist_id)}
+          onClose={() => setSelectedArtwork(null)}
+        />
+      )}
     </div>
   );
 }
