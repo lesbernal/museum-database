@@ -144,16 +144,35 @@ export async function deleteEvent(id) {
   return res.json();
 }
 
-// -------------------- TICKETS --------------------
+// -------------------- TICKETS and DONATIONS --------------------
 
 // Post a ticket
 export async function postTicket(ticket) {
+  const token = localStorage.getItem("token");
   const res = await fetch(`${BASE_URL}/tickets`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${token}`
+    },
     body: JSON.stringify(ticket),
   });
   if (!res.ok) throw new Error("Failed to post ticket");
+  return res.json();
+}
+
+// Post a donation
+export async function postDonation(donation) {
+  const token = localStorage.getItem("token");
+  const res = await fetch(`${BASE_URL}/donations`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${token}`
+    },
+    body: JSON.stringify(donation),
+  });
+  if (!res.ok) throw new Error("Failed to post donation");
   return res.json();
 }
 
