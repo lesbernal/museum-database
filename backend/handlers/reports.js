@@ -159,38 +159,41 @@ module.exports = (req, res, parsedUrl) => {
     return;
   }
 
-  // ==================== REPORT 4: USER SUMMARY (Optional) ====================
+  // ==================== REPORT 4: USER SUMMARY ====================
   if (parsedUrl.pathname === "/reports/user-summary") {
-    const sql = `
-      SELECT 
-        -- User Counts
-        (SELECT COUNT(*) FROM user) as total_users,
-        (SELECT COUNT(*) FROM user WHERE role = 'admin') as admin_count,
-        (SELECT COUNT(*) FROM user WHERE role = 'employee') as employee_count,
-        (SELECT COUNT(*) FROM user WHERE role = 'member') as member_count,
-        (SELECT COUNT(*) FROM user WHERE role = 'visitor') as visitor_count,
-        
-        -- Visitor Info
-        (SELECT COUNT(*) FROM visitor) as visitors_with_visits,
-        (SELECT ROUND(AVG(total_visits), 2) FROM visitor) as avg_visits_per_visitor,
-        (SELECT MAX(total_visits) FROM visitor) as max_visits,
-        
-        -- Member Info
-        (SELECT COUNT(*) FROM member) as active_members,
-        (SELECT COUNT(*) FROM member WHERE expiration_date < CURDATE()) as expired_members,
-        (SELECT membership_level FROM member GROUP BY membership_level ORDER BY COUNT(*) DESC LIMIT 1) as most_common_membership,
-        
-        -- Recent Activity
-        (SELECT COUNT(*) FROM user WHERE DATE(created_at) >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)) as new_users_last_30_days
+  const sql = `
+    SELECT 
+      -- User Counts
+      (SELECT COUNT(*) FROM user) as total_users,
+      (SELECT COUNT(*) FROM user WHERE role = 'admin') as admin_count,
+      (SELECT COUNT(*) FROM user WHERE role = 'employee') as employee_count,
+      (SELECT COUNT(*) FROM user WHERE role = 'member') as member_count,
+      (SELECT COUNT(*) FROM user WHERE role = 'visitor') as visitor_count,
+      
+      -- Visitor Info
+      (SELECT COUNT(*) FROM visitor) as visitors_with_visits,
+      (SELECT ROUND(COALESCE(AVG(total_visits), 0), 2) FROM visitor) as avg_visits_per_visitor,
+      (SELECT COALESCE(MAX(total_visits), 0) FROM visitor) as max_visits,
+      
+      -- Member Info
+      (SELECT COUNT(*) FROM member) as active_members,
+      (SELECT COUNT(*) FROM member WHERE expiration_date < CURDATE()) as expired_members,
+      (SELECT COALESCE(
+        (SELECT membership_level FROM member GROUP BY membership_level ORDER BY COUNT(*) DESC LIMIT 1), 
+        'None'
+      )) as most_common_membership
     `;
     db.query(sql, (err, results) => {
-      if (err) return sendError(res, err);
-      sendJSON(res, results[0]);
+        if (err) {
+        console.error("❌ User report error:", err);
+        return sendError(res, err);
+        }
+        sendJSON(res, results[0]);
     });
     return;
-  }
+    }
 
-  // ==================== DATA QUERIES ====================
+// ==================== DATA QUERIES ====================
   
   // Query 1: Artworks by Artist
   if (parsedUrl.pathname === "/queries/artworks-by-artist") {
@@ -241,7 +244,36 @@ module.exports = (req, res, parsedUrl) => {
     return;
   }
 
-  // Query 3: Gift Shop Low Stock Items
+  // Query 3: Artworks by Medium
+  if (parsedUrl.pathname === "/queries/artworks-by-medium") {
+    const medium = query.medium || "";
+    console.log("📊 Medium query received:", medium);
+    const sql = `
+      SELECT 
+        a.artwork_id, 
+        a.title, 
+        a.creation_year,
+        a.dimensions,
+        CONCAT(ar.first_name, ' ', ar.last_name) as artist_name,
+        a.current_display_status,
+        a.medium
+      FROM artwork a
+      JOIN artist ar ON a.artist_id = ar.artist_id
+      WHERE a.medium = ?
+      ORDER BY a.title
+    `;
+    db.query(sql, [medium], (err, results) => {
+      if (err) {
+        console.error("Medium query error:", err);
+        return sendError(res, err);
+      }
+      console.log("📊 Medium query found:", results.length, "results");
+      sendJSON(res, results);
+    });
+    return;
+  }
+
+  // Query 4: Gift Shop Low Stock Items
   if (parsedUrl.pathname === "/queries/giftshop-low-stock") {
     const sql = `
       SELECT item_id, item_name, category, price, stock_quantity
@@ -256,7 +288,7 @@ module.exports = (req, res, parsedUrl) => {
     return;
   }
 
-  // Query 4: Top Valued Artworks
+  // Query 5: Top Valued Artworks
   if (parsedUrl.pathname === "/queries/top-valued-artworks") {
     const limit = query.limit || 10;
     const sql = `

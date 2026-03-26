@@ -50,6 +50,7 @@ import "../styles/UserManagement.css";
 
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState("artists");
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false); // Add this for mobile menu
 
   // Data
   const [artists, setArtists] = useState([]);
@@ -120,6 +121,19 @@ export default function AdminDashboard() {
     loadGalleries();
     loadEvents();
   }, []);
+
+  // Close mobile menu when clicking outside (optional)
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      const sidebar = document.querySelector('.admin-sidebar');
+      const toggleBtn = document.querySelector('.mobile-menu-toggle');
+      if (isMobileMenuOpen && sidebar && !sidebar.contains(event.target) && !toggleBtn?.contains(event.target)) {
+        setIsMobileMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isMobileMenuOpen]);
 
   const loadArtists = async () => {
     setLoading(true);
@@ -441,6 +455,13 @@ export default function AdminDashboard() {
     navigate("/login");
   };
 
+  // Handle tab click - closes mobile menu on selection
+  const handleTabClick = (tabId) => {
+    setActiveTab(tabId);
+    setSearchTerm("");
+    setIsMobileMenuOpen(false); // Close mobile menu after selection
+  };
+
   // Filtered data
   const filteredArtists = artists.filter(
     (artist) =>
@@ -497,20 +518,26 @@ export default function AdminDashboard() {
 
   return (
     <div className="admin-dashboard">
-      <aside className="admin-sidebar">
+      {/* Mobile Menu Toggle Button */}
+      <button 
+        className="mobile-menu-toggle" 
+        onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+        aria-label="Toggle menu"
+      >
+        ☰
+      </button>
+
+      <aside className={`admin-sidebar ${isMobileMenuOpen ? 'open' : ''}`}>
         <div className="sidebar-header">
           <h2>MFAH Admin</h2>
-          <Link to="/" className="back-to-site">Back to Home</Link>
+          <Link to="/" className="back-to-site" onClick={() => setIsMobileMenuOpen(false)}>Back to Home</Link>
         </div>
         <nav className="sidebar-nav">
           {tabs.map((tab) => (
             <button
               key={tab.id}
               className={`nav-item ${activeTab === tab.id ? "active" : ""}`}
-              onClick={() => {
-                setActiveTab(tab.id);
-                setSearchTerm("");
-              }}
+              onClick={() => handleTabClick(tab.id)}
             >
               <span className="nav-icon">{tab.icon}</span>
               <span className="nav-name">{tab.name}</span>
