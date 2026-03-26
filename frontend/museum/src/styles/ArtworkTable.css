@@ -1,13 +1,19 @@
 .artwork-table-container {
   overflow-x: auto;
-  background: white;
-  border-radius: 12px;
+  width: 100%;
 }
 
 .artwork-table {
+  min-width: 700px;
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.875rem;
+}
+
+/* For smaller screens, allow horizontal scroll */
+@media (max-width: 768px) {
+  .artwork-table {
+    min-width: 600px;
+  }
 }
 
 .artwork-table thead {

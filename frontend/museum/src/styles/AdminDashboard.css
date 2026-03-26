@@ -15,6 +15,7 @@
   height: 100vh;
   left: 0;
   top: 0;
+  overflow-y: auto;
 }
 
 .sidebar-header {
@@ -166,12 +167,23 @@
   border-color: var(--color-gold);
 }
 
+/* Content Area - Make tables scrollable */
 .content-area {
   background: var(--color-white);
   border: var(--border-width) solid var(--color-border);
-  min-height: 400px;
+  overflow-x: auto;
+  overflow-y: visible;
+  width: 100%;
 }
 
+/* Ensure tables don't break layout */
+.content-area table {
+  min-width: 600px;
+  width: 100%;
+  table-layout: auto;
+}
+
+/* For very small screens */
 @media (max-width: 768px) {
   .admin-sidebar {
     transform: translateX(-100%);
@@ -196,8 +208,24 @@
     width: 100%;
     text-align: center;
   }
-.search-bar input {
+  
+  .search-bar input {
     max-width: 100%;
+  }
+  
+  .content-area {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  .content-area table {
+    min-width: 550px;
+  }
+}
+
+@media (max-width: 640px) {
+  .content-area table {
+    min-width: 500px;
   }
 }
 
@@ -207,20 +235,15 @@
 }
 
 .admin-sidebar::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.05);
 }
 
 .admin-sidebar::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.3);
+  background: rgba(0, 0, 0, 0.2);
   border-radius: 3px;
 }
 
 .admin-sidebar::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.5);
+  background: rgba(0, 0, 0, 0.3);
 }
 
-.content-area {
-  width: 100%;
-  min-width: 0;
-  overflow: hidden;
-}
