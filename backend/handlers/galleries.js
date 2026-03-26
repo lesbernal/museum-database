@@ -1,18 +1,18 @@
-// handlers/exhibitions.js
+// handlers/galleries.js
 
 const db = require("../db");
 
 module.exports = (req, res, parsedUrl) => {
   const urlParts = parsedUrl.pathname.split("/").filter(Boolean);
 
-  // GET all exhibitions with gallery name
+  // GET all galleries with building name
   if (req.method === "GET" && urlParts.length === 1) {
     const sql = `
-      SELECT e.*,
-             g.gallery_name
-      FROM exhibition e
-      LEFT JOIN gallery g ON e.gallery_id = g.gallery_id
-      ORDER BY e.exhibition_id
+      SELECT g.*,
+             mb.building_name
+      FROM gallery g
+      LEFT JOIN museumbuilding mb ON g.building_id = mb.building_id
+      ORDER BY g.gallery_id
     `;
     db.query(sql, (err, results) => {
       if (err) return sendError(res, err);
@@ -20,14 +20,14 @@ module.exports = (req, res, parsedUrl) => {
     });
   }
 
-  // GET exhibition by id
+  // GET gallery by id
   else if (req.method === "GET" && urlParts.length === 2) {
     const sql = `
-      SELECT e.*,
-             g.gallery_name
-      FROM exhibition e
-      LEFT JOIN gallery g ON e.gallery_id = g.gallery_id
-      WHERE e.exhibition_id = ?
+      SELECT g.*,
+             mb.building_name
+      FROM gallery g
+      LEFT JOIN museumbuilding mb ON g.building_id = mb.building_id
+      WHERE g.gallery_id = ?
     `;
     db.query(sql, [urlParts[1]], (err, results) => {
       if (err) return sendError(res, err);
@@ -35,58 +35,56 @@ module.exports = (req, res, parsedUrl) => {
     });
   }
 
-  // POST exhibition
+  // POST gallery
   else if (req.method === "POST") {
     parseBody(req, (data) => {
       const sql = `
-        INSERT INTO exhibition
-        (gallery_id, exhibition_name, start_date, end_date, exhibition_type)
+        INSERT INTO gallery
+        (building_id, gallery_name, floor_number, square_footage, climate_controlled)
         VALUES (?, ?, ?, ?, ?)
       `;
       db.query(sql, [
-        data.gallery_id || null,
-        data.exhibition_name || "",
-        data.start_date || null,
-        data.end_date || null,
-        data.exhibition_type || "Temporary",
+        data.building_id || null,
+        data.gallery_name || "",
+        data.floor_number ?? null,
+        data.square_footage || null,
+        data.climate_controlled ?? null,
       ], (err, result) => {
         if (err) return sendError(res, err);
-        sendJSON(res, { message: "Exhibition added", exhibition_id: result.insertId }, 201);
+        sendJSON(res, { message: "Gallery added", gallery_id: result.insertId }, 201);
       });
     });
   }
 
-  // PUT exhibition
+  // PUT gallery
   else if (req.method === "PUT" && urlParts.length === 2) {
     parseBody(req, (data) => {
+      console.log("PUT gallery data:", data);
       const sql = `
-        UPDATE exhibition SET
-        gallery_id=?, exhibition_name=?, start_date=?,
-        end_date=?, exhibition_type=?
-        WHERE exhibition_id=?
+        UPDATE gallery SET
+        building_id=?, gallery_name=?, floor_number=?,
+        square_footage=?, climate_controlled=?
+        WHERE gallery_id=?
       `;
       db.query(sql, [
-        data.gallery_id || null,
-        data.exhibition_name || "",
-        data.start_date || null,
-        data.end_date || null,
-        data.exhibition_type || "Temporary",
+        data.building_id || null,
+        data.gallery_name || "",
+        data.floor_number ?? null,
+        data.square_footage || null,
+        data.climate_controlled ?? null,
         urlParts[1],
       ], (err) => {
         if (err) return sendError(res, err);
-        sendJSON(res, { message: "Exhibition updated" });
+        sendJSON(res, { message: "Gallery updated" });
       });
     });
   }
 
-  // DELETE exhibition
+  // DELETE gallery
   else if (req.method === "DELETE" && urlParts.length === 2) {
-    db.query("DELETE FROM exhibitionartwork WHERE exhibition_id=?", [urlParts[1]], (err) => {
+    db.query("DELETE FROM gallery WHERE gallery_id=?", [urlParts[1]], (err) => {
       if (err) return sendError(res, err);
-      db.query("DELETE FROM exhibition WHERE exhibition_id=?", [urlParts[1]], (err) => {
-        if (err) return sendError(res, err);
-        sendJSON(res, { message: "Exhibition deleted" });
-      });
+      sendJSON(res, { message: "Gallery deleted" });
     });
   }
 
@@ -106,13 +104,11 @@ function parseBody(req, callback) {
 }
 
 function sendJSON(res, data, status = 200) {
-  res.setHeader("Content-Type", "application/json");
-  res.writeHead(status);
+  res.writeHead(status, { "Content-Type": "application/json" });
   res.end(JSON.stringify(data));
 }
 
 function sendError(res, err) {
-  res.setHeader("Content-Type", "application/json");
-  res.writeHead(500);
+  res.writeHead(500, { "Content-Type": "application/json" });
   res.end(JSON.stringify({ error: err.message || err }));
 }

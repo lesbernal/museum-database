@@ -133,3 +133,15 @@
 .checkbox-item:hover .exhibition-name {
   color: #f97316;
 }
+
+.gallery-form input,
+.gallery-form select,
+.gallery-form textarea {
+  color: #111827;
+}
+
+.exhibition-form input,
+.exhibition-form select,
+.exhibition-form textarea {
+  color: #111827;
+}

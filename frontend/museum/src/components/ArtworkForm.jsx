@@ -1,5 +1,5 @@
 // components/ArtworkForm.jsx
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { getArtists } from "../services/api";
 import "../styles/ArtworkForm.css";
 
@@ -13,13 +13,22 @@ export default function ArtworkForm({ onSubmit, initialData = null, onCancel, is
     dimensions: "",
     acquisition_date: "",
     insurance_value: "",
-    current_display_status: "On Display"
+    current_display_status: "On Display",
+    image_url: "",
   });
   
   const [artists, setArtists] = useState([]);
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [imagePreview, setImagePreview] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef(null);
   const [showSuccessToast, setShowSuccessToast] = useState(false);
+
+  // Debug: Check if API key loads
+  useEffect(() => {
+    console.log("🔑 VITE_IMGBB_API_KEY exists:", !!import.meta.env.VITE_IMGBB_API_KEY);
+  }, []);
 
   // Load artists for dropdown
   useEffect(() => {
@@ -30,7 +39,7 @@ export default function ArtworkForm({ onSubmit, initialData = null, onCancel, is
   useEffect(() => {
     if (initialData) {
       setForm({
-        artist_id: initialData.artist_id,
+        artist_id: initialData.artist_id || "",
         title: initialData.title || "",
         description: initialData.description || "",
         creation_year: initialData.creation_year || "",
@@ -38,8 +47,12 @@ export default function ArtworkForm({ onSubmit, initialData = null, onCancel, is
         dimensions: initialData.dimensions || "",
         acquisition_date: initialData.acquisition_date ? new Date(initialData.acquisition_date).toISOString().split('T')[0] : "",
         insurance_value: initialData.insurance_value || "",
-        current_display_status: initialData.current_display_status || "On Display"
+        current_display_status: initialData.current_display_status || "On Display",
+        image_url: initialData.image_url || "",
       });
+      if (initialData.image_url) {
+        setImagePreview(initialData.image_url);
+      }
     }
   }, [initialData]);
 
@@ -88,14 +101,63 @@ export default function ArtworkForm({ onSubmit, initialData = null, onCancel, is
     }
   }
 
+  // Upload image to ImgBB
+  const handleImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    console.log("🖼️ Starting upload, file:", file.name);
+    setUploading(true);
+    
+    const formData = new FormData();
+    formData.append("image", file);
+    
+    try {
+      const apiKey = import.meta.env.VITE_IMGBB_API_KEY;
+      console.log("🔑 API Key:", apiKey ? `${apiKey.substring(0, 5)}...` : "MISSING!");
+      
+      const response = await fetch(`https://api.imgbb.com/1/upload?key=${apiKey}`, {
+        method: "POST",
+        body: formData
+      });
+      const data = await response.json();
+      console.log("📡 ImgBB Response:", data);
+      
+      if (data.success) {
+        const imageUrl = data.data.url;
+        console.log("✅ Image uploaded! URL:", imageUrl);
+        setImagePreview(imageUrl);
+        setForm(prev => {
+          console.log("Updating form with image_url:", imageUrl);
+          return { ...prev, image_url: imageUrl };
+        });
+      } else {
+        console.error("❌ ImgBB upload failed:", data);
+        alert("Upload failed: " + (data.error?.message || "Unknown error"));
+      }
+    } catch (error) {
+      console.error("❌ Upload error:", error);
+      alert("Upload failed: " + error.message);
+    } finally {
+      setUploading(false);
+    }
+  };
+
   async function handleSubmit(e) {
     e.preventDefault();
+    
+    console.log("🚀 Submitting artwork with image_url:", form.image_url);
     
     if (!validateForm()) return;
     
     setIsSubmitting(true);
     try {
+      console.log("📤 Sending to backend:", {
+        title: form.title,
+        image_url: form.image_url
+      });
       await onSubmit(form);
+      console.log("✅ Submit successful!");
       setShowSuccessToast(true);
       setTimeout(() => setShowSuccessToast(false), 3000);
       
@@ -109,11 +171,14 @@ export default function ArtworkForm({ onSubmit, initialData = null, onCancel, is
           dimensions: "",
           acquisition_date: "",
           insurance_value: "",
-          current_display_status: "On Display"
+          current_display_status: "On Display",
+          image_url: "",
         });
+        setImagePreview(null);
+        if (fileInputRef.current) fileInputRef.current.value = "";
       }
     } catch (error) {
-      console.error("Error saving artwork:", error);
+      console.error("❌ Error saving artwork:", error);
       setErrors({ submit: "Failed to save artwork. Please try again." });
     } finally {
       setIsSubmitting(false);
@@ -138,6 +203,46 @@ export default function ArtworkForm({ onSubmit, initialData = null, onCancel, is
           </div>
           
           <form onSubmit={handleSubmit} className="artwork-form">
+            {/* Image Upload Section */}
+            <div className="form-image-section artwork-image-section">
+              <div className="image-preview">
+                {imagePreview ? (
+                  <img src={imagePreview} alt="Artwork preview" />
+                ) : (
+                  <div className="image-placeholder">
+                    <span>🖼️</span>
+                    <p>No image</p>
+                  </div>
+                )}
+              </div>
+              <div className="image-upload-controls">
+                <button 
+                  type="button" 
+                  className="upload-btn"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading}
+                >
+                  {uploading ? "📤 Uploading..." : "📸 Upload Image"}
+                </button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  style={{ display: "none" }}
+                />
+                <p className="upload-hint">Or paste image URL below:</p>
+                <input
+                  type="text"
+                  name="image_url"
+                  placeholder="https://example.com/artwork-image.jpg"
+                  value={form.image_url}
+                  onChange={handleChange}
+                  className="image-url-input"
+                />
+              </div>
+            </div>
+            
             <div className="form-grid">
               <div className="form-group full-width">
                 <label>Artist *</label>

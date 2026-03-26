@@ -1,3 +1,4 @@
+// src/App.jsx
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Navbar from "./components/Navbar";
@@ -10,6 +11,7 @@ import ArtistsGallery from "./pages/ArtistsGallery";
 import Artworks from "./pages/Artworks";
 import Exhibitions from "./pages/Exhibitions";
 import Events from "./pages/Events";
+import Buildings from "./pages/Buildings";
 import CafePage from "./pages/CafePage";
 import CafeCartPage from "./pages/CafeCartPage";
 import CafeCheckoutPage from "./pages/CafeCheckoutPage";
@@ -17,6 +19,9 @@ import GiftShopPage from "./pages/GiftShopPage";
 import GiftShopCartPage from "./pages/GiftShopCartPage";
 import GiftShopCheckoutPage from "./pages/GiftShopCheckoutPage";
 import AdminDashboard from "./components/AdminDashboard";
+import TicketPage from "./pages/Tickets";
+import DonationPage from "./pages/Donations";
+import EventsPage from "./pages/Events";
 import VisitorDashboard  from "./pages/VisitorDashboard";
 import MemberDashboard   from "./pages/MemberDashboard";
 import EmployeeDashboard from "./pages/EmployeeDashboard";
@@ -31,9 +36,23 @@ function App() {
         <Route path="/home"    element={<Navigate to="/" replace />} />
         <Route path="/login"   element={<Login />} />
         <Route path="/artists" element={<ArtistsGallery />} />
+        <Route path="/tickets" element={<TicketPage />} />
+        <Route path="/donations" element={<DonationPage />} />
+        <Route path="/events" element={<EventsPage />} />
+
+        {/* Admin Only Routes */}
+        <Route
+          path="/admin"
+          element={
+            <AdminDashboard /> // or wrap with ProtectedRoute if needed
+          }
+        />
+
+        {/* Fallback route */}
         <Route path="/artworks" element={<Artworks />} />
         <Route path="/exhibitions" element={<Exhibitions />} />
         <Route path="/events" element={<Events />} />
+        <Route path="/buildings" element={<Buildings />} />
         <Route path="/cafe" element={<CafePage />} />
         <Route path="/cafe/cart" element={<CafeCartPage />} />
         <Route path="/cafe/checkout" element={<CafeCheckoutPage />} />

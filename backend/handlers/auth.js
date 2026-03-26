@@ -1,6 +1,5 @@
 const db = require("../db");
 const jwt = require("jsonwebtoken");
-const bcrypt   = require("bcrypt");
 const SECRET_KEY = "your_secret_key";
 
 module.exports = (req, res) => {
@@ -20,7 +19,7 @@ module.exports = (req, res) => {
       db.query(
         "SELECT * FROM user WHERE email = ?",
         [email],
-        async (err, results) => {
+        (err, results) => {
           if (err) {
             console.error("Database error:", err); // DEBUG
             return sendError(res, err);
@@ -38,8 +37,7 @@ module.exports = (req, res) => {
           
           console.log("User found - ID:", user.user_id, "Role:", user.role); // DEBUG
           
-          const passwordMatch = await bcrypt.compare(password, user.password);
-          if (!passwordMatch) {
+          if (user.password !== password) {
             console.log("Password mismatch");
             res.writeHead(401, { "Content-Type": "application/json" });
             return res.end(JSON.stringify({ error: "Invalid credentials" }));

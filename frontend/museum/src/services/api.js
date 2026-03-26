@@ -52,6 +52,8 @@ function authRequest(path, options = {}, fallbackMessage = "Request failed") {
 export async function getArtists() {
   return request("/artists", {}, "Failed to fetch artists");
 }
+
+// Create a new artist
 export async function createArtist(artist) {
   return request("/artists", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(artist) }, "Failed to create artist");
 }
@@ -62,27 +64,41 @@ export async function deleteArtist(id) {
   return request(`/artists/${id}`, { method: "DELETE" }, "Failed to delete artist");
 }
 
-// ── ARTWORKS ──────────────────────────────────────────────────────────────────
+// -------------------- ARTWORKS --------------------
+
+// Get all artworks
 export async function getArtworks() {
   return request("/artwork", {}, "Failed to fetch artworks");
 }
+
+// Create a new artwork
 export async function createArtwork(artwork) {
   return request("/artwork", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(artwork) }, "Failed to create artwork");
 }
+
+// Update artwork by ID
 export async function updateArtwork(id, artwork) {
   return request(`/artwork/${id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(artwork) }, "Failed to update artwork");
 }
+
+// Delete artwork by ID
 export async function deleteArtwork(id) {
   return request(`/artwork/${id}`, { method: "DELETE" }, "Failed to delete artwork");
 }
 
-// ── PROVENANCE ────────────────────────────────────────────────────────────────
+// -------------------- PROVENANCE --------------------
+
+// Get all provenance records
 export async function getProvenance() {
   return request("/provenance", {}, "Failed to fetch provenance");
 }
+
+// Create a provenance record
 export async function createProvenance(record) {
   return request("/provenance", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(record) }, "Failed to create provenance");
 }
+
+// Update provenance by ID
 export async function updateProvenance(id, record) {
   return request(`/provenance/${id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(record) }, "Failed to update provenance");
 }
@@ -90,6 +106,70 @@ export async function deleteProvenance(id) {
   return request(`/provenance/${id}`, { method: "DELETE" }, "Failed to delete provenance");
 }
 
+// -------------------- EVENTS --------------------
+
+// Get all events
+export async function getEvents() {
+  return request("/events", {}, "Failed to fetch events");
+}
+
+// Create a new event
+export async function createEvent(event) {
+  const res = await fetch(`${BASE_URL}/events`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(event),
+  });
+  if (!res.ok) throw new Error("Failed to create event");
+  return res.json();
+}
+
+// Update an event by ID
+export async function updateEvent(id, event) {
+  const res = await fetch(`${BASE_URL}/events/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(event),
+  });
+  if (!res.ok) throw new Error("Failed to update event");
+  return res.json();
+}
+
+// Delete an event by ID
+export async function deleteEvent(id) {
+  const res = await fetch(`${BASE_URL}/events/${id}`, {
+    method: "DELETE",
+  });
+  if (!res.ok) throw new Error("Failed to delete event");
+  return res.json();
+}
+
+// -------------------- TICKETS --------------------
+
+// Post a ticket
+export async function postTicket(ticket) {
+  const res = await fetch(`${BASE_URL}/tickets`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(ticket),
+  });
+  if (!res.ok) throw new Error("Failed to post ticket");
+  return res.json();
+}
+
+// Get revenue summary
+export async function getRevenueReport() {
+  const res = await fetch(`${BASE_URL}/reports/revenue`);
+  if (!res.ok) throw new Error("Failed to fetch revenue report");
+  return res.json();
+}
+
+// Fetch attendance report
+export async function getAttendanceReport() {
+  const res = await fetch(`${BASE_URL}/reports/attendance`);
+  if (!res.ok) throw new Error("Failed to fetch attendance report");
+  return res.json();
+}
 // ── MUSEUM BUILDINGS ──────────────────────────────────────────────────────────
 export async function getBuildings() {
   return request("/buildings", {}, "Failed to fetch buildings");
@@ -130,11 +210,6 @@ export async function updateGallery(id, data) {
 }
 export async function deleteGallery(id) {
   return request(`/galleries/${id}`, { method: "DELETE" }, "Failed to delete gallery");
-}
-
-// ── EVENTS ────────────────────────────────────────────────────────────────────
-export async function getEvents() {
-  return request("/events", {}, "Failed to fetch events");
 }
 
 // ── CAFE ──────────────────────────────────────────────────────────────────────

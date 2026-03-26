@@ -1,5 +1,6 @@
-// pages/Events.jsx - PLACEHOLDER
+// src/pages/Events.jsx
 import { useEffect, useState } from "react";
+import "../styles/theme.css";
 import { getEvents } from "../services/api";
 
 export default function Events() {
@@ -7,6 +8,7 @@ export default function Events() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Fetch events using the API helper
     getEvents()
       .then(data => setEvents(data))
       .catch(err => console.error(err))
@@ -16,20 +18,32 @@ export default function Events() {
   if (loading) return <p>Loading events...</p>;
 
   return (
-    <div style={{ padding: "2rem" }}>
-      <h1>Events</h1>
+    <div style={{ padding: "var(--spacing-3xl)" }}>
+      <h1>Upcoming Events</h1>
+
       {events.length === 0 ? (
         <p>No events found.</p>
       ) : (
-        <ul>
+        <div
+          style={{
+            display: "grid",
+            gap: "var(--spacing-lg)",
+            marginTop: "var(--spacing-xl)",
+          }}
+        >
           {events.map(e => (
-            <li key={e.event_id}>
-              <strong>{e.name}</strong> — {e.event_date}
-              <br />
-              Capacity: {e.capacity} {e.member_only ? "· Members Only" : ""}
-            </li>
+            <div key={e.event_id} className="card" style={{ padding: "var(--spacing-lg)" }}>
+              <h3>{e.name || e.event_name}</h3>
+              <p>{e.event_date}</p>
+              {e.description && <p>{e.description}</p>}
+              {e.capacity && (
+                <p>
+                  Capacity: {e.capacity} {e.member_only ? "· Members Only" : ""}
+                </p>
+              )}
+            </div>
           ))}
-        </ul>
+        </div>
       )}
     </div>
   );
