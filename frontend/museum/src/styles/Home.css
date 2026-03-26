@@ -12,7 +12,7 @@
 .hero-section {
   position: relative;
   min-height: 70vh;
-  background: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url('https://static.mfah.com/images/kinder-building-from-above.4932242836019972711.jpg?width=1680') no-repeat center center/cover;
+  background: linear-gradient(rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.3)), url('https://static.mfah.com/images/kinder-building-from-above.4932242836019972711.jpg?width=1680') no-repeat center center/cover;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -288,7 +288,7 @@
 .quick-links-section {
   position: relative;
   padding: 5rem 2rem;
-  background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url('https://365thingsinhouston.com/wp-content/uploads/2017/08/museum-of-fine-arts-houston-Beck-Interior-Gallery.jpeg') no-repeat center center/cover;
+  background: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url('https://365thingsinhouston.com/wp-content/uploads/2017/08/museum-of-fine-arts-houston-Beck-Interior-Gallery.jpeg') no-repeat center center/cover;
   background-attachment: fixed;
 }
 
