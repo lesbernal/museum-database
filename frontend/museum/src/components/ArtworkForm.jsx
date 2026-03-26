@@ -25,6 +25,11 @@ export default function ArtworkForm({ onSubmit, initialData = null, onCancel, is
   const fileInputRef = useRef(null);
   const [showSuccessToast, setShowSuccessToast] = useState(false);
 
+  // Debug: Check if API key loads
+  useEffect(() => {
+    console.log("🔑 VITE_IMGBB_API_KEY exists:", !!import.meta.env.VITE_IMGBB_API_KEY);
+  }, []);
+
   // Load artists for dropdown
   useEffect(() => {
     loadArtists();
@@ -101,32 +106,38 @@ export default function ArtworkForm({ onSubmit, initialData = null, onCancel, is
     const file = e.target.files[0];
     if (!file) return;
     
+    console.log("🖼️ Starting upload, file:", file.name);
     setUploading(true);
     
     const formData = new FormData();
     formData.append("image", file);
     
     try {
-      // Replace with your ImgBB API key (get free at https://api.imgbb.com/)
       const apiKey = import.meta.env.VITE_IMGBB_API_KEY;
+      console.log("🔑 API Key:", apiKey ? `${apiKey.substring(0, 5)}...` : "MISSING!");
+      
       const response = await fetch(`https://api.imgbb.com/1/upload?key=${apiKey}`, {
         method: "POST",
         body: formData
       });
       const data = await response.json();
+      console.log("📡 ImgBB Response:", data);
+      
       if (data.success) {
         const imageUrl = data.data.url;
+        console.log("✅ Image uploaded! URL:", imageUrl);
         setImagePreview(imageUrl);
-        setForm({ ...form, image_url: imageUrl });
+        setForm(prev => {
+          console.log("Updating form with image_url:", imageUrl);
+          return { ...prev, image_url: imageUrl };
+        });
+      } else {
+        console.error("❌ ImgBB upload failed:", data);
+        alert("Upload failed: " + (data.error?.message || "Unknown error"));
       }
     } catch (error) {
-      console.error("Upload failed:", error);
-      // Fallback: use local preview only
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result);
-      };
-      reader.readAsDataURL(file);
+      console.error("❌ Upload error:", error);
+      alert("Upload failed: " + error.message);
     } finally {
       setUploading(false);
     }
@@ -135,11 +146,18 @@ export default function ArtworkForm({ onSubmit, initialData = null, onCancel, is
   async function handleSubmit(e) {
     e.preventDefault();
     
+    console.log("🚀 Submitting artwork with image_url:", form.image_url);
+    
     if (!validateForm()) return;
     
     setIsSubmitting(true);
     try {
+      console.log("📤 Sending to backend:", {
+        title: form.title,
+        image_url: form.image_url
+      });
       await onSubmit(form);
+      console.log("✅ Submit successful!");
       setShowSuccessToast(true);
       setTimeout(() => setShowSuccessToast(false), 3000);
       
@@ -160,7 +178,7 @@ export default function ArtworkForm({ onSubmit, initialData = null, onCancel, is
         if (fileInputRef.current) fileInputRef.current.value = "";
       }
     } catch (error) {
-      console.error("Error saving artwork:", error);
+      console.error("❌ Error saving artwork:", error);
       setErrors({ submit: "Failed to save artwork. Please try again." });
     } finally {
       setIsSubmitting(false);
