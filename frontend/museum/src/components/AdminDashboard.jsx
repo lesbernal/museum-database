@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { getRevenueReport, getAttendanceReport } from "../services/api";
 import ArtistForm from "./ArtistForm";
 import ArtistTable from "./ArtistTable";
 import ArtworkForm from "./ArtworkForm";
@@ -14,6 +13,7 @@ import GalleryTable from "./GalleryTable";
 import CafeAdminPanel from "./CafeAdminPanel";
 import GiftShopAdminPanel from "./GiftShopAdminPanel";
 import UserManagement from "./UserManagement";
+import ReportsPanel from "./ReportsPanel";
 
 import {
   getArtists,
@@ -40,7 +40,6 @@ import {
 
 import "../styles/AdminDashboard.css";
 import "../styles/UserManagement.css";
-import ReportsPanel from "./ReportsPanel";
 
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState("artists");
@@ -81,10 +80,6 @@ export default function AdminDashboard() {
   const [exhibitionsError, setExhibitionsError] = useState("");
   const [galleriesError, setGalleriesError] = useState("");
 
-  //reports
-  const [revenueReport, setRevenueReport] = useState(null);
-  const [attendanceReport, setAttendanceReport] = useState([]);
-
   const navigate = useNavigate();
 
   const tabs = [
@@ -97,8 +92,6 @@ export default function AdminDashboard() {
     { id: "giftshop", name: "Gift Shop", icon: "🛍️" },
     { id: "reports", name: "Reports", icon: "📊" },
     { id: "users", name: "Users", icon: "👥" },
-    { id: "revenue", name: "Revenue", icon: "💰" },
-    { id: "events", name: "Events", icon: "📅" },
   ];
 
   // Load all data on mount
@@ -374,26 +367,6 @@ export default function AdminDashboard() {
     }
   };
 
-  const generateRevenueReport = async () => {
-  try {
-    const data = await getRevenueReport();
-    setRevenueReport(data);
-  } catch (err) {
-    console.error(err);
-    alert("Failed to generate revenue report");
-  }
-};
-
-const generateAttendanceReport = async () => {
-  try {
-    const data = await getAttendanceReport();
-    setAttendanceReport(data);
-  } catch (err) {
-    console.error(err);
-    alert("Failed to generate attendance report");
-  }
-};
-
   // General dispatcher for Add button
   const handleAdd = () => {
     switch (activeTab) {
@@ -525,14 +498,14 @@ const generateAttendanceReport = async () => {
                 " - Manage gift shop items, transactions, and line items"}
             </p>
           </div>
-          {!usesCustomManager && activeTab !== "users" && (
+          {!usesCustomManager && activeTab !== "users" && activeTab !== "reports" && (
             <button className="add-btn" onClick={handleAdd}>
               + Add New {getAddLabel()}
             </button>
           )}
         </header>
 
-        {!usesCustomManager && (
+        {!usesCustomManager && activeTab !== "reports" && (
           <div className="search-bar">
             <input
               type="text"
@@ -546,47 +519,77 @@ const generateAttendanceReport = async () => {
         <div className="content-area">
           {/* Artists */}
           {activeTab === "artists" && (
-            <ArtistTable
-              artists={filteredArtists}
-              onEdit={handleEditArtist}
-              onDelete={handleDeleteArtist}
-            />
+            <>
+              {artistsError ? (
+                <div className="error-message">{artistsError}</div>
+              ) : (
+                <ArtistTable
+                  artists={filteredArtists}
+                  onEdit={handleEditArtist}
+                  onDelete={handleDeleteArtist}
+                />
+              )}
+            </>
           )}
 
           {/* Artwork */}
           {activeTab === "artwork" && (
-            <ArtworkTable
-              artworks={filteredArtworks}
-              onEdit={handleEditArtwork}
-              onDelete={handleDeleteArtwork}
-            />
+            <>
+              {artworksError ? (
+                <div className="error-message">{artworksError}</div>
+              ) : (
+                <ArtworkTable
+                  artworks={filteredArtworks}
+                  onEdit={handleEditArtwork}
+                  onDelete={handleDeleteArtwork}
+                />
+              )}
+            </>
           )}
 
           {/* Provenance */}
           {activeTab === "provenance" && (
-            <ProvenanceTable
-              provenance={filteredProvenance}
-              onEdit={handleEditProvenance}
-              onDelete={handleDeleteProvenance}
-            />
+            <>
+              {provenanceError ? (
+                <div className="error-message">{provenanceError}</div>
+              ) : (
+                <ProvenanceTable
+                  provenance={filteredProvenance}
+                  onEdit={handleEditProvenance}
+                  onDelete={handleDeleteProvenance}
+                />
+              )}
+            </>
           )}
 
           {/* Exhibitions */}
           {activeTab === "exhibitions" && (
-            <ExhibitionTable
-              exhibitions={filteredExhibitions}
-              onEdit={handleEditExhibition}
-              onDelete={handleDeleteExhibition}
-            />
+            <>
+              {exhibitionsError ? (
+                <div className="error-message">{exhibitionsError}</div>
+              ) : (
+                <ExhibitionTable
+                  exhibitions={filteredExhibitions}
+                  onEdit={handleEditExhibition}
+                  onDelete={handleDeleteExhibition}
+                />
+              )}
+            </>
           )}
 
           {/* Galleries */}
           {activeTab === "galleries" && (
-            <GalleryTable
-              galleries={filteredGalleries}
-              onEdit={handleEditGallery}
-              onDelete={handleDeleteGallery}
-            />
+            <>
+              {galleriesError ? (
+                <div className="error-message">{galleriesError}</div>
+              ) : (
+                <GalleryTable
+                  galleries={filteredGalleries}
+                  onEdit={handleEditGallery}
+                  onDelete={handleDeleteGallery}
+                />
+              )}
+            </>
           )}
 
           {/* Cafe */}
@@ -595,60 +598,11 @@ const generateAttendanceReport = async () => {
           {/* Gift Shop */}
           {activeTab === "giftshop" && <GiftShopAdminPanel />}
 
+          {/* Reports */}
+          {activeTab === "reports" && <ReportsPanel />}
+
           {/* Users */}
           {activeTab === "users" && <UserManagement />}
-
-          {activeTab === "revenue" && (
-            <div>
-              <h3>Revenue Report</h3>
-              <button onClick={generateRevenueReport}>
-                Generate Revenue Report
-              </button>
-
-              {revenueReport ? (
-                <div>
-                  <p>Donation Revenue: ${revenueReport.donation_revenue}</p>
-                  <p>Ticket Revenue: ${revenueReport.ticket_revenue}</p>
-                  <p>Total Revenue: ${revenueReport.total_revenue}</p>
-                </div>
-              ) : (
-                <p>No report generated yet</p>
-              )}
-            </div>
-          )}
-
-          {activeTab === "events" && (
-            <div>
-              <h3>Event Attendance Report</h3>
-
-              <button onClick={generateAttendanceReport}>
-                Generate Attendance Report
-              </button>
-
-              {attendanceReport.length > 0 ? (
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Event Name</th>
-                      <th>Date</th>
-                      <th>Total Attendees</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {attendanceReport.map((r) => (
-                      <tr key={r.event_name + r.event_date}>
-                        <td>{r.event_name}</td>
-                        <td>{new Date(r.event_date).toLocaleDateString()}</td>
-                        <td>{r.total_attendees}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              ) : (
-                <p>No attendance data yet</p>
-              )}
-            </div>
-  )}
         </div>
       </main>
 
