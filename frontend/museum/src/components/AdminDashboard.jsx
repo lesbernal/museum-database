@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import ArtistForm from "./ArtistForm";
 import ArtistTable from "./ArtistTable";
@@ -16,6 +16,7 @@ import CafeAdminPanel from "./CafeAdminPanel";
 import GiftShopAdminPanel from "./GiftShopAdminPanel";
 import UserManagement from "./UserManagement";
 import ReportsPanel from "./ReportsPanel";
+import DepartmentManagement from "./DepartmentManagement";
 
 import {
   getArtists,
@@ -91,7 +92,9 @@ export default function AdminDashboard() {
   const [exhibitionsError, setExhibitionsError] = useState("");
   const [galleriesError, setGalleriesError] = useState("");
   const [eventsError, setEventsError] = useState("");
-
+  const userMgmtRef = useRef(null);
+  const deptMgmtRef = useRef(null);
+  const [userMgmtSubTab, setUserMgmtSubTab] = useState("users");
   const navigate = useNavigate();
 
   const tabs = [
@@ -105,6 +108,7 @@ export default function AdminDashboard() {
     { id: "giftshop", name: "Gift Shop", icon: "🛍️" },
     { id: "reports", name: "Reports", icon: "📊" },
     { id: "users", name: "Users", icon: "👥" },
+    { id: "departments", name: "Departments", icon: "🏢" }
   ];
 
   // Load all data on mount
@@ -423,6 +427,8 @@ export default function AdminDashboard() {
       case "exhibitions": return handleAddExhibition();
       case "galleries": return handleAddGallery();
       case "events": return handleAddEvent();
+      case "users":       return userMgmtRef.current?.openAdd();
+      case "departments": return deptMgmtRef.current?.openAdd(); 
       default: return;
     }
   };
@@ -483,6 +489,8 @@ export default function AdminDashboard() {
       case "exhibitions": return "Exhibition";
       case "galleries": return "Gallery";
       case "events": return "Event";
+      case "users": return userMgmtSubTab.slice(0, -1);       
+      case "departments": return "Department";   
       default: return "";
     }
   };
@@ -528,9 +536,10 @@ export default function AdminDashboard() {
               {activeTab === "events" && " - Add, edit, or remove museum events"}
               {activeTab === "cafe" && " - Manage cafe items, transactions, and line items"}
               {activeTab === "giftshop" && " - Manage gift shop items, transactions, and line items"}
+              {activeTab === "departments" && " - Manage museum departments and budgets"}
             </p>
           </div>
-          {!usesCustomManager && activeTab !== "users" && activeTab !== "reports" && (
+          {!usesCustomManager && activeTab !== "reports" && (
             <button className="add-btn" onClick={handleAdd}>
               + Add New {getAddLabel()}
             </button>
@@ -625,7 +634,15 @@ export default function AdminDashboard() {
           {activeTab === "reports" && <ReportsPanel />}
 
           {/* Users */}
-          {activeTab === "users" && <UserManagement />}
+          {activeTab === "users" && (
+            <UserManagement
+              ref={userMgmtRef}
+              searchTerm={searchTerm}
+              onSubTabChange={setUserMgmtSubTab}
+            />
+          )}
+          {/* Departments */}
+          {activeTab === "departments" && <DepartmentManagement ref={deptMgmtRef} searchTerm={searchTerm} />}
         </div>
       </main>
 

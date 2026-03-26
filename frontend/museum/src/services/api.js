@@ -387,3 +387,16 @@ export async function getMyMemberRecord() {
   const user_id = localStorage.getItem("user_id");
   return authRequest(`/members/${user_id}`, {}, "Failed to fetch membership record");
 }
+// ── DEPARTMENTS (auth-protected) ──────────────────────────────────────────────
+export async function getDepartments() {
+  return authRequest("/departments", {}, "Failed to fetch departments");
+}
+export async function createDepartment(data) {
+  return authRequest("/departments", { method: "POST", body: JSON.stringify(data) }, "Failed to create department");
+}
+export async function updateDepartment(id, data) {
+  return authRequest(`/departments/${id}`, { method: "PUT", body: JSON.stringify(data) }, "Failed to update department");
+}
+export async function deleteDepartment(id) {
+  return authRequest(`/departments/${id}`, { method: "DELETE" }, "Failed to delete department");
+}
