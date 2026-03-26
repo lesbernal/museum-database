@@ -1,4 +1,5 @@
 const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+console.log("🔗 API BASE_URL:", BASE_URL);
 
 // ── Shared request helper (from main branch) ──────────────────────────────────
 async function request(path, options = {}, fallbackMessage = "Request failed") {
