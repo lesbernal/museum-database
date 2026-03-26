@@ -35,8 +35,8 @@ module.exports = (req, res, parsedUrl) => {
 
       const sql = `
         INSERT INTO giftshopitem
-        (item_id, item_name, category, price, stock_quantity)
-        VALUES (?, ?, ?, ?, ?)
+        (item_id, item_name, category, price, stock_quantity, image_url)
+        VALUES (?, ?, ?, ?, ?, ?)
       `;
 
       db.query(
@@ -46,7 +46,8 @@ module.exports = (req, res, parsedUrl) => {
           data.item_name,
           data.category,
           data.price,
-          data.stock_quantity
+          data.stock_quantity,
+          data.image_url || null
         ],
         (err, result) => {
 
@@ -81,7 +82,7 @@ else if (req.method === "PUT" && parsedUrl.pathname.split("/")[2]) {
 
     const sql = `
       UPDATE giftshopitem
-      SET item_name = ?, category = ?, price = ?, stock_quantity = ?
+      SET item_name = ?, category = ?, price = ?, stock_quantity = ?, image_url = ?
       WHERE item_id = ?
     `;
 
@@ -92,6 +93,7 @@ else if (req.method === "PUT" && parsedUrl.pathname.split("/")[2]) {
         data.category,
         data.price,
         data.stock_quantity,
+        data.image_url || null,
         id
       ],
       (err) => {

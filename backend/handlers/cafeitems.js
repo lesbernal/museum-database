@@ -30,8 +30,8 @@ module.exports = (req, res, parsedUrl) => {
 
       const sql = `
         INSERT INTO cafeitem
-        (item_id, item_name, category, price, stock_quantity)
-        VALUES (?, ?, ?, ?, ?)
+        (item_id, item_name, category, price, stock_quantity, image_url)
+        VALUES (?, ?, ?, ?, ?, ?)
       `;
 
       db.query(
@@ -41,7 +41,8 @@ module.exports = (req, res, parsedUrl) => {
           data.item_name,
           data.category,
           data.price,
-          data.stock_quantity
+          data.stock_quantity,
+          data.image_url || null
         ],
         (err, result) => {
           if (err) {
@@ -74,7 +75,7 @@ module.exports = (req, res, parsedUrl) => {
 
       const sql = `
         UPDATE cafeitem
-        SET item_name = ?, category = ?, price = ?, stock_quantity = ?
+        SET item_name = ?, category = ?, price = ?, stock_quantity = ?, image_url = ?
         WHERE item_id = ?
       `;
 
@@ -85,6 +86,7 @@ module.exports = (req, res, parsedUrl) => {
           data.category,
           data.price,
           data.stock_quantity,
+          data.image_url || null,
           id
         ],
         (err) => {

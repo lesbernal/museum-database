@@ -15,7 +15,15 @@ module.exports = (req, res, parsedUrl) => {
   const urlParts = parsedUrl.pathname.split("/").filter(Boolean);
 
   const user = verifyToken(req);
-  if (!user || !["admin", "employee"].includes(user.role)) {
+  const isSelfLookup =
+    req.method === "GET" &&
+    urlParts.length === 2 &&
+    user &&
+    String(user.user_id) === String(urlParts[1]);
+
+  const isPrivileged = user && ["admin", "employee"].includes(user.role);
+
+  if (!user || (!isPrivileged && !isSelfLookup)) {
     res.writeHead(403, { "Content-Type": "application/json" });
     return res.end(JSON.stringify({ error: "Forbidden: insufficient permissions" }));
   }
@@ -24,6 +32,10 @@ module.exports = (req, res, parsedUrl) => {
 
   // GET all users
   if (req.method === "GET" && urlParts.length === 1) {
+    if (!isPrivileged) {
+      res.writeHead(403, { "Content-Type": "application/json" });
+      return res.end(JSON.stringify({ error: "Forbidden: insufficient permissions" }));
+    }
     db.query("SELECT * FROM user", (err, results) => {
       if (err) return sendError(res, err);
       sendJSON(res, results);

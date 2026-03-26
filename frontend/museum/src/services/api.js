@@ -3,7 +3,18 @@ const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 // ── Shared request helper (from main branch) ──────────────────────────────────
 async function request(path, options = {}, fallbackMessage = "Request failed") {
   try {
-    const res = await fetch(`${BASE_URL}${path}`, options);
+    const token =
+      typeof window !== "undefined" ? window.localStorage.getItem("token") : null;
+
+    const headers = {
+      ...(options.headers || {}),
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    };
+
+    const res = await fetch(`${BASE_URL}${path}`, {
+      ...options,
+      headers,
+    });
 
     if (!res.ok) {
       let message = fallbackMessage;
