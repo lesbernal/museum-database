@@ -119,6 +119,7 @@
   margin-bottom: var(--spacing-3xl);
   flex-wrap: wrap;
   gap: var(--spacing-md);
+  min-width: 0;
 }
 
 .admin-header h1 {
@@ -143,6 +144,8 @@
   font-size: var(--font-size-sm);
   text-transform: uppercase;
   letter-spacing: 0.03em;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .add-btn:hover {
@@ -174,6 +177,7 @@
   overflow-x: auto;
   overflow-y: visible;
   width: 100%;
+  min-width: 0;
 }
 
 /* Ensure tables don't break layout */
@@ -183,6 +187,17 @@
   table-layout: auto;
 }
 
+/* Allow nested UserManagement / DepartmentManagement to scroll */
+.content-area .um-wrap {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.content-area .um-table-container {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
 /* For very small screens */
 @media (max-width: 768px) {
   .admin-sidebar {
@@ -190,34 +205,34 @@
     transition: transform var(--transition-normal);
     z-index: 1000;
   }
-  
+
   .admin-sidebar.open {
     transform: translateX(0);
   }
-  
+
   .admin-main {
     margin-left: 0;
     padding: var(--spacing-md);
   }
-  
+
   .admin-header h1 {
     font-size: var(--font-size-2xl);
   }
-  
+
   .add-btn {
     width: 100%;
     text-align: center;
   }
-  
+
   .search-bar input {
     max-width: 100%;
   }
-  
+
   .content-area {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
   }
-  
+
   .content-area table {
     min-width: 550px;
   }
@@ -246,4 +261,3 @@
 .admin-sidebar::-webkit-scrollbar-thumb:hover {
   background: rgba(0, 0, 0, 0.3);
 }
-

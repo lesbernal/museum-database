@@ -129,6 +129,10 @@ const server = http.createServer((req, res) => {
     return handleReports(req, res, parsedUrl);
   }
 
+  if (parsedUrl.pathname.startsWith("/departments")) {
+    return handleDepartments(req, res, parsedUrl);
+  }
+
   // 404 for anything else
   res.writeHead(404, { "Content-Type": "application/json" });
   res.end(JSON.stringify({ message: "Route not found" }));
