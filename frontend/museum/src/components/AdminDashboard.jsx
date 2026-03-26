@@ -35,6 +35,8 @@ import {
   deleteGallery,
 } from "../services/api";
 import "../styles/AdminDashboard.css";
+import UserManagement from "./UserManagement";
+import "../styles/UserManagement.css";
 
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState("artists");
@@ -566,10 +568,7 @@ export default function AdminDashboard() {
 
           {/* Users Tab */}
           {activeTab === "users" && (
-            <div className="coming-soon">
-              <p>User Management Coming Soon</p>
-              <small>Manage museum staff and visitor accounts</small>
-            </div>
+            <UserManagement />
           )}
         </div>
       </main>

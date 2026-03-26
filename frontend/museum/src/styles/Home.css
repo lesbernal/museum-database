@@ -12,7 +12,7 @@
 .hero-section {
   position: relative;
   min-height: 70vh;
-  background: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url('https://images.unsplash.com/photo-1558959357-4f3ff1e6f332?auto=format&fit=crop&w=1400&q=80') no-repeat center center/cover;
+  background: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url('https://static.mfah.com/images/kinder-building-from-above.4932242836019972711.jpg?width=1680') no-repeat center center/cover;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -112,25 +112,49 @@
   position: relative;
   max-width: 1400px;
   margin: 0 auto;
-  overflow: hidden;
+  padding: 0 60px; /* Add padding for buttons */
 }
 
 .carousel-track {
   display: flex;
   gap: 2rem;
   transition: transform 0.5s ease;
-  padding: 1rem;
+  padding: 1rem 0;
+  overflow-x: hidden;
 }
 
 .event-card {
-  flex: 1;
-  min-width: 280px;
+  flex: 0 0 calc(25% - 1.5rem); /* 4 cards per row on desktop */
+  min-width: 0;
   background: #ffffff;
   border: 1px solid #e5e5e5;
   border-radius: 0;
   overflow: hidden;
   transition: all 0.3s ease;
   cursor: pointer;
+}
+
+/* For different screen sizes */
+@media (min-width: 1200px) {
+  .event-card {
+    flex: 0 0 calc(25% - 1.5rem);
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1199px) {
+  .event-card {
+    flex: 0 0 calc(33.333% - 1.33rem); /* 3 cards per row */
+  }
+}
+
+@media (max-width: 767px) {
+  .event-card {
+    flex: 0 0 calc(100% - 0rem); /* 1 card per row */
+  }
+  
+  .carousel-container {
+    padding: 0;
+  }
 }
 
 .event-card:hover {
@@ -207,8 +231,8 @@
   transform: translateY(-50%);
   background: #ffffff;
   border: 1px solid #e5e5e5;
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   border-radius: 0;
   cursor: pointer;
   font-size: 1.5rem;
@@ -227,11 +251,11 @@
 }
 
 .carousel-btn.prev {
-  left: -20px;
+  left: 0;
 }
 
 .carousel-btn.next {
-  right: -20px;
+  right: 0;
 }
 
 .carousel-dots {
@@ -260,10 +284,19 @@
   background: #c5a028;
 }
 
-/* Quick Links Section */
+/* Quick Links Section - With Background Image */
 .quick-links-section {
+  position: relative;
   padding: 5rem 2rem;
-  background: #faf9f8;
+  background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url('https://365thingsinhouston.com/wp-content/uploads/2017/08/museum-of-fine-arts-houston-Beck-Interior-Gallery.jpeg') no-repeat center center/cover;
+  background-attachment: fixed;
+}
+
+.quick-links-section .section-header h2,
+.quick-links-section .section-header p {
+  color: #ffffff;
+  position: relative;
+  z-index: 2;
 }
 
 .links-grid {
@@ -272,22 +305,26 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
   gap: 2rem;
+  position: relative;
+  z-index: 2;
 }
 
 .link-card {
-  background: #ffffff;
+  background: rgba(255, 255, 255, 0.95);
   padding: 2rem;
   border-radius: 0;
   text-decoration: none;
   text-align: center;
   transition: all 0.3s ease;
-  border: 1px solid #e5e5e5;
+  border: 1px solid rgba(229, 229, 229, 0.3);
+  backdrop-filter: blur(5px);
 }
 
 .link-card:hover {
   transform: translateY(-3px);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
   border-color: #c5a028;
+  background: #ffffff;
 }
 
 .link-icon {
@@ -310,31 +347,20 @@
   line-height: 1.5;
 }
 
-/* New Cards Section - Events, Gift Shop, Cafe */
+/* New Cards Section - With Background Image */
 .extras-section {
+  position: relative;
   padding: 5rem 2rem;
-  background: #ffffff;
-  border-top: 1px solid #e5e5e5;
+  background: linear-gradient(rgba(0, 0, 0, 0.65), rgba(0, 0, 0, 0.65));
+  background-attachment: fixed;
+  border-top: none;
 }
 
-.extras-section .section-header {
-  text-align: center;
-  margin-bottom: 3rem;
-}
-
-.extras-section .section-header h2 {
-  font-size: 2rem;
-  font-weight: 400;
-  color: #000000;
-  margin-bottom: 0.5rem;
-  letter-spacing: -0.01em;
-}
-
+.extras-section .section-header h2,
 .extras-section .section-header p {
-  font-size: 0.875rem;
-  color: #666666;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
+  color: #ffffff;
+  position: relative;
+  z-index: 2;
 }
 
 .extras-grid {
@@ -343,18 +369,21 @@
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 2rem;
+  position: relative;
+  z-index: 2;
 }
 
 .extras-card {
-  background: #ffffff;
+  background: rgba(255, 255, 255, 0.95);
   padding: 2.5rem;
   border-radius: 0;
   text-decoration: none;
   text-align: center;
   transition: all 0.3s ease;
-  border: 1px solid #e5e5e5;
+  border: 1px solid rgba(229, 229, 229, 0.3);
   position: relative;
   overflow: hidden;
+  backdrop-filter: blur(5px);
 }
 
 /* Washdown/cascade effect for extras cards */
@@ -367,7 +396,7 @@
   height: 100%;
   background: linear-gradient(90deg, 
     transparent 0%, 
-    rgba(197, 160, 40, 0.2) 50%, 
+    rgba(197, 160, 40, 0.3) 50%, 
     transparent 100%);
   transition: left 0.5s ease;
   z-index: 0;
@@ -379,8 +408,9 @@
 
 .extras-card:hover {
   transform: translateY(-5px);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
   border-color: #c5a028;
+  background: #ffffff;
 }
 
 .extras-icon {
@@ -428,7 +458,7 @@
   color: #d4af37;
 }
 
-/* Responsive */
+/* Responsive for Extras */
 @media (max-width: 768px) {
   .extras-grid {
     grid-template-columns: 1fr;
@@ -537,6 +567,11 @@
   
   .social-links {
     justify-content: center;
+  }
+  
+  .quick-links-section,
+  .extras-section {
+    background-attachment: scroll;
   }
 }
 
