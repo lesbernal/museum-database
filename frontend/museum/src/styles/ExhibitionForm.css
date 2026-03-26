@@ -168,3 +168,15 @@
   background: #fdba74;
   cursor: not-allowed;
 }
+
+.gallery-form input,
+.gallery-form select,
+.gallery-form textarea {
+  color: #111827;
+}
+
+.exhibition-form input,
+.exhibition-form select,
+.exhibition-form textarea {
+  color: #111827;
+}

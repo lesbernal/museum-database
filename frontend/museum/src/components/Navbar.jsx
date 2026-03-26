@@ -9,7 +9,7 @@ export default function Navbar() {
   const role = localStorage.getItem("role");
   const isLoggedIn = !!token;
   const isAdmin = role === "admin";
-  
+
   // Check if we're on an admin page
   const isAdminPage = location.pathname.startsWith("/admin");
 
@@ -67,13 +67,10 @@ export default function Navbar() {
           >
             EXHIBITIONS
           </NavLink>
-          <NavLink
-            to="/events"
-            className={({ isActive }) =>
-              isActive ? "category-link active" : "category-link"
-            }
-          >
-            EVENTS
+          <NavLink to="/buildings" className={({ isActive }) =>
+            isActive ? "category-link active" : "category-link"
+          }>
+            BUILDINGS
           </NavLink>
         </div>
       </nav>

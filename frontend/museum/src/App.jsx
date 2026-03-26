@@ -11,6 +11,7 @@ import ArtistsGallery from "./pages/ArtistsGallery";
 import Artworks from "./pages/Artworks";
 import Exhibitions from "./pages/Exhibitions";
 import Events from "./pages/Events";
+import Buildings from "./pages/Buildings";
 import CafePage from "./pages/CafePage";
 import GiftShopPage from "./pages/GiftShopPage";
 import GiftShopCartPage from "./pages/GiftShopCartPage";
@@ -49,6 +50,7 @@ function App() {
         <Route path="/artworks" element={<Artworks />} />
         <Route path="/exhibitions" element={<Exhibitions />} />
         <Route path="/events" element={<Events />} />
+        <Route path="/buildings" element={<Buildings />} />
         <Route path="/cafe" element={<CafePage />} />
         <Route path="/gift-shop" element={<GiftShopPage />} />
         <Route path="/gift-shop/cart" element={<GiftShopCartPage />} />
