@@ -179,7 +179,15 @@ export default function GiftShopPage() {
           {filteredItems.map((item) => (
             <article className="giftshop-card" key={item.item_id}>
               <div className="giftshop-card-art">
-                <span>{item.category?.slice(0, 1) || "M"}</span>
+                {item.image_url ? (
+                  <img
+                    src={item.image_url}
+                    alt={item.item_name}
+                    className="giftshop-card-image"
+                  />
+                ) : (
+                  <span>{item.category?.slice(0, 1) || "M"}</span>
+                )}
               </div>
               <div className="giftshop-card-body">
                 <p className="giftshop-category">{item.category}</p>

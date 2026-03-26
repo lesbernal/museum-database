@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import "../styles/ReportsPanel.css";
 
 export default function ReportsPanel() {
-  const [activeReport, setActiveReport] = useState("artwork");
+  const [activeReport, setActiveReport] = useState("revenue");
   const [reportData, setReportData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [queryResult, setQueryResult] = useState(null);
@@ -15,32 +15,7 @@ export default function ReportsPanel() {
 
   // ==================== DATA REPORTS ====================
   
-  const loadArtworkReport = async () => {
-    setLoading(true);
-    try {
-      const response = await fetch(`${BASE_URL}/reports/artwork-summary`);
-      const data = await response.json();
-      setReportData(data);
-    } catch (err) {
-      console.error("Failed to load artwork report:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const loadArtistReport = async () => {
-    setLoading(true);
-    try {
-      const response = await fetch(`${BASE_URL}/reports/artist-stats`);
-      const data = await response.json();
-      setReportData(data);
-    } catch (err) {
-      console.error("Failed to load artist report:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  // Report 1: Revenue (Tickets + Donations)
   const loadRevenueReport = async () => {
     setLoading(true);
     try {
@@ -54,14 +29,43 @@ export default function ReportsPanel() {
     }
   };
 
-  const loadExhibitionReport = async () => {
+  // Report 2: Art Collection (Artists + Artwork + Exhibitions)
+  const loadArtCollectionReport = async () => {
     setLoading(true);
     try {
-      const response = await fetch(`${BASE_URL}/reports/exhibition-summary`);
+      const response = await fetch(`${BASE_URL}/reports/art-collection-summary`);
       const data = await response.json();
       setReportData(data);
     } catch (err) {
-      console.error("Failed to load exhibition report:", err);
+      console.error("Failed to load art collection report:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Report 3: Gift Shop Summary
+  const loadGiftShopReport = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch(`${BASE_URL}/reports/giftshop-summary`);
+      const data = await response.json();
+      setReportData(data);
+    } catch (err) {
+      console.error("Failed to load gift shop report:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Report 4: User Summary
+  const loadUserReport = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch(`${BASE_URL}/reports/user-summary`);
+      const data = await response.json();
+      setReportData(data);
+    } catch (err) {
+      console.error("Failed to load user report:", err);
     } finally {
       setLoading(false);
     }
@@ -124,27 +128,120 @@ export default function ReportsPanel() {
     }
   };
 
+  const searchGiftShopLowStock = async () => {
+    setQueryLoading(true);
+    try {
+      const response = await fetch(`${BASE_URL}/queries/giftshop-low-stock`);
+      const data = await response.json();
+      setQueryResult(data);
+    } catch (err) {
+      console.error("Query failed:", err);
+    } finally {
+      setQueryLoading(false);
+    }
+  };
+
   useEffect(() => {
-    if (activeReport === "artwork") loadArtworkReport();
-    else if (activeReport === "artists") loadArtistReport();
-    else if (activeReport === "revenue") loadRevenueReport();
-    else if (activeReport === "exhibitions") loadExhibitionReport();
+    if (activeReport === "revenue") loadRevenueReport();
+    else if (activeReport === "artCollection") loadArtCollectionReport();
+    else if (activeReport === "giftShop") loadGiftShopReport();
+    else if (activeReport === "users") loadUserReport();
   }, [activeReport]);
 
-  // Helper function to format currency
+  // Helper functions
   const formatCurrency = (value) => {
-    if (!value) return '$0.00';
+    if (!value && value !== 0) return '$0.00';
     return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 }).format(value);
   };
 
-  // Helper function to format numbers
   const formatNumber = (value) => {
-    if (!value) return '0';
+    if (!value && value !== 0) return '0';
     return new Intl.NumberFormat('en-US').format(value);
   };
 
-  // Render Artwork Summary Report
-  const renderArtworkSummary = () => {
+  // ==================== RENDER FUNCTIONS ====================
+
+  // Render Revenue Report (Tickets + Donations)
+  const renderRevenueReport = () => {
+    if (!reportData) return null;
+    return (
+      <div className="report-content">
+        <h4>🎟️ Ticket Sales</h4>
+        <div className="stats-grid two-columns">
+          <div className="stat-card">
+            <div className="stat-icon">🎟️</div>
+            <div className="stat-value">{formatCurrency(reportData.total_ticket_revenue)}</div>
+            <div className="stat-label">Total Ticket Revenue</div>
+            <div className="stat-sub">{formatNumber(reportData.total_tickets_sold)} tickets sold</div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-icon">📊</div>
+            <div className="stat-value">{formatCurrency(reportData.avg_ticket_price)}</div>
+            <div className="stat-label">Average Ticket Price</div>
+          </div>
+        </div>
+
+        <div className="stats-grid four-columns">
+          <div className="stat-card small">
+            <div className="stat-label">Adult (19+)</div>
+            <div className="stat-value">{formatCurrency(reportData.adult_ticket_revenue)}</div>
+            <div className="stat-sub">{formatNumber(reportData.adult_tickets_sold)} sold</div>
+          </div>
+          <div className="stat-card small">
+            <div className="stat-label">Senior (65+)</div>
+            <div className="stat-value">{formatCurrency(reportData.senior_ticket_revenue)}</div>
+            <div className="stat-sub">{formatNumber(reportData.senior_tickets_sold)} sold</div>
+          </div>
+          <div className="stat-card small">
+            <div className="stat-label">Youth (13-18)</div>
+            <div className="stat-value">{formatCurrency(reportData.youth_ticket_revenue)}</div>
+            <div className="stat-sub">{formatNumber(reportData.youth_tickets_sold)} sold</div>
+          </div>
+          <div className="stat-card small">
+            <div className="stat-label">Child (12 & under)</div>
+            <div className="stat-value">{formatCurrency(reportData.child_ticket_revenue)}</div>
+            <div className="stat-sub">{formatNumber(reportData.child_tickets_sold)} sold</div>
+          </div>
+        </div>
+
+        <h4>💝 Donations</h4>
+        <div className="stats-grid two-columns">
+          <div className="stat-card">
+            <div className="stat-icon">💝</div>
+            <div className="stat-value">{formatCurrency(reportData.total_donation_revenue)}</div>
+            <div className="stat-label">Total Donations</div>
+            <div className="stat-sub">{formatNumber(reportData.total_donations)} donations</div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-icon">📊</div>
+            <div className="stat-value">{formatCurrency(reportData.avg_donation_amount)}</div>
+            <div className="stat-label">Average Donation</div>
+          </div>
+        </div>
+
+        <div className="stats-grid two-columns">
+          <div className="stat-card">
+            <div className="stat-label">One-time Donations</div>
+            <div className="stat-value">{formatCurrency(reportData.one_time_donations)}</div>
+            <div className="stat-sub">{formatNumber(reportData.one_time_donation_count)} donations</div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-label">Recurring Donations</div>
+            <div className="stat-value">{formatCurrency(reportData.recurring_donations)}</div>
+            <div className="stat-sub">{formatNumber(reportData.recurring_donation_count)} donations</div>
+          </div>
+        </div>
+
+        <div className="total-revenue-card">
+          <div className="total-label">COMBINED TOTAL REVENUE</div>
+          <div className="total-value">{formatCurrency(reportData.total_revenue)}</div>
+        </div>
+      </div>
+    );
+  };
+
+  // Render Art Collection Report (Artists + Artwork + Exhibitions)
+  const renderArtCollectionReport = () => {
     if (!reportData) return null;
     return (
       <div className="report-content">
@@ -166,8 +263,8 @@ export default function ReportsPanel() {
           </div>
           <div className="stat-card">
             <div className="stat-icon">💰</div>
-            <div className="stat-value">{formatCurrency(reportData.total_insurance_value)}</div>
-            <div className="stat-label">Total Collection Value</div>
+            <div className="stat-value">{formatCurrency(reportData.total_collection_value)}</div>
+            <div className="stat-label">Collection Value</div>
           </div>
         </div>
 
@@ -178,152 +275,225 @@ export default function ReportsPanel() {
               <div className="status-item">
                 <span>On Display</span>
                 <div className="progress-bar">
-                  <div className="progress-fill display" style={{ width: `${(reportData.on_display / reportData.total_artworks) * 100}%` }}></div>
+                  <div className="progress-fill display" style={{ width: `${(reportData.artworks_on_display / reportData.total_artworks) * 100}%` }}></div>
                 </div>
-                <span className="status-count">{reportData.on_display}</span>
+                <span className="status-count">{reportData.artworks_on_display}</span>
               </div>
               <div className="status-item">
                 <span>In Storage</span>
                 <div className="progress-bar">
-                  <div className="progress-fill storage" style={{ width: `${(reportData.in_storage / reportData.total_artworks) * 100}%` }}></div>
+                  <div className="progress-fill storage" style={{ width: `${(reportData.artworks_in_storage / reportData.total_artworks) * 100}%` }}></div>
                 </div>
-                <span className="status-count">{reportData.in_storage}</span>
+                <span className="status-count">{reportData.artworks_in_storage}</span>
               </div>
               <div className="status-item">
                 <span>On Loan</span>
                 <div className="progress-bar">
-                  <div className="progress-fill loan" style={{ width: `${(reportData.on_loan / reportData.total_artworks) * 100}%` }}></div>
+                  <div className="progress-fill loan" style={{ width: `${(reportData.artworks_on_loan / reportData.total_artworks) * 100}%` }}></div>
                 </div>
-                <span className="status-count">{reportData.on_loan}</span>
+                <span className="status-count">{reportData.artworks_on_loan}</span>
               </div>
             </div>
           </div>
 
           <div className="stat-group">
-            <h4>Date Range</h4>
-            <div className="date-range">
-              <div className="date-card">
-                <span className="date-label">Oldest</span>
-                <span className="date-value">{reportData.oldest_artwork_year}</span>
-              </div>
-              <div className="date-arrow">→</div>
-              <div className="date-card">
-                <span className="date-label">Newest</span>
-                <span className="date-value">{reportData.newest_artwork_year}</span>
-              </div>
+            <h4>Collection Highlights</h4>
+            <div className="highlight-item">
+              <span>🥇 Most Prolific Artist</span>
+              <strong>{reportData.top_artist_by_count}</strong>
+              <span>({reportData.top_artist_count} artworks)</span>
             </div>
-            <div className="avg-value">
-              <span>Average Insurance Value:</span>
-              <strong>{formatCurrency(reportData.avg_insurance_value)}</strong>
+            <div className="highlight-item">
+              <span>📅 Date Range</span>
+              <strong>{reportData.oldest_artwork} - {reportData.newest_artwork}</strong>
+            </div>
+            <div className="highlight-item">
+              <span>💰 Average Artwork Value</span>
+              <strong>{formatCurrency(reportData.avg_artwork_value)}</strong>
             </div>
           </div>
         </div>
-      </div>
-    );
-  };
 
-  // Render Artist Statistics Report
-  const renderArtistStats = () => {
-    if (!reportData || !Array.isArray(reportData)) return null;
-    return (
-      <div className="report-content">
-        <div className="artist-table-container">
-          <table className="artist-stats-table">
-            <thead>
-              <tr>
-                <th>Artist</th>
-                <th>Nationality</th>
-                <th>Artworks</th>
-                <th>Total Value</th>
-                <th>Avg Value</th>
-                <th>Years Active</th>
-              </tr>
-            </thead>
-            <tbody>
-              {reportData.map((artist, index) => (
-                <tr key={artist.artist_id} className={index < 3 ? 'top-artist' : ''}>
-                  <td className="artist-name">
-                    {index < 3 && <span className="medal">{index === 0 ? '🥇' : index === 1 ? '🥈' : '🥉'}</span>}
-                    {artist.artist_name}
-                  </td>
-                  <td>{artist.nationality}</td>
-                  <td className="text-center">{artist.artwork_count}</td>
-                  <td className="text-right">{formatCurrency(artist.total_artwork_value)}</td>
-                  <td className="text-right">{formatCurrency(artist.avg_artwork_value)}</td>
-                  <td className="text-center">{artist.earliest_work} - {artist.latest_work}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <h4>🏛️ Exhibition Summary</h4>
+        <div className="stats-grid four-columns">
+          <div className="stat-card small">
+            <div className="stat-label">Total Exhibitions</div>
+            <div className="stat-value">{formatNumber(reportData.total_exhibitions)}</div>
+          </div>
+          <div className="stat-card small">
+            <div className="stat-label">Permanent</div>
+            <div className="stat-value">{formatNumber(reportData.permanent_exhibitions)}</div>
+          </div>
+          <div className="stat-card small">
+            <div className="stat-label">Temporary</div>
+            <div className="stat-value">{formatNumber(reportData.temporary_exhibitions)}</div>
+          </div>
+          <div className="stat-card small">
+            <div className="stat-label">Artworks in Exhibitions</div>
+            <div className="stat-value">{formatNumber(reportData.artworks_in_exhibitions)}</div>
+          </div>
         </div>
+        {reportData.current_exhibition && (
+          <div className="current-exhibition">
+            <span>📅 Current Exhibition:</span>
+            <strong>{reportData.current_exhibition}</strong>
+          </div>
+        )}
       </div>
     );
   };
 
-  // Render Revenue Summary Report
-  const renderRevenueSummary = () => {
+  // Render Gift Shop Report
+  const renderGiftShopReport = () => {
     if (!reportData) return null;
     return (
       <div className="report-content">
-        <div className="stats-grid revenue-grid">
-          <div className="stat-card revenue-card cafe">
-            <div className="stat-icon">☕</div>
-            <div className="stat-value">{formatCurrency(reportData.cafe_revenue || 0)}</div>
-            <div className="stat-label">Cafe Revenue</div>
-            <div className="stat-sub">{formatNumber(reportData.cafe_transaction_count)} transactions</div>
+        <div className="stats-grid">
+          <div className="stat-card">
+            <div className="stat-icon">💰</div>
+            <div className="stat-value">{formatCurrency(reportData.total_revenue)}</div>
+            <div className="stat-label">Total Revenue</div>
+            <div className="stat-sub">{formatNumber(reportData.total_transactions)} transactions</div>
           </div>
-          <div className="stat-card revenue-card gift">
-            <div className="stat-icon">🛍️</div>
-            <div className="stat-value">{formatCurrency(reportData.gift_shop_revenue || 0)}</div>
-            <div className="stat-label">Gift Shop Revenue</div>
-            <div className="stat-sub">{formatNumber(reportData.gift_shop_transaction_count)} transactions</div>
+          <div className="stat-card">
+            <div className="stat-icon">📊</div>
+            <div className="stat-value">{formatCurrency(reportData.avg_transaction_value)}</div>
+            <div className="stat-label">Average Transaction</div>
           </div>
-          <div className="stat-card revenue-card ticket">
-            <div className="stat-icon">🎟️</div>
-            <div className="stat-value">{formatCurrency(reportData.ticket_revenue || 0)}</div>
-            <div className="stat-label">Ticket Revenue</div>
-            <div className="stat-sub">{formatNumber(reportData.ticket_sales_count)} tickets sold</div>
+          <div className="stat-card">
+            <div className="stat-icon">🏆</div>
+            <div className="stat-value">{formatCurrency(reportData.max_transaction)}</div>
+            <div className="stat-label">Largest Sale</div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-icon">📦</div>
+            <div className="stat-value">{formatNumber(reportData.total_items)}</div>
+            <div className="stat-label">Total Products</div>
+            <div className="stat-sub">{formatNumber(reportData.total_stock)} units in stock</div>
           </div>
         </div>
-        
-        <div className="total-revenue-card">
-          <div className="total-label">TOTAL REVENUE</div>
-          <div className="total-value">{formatCurrency(reportData.total_revenue)}</div>
+
+        <div className="stats-row">
+          <div className="stat-group">
+            <h4>⚠️ Inventory Alerts</h4>
+            <div className="alert-item warning">
+              <span>⚠️ Low Stock Items</span>
+              <strong>{formatNumber(reportData.low_stock_items)} items below 10 units</strong>
+            </div>
+            <div className="alert-item danger">
+              <span>❌ Out of Stock</span>
+              <strong>{formatNumber(reportData.out_of_stock_items)} items</strong>
+            </div>
+          </div>
+
+          <div className="stat-group">
+            <h4>🏆 Top Performers</h4>
+            <div className="highlight-item">
+              <span>🥇 Best Selling Item</span>
+              <strong>{reportData.top_selling_item}</strong>
+              <span>({reportData.top_selling_quantity} sold)</span>
+            </div>
+            <div className="highlight-item">
+              <span>💰 Top Revenue Item</span>
+              <strong>{reportData.top_revenue_item}</strong>
+              <span>{formatCurrency(reportData.top_revenue_amount)}</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="stats-grid two-columns">
+          <div className="stat-card">
+            <div className="stat-label">Most Common Category</div>
+            <div className="stat-value">{reportData.most_common_category || 'N/A'}</div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-label">Most Used Payment Method</div>
+            <div className="stat-value">{reportData.most_used_payment || 'N/A'}</div>
+          </div>
+        </div>
+
+        <div className="query-card" style={{ marginTop: '20px' }}>
+          <h4>🔍 Check Low Stock Items</h4>
+          <div className="query-input">
+            <button onClick={searchGiftShopLowStock}>
+              View Low Stock Items
+            </button>
+          </div>
         </div>
       </div>
     );
   };
 
-  // Render Exhibition Summary Report
-  const renderExhibitionSummary = () => {
-    if (!reportData || !Array.isArray(reportData)) return null;
+  // Render User Summary Report
+  const renderUserReport = () => {
+    if (!reportData) return null;
     return (
       <div className="report-content">
-        <div className="exhibition-table-container">
-          <table className="exhibition-table">
-            <thead>
-              <tr>
-                <th>Exhibition</th>
-                <th>Type</th>
-                <th>Location</th>
-                <th>Start Date</th>
-                <th>End Date</th>
-                <th>Duration</th>
-              </tr>
-            </thead>
-            <tbody>
-              {reportData.map((exhibition) => (
-                <tr key={exhibition.exhibition_id}>
-                  <td className="exhibition-title">{exhibition.exhibition_title}</td>
-                  <td><span className={`type-badge ${exhibition.type?.toLowerCase()}`}>{exhibition.type}</span></td>
-                  <td>{exhibition.gallery_name} <span className="building-name">({exhibition.building_name})</span></td>
-                  <td>{new Date(exhibition.start_date).toLocaleDateString()}</td>
-                  <td>{new Date(exhibition.end_date).toLocaleDateString()}</td>
-                  <td>{exhibition.duration_days} days</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="stats-grid">
+          <div className="stat-card">
+            <div className="stat-icon">👥</div>
+            <div className="stat-value">{formatNumber(reportData.total_users)}</div>
+            <div className="stat-label">Total Users</div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-icon">👑</div>
+            <div className="stat-value">{formatNumber(reportData.admin_count)}</div>
+            <div className="stat-label">Admins</div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-icon">👔</div>
+            <div className="stat-value">{formatNumber(reportData.employee_count)}</div>
+            <div className="stat-label">Employees</div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-icon">⭐</div>
+            <div className="stat-value">{formatNumber(reportData.member_count)}</div>
+            <div className="stat-label">Members</div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-icon">🚶</div>
+            <div className="stat-value">{formatNumber(reportData.visitor_count)}</div>
+            <div className="stat-label">Visitors</div>
+          </div>
+        </div>
+
+        <div className="stats-row">
+          <div className="stat-group">
+            <h4>📊 Visitor Statistics</h4>
+            <div className="highlight-item">
+              <span>Visitors with recorded visits</span>
+              <strong>{formatNumber(reportData.visitors_with_visits)}</strong>
+            </div>
+            <div className="highlight-item">
+              <span>Average visits per visitor</span>
+              <strong>{reportData.avg_visits_per_visitor || '0'}</strong>
+            </div>
+            <div className="highlight-item">
+              <span>Most frequent visitor</span>
+              <strong>{reportData.max_visits || '0'} visits</strong>
+            </div>
+          </div>
+
+          <div className="stat-group">
+            <h4>💎 Membership Statistics</h4>
+            <div className="highlight-item">
+              <span>Active Members</span>
+              <strong>{formatNumber(reportData.active_members)}</strong>
+            </div>
+            <div className="highlight-item">
+              <span>Expired Memberships</span>
+              <strong>{formatNumber(reportData.expired_members)}</strong>
+            </div>
+            <div className="highlight-item">
+              <span>Most Common Level</span>
+              <strong>{reportData.most_common_membership || 'N/A'}</strong>
+            </div>
+          </div>
+        </div>
+
+        <div className="current-exhibition">
+          <span>📈 New Users (Last 30 Days):</span>
+          <strong>{formatNumber(reportData.new_users_last_30_days)}</strong>
         </div>
       </div>
     );
@@ -349,7 +519,11 @@ export default function ReportsPanel() {
             {queryResult.map((row, idx) => (
               <tr key={idx}>
                 {Object.values(row).map((value, i) => (
-                  <td key={i}>{typeof value === 'number' ? formatCurrency(value) : value}</td>
+                  <td key={i}>
+                    {typeof value === 'number' && key.includes('price') || key.includes('value') || key.includes('amount') 
+                      ? formatCurrency(value) 
+                      : value}
+                  </td>
                 ))}
               </tr>
             ))}
@@ -364,47 +538,47 @@ export default function ReportsPanel() {
       {/* Report Buttons */}
       <div className="report-buttons">
         <button 
-          className={activeReport === "artwork" ? "active" : ""} 
-          onClick={() => setActiveReport("artwork")}
-        >
-          Artwork Summary
-        </button>
-        <button 
-          className={activeReport === "artists" ? "active" : ""} 
-          onClick={() => setActiveReport("artists")}
-        >
-          Artist Statistics
-        </button>
-        <button 
           className={activeReport === "revenue" ? "active" : ""} 
           onClick={() => setActiveReport("revenue")}
         >
-          Revenue Summary
+          💰 Revenue (Tickets + Donations)
         </button>
         <button 
-          className={activeReport === "exhibitions" ? "active" : ""} 
-          onClick={() => setActiveReport("exhibitions")}
+          className={activeReport === "artCollection" ? "active" : ""} 
+          onClick={() => setActiveReport("artCollection")}
         >
-          Exhibition Summary
+          🎨 Art Collection
+        </button>
+        <button 
+          className={activeReport === "giftShop" ? "active" : ""} 
+          onClick={() => setActiveReport("giftShop")}
+        >
+          🛍️ Gift Shop
+        </button>
+        <button 
+          className={activeReport === "users" ? "active" : ""} 
+          onClick={() => setActiveReport("users")}
+        >
+          👥 User Summary
         </button>
       </div>
 
       {/* Report Display */}
       <div className="report-display">
         <h3>
-          {activeReport === "artwork" && "📊 Artwork Collection Summary"}
-          {activeReport === "artists" && "🏆 Artist Statistics"}
-          {activeReport === "revenue" && "💰 Revenue Summary"}
-          {activeReport === "exhibitions" && "🏛️ Exhibition Summary"}
+          {activeReport === "revenue" && "💰 Revenue Report (Ticket Sales + Donations)"}
+          {activeReport === "artCollection" && "🎨 Art Collection Report"}
+          {activeReport === "giftShop" && "🛍️ Gift Shop Report"}
+          {activeReport === "users" && "👥 User Summary Report"}
         </h3>
         {loading ? (
           <div className="loading">Loading report...</div>
         ) : reportData ? (
           <>
-            {activeReport === "artwork" && renderArtworkSummary()}
-            {activeReport === "artists" && renderArtistStats()}
-            {activeReport === "revenue" && renderRevenueSummary()}
-            {activeReport === "exhibitions" && renderExhibitionSummary()}
+            {activeReport === "revenue" && renderRevenueReport()}
+            {activeReport === "artCollection" && renderArtCollectionReport()}
+            {activeReport === "giftShop" && renderGiftShopReport()}
+            {activeReport === "users" && renderUserReport()}
           </>
         ) : (
           <p>Select a report to view</p>

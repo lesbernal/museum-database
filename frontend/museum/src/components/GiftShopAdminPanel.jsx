@@ -24,13 +24,14 @@ const resources = [
     create: createGiftShopItem,
     update: updateGiftShopItem,
     remove: deleteGiftShopItem,
-    searchKeys: ["item_id", "item_name", "category"],
+    searchKeys: ["item_id", "item_name", "category", "image_url"],
     columns: [
       { key: "item_id", label: "ID" },
       { key: "item_name", label: "Name" },
       { key: "category", label: "Category" },
       { key: "price", label: "Price" },
       { key: "stock_quantity", label: "Stock" },
+      { key: "image_url", label: "Image URL" },
     ],
     fields: [
       { name: "item_id", label: "Item ID", required: true, readOnlyOnEdit: true, placeholder: "30" },
@@ -38,6 +39,12 @@ const resources = [
       { name: "category", label: "Category", required: true, placeholder: "Decor" },
       { name: "price", label: "Price", required: true, placeholder: "19.99" },
       { name: "stock_quantity", label: "Stock Quantity", required: true, placeholder: "10" },
+      {
+        name: "image_url",
+        label: "Image URL",
+        placeholder: "https://example.com/gift-shop-item.jpg",
+        fullWidth: true,
+      },
     ],
   },
   {

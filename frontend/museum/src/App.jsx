@@ -13,6 +13,8 @@ import Exhibitions from "./pages/Exhibitions";
 import Events from "./pages/Events";
 import Buildings from "./pages/Buildings";
 import CafePage from "./pages/CafePage";
+import CafeCartPage from "./pages/CafeCartPage";
+import CafeCheckoutPage from "./pages/CafeCheckoutPage";
 import GiftShopPage from "./pages/GiftShopPage";
 import GiftShopCartPage from "./pages/GiftShopCartPage";
 import GiftShopCheckoutPage from "./pages/GiftShopCheckoutPage";
@@ -52,6 +54,8 @@ function App() {
         <Route path="/events" element={<Events />} />
         <Route path="/buildings" element={<Buildings />} />
         <Route path="/cafe" element={<CafePage />} />
+        <Route path="/cafe/cart" element={<CafeCartPage />} />
+        <Route path="/cafe/checkout" element={<CafeCheckoutPage />} />
         <Route path="/gift-shop" element={<GiftShopPage />} />
         <Route path="/gift-shop/cart" element={<GiftShopCartPage />} />
         <Route path="/gift-shop/checkout" element={<GiftShopCheckoutPage />} />
