@@ -1,0 +1,317 @@
+// pages/MemberDashboard.jsx
+// PROTECTED — requires login with role "member"
+// Everything VisitorDashboard has, plus a Membership tab.
+
+import { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import {
+  getMyProfile,
+  updateMyProfile,
+  changeMyPassword,
+  getMyVisitorRecord,
+  getMyMemberRecord,
+} from "../services/api";
+import "../styles/Dashboard.css";
+import "../styles/SelfService.css";
+
+const TABS = [
+  { id: "profile",    label: "My Profile",      icon: "👤" },
+  { id: "membership", label: "Membership",       icon: "⭐" },
+  { id: "visits",     label: "Visit History",    icon: "🏛️" },
+  { id: "purchases",  label: "Purchase History", icon: "🛍️" },
+  { id: "password",   label: "Change Password",  icon: "🔒" },
+];
+
+const LEVEL_COLORS = {
+  Bronze:   { bg: "#fdf2e9", color: "#a04000", border: "#f0a070" },
+  Silver:   { bg: "#f2f3f4", color: "#566573", border: "#aab7b8" },
+  Gold:     { bg: "#fef9e7", color: "#9a7d0a", border: "#f4d03f" },
+  Platinum: { bg: "#eaf4fb", color: "#1a5276", border: "#7fb3d3" },
+};
+
+export default function MemberDashboard() {
+  const navigate    = useNavigate();
+  const userEmail   = localStorage.getItem("user_email") || "";
+  const displayName = userEmail.split("@")[0];
+
+  const [activeTab,  setActiveTab]  = useState("profile");
+  const [profile,    setProfile]    = useState(null);
+  const [visitorRec, setVisitorRec] = useState(null);
+  const [memberRec,  setMemberRec]  = useState(null);
+  const [loading,    setLoading]    = useState(true);
+  const [saving,     setSaving]     = useState(false);
+  const [feedback,   setFeedback]   = useState(null);
+  const [form,       setForm]       = useState({});
+  const [pwForm,     setPwForm]     = useState({ new_password: "", confirm_password: "" });
+
+  const notify = (msg, type = "success") => {
+    setFeedback({ msg, type });
+    setTimeout(() => setFeedback(null), 3500);
+  };
+
+  useEffect(() => {
+    async function load() {
+      setLoading(true);
+      try {
+        const [prof, vis, mem] = await Promise.allSettled([
+          getMyProfile(),
+          getMyVisitorRecord(),
+          getMyMemberRecord(),
+        ]);
+        if (prof.status === "fulfilled") { setProfile(prof.value); setForm(prof.value); }
+        if (vis.status  === "fulfilled") setVisitorRec(vis.value);
+        if (mem.status  === "fulfilled") setMemberRec(mem.value);
+      } catch (e) {
+        notify(e.message, "error");
+      } finally {
+        setLoading(false);
+      }
+    }
+    load();
+  }, []);
+
+  function handleLogout() {
+    localStorage.removeItem("token");
+    localStorage.removeItem("role");
+    localStorage.removeItem("user_id");
+    localStorage.removeItem("user_email");
+    navigate("/login");
+  }
+
+  async function handleProfileSave(e) {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      await updateMyProfile({
+        first_name: form.first_name, last_name: form.last_name,
+        email: form.email, phone_number: form.phone_number,
+        street_address: form.street_address, city: form.city,
+        state: form.state, zip_code: form.zip_code,
+        date_of_birth: form.date_of_birth,
+      });
+      setProfile({ ...profile, ...form });
+      notify("Profile updated successfully");
+    } catch (e) { notify(e.message, "error"); }
+    finally { setSaving(false); }
+  }
+
+  async function handlePasswordChange(e) {
+    e.preventDefault();
+    if (pwForm.new_password.length < 6) { notify("Password must be at least 6 characters", "error"); return; }
+    if (pwForm.new_password !== pwForm.confirm_password) { notify("Passwords do not match", "error"); return; }
+    setSaving(true);
+    try {
+      await changeMyPassword(pwForm.new_password);
+      notify("Password changed successfully");
+      setPwForm({ new_password: "", confirm_password: "" });
+    } catch (e) { notify(e.message, "error"); }
+    finally { setSaving(false); }
+  }
+
+  const daysUntilExpiry = memberRec?.expiration_date
+    ? Math.ceil((new Date(memberRec.expiration_date) - new Date()) / (1000 * 60 * 60 * 24))
+    : null;
+  const levelStyle = LEVEL_COLORS[memberRec?.membership_level] || LEVEL_COLORS.Bronze;
+
+  return (
+    <div className="dashboard-page member-dashboard">
+      <div className="dashboard-hero member-hero">
+        <div className="dashboard-hero-overlay" />
+        <div className="dashboard-hero-content">
+          <span className="dashboard-role-badge member-badge">Member</span>
+          <h1>Welcome, {profile?.first_name || displayName}</h1>
+          <p>Access your membership benefits and manage your account.</p>
+          <div className="dashboard-hero-actions">
+            <Link to="/" className="dashboard-back-btn">← Back to Home</Link>
+            <button className="dashboard-logout-btn" onClick={handleLogout}>Sign Out</button>
+          </div>
+        </div>
+      </div>
+
+      <div className="dashboard-body">
+        <div className="ss-tabs">
+          {TABS.map(t => (
+            <button key={t.id} className={`ss-tab ${activeTab === t.id ? "active" : ""}`}
+              onClick={() => setActiveTab(t.id)}>
+              <span>{t.icon}</span> {t.label}
+            </button>
+          ))}
+        </div>
+
+        {feedback && <div className={`ss-feedback ${feedback.type}`}>{feedback.msg}</div>}
+
+        {loading ? (
+          <div className="ss-loading">Loading your information…</div>
+        ) : (
+          <>
+            {/* ── PROFILE TAB ── */}
+            {activeTab === "profile" && (
+              <div className="ss-card">
+                <h2 className="ss-section-title">My Profile</h2>
+                <form className="ss-form" onSubmit={handleProfileSave}>
+                  <div className="ss-form-grid">
+                    <div className="ss-form-group">
+                      <label>First Name</label>
+                      <input value={form.first_name || ""} onChange={e => setForm(p => ({ ...p, first_name: e.target.value }))} />
+                    </div>
+                    <div className="ss-form-group">
+                      <label>Last Name</label>
+                      <input value={form.last_name || ""} onChange={e => setForm(p => ({ ...p, last_name: e.target.value }))} />
+                    </div>
+                    <div className="ss-form-group full">
+                      <label>Email</label>
+                      <input type="email" value={form.email || ""} onChange={e => setForm(p => ({ ...p, email: e.target.value }))} />
+                    </div>
+                    <div className="ss-form-group">
+                      <label>Phone Number</label>
+                      <input value={form.phone_number || ""} onChange={e => setForm(p => ({ ...p, phone_number: e.target.value }))} />
+                    </div>
+                    <div className="ss-form-group">
+                      <label>Date of Birth</label>
+                      <input type="date" value={form.date_of_birth?.slice(0,10) || ""} onChange={e => setForm(p => ({ ...p, date_of_birth: e.target.value }))} />
+                    </div>
+                    <div className="ss-form-group full">
+                      <label>Street Address</label>
+                      <input value={form.street_address || ""} onChange={e => setForm(p => ({ ...p, street_address: e.target.value }))} />
+                    </div>
+                    <div className="ss-form-group">
+                      <label>City</label>
+                      <input value={form.city || ""} onChange={e => setForm(p => ({ ...p, city: e.target.value }))} />
+                    </div>
+                    <div className="ss-form-group">
+                      <label>State</label>
+                      <input value={form.state || ""} onChange={e => setForm(p => ({ ...p, state: e.target.value }))} />
+                    </div>
+                    <div className="ss-form-group">
+                      <label>Zip Code</label>
+                      <input value={form.zip_code || ""} onChange={e => setForm(p => ({ ...p, zip_code: e.target.value }))} />
+                    </div>
+                  </div>
+                  <div className="ss-form-actions">
+                    <button type="submit" className="ss-btn ss-btn-primary" disabled={saving}>
+                      {saving ? "Saving…" : "Save Changes"}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
+
+            {/* ── MEMBERSHIP TAB ── */}
+            {activeTab === "membership" && (
+              <div className="ss-card">
+                <h2 className="ss-section-title">Membership Details</h2>
+                {memberRec ? (
+                  <>
+                    <div className="ss-membership-badge" style={{
+                      background: levelStyle.bg,
+                      color: levelStyle.color,
+                      border: `1px solid ${levelStyle.border}`
+                    }}>
+                      ⭐ {memberRec.membership_level} Member
+                    </div>
+                    <div className="ss-stat-grid" style={{ marginTop: 24 }}>
+                      <div className="ss-stat">
+                        <span className="ss-stat-value">
+                          {memberRec.join_date
+                            ? new Date(memberRec.join_date).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
+                            : "—"}
+                        </span>
+                        <span className="ss-stat-label">Member Since</span>
+                      </div>
+                      <div className="ss-stat">
+                        <span className="ss-stat-value">
+                          {memberRec.expiration_date
+                            ? new Date(memberRec.expiration_date).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
+                            : "—"}
+                        </span>
+                        <span className="ss-stat-label">Expires</span>
+                      </div>
+                      {daysUntilExpiry !== null && (
+                        <div className="ss-stat">
+                          <span className="ss-stat-value" style={{ color: daysUntilExpiry < 30 ? "#c0392b" : "inherit" }}>
+                            {daysUntilExpiry > 0 ? `${daysUntilExpiry} days` : "Expired"}
+                          </span>
+                          <span className="ss-stat-label">Until Expiry</span>
+                        </div>
+                      )}
+                      <div className="ss-stat">
+                        <span className="ss-stat-value">{visitorRec?.total_visits ?? 0}</span>
+                        <span className="ss-stat-label">Total Visits</span>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <div className="ss-empty">No membership record found.</div>
+                )}
+              </div>
+            )}
+
+            {/* ── VISIT HISTORY TAB ── */}
+            {activeTab === "visits" && (
+              <div className="ss-card">
+                <h2 className="ss-section-title">Visit History</h2>
+                {visitorRec ? (
+                  <div className="ss-stat-grid">
+                    <div className="ss-stat">
+                      <span className="ss-stat-value">{visitorRec.total_visits ?? 0}</span>
+                      <span className="ss-stat-label">Total Visits</span>
+                    </div>
+                    <div className="ss-stat">
+                      <span className="ss-stat-value">
+                        {visitorRec.last_visit_date
+                          ? new Date(visitorRec.last_visit_date).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
+                          : "—"}
+                      </span>
+                      <span className="ss-stat-label">Last Visit</span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="ss-empty">No visit records found.</div>
+                )}
+              </div>
+            )}
+
+            {/* ── PURCHASE HISTORY TAB ── */}
+            {activeTab === "purchases" && (
+              <div className="ss-card">
+                <h2 className="ss-section-title">Purchase History</h2>
+                <div className="ss-placeholder">
+                  <div className="ss-placeholder-icon">🛍️</div>
+                  <p>Purchase history will appear here once the ticketing and shop features are completed.</p>
+                </div>
+              </div>
+            )}
+
+            {/* ── CHANGE PASSWORD TAB ── */}
+            {activeTab === "password" && (
+              <div className="ss-card" style={{ maxWidth: 420 }}>
+                <h2 className="ss-section-title">Change Password</h2>
+                <form className="ss-form" onSubmit={handlePasswordChange}>
+                  <div className="ss-form-grid" style={{ gridTemplateColumns: "1fr" }}>
+                    <div className="ss-form-group">
+                      <label>New Password</label>
+                      <input type="password" placeholder="Min. 6 characters"
+                        value={pwForm.new_password}
+                        onChange={e => setPwForm(p => ({ ...p, new_password: e.target.value }))} required />
+                    </div>
+                    <div className="ss-form-group">
+                      <label>Confirm New Password</label>
+                      <input type="password" placeholder="Repeat new password"
+                        value={pwForm.confirm_password}
+                        onChange={e => setPwForm(p => ({ ...p, confirm_password: e.target.value }))} required />
+                    </div>
+                  </div>
+                  <div className="ss-form-actions">
+                    <button type="submit" className="ss-btn ss-btn-primary" disabled={saving}>
+                      {saving ? "Updating…" : "Update Password"}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  );
+}

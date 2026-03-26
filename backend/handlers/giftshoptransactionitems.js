@@ -53,13 +53,52 @@ module.exports = (req, res, parsedUrl) => {
 
           res.writeHead(201, { "Content-Type": "application/json" });
           res.end(JSON.stringify({
-            message: "Cafe transaction item added",
+            message: "Gift shop transaction item added",
             id: result.insertId
           }));
         }
       );
     });
   }
+
+else if (req.method === "PUT" && parsedUrl.pathname.split("/")[2]) {
+  const id = parsedUrl.pathname.split("/")[2];
+  let body = "";
+
+  req.on("data", chunk => {
+    body += chunk.toString();
+  });
+
+  req.on("end", () => {
+    const data = JSON.parse(body);
+
+    const sql = `
+      UPDATE giftshoptransactionitem
+      SET transaction_id = ?, item_id = ?, quantity = ?, subtotal = ?
+      WHERE shop_item_id = ?
+    `;
+
+    db.query(
+      sql,
+      [
+        data.transaction_id,
+        data.item_id,
+        data.quantity,
+        data.subtotal,
+        id
+      ],
+      (err) => {
+        if (err) {
+          res.writeHead(500, { "Content-Type": "application/json" });
+          return res.end(JSON.stringify(err));
+        }
+
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ message: "Gift shop transaction item updated" }));
+      }
+    );
+  });
+}
 
 else if (req.method === "DELETE") {
   const id = parsedUrl.pathname.split("/")[2];

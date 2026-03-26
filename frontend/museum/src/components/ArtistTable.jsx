@@ -24,7 +24,7 @@ export default function ArtistTable({ artists, onEdit, onDelete }) {
               <td>{artist.artist_id}</td>
               <td>
                 <div className="artist-name">
-                  <span className="artist-avatar">🎨</span>
+                  <span className="artist-avatar"></span>
                   <span>{artist.first_name} {artist.last_name}</span>
                 </div>
               </td>

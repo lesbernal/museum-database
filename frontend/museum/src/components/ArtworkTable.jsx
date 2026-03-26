@@ -20,6 +20,7 @@ export default function ArtworkTable({ artworks, onEdit, onDelete }) {
       <table className="artwork-table">
         <thead>
           <tr>
+            <th>Image</th>
             <th>ID</th>
             <th>Title</th>
             <th>Artist</th>
@@ -32,6 +33,23 @@ export default function ArtworkTable({ artworks, onEdit, onDelete }) {
         <tbody>
           {artworks.map(artwork => (
             <tr key={artwork.artwork_id}>
+              <td className="image-cell">
+                {artwork.image_url ? (
+                  <img 
+                    src={artwork.image_url} 
+                    alt={artwork.title}
+                    className="thumbnail-image"
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.src = '';
+                      e.target.style.display = 'none';
+                      e.target.parentElement.innerHTML = '<div class="thumbnail-placeholder">🖼️</div>';
+                    }}
+                  />
+                ) : (
+                  <div className="thumbnail-placeholder">🖼️</div>
+                )}
+              </td>
               <td>{artwork.artwork_id}</td>
               <td className="title-cell">{artwork.title}</td>
               <td>{artwork.artist_name || `${artwork.first_name} ${artwork.last_name}`}</td>

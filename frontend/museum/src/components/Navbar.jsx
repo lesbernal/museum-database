@@ -1,13 +1,22 @@
 // components/Navbar.jsx
-import { Link, useNavigate } from "react-router-dom";
+import { NavLink, Link, useNavigate, useLocation } from "react-router-dom";
 import "../styles/Navbar.css";
 
 export default function Navbar() {
   const navigate = useNavigate();
+  const location = useLocation();
   const token = localStorage.getItem("token");
   const role = localStorage.getItem("role");
   const isLoggedIn = !!token;
   const isAdmin = role === "admin";
+  
+  // Check if we're on an admin page
+  const isAdminPage = location.pathname.startsWith("/admin");
+
+  // Don't render navbar on admin pages
+  if (isAdminPage) {
+    return null;
+  }
 
   const handleLogout = () => {
     localStorage.clear();
@@ -42,9 +51,30 @@ export default function Navbar() {
       {/* Secondary Navbar - Categories */}
       <nav className="category-navbar">
         <div className="category-links">
-          <Link to="/artworks" className="category-link">ARTWORK</Link>
-          <Link to="/exhibitions" className="category-link">EXHIBITIONS</Link>
-          <Link to="/events" className="category-link">EVENTS</Link>
+          <NavLink
+            to="/artworks"
+            className={({ isActive }) =>
+              isActive ? "category-link active" : "category-link"
+            }
+          >
+            ARTWORK
+          </NavLink>
+          <NavLink
+            to="/exhibitions"
+            className={({ isActive }) =>
+              isActive ? "category-link active" : "category-link"
+            }
+          >
+            EXHIBITIONS
+          </NavLink>
+          <NavLink
+            to="/events"
+            className={({ isActive }) =>
+              isActive ? "category-link active" : "category-link"
+            }
+          >
+            EVENTS
+          </NavLink>
         </div>
       </nav>
     </div>

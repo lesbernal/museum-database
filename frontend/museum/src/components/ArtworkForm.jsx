@@ -1,5 +1,5 @@
 // components/ArtworkForm.jsx
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { getArtists } from "../services/api";
 import "../styles/ArtworkForm.css";
 
@@ -13,12 +13,16 @@ export default function ArtworkForm({ onSubmit, initialData = null, onCancel, is
     dimensions: "",
     acquisition_date: "",
     insurance_value: "",
-    current_display_status: "On Display"
+    current_display_status: "On Display",
+    image_url: "",
   });
   
   const [artists, setArtists] = useState([]);
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [imagePreview, setImagePreview] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef(null);
   const [showSuccessToast, setShowSuccessToast] = useState(false);
 
   // Load artists for dropdown
@@ -30,7 +34,7 @@ export default function ArtworkForm({ onSubmit, initialData = null, onCancel, is
   useEffect(() => {
     if (initialData) {
       setForm({
-        artist_id: initialData.artist_id,
+        artist_id: initialData.artist_id || "",
         title: initialData.title || "",
         description: initialData.description || "",
         creation_year: initialData.creation_year || "",
@@ -38,8 +42,12 @@ export default function ArtworkForm({ onSubmit, initialData = null, onCancel, is
         dimensions: initialData.dimensions || "",
         acquisition_date: initialData.acquisition_date ? new Date(initialData.acquisition_date).toISOString().split('T')[0] : "",
         insurance_value: initialData.insurance_value || "",
-        current_display_status: initialData.current_display_status || "On Display"
+        current_display_status: initialData.current_display_status || "On Display",
+        image_url: initialData.image_url || "",
       });
+      if (initialData.image_url) {
+        setImagePreview(initialData.image_url);
+      }
     }
   }, [initialData]);
 
@@ -88,6 +96,42 @@ export default function ArtworkForm({ onSubmit, initialData = null, onCancel, is
     }
   }
 
+  // Upload image to ImgBB
+  const handleImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    setUploading(true);
+    
+    const formData = new FormData();
+    formData.append("image", file);
+    
+    try {
+      // Replace with your ImgBB API key (get free at https://api.imgbb.com/)
+      const apiKey = import.meta.env.VITE_IMGBB_API_KEY;
+      const response = await fetch(`https://api.imgbb.com/1/upload?key=${apiKey}`, {
+        method: "POST",
+        body: formData
+      });
+      const data = await response.json();
+      if (data.success) {
+        const imageUrl = data.data.url;
+        setImagePreview(imageUrl);
+        setForm({ ...form, image_url: imageUrl });
+      }
+    } catch (error) {
+      console.error("Upload failed:", error);
+      // Fallback: use local preview only
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+    } finally {
+      setUploading(false);
+    }
+  };
+
   async function handleSubmit(e) {
     e.preventDefault();
     
@@ -109,8 +153,11 @@ export default function ArtworkForm({ onSubmit, initialData = null, onCancel, is
           dimensions: "",
           acquisition_date: "",
           insurance_value: "",
-          current_display_status: "On Display"
+          current_display_status: "On Display",
+          image_url: "",
         });
+        setImagePreview(null);
+        if (fileInputRef.current) fileInputRef.current.value = "";
       }
     } catch (error) {
       console.error("Error saving artwork:", error);
@@ -138,6 +185,46 @@ export default function ArtworkForm({ onSubmit, initialData = null, onCancel, is
           </div>
           
           <form onSubmit={handleSubmit} className="artwork-form">
+            {/* Image Upload Section */}
+            <div className="form-image-section artwork-image-section">
+              <div className="image-preview">
+                {imagePreview ? (
+                  <img src={imagePreview} alt="Artwork preview" />
+                ) : (
+                  <div className="image-placeholder">
+                    <span>🖼️</span>
+                    <p>No image</p>
+                  </div>
+                )}
+              </div>
+              <div className="image-upload-controls">
+                <button 
+                  type="button" 
+                  className="upload-btn"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading}
+                >
+                  {uploading ? "📤 Uploading..." : "📸 Upload Image"}
+                </button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  style={{ display: "none" }}
+                />
+                <p className="upload-hint">Or paste image URL below:</p>
+                <input
+                  type="text"
+                  name="image_url"
+                  placeholder="https://example.com/artwork-image.jpg"
+                  value={form.image_url}
+                  onChange={handleChange}
+                  className="image-url-input"
+                />
+              </div>
+            </div>
+            
             <div className="form-grid">
               <div className="form-group full-width">
                 <label>Artist *</label>
