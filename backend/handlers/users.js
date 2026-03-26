@@ -6,7 +6,14 @@ const { verifyToken } = require("./authHelpers");
 module.exports = (req, res, parsedUrl) => {
   const urlParts = parsedUrl.pathname.split("/").filter(Boolean);
 
+  // DEBUG - Add these lines
+  console.log("📡 Users handler called");
+  console.log("📡 Authorization header:", req.headers.authorization);
+  
   const user = verifyToken(req);
+  console.log("📡 Verified user:", user);
+  console.log("📡 User role:", user?.role);
+  
   const isSelfLookup =
     req.method === "GET" &&
     urlParts.length === 2 &&
@@ -14,12 +21,18 @@ module.exports = (req, res, parsedUrl) => {
     String(user.user_id) === String(urlParts[1]);
 
   const isPrivileged = user && ["admin", "employee"].includes(user.role);
+  
+  console.log("📡 isSelfLookup:", isSelfLookup);
+  console.log("📡 isPrivileged:", isPrivileged);
+  console.log("📡 Request method:", req.method);
+  console.log("📡 URL parts:", urlParts);
 
   if (!user || (!isPrivileged && !isSelfLookup)) {
+    console.log("❌ Access denied - user:", user, "isPrivileged:", isPrivileged);
     res.writeHead(403, { "Content-Type": "application/json" });
     return res.end(JSON.stringify({ error: "Forbidden: insufficient permissions" }));
   }
-
+  
   // ============================ USERS ============================
 
   // GET all users
