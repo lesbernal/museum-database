@@ -15,9 +15,9 @@ module.exports = (req, res, parsedUrl) => {
     return;
   }
 
-  // ==================== DATA REPORTS (Multi-table) ====================
+  // ==================== DATA REPORTS ====================
   
-  // Report 1: Artwork Collection Summary with Artist Info
+  // Report 1: Artwork Collection Summary
   if (parsedUrl.pathname === "/reports/artwork-summary") {
     const sql = `
       SELECT 
@@ -41,7 +41,7 @@ module.exports = (req, res, parsedUrl) => {
     return;
   }
 
-  // Report 2: Artist Statistics with Artwork Details
+  // Report 2: Artist Statistics
   if (parsedUrl.pathname === "/reports/artist-stats") {
     const sql = `
       SELECT 
@@ -68,26 +68,43 @@ module.exports = (req, res, parsedUrl) => {
     return;
   }
 
-  // Report 3: Sales Summary (Cafe only - using correct column names)
-  if (parsedUrl.pathname === "/reports/sales-summary") {
+  // Report 3: Revenue Summary (Cafe + Gift Shop + Tickets)
+  if (parsedUrl.pathname === "/reports/revenue-summary") {
     const sql = `
       SELECT 
-        'Cafe' as category,
-        COUNT(*) as total_transactions,
-        ROUND(SUM(total_amount), 2) as total_sales,
-        ROUND(AVG(total_amount), 2) as avg_transaction_value,
-        MIN(transaction_datetime) as first_transaction,
-        MAX(transaction_datetime) as last_transaction
-      FROM cafetransaction
+        'Total Revenue' as report_type,
+        (
+          SELECT ROUND(SUM(total_amount), 2) FROM cafetransaction
+        ) as cafe_revenue,
+        (
+          SELECT ROUND(SUM(total_amount), 2) FROM giftshoptransaction
+        ) as gift_shop_revenue,
+        (
+          SELECT ROUND(SUM(final_price), 2) FROM ticket
+        ) as ticket_revenue,
+        (
+          COALESCE((SELECT ROUND(SUM(total_amount), 2) FROM cafetransaction), 0) + 
+          COALESCE((SELECT ROUND(SUM(total_amount), 2) FROM giftshoptransaction), 0) + 
+          COALESCE((SELECT ROUND(SUM(final_price), 2) FROM ticket), 0)
+        ) as total_revenue,
+        (
+          SELECT COUNT(*) FROM cafetransaction
+        ) as cafe_transaction_count,
+        (
+          SELECT COUNT(*) FROM giftshoptransaction
+        ) as gift_shop_transaction_count,
+        (
+          SELECT COUNT(*) FROM ticket
+        ) as ticket_sales_count
     `;
     db.query(sql, (err, results) => {
       if (err) return sendError(res, err);
-      sendJSON(res, results);
+      sendJSON(res, results[0]);
     });
     return;
   }
 
-  // Report 4: Exhibition Summary (using correct column names: exhibition_name, exhibition_type)
+  // Report 4: Exhibition Summary
   if (parsedUrl.pathname === "/reports/exhibition-summary") {
     const sql = `
       SELECT 
@@ -111,28 +128,9 @@ module.exports = (req, res, parsedUrl) => {
     return;
   }
 
-  // Report 5: Cafe Sales by Month
-  if (parsedUrl.pathname === "/reports/cafe-monthly-sales") {
-    const sql = `
-      SELECT 
-        DATE_FORMAT(transaction_datetime, '%Y-%m') as month,
-        COUNT(*) as transaction_count,
-        ROUND(SUM(total_amount), 2) as total_sales,
-        ROUND(AVG(total_amount), 2) as avg_transaction
-      FROM cafetransaction
-      GROUP BY DATE_FORMAT(transaction_datetime, '%Y-%m')
-      ORDER BY month DESC
-    `;
-    db.query(sql, (err, results) => {
-      if (err) return sendError(res, err);
-      sendJSON(res, results);
-    });
-    return;
-  }
-
   // ==================== DATA QUERIES ====================
   
-  // Query 1: Artworks by Artist with Full Details
+  // Query 1: Artworks by Artist
   if (parsedUrl.pathname === "/queries/artworks-by-artist") {
     const artistName = query.name || "";
     const sql = `
@@ -162,7 +160,7 @@ module.exports = (req, res, parsedUrl) => {
     return;
   }
 
-  // Query 2: Artworks by Year Range with Artist and Provenance
+  // Query 2: Artworks by Year Range
   if (parsedUrl.pathname === "/queries/artworks-by-year") {
     const startYear = query.start || 0;
     const endYear = query.end || new Date().getFullYear();
@@ -191,7 +189,7 @@ module.exports = (req, res, parsedUrl) => {
     return;
   }
 
-  // Query 3: Artworks by Medium with Artist and Exhibition Info
+  // Query 3: Artworks by Medium
   if (parsedUrl.pathname === "/queries/artworks-by-medium") {
     const medium = query.medium || "";
     const sql = `
@@ -214,7 +212,7 @@ module.exports = (req, res, parsedUrl) => {
     return;
   }
 
-  // Query 4: Top Valued Artworks with Artist and Provenance
+  // Query 4: Top Valued Artworks
   if (parsedUrl.pathname === "/queries/top-valued-artworks") {
     const limit = query.limit || 10;
     const sql = `
