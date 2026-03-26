@@ -1,0 +1,200 @@
+/* src/styles/ReportsPanel.css */
+
+.reports-panel {
+  padding: var(--spacing-xl);
+  background: var(--color-white);
+}
+
+/* Report Buttons */
+.report-buttons {
+  display: flex;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-xl);
+  border-bottom: var(--border-width) solid var(--color-border);
+  padding-bottom: var(--spacing-md);
+}
+
+.report-buttons button {
+  padding: var(--spacing-sm) var(--spacing-xl);
+  background: transparent;
+  border: none;
+  font-size: var(--font-size-sm);
+  font-family: var(--font-primary);
+  color: var(--color-gray);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.report-buttons button:hover {
+  color: var(--color-gold);
+}
+
+.report-buttons button.active {
+  color: var(--color-gold);
+  border-bottom: 2px solid var(--color-gold);
+}
+
+/* Report Display */
+.report-display {
+  margin-bottom: var(--spacing-3xl);
+  padding: var(--spacing-xl);
+  background: var(--color-cream);
+  border: var(--border-width) solid var(--color-border);
+}
+
+.report-display h3 {
+  margin-top: 0;
+  margin-bottom: var(--spacing-lg);
+  font-size: var(--font-size-lg);
+  font-weight: 500;
+  color: var(--color-black);
+}
+
+.report-data {
+  background: var(--color-white);
+  padding: var(--spacing-lg);
+  border: var(--border-width) solid var(--color-border);
+  overflow-x: auto;
+  font-family: monospace;
+  font-size: var(--font-size-sm);
+  color: var(--color-gray);
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+/* Queries Section */
+.queries-section {
+  border-top: var(--border-width) solid var(--color-border);
+  padding-top: var(--spacing-xl);
+}
+
+.queries-section h3 {
+  margin-bottom: var(--spacing-xl);
+  font-size: var(--font-size-lg);
+  font-weight: 500;
+  color: var(--color-black);
+}
+
+/* Query Cards */
+.query-card {
+  margin-bottom: var(--spacing-xl);
+  padding: var(--spacing-lg);
+  background: var(--color-cream);
+  border: var(--border-width) solid var(--color-border);
+}
+
+.query-card h4 {
+  margin-top: 0;
+  margin-bottom: var(--spacing-md);
+  font-size: var(--font-size-md);
+  font-weight: 500;
+  color: var(--color-black);
+}
+
+.query-input {
+  display: flex;
+  gap: var(--spacing-md);
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.query-input input {
+  flex: 1;
+  min-width: 150px;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: var(--border-width) solid var(--color-border);
+  font-size: var(--font-size-sm);
+  font-family: var(--font-primary);
+  background: var(--color-white);
+  color: var(--color-black);
+}
+
+.query-input input:focus {
+  outline: none;
+  border-color: var(--color-gold);
+}
+
+.query-input span {
+  color: var(--color-gray-light);
+  font-size: var(--font-size-sm);
+}
+
+.query-input button {
+  padding: var(--spacing-sm) var(--spacing-xl);
+  background: var(--color-gold);
+  border: none;
+  font-size: var(--font-size-sm);
+  font-family: var(--font-primary);
+  color: var(--color-black);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.query-input button:hover {
+  background: var(--color-gold-light);
+  transform: translateY(-1px);
+}
+
+/* Query Results */
+.query-results {
+  margin-top: var(--spacing-lg);
+  padding: var(--spacing-lg);
+  background: var(--color-white);
+  border: var(--border-width) solid var(--color-border);
+}
+
+.query-results h4 {
+  margin-top: 0;
+  margin-bottom: var(--spacing-md);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: var(--color-black);
+}
+
+.query-results pre {
+  margin: 0;
+  font-family: monospace;
+  font-size: var(--font-size-xs);
+  color: var(--color-gray);
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+/* Loading State */
+.loading {
+  text-align: center;
+  padding: var(--spacing-3xl);
+  color: var(--color-gray-light);
+  font-size: var(--font-size-sm);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .reports-panel {
+    padding: var(--spacing-md);
+  }
+  
+  .query-input {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .query-input input,
+  .query-input button {
+    width: 100%;
+  }
+  
+  .report-data {
+    font-size: var(--font-size-xs);
+  }
+  
+  .query-results pre {
+    font-size: var(--font-size-xs);
+  }
+}
