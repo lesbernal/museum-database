@@ -8,61 +8,15 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [currentSlide, setCurrentSlide] = useState(0);
 
-  // Sample events data
-  const sampleEvents = [
-    {
-      id: 1,
-      title: "Monet: The Water Lilies",
-      date: "March 15 - June 30, 2026",
-      description: "Experience the iconic water lily paintings in an immersive exhibition.",
-      image: "🎨",
-      location: "East Gallery"
-    },
-    {
-      id: 2,
-      title: "Modern Masters: Picasso to Warhol",
-      date: "April 1 - August 15, 2026",
-      description: "A journey through 20th century art with works from the world's greatest artists.",
-      image: "🖼️",
-      location: "West Gallery"
-    },
-    {
-      id: 3,
-      title: "Texas Contemporary",
-      date: "May 10 - July 20, 2026",
-      description: "Celebrating the vibrant contemporary art scene across Texas.",
-      image: "🎭",
-      location: "Contemporary Wing"
-    },
-    {
-      id: 4,
-      title: "Ancient Treasures of Egypt",
-      date: "June 5 - September 12, 2026",
-      description: "Rare artifacts and artworks from ancient Egyptian civilization.",
-      image: "🏺",
-      location: "Special Exhibitions Hall"
-    },
-    {
-      id: 5,
-      title: "Photography Now",
-      date: "July 1 - October 15, 2026",
-      description: "Cutting-edge photography from emerging and established artists.",
-      image: "📷",
-      location: "Photo Gallery"
-    },
-    {
-      id: 6,
-      title: "Sculpture Garden Installation",
-      date: "August 1 - November 30, 2026",
-      description: "Large-scale contemporary sculptures in the museum gardens.",
-      image: "🗿",
-      location: "Sculpture Garden"
-    }
-  ];
-
+  // Fetch real events from the database
   useEffect(() => {
-    setEvents(sampleEvents);
-    setLoading(false);
+    fetch("http://localhost:5000/events")
+      .then(res => res.json())
+      .then(data => {
+        setEvents(data);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
   }, []);
 
   useEffect(() => {
@@ -80,6 +34,22 @@ export default function Home() {
   const handleNextSlide = () => {
     setCurrentSlide((prev) => (prev + 1) % Math.ceil(events.length / 4));
   };
+
+  // Pick an emoji based on event name keywords
+  function getEventIcon(name = "") {
+    const lower = name.toLowerCase();
+    if (lower.includes("photo")) return "📷";
+    if (lower.includes("sculpt")) return "🗿";
+    if (lower.includes("workshop")) return "🎨";
+    if (lower.includes("lecture") || lower.includes("talk") || lower.includes("panel")) return "🎤";
+    if (lower.includes("family") || lower.includes("kids")) return "👨‍👩‍👧";
+    if (lower.includes("member")) return "⭐";
+    if (lower.includes("latin") || lower.includes("african") || lower.includes("egypt")) return "🏺";
+    if (lower.includes("tour")) return "🗺️";
+    if (lower.includes("contemporary") || lower.includes("modern")) return "🖼️";
+    if (lower.includes("music") || lower.includes("evening") || lower.includes("solstice")) return "🎶";
+    return "🎭";
+  }
 
   return (
     <div className="home-container">
@@ -105,44 +75,64 @@ export default function Home() {
             <h2>Current & Upcoming Events</h2>
             <p>Explore exhibitions, lectures, and special programs</p>
           </div>
-          
+
           <div className="carousel-container">
             <button className="carousel-btn prev" onClick={handlePrevSlide} aria-label="Previous">
               ‹
             </button>
-            
+
             <div className="carousel-track">
               {events.slice(currentSlide * 4, (currentSlide + 1) * 4).map((event) => (
-                <div className="event-card" key={event.id}>
+                <div className="event-card" key={event.event_id}>
                   <div className="event-card-image">
-                    <div className="event-icon">{event.image}</div>
+                    <div className="event-icon">{getEventIcon(event.event_name)}</div>
                   </div>
                   <div className="event-card-content">
-                    <h3>{event.title}</h3>
-                    <p className="event-date">{event.date}</p>
-                    <p className="event-location">{event.location}</p>
+                    <h3>{event.event_name}</h3>
+                    <p className="event-date">{event.event_date?.split("T")[0] ?? event.event_date}</p>
                     <p className="event-description">{event.description}</p>
-                    <Link to={`/events/${event.id}`} className="event-link">
-                      Learn More →
-                    </Link>
+                    <p className="event-location">
+                      Capacity: {event.capacity}
+                      {event.member_only ? " · Members Only ⭐" : ""}
+                    </p>
                   </div>
                 </div>
               ))}
             </div>
-            
+
             <button className="carousel-btn next" onClick={handleNextSlide} aria-label="Next">
               ›
             </button>
           </div>
-          
+
           <div className="carousel-dots">
             {[...Array(Math.ceil(events.length / 4))].map((_, idx) => (
               <button
                 key={idx}
-                className={`dot ${currentSlide === idx ? 'active' : ''}`}
+                className={`dot ${currentSlide === idx ? "active" : ""}`}
                 onClick={() => setCurrentSlide(idx)}
               />
             ))}
+          </div>
+        </section>
+      )}
+
+      {/* Loading state */}
+      {loading && (
+        <section className="events-section">
+          <div className="section-header">
+            <h2>Current & Upcoming Events</h2>
+            <p>Loading events...</p>
+          </div>
+        </section>
+      )}
+
+      {/* No events fallback */}
+      {!loading && events.length === 0 && (
+        <section className="events-section">
+          <div className="section-header">
+            <h2>Current & Upcoming Events</h2>
+            <p>No upcoming events at this time. Check back soon!</p>
           </div>
         </section>
       )}
@@ -153,20 +143,20 @@ export default function Home() {
           <h2>Plan Your Visit</h2>
           <p>Everything you need to know about your museum experience</p>
         </div>
-        
+
         <div className="links-grid">
           <Link to="/tickets" className="link-card">
             <div className="link-icon">📍</div>
             <h3>Hours & Admission</h3>
             <p>Plan your visit with hours, tickets, and directions</p>
           </Link>
-          
+
           <Link to="/membership" className="link-card">
             <div className="link-icon">⭐</div>
             <h3>Membership</h3>
             <p>Join today for exclusive benefits and support the arts</p>
           </Link>
-          
+
           <Link to="/events" className="link-card">
             <div className="link-icon">🎉</div>
             <h3>Events</h3>
@@ -181,7 +171,7 @@ export default function Home() {
           <h2>More to Explore</h2>
           <p>Enhance your museum experience</p>
         </div>
-        
+
         <div className="extras-grid">
           <Link to="/gift-shop" className="extras-card">
             <div className="extras-icon">🛍️</div>
@@ -189,14 +179,14 @@ export default function Home() {
             <p>Unique art-inspired gifts, books, jewelry, and museum merchandise</p>
             <span className="extras-link">Shop Now →</span>
           </Link>
-          
+
           <Link to="/cafe" className="extras-card">
             <div className="extras-icon">☕</div>
             <h3>Café</h3>
             <p>Enjoy coffee, pastries, and light meals in a beautiful setting</p>
             <span className="extras-link">View Menu →</span>
           </Link>
-          
+
           <Link to="/donations" className="extras-card">
             <div className="extras-icon">💝</div>
             <h3>Donation</h3>
