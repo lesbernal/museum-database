@@ -112,25 +112,49 @@
   position: relative;
   max-width: 1400px;
   margin: 0 auto;
-  overflow: hidden;
+  padding: 0 60px; /* Add padding for buttons */
 }
 
 .carousel-track {
   display: flex;
   gap: 2rem;
   transition: transform 0.5s ease;
-  padding: 1rem;
+  padding: 1rem 0;
+  overflow-x: hidden;
 }
 
 .event-card {
-  flex: 1;
-  min-width: 280px;
+  flex: 0 0 calc(25% - 1.5rem); /* 4 cards per row on desktop */
+  min-width: 0;
   background: #ffffff;
   border: 1px solid #e5e5e5;
   border-radius: 0;
   overflow: hidden;
   transition: all 0.3s ease;
   cursor: pointer;
+}
+
+/* For different screen sizes */
+@media (min-width: 1200px) {
+  .event-card {
+    flex: 0 0 calc(25% - 1.5rem);
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1199px) {
+  .event-card {
+    flex: 0 0 calc(33.333% - 1.33rem); /* 3 cards per row */
+  }
+}
+
+@media (max-width: 767px) {
+  .event-card {
+    flex: 0 0 calc(100% - 0rem); /* 1 card per row */
+  }
+  
+  .carousel-container {
+    padding: 0;
+  }
 }
 
 .event-card:hover {
@@ -207,8 +231,8 @@
   transform: translateY(-50%);
   background: #ffffff;
   border: 1px solid #e5e5e5;
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   border-radius: 0;
   cursor: pointer;
   font-size: 1.5rem;
@@ -227,11 +251,11 @@
 }
 
 .carousel-btn.prev {
-  left: -20px;
+  left: 0;
 }
 
 .carousel-btn.next {
-  right: -20px;
+  right: 0;
 }
 
 .carousel-dots {
