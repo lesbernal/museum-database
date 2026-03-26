@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { getRevenueReport, getAttendanceReport } from "../services/api";
 import ArtistForm from "./ArtistForm";
 import ArtistTable from "./ArtistTable";
 import ArtworkForm from "./ArtworkForm";
@@ -12,6 +13,8 @@ import GalleryForm from "./GalleryForm";
 import GalleryTable from "./GalleryTable";
 import CafeAdminPanel from "./CafeAdminPanel";
 import GiftShopAdminPanel from "./GiftShopAdminPanel";
+import UserManagement from "./UserManagement";
+
 import {
   getArtists,
   createArtist,
@@ -34,8 +37,8 @@ import {
   updateGallery,
   deleteGallery,
 } from "../services/api";
+
 import "../styles/AdminDashboard.css";
-import UserManagement from "./UserManagement";
 import "../styles/UserManagement.css";
 import ReportsPanel from "./ReportsPanel";
 
@@ -78,6 +81,10 @@ export default function AdminDashboard() {
   const [exhibitionsError, setExhibitionsError] = useState("");
   const [galleriesError, setGalleriesError] = useState("");
 
+  //reports
+  const [revenueReport, setRevenueReport] = useState(null);
+  const [attendanceReport, setAttendanceReport] = useState([]);
+
   const navigate = useNavigate();
 
   const tabs = [
@@ -90,6 +97,8 @@ export default function AdminDashboard() {
     { id: "giftshop", name: "Gift Shop", icon: "🛍️" },
     { id: "reports", name: "Reports", icon: "📊" },
     { id: "users", name: "Users", icon: "👥" },
+    { id: "revenue", name: "Revenue", icon: "💰" },
+    { id: "events", name: "Events", icon: "📅" },
   ];
 
   // Load all data on mount
@@ -186,7 +195,11 @@ export default function AdminDashboard() {
   };
 
   const handleDeleteArtist = async (artistId) => {
-    if (window.confirm("Are you sure you want to delete this artist? This will also delete their artworks and provenance records.")) {
+    if (
+      window.confirm(
+        "Are you sure you want to delete this artist? This will also delete their artworks and provenance records."
+      )
+    ) {
       try {
         await deleteArtist(artistId);
         await loadArtists();
@@ -224,7 +237,11 @@ export default function AdminDashboard() {
   };
 
   const handleDeleteArtwork = async (id) => {
-    if (window.confirm("Are you sure you want to delete this artwork? This will also delete its provenance records.")) {
+    if (
+      window.confirm(
+        "Are you sure you want to delete this artwork? This will also delete its provenance records."
+      )
+    ) {
       try {
         await deleteArtwork(id);
         await loadArtworks();
@@ -300,7 +317,11 @@ export default function AdminDashboard() {
   };
 
   const handleDeleteExhibition = async (id) => {
-    if (window.confirm("Are you sure you want to delete this exhibition? This will also remove its artwork associations.")) {
+    if (
+      window.confirm(
+        "Are you sure you want to delete this exhibition? This will also remove its artwork associations."
+      )
+    ) {
       try {
         await deleteExhibition(id);
         await loadExhibitions();
@@ -338,7 +359,11 @@ export default function AdminDashboard() {
   };
 
   const handleDeleteGallery = async (id) => {
-    if (window.confirm("Are you sure you want to delete this gallery? This will also delete its exhibitions and events.")) {
+    if (
+      window.confirm(
+        "Are you sure you want to delete this gallery? This will also delete its exhibitions and events."
+      )
+    ) {
       try {
         await deleteGallery(id);
         await loadGalleries();
@@ -349,15 +374,41 @@ export default function AdminDashboard() {
     }
   };
 
-  // General dispatcher
+  const generateRevenueReport = async () => {
+  try {
+    const data = await getRevenueReport();
+    setRevenueReport(data);
+  } catch (err) {
+    console.error(err);
+    alert("Failed to generate revenue report");
+  }
+};
+
+const generateAttendanceReport = async () => {
+  try {
+    const data = await getAttendanceReport();
+    setAttendanceReport(data);
+  } catch (err) {
+    console.error(err);
+    alert("Failed to generate attendance report");
+  }
+};
+
+  // General dispatcher for Add button
   const handleAdd = () => {
     switch (activeTab) {
-      case "artists": return handleAddArtist();
-      case "artwork": return handleAddArtwork();
-      case "provenance": return handleAddProvenance();
-      case "exhibitions": return handleAddExhibition();
-      case "galleries": return handleAddGallery();
-      default: return;
+      case "artists":
+        return handleAddArtist();
+      case "artwork":
+        return handleAddArtwork();
+      case "provenance":
+        return handleAddProvenance();
+      case "exhibitions":
+        return handleAddExhibition();
+      case "galleries":
+        return handleAddGallery();
+      default:
+        return;
     }
   };
 
@@ -370,45 +421,57 @@ export default function AdminDashboard() {
   };
 
   // Filtered data
-  const filteredArtists = artists.filter(artist =>
-    `${artist.first_name} ${artist.last_name}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    artist.nationality?.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredArtists = artists.filter(
+    (artist) =>
+      `${artist.first_name} ${artist.last_name}`
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase()) ||
+      artist.nationality?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const filteredArtworks = artworks.filter(artwork =>
-    artwork.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    artwork.medium?.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredArtworks = artworks.filter(
+    (artwork) =>
+      artwork.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      artwork.medium?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const filteredProvenance = provenance.filter(record =>
-    record.owner_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    record.acquisition_method?.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredProvenance = provenance.filter(
+    (record) =>
+      record.owner_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      record.acquisition_method?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const filteredExhibitions = exhibitions.filter(exhibition =>
-    exhibition.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    exhibition.type?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    exhibition.gallery_name?.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredExhibitions = exhibitions.filter(
+    (exhibition) =>
+      exhibition.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      exhibition.type?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      exhibition.gallery_name?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const filteredGalleries = galleries.filter(gallery =>
-    gallery.gallery_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    gallery.building_name?.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredGalleries = galleries.filter(
+    (gallery) =>
+      gallery.gallery_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      gallery.building_name?.toLowerCase().includes(searchTerm.toLowerCase())
   );
-
-  // Add button label
-  const getAddLabel = () => {
-    switch (activeTab) {
-      case "artists": return "Artist";
-      case "artwork": return "Artwork";
-      case "provenance": return "Provenance Record";
-      case "exhibitions": return "Exhibition";
-      case "galleries": return "Gallery";
-      default: return "";
-    }
-  };
 
   const usesCustomManager = activeTab === "cafe" || activeTab === "giftshop";
+
+  const getAddLabel = () => {
+    switch (activeTab) {
+      case "artists":
+        return "Artist";
+      case "artwork":
+        return "Artwork";
+      case "provenance":
+        return "Provenance Record";
+      case "exhibitions":
+        return "Exhibition";
+      case "galleries":
+        return "Gallery";
+      default:
+        return "";
+    }
+  };
 
   return (
     <div className="admin-dashboard">
@@ -448,12 +511,18 @@ export default function AdminDashboard() {
             <p className="admin-subtitle">
               Manage {activeTab} in the museum database
               {activeTab === "artists" && " - Add, edit, or remove artists"}
-              {activeTab === "artwork" && " - Add, edit, or remove artworks and link them to artists"}
-              {activeTab === "provenance" && " - Track ownership history of artworks"}
-              {activeTab === "exhibitions" && " - Manage exhibitions and their associated artworks"}
-              {activeTab === "galleries" && " - Manage gallery spaces and their climate settings"}
-              {activeTab === "cafe" && " - Manage cafe items, transactions, and line items"}
-              {activeTab === "giftshop" && " - Manage gift shop items, transactions, and line items"}
+              {activeTab === "artwork" &&
+                " - Add, edit, or remove artworks and link them to artists"}
+              {activeTab === "provenance" &&
+                " - Track ownership history of artworks"}
+              {activeTab === "exhibitions" &&
+                " - Manage exhibitions and their associated artworks"}
+              {activeTab === "galleries" &&
+                " - Manage gallery spaces and their climate settings"}
+              {activeTab === "cafe" &&
+                " - Manage cafe items, transactions, and line items"}
+              {activeTab === "giftshop" &&
+                " - Manage gift shop items, transactions, and line items"}
             </p>
           </div>
           {!usesCustomManager && activeTab !== "users" && (
@@ -475,106 +544,111 @@ export default function AdminDashboard() {
         )}
 
         <div className="content-area">
-          {/* Artists Tab */}
+          {/* Artists */}
           {activeTab === "artists" && (
-            <>
-              {loading ? (
-                <div className="loading-spinner">Loading artists...</div>
-              ) : artistsError ? (
-                <div className="error-message">{artistsError}</div>
-              ) : filteredArtists.length === 0 ? (
-                <div className="no-data">No artists found. Click "Add New Artist" to get started.</div>
-              ) : (
-                <ArtistTable
-                  artists={filteredArtists}
-                  onEdit={handleEditArtist}
-                  onDelete={handleDeleteArtist}
-                />
-              )}
-            </>
+            <ArtistTable
+              artists={filteredArtists}
+              onEdit={handleEditArtist}
+              onDelete={handleDeleteArtist}
+            />
           )}
 
-          {/* Artwork Tab */}
+          {/* Artwork */}
           {activeTab === "artwork" && (
-            <>
-              {artworksError ? (
-                <div className="error-message">{artworksError}</div>
-              ) : filteredArtworks.length === 0 ? (
-                <div className="no-data">No artworks found. Click "Add New Artwork" to get started.</div>
-              ) : (
-                <ArtworkTable
-                  artworks={filteredArtworks}
-                  onEdit={handleEditArtwork}
-                  onDelete={handleDeleteArtwork}
-                />
-              )}
-            </>
+            <ArtworkTable
+              artworks={filteredArtworks}
+              onEdit={handleEditArtwork}
+              onDelete={handleDeleteArtwork}
+            />
           )}
 
-          {/* Provenance Tab */}
+          {/* Provenance */}
           {activeTab === "provenance" && (
-            <>
-              {provenanceError ? (
-                <div className="error-message">{provenanceError}</div>
-              ) : filteredProvenance.length === 0 ? (
-                <div className="no-data">No provenance records found. Click "Add New Provenance Record" to get started.</div>
-              ) : (
-                <ProvenanceTable
-                  provenance={filteredProvenance}
-                  onEdit={handleEditProvenance}
-                  onDelete={handleDeleteProvenance}
-                />
-              )}
-            </>
+            <ProvenanceTable
+              provenance={filteredProvenance}
+              onEdit={handleEditProvenance}
+              onDelete={handleDeleteProvenance}
+            />
           )}
 
-          {/* Exhibitions Tab */}
+          {/* Exhibitions */}
           {activeTab === "exhibitions" && (
-            <>
-              {exhibitionsError ? (
-                <div className="error-message">{exhibitionsError}</div>
-              ) : filteredExhibitions.length === 0 ? (
-                <div className="no-data">No exhibitions found. Click "Add New Exhibition" to get started.</div>
-              ) : (
-                <ExhibitionTable
-                  exhibitions={filteredExhibitions}
-                  onEdit={handleEditExhibition}
-                  onDelete={handleDeleteExhibition}
-                />
-              )}
-            </>
+            <ExhibitionTable
+              exhibitions={filteredExhibitions}
+              onEdit={handleEditExhibition}
+              onDelete={handleDeleteExhibition}
+            />
           )}
 
-          {/* Galleries Tab */}
+          {/* Galleries */}
           {activeTab === "galleries" && (
-            <>
-              {galleriesError ? (
-                <div className="error-message">{galleriesError}</div>
-              ) : filteredGalleries.length === 0 ? (
-                <div className="no-data">No galleries found. Click "Add New Gallery" to get started.</div>
-              ) : (
-                <GalleryTable
-                  galleries={filteredGalleries}
-                  onEdit={handleEditGallery}
-                  onDelete={handleDeleteGallery}
-                />
-              )}
-            </>
+            <GalleryTable
+              galleries={filteredGalleries}
+              onEdit={handleEditGallery}
+              onDelete={handleDeleteGallery}
+            />
           )}
 
-          {/* Cafe Tab */}
+          {/* Cafe */}
           {activeTab === "cafe" && <CafeAdminPanel />}
 
-          {/* Gift Shop Tab */}
+          {/* Gift Shop */}
           {activeTab === "giftshop" && <GiftShopAdminPanel />}
 
-          {/* Reports Tab */}
-          {activeTab === "reports" && <ReportsPanel />}
+          {/* Users */}
+          {activeTab === "users" && <UserManagement />}
 
-          {/* Users Tab */}
-          {activeTab === "users" && (
-            <UserManagement />
+          {activeTab === "revenue" && (
+            <div>
+              <h3>Revenue Report</h3>
+              <button onClick={generateRevenueReport}>
+                Generate Revenue Report
+              </button>
+
+              {revenueReport ? (
+                <div>
+                  <p>Donation Revenue: ${revenueReport.donation_revenue}</p>
+                  <p>Ticket Revenue: ${revenueReport.ticket_revenue}</p>
+                  <p>Total Revenue: ${revenueReport.total_revenue}</p>
+                </div>
+              ) : (
+                <p>No report generated yet</p>
+              )}
+            </div>
           )}
+
+          {activeTab === "events" && (
+            <div>
+              <h3>Event Attendance Report</h3>
+
+              <button onClick={generateAttendanceReport}>
+                Generate Attendance Report
+              </button>
+
+              {attendanceReport.length > 0 ? (
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Event Name</th>
+                      <th>Date</th>
+                      <th>Total Attendees</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {attendanceReport.map((r) => (
+                      <tr key={r.event_name + r.event_date}>
+                        <td>{r.event_name}</td>
+                        <td>{new Date(r.event_date).toLocaleDateString()}</td>
+                        <td>{r.total_attendees}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              ) : (
+                <p>No attendance data yet</p>
+              )}
+            </div>
+  )}
         </div>
       </main>
 

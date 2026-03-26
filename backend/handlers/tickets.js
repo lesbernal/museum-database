@@ -1,30 +1,56 @@
+// backend/routes/tickets.js
 const db = require("../db");
 
+// Simple middleware to check user is "logged in"
+function verifyUser(req) {
+  const authHeader = req.headers["authorization"];
+  if (!authHeader) return null;
+
+  // Expect header: "Bearer <user_id>"
+  const parts = authHeader.split(" ");
+  if (parts.length !== 2 || parts[0] !== "Bearer") return null;
+
+  const userId = parts[1];
+  return userId;
+}
+
 module.exports = (req, res) => {
+  const userId = verifyUser(req);
 
   // GET /tickets
   if (req.method === "GET") {
-    db.query("SELECT * FROM ticket", (err, results) => {
+    return db.query("SELECT * FROM ticket", (err, results) => {
       if (err) {
-        res.writeHead(500);
-        return res.end(JSON.stringify(err));
+        res.writeHead(500, { "Content-Type": "application/json" });
+        return res.end(JSON.stringify({ error: err.sqlMessage }));
       }
 
       res.writeHead(200, { "Content-Type": "application/json" });
-      res.end(JSON.stringify(results));
+      return res.end(JSON.stringify(results));
     });
   }
 
   // POST /tickets
   else if (req.method === "POST") {
-    let body = "";
+    if (!userId) {
+      res.writeHead(401, { "Content-Type": "application/json" });
+      return res.end(JSON.stringify({ error: "Unauthorized. Please log in." }));
+    }
 
-    req.on("data", chunk => {
-      body += chunk.toString();
-    });
+    let body = "";
+    req.on("data", chunk => { body += chunk.toString(); });
 
     req.on("end", () => {
-      const data = JSON.parse(body);
+      let data;
+      try {
+        data = JSON.parse(body);
+      } catch {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        return res.end(JSON.stringify({ error: "Invalid JSON" }));
+      }
+
+      // Override user_id from token/header
+      data.user_id = userId;
 
       const sql = `
         INSERT INTO ticket
@@ -46,14 +72,20 @@ module.exports = (req, res) => {
         ],
         (err) => {
           if (err) {
-            res.writeHead(500);
-            return res.end(JSON.stringify(err));
+            res.writeHead(400, { "Content-Type": "application/json" });
+            return res.end(JSON.stringify({ error: err.sqlMessage }));
           }
 
-          res.writeHead(201);
-          res.end(JSON.stringify({ message: "Ticket added" }));
+          res.writeHead(201, { "Content-Type": "application/json" });
+          return res.end(JSON.stringify({ message: "Ticket added" }));
         }
       );
     });
+  }
+
+  // Method not allowed
+  else {
+    res.writeHead(405, { "Content-Type": "application/json" });
+    return res.end(JSON.stringify({ error: "Method not allowed" }));
   }
 };

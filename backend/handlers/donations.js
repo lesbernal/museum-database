@@ -1,55 +1,74 @@
 const db = require("../db");
 
-module.exports = (req, res) => {
+// Check logged-in user
+function verifyUser(req) {
+  const authHeader = req.headers["authorization"];
+  if (!authHeader) return null;
 
-  // GET /donations
+  const parts = authHeader.split(" ");
+  if (parts.length !== 2 || parts[0] !== "Bearer") return null;
+
+  return parts[1]; // user_id
+}
+
+module.exports = (req, res) => {
+  const userId = verifyUser(req);
+
   if (req.method === "GET") {
-    db.query("SELECT * FROM donation", (err, results) => {
+    return db.query("SELECT * FROM donation", (err, results) => {
       if (err) {
-        res.writeHead(500);
-        return res.end(JSON.stringify(err));
+        res.writeHead(500, { "Content-Type": "application/json" });
+        return res.end(JSON.stringify({ error: err.sqlMessage }));
       }
 
       res.writeHead(200, { "Content-Type": "application/json" });
-      res.end(JSON.stringify(results));
+      return res.end(JSON.stringify(results));
     });
   }
 
-  // POST /donations
   else if (req.method === "POST") {
-    let body = "";
+    if (!userId) {
+      res.writeHead(401, { "Content-Type": "application/json" });
+      return res.end(JSON.stringify({ error: "Unauthorized. Please log in." }));
+    }
 
-    req.on("data", chunk => {
-      body += chunk.toString();
-    });
+    let body = "";
+    req.on("data", chunk => { body += chunk.toString(); });
 
     req.on("end", () => {
-      const data = JSON.parse(body);
+      let data;
+      try {
+        data = JSON.parse(body);
+      } catch {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        return res.end(JSON.stringify({ error: "Invalid JSON" }));
+      }
+
+      // Override user_id with logged-in user
+      data.user_id = userId;
 
       const sql = `
-        INSERT INTO donation
-        (user_id, donation_date, amount, donation_type)
+        INSERT INTO donation (user_id, donation_date, amount, donation_type)
         VALUES (?, ?, ?, ?)
       `;
 
-      db.query(
-        sql,
-        [
-          data.user_id,
-          data.donation_date,
-          data.amount,
-          data.donation_type
-        ],
+      db.query(sql,
+        [data.user_id, data.donation_date, data.amount, data.donation_type],
         (err) => {
           if (err) {
-            res.writeHead(500);
-            return res.end(JSON.stringify(err));
+            res.writeHead(400, { "Content-Type": "application/json" });
+            return res.end(JSON.stringify({ error: err.sqlMessage }));
           }
 
-          res.writeHead(201);
-          res.end(JSON.stringify({ message: "Donation added" }));
+          res.writeHead(201, { "Content-Type": "application/json" });
+          return res.end(JSON.stringify({ message: "Donation added" }));
         }
       );
     });
+  }
+
+  else {
+    res.writeHead(405, { "Content-Type": "application/json" });
+    return res.end(JSON.stringify({ error: "Method not allowed" }));
   }
 };

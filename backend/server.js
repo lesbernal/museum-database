@@ -23,6 +23,7 @@ const handleExhibitions = require("./handlers/exhibitions");
 const handleGalleries = require("./handlers/galleries");
 const handleBuildings = require("./handlers/buildings");
 const handleLogin = require("./handlers/auth");
+const handleReports = require("./handlers/reports"); // Make sure you have this
 
 const server = http.createServer((req, res) => {
   // Enable CORS
@@ -38,10 +39,12 @@ const server = http.createServer((req, res) => {
   const parsedUrl = url.parse(req.url, true);
   console.log(`${req.method} ${parsedUrl.pathname}`);
 
+  // Auth
   if (parsedUrl.pathname === "/login") {
     return handleLogin(req, res);
   }
 
+  // Artists / Artwork / Provenance
   if (
     parsedUrl.pathname.startsWith("/artists") ||
     parsedUrl.pathname.startsWith("/artwork") ||
@@ -50,82 +53,83 @@ const server = http.createServer((req, res) => {
     return handleArtists(req, res, parsedUrl);
   }
 
+  // Cafe
   if (parsedUrl.pathname.startsWith("/cafeitems")) {
     return handleCafeitem(req, res, parsedUrl);
   }
-
   if (parsedUrl.pathname.startsWith("/cafetransactions")) {
     return handleCafetransaction(req, res, parsedUrl);
   }
-
   if (parsedUrl.pathname.startsWith("/cafetransactionitems")) {
     return handleCafetransactionitem(req, res, parsedUrl);
   }
-
-  if (parsedUrl.pathname.startsWith("/giftshopitems")) {
-    return handleGiftshopitem(req, res, parsedUrl);
-  }
-
-  if (parsedUrl.pathname.startsWith("/giftshoptransactions")) {
-    return handleGiftshoptransaction(req, res, parsedUrl);
-  }
-
-  if (parsedUrl.pathname.startsWith("/giftshoptransactionitems")) {
-    return handleGiftshoptransactionitem(req, res, parsedUrl);
-  }
-
-  if (parsedUrl.pathname.startsWith("/tickets")) {
-    return handleTickets(req, res, parsedUrl);
-  }
-
-  if (parsedUrl.pathname.startsWith("/events")) {
-    return handleEvents(req, res, parsedUrl);
-  }
-
-  if (parsedUrl.pathname.startsWith("/donations")) {
-    return handleDonations(req, res, parsedUrl);
-  }
-
-  if (parsedUrl.pathname.startsWith("/users")) {
-    return handleUsers(req, res, parsedUrl);
-  }
-
-  if (parsedUrl.pathname.startsWith("/employees")) {
-    return handleEmployees(req, res, parsedUrl);
-  }
-
-  if (parsedUrl.pathname.startsWith("/visitors")) {
-    return handleVisitors(req, res, parsedUrl);
-  }
-
-  if (parsedUrl.pathname.startsWith("/members")) {
-    return handleMembers(req, res, parsedUrl);
-  }
-
-  if (parsedUrl.pathname.startsWith("/departments")) {
-    return handleDepartments(req, res, parsedUrl);
-  }
-
-  if (parsedUrl.pathname.startsWith("/giftshop")) {
-    return handleGiftshop(req, res, parsedUrl);
-  }
-
   if (parsedUrl.pathname.startsWith("/cafe")) {
     return handleCafe(req, res, parsedUrl);
   }
 
+  // Gift Shop
+  if (parsedUrl.pathname.startsWith("/giftshopitems")) {
+    return handleGiftshopitem(req, res, parsedUrl);
+  }
+  if (parsedUrl.pathname.startsWith("/giftshoptransactions")) {
+    return handleGiftshoptransaction(req, res, parsedUrl);
+  }
+  if (parsedUrl.pathname.startsWith("/giftshoptransactionitems")) {
+    return handleGiftshoptransactionitem(req, res, parsedUrl);
+  }
+  if (parsedUrl.pathname.startsWith("/giftshop")) {
+    return handleGiftshop(req, res, parsedUrl);
+  }
+
+  // Tickets, Events, Donations
+  if (parsedUrl.pathname.startsWith("/tickets")) {
+    return handleTickets(req, res, parsedUrl);
+  }
+  if (parsedUrl.pathname.startsWith("/events")) {
+    return handleEvents(req, res, parsedUrl);
+  }
+  if (parsedUrl.pathname.startsWith("/donations")) {
+    return handleDonations(req, res, parsedUrl);
+  }
+
+  // Users, Employees, Visitors, Members, Departments
+  if (parsedUrl.pathname.startsWith("/users")) {
+    return handleUsers(req, res, parsedUrl);
+  }
+  if (parsedUrl.pathname.startsWith("/employees")) {
+    return handleEmployees(req, res, parsedUrl);
+  }
+  if (parsedUrl.pathname.startsWith("/visitors")) {
+    return handleVisitors(req, res, parsedUrl);
+  }
+  if (parsedUrl.pathname.startsWith("/members")) {
+    return handleMembers(req, res, parsedUrl);
+  }
+  if (parsedUrl.pathname.startsWith("/departments")) {
+    return handleDepartments(req, res, parsedUrl);
+  }
+
+  // Exhibitions, Galleries, Buildings
   if (parsedUrl.pathname.startsWith("/exhibitions")) {
     return handleExhibitions(req, res, parsedUrl);
   }
-
   if (parsedUrl.pathname.startsWith("/galleries")) {
     return handleGalleries(req, res, parsedUrl);
   }
-
   if (parsedUrl.pathname.startsWith("/buildings")) {
     return handleBuildings(req, res, parsedUrl);
   }
 
+  // Reports & Queries
+  if (
+    parsedUrl.pathname.startsWith("/reports") ||
+    parsedUrl.pathname.startsWith("/queries")
+  ) {
+    console.log("✅ Reports route matched!");
+    return handleReports(req, res, parsedUrl);
+  }
+
+  // 404 for anything else
   res.writeHead(404, { "Content-Type": "application/json" });
   res.end(JSON.stringify({ message: "Route not found" }));
 });
