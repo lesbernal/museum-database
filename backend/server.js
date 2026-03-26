@@ -19,6 +19,7 @@ const handleMembers = require("./handlers/members");
 const handleDepartments = require("./handlers/departments");
 const handleGiftshop = require("./handlers/giftshop");
 const handleCafe = require("./handlers/cafe");
+const handleReports = require("./handlers/reports");
 
 // Load exhibitions handler with error handling
 let handleExhibitions;
@@ -31,11 +32,11 @@ try {
 }
 
 const handleLogin = require("./handlers/auth");
-const handleReports = require("./handlers/reports");
 
 console.log("✅ handleExhibitions type:", typeof handleExhibitions);
 console.log("✅ handleArtists type:", typeof handleArtists);
 console.log("✅ handleLogin type:", typeof handleLogin);
+console.log("✅ handleReports type:", typeof handleReports);
 
 // Helper function to set CORS headers
 function setCorsHeaders(res) {
@@ -64,6 +65,13 @@ const server = http.createServer((req, res) => {
   if (parsedUrl.pathname === "/test-cors") {
     res.writeHead(200, { "Content-Type": "application/json" });
     res.end(JSON.stringify({ message: "CORS is working!", timestamp: Date.now() }));
+    return;
+  }
+
+  // TEST REPORTS ENDPOINT
+  if (parsedUrl.pathname === "/test-reports") {
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ message: "Test reports endpoint working!" }));
     return;
   }
 
@@ -225,8 +233,14 @@ const server = http.createServer((req, res) => {
     }
   }
 
-  if (parsedUrl.pathname.startsWith("/reports")) {
-  return handleReports(req, res, parsedUrl);
+  // Reports
+  console.log("Checking route for reports:", parsedUrl.pathname);
+  if (
+    parsedUrl.pathname.startsWith("/reports") ||
+    parsedUrl.pathname.startsWith("/queries")
+  ) {
+    console.log("✅ Reports route matched!");
+    return handleReports(req, res, parsedUrl);
   }
 
   // 404 for unmatched routes

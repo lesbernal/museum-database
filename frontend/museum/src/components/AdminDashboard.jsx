@@ -40,6 +40,7 @@ import {
 
 import "../styles/AdminDashboard.css";
 import "../styles/UserManagement.css";
+import ReportsPanel from "./ReportsPanel";
 
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState("artists");
@@ -94,6 +95,7 @@ export default function AdminDashboard() {
     { id: "galleries", name: "Galleries", icon: "🗺️" },
     { id: "cafe", name: "Cafe", icon: "☕" },
     { id: "giftshop", name: "Gift Shop", icon: "🛍️" },
+    { id: "reports", name: "Reports", icon: "📊" },
     { id: "users", name: "Users", icon: "👥" },
     { id: "revenue", name: "Revenue", icon: "💰" },
     { id: "events", name: "Events", icon: "📅" },
