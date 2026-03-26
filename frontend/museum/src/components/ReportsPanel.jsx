@@ -7,6 +7,8 @@ export default function ReportsPanel() {
   const [loading, setLoading] = useState(false);
   const [queryResult, setQueryResult] = useState(null);
   const [queryLoading, setQueryLoading] = useState(false);
+  const [mediumsList, setMediumsList] = useState([]);
+  const [selectedMedium, setSelectedMedium] = useState("");
 
   // Dynamic BASE_URL - works locally and in production
   const BASE_URL = window.location.hostname === 'localhost' 
@@ -15,7 +17,6 @@ export default function ReportsPanel() {
 
   // ==================== DATA REPORTS ====================
   
-  // Report 1: Revenue (Tickets + Donations)
   const loadRevenueReport = async () => {
     setLoading(true);
     try {
@@ -29,7 +30,6 @@ export default function ReportsPanel() {
     }
   };
 
-  // Report 2: Art Collection (Artists + Artwork + Exhibitions)
   const loadArtCollectionReport = async () => {
     setLoading(true);
     try {
@@ -43,7 +43,6 @@ export default function ReportsPanel() {
     }
   };
 
-  // Report 3: Gift Shop Summary
   const loadGiftShopReport = async () => {
     setLoading(true);
     try {
@@ -57,7 +56,6 @@ export default function ReportsPanel() {
     }
   };
 
-  // Report 4: User Summary
   const loadUserReport = async () => {
     setLoading(true);
     try {
@@ -78,10 +76,14 @@ export default function ReportsPanel() {
     setQueryLoading(true);
     try {
       const response = await fetch(`${BASE_URL}/queries/artworks-by-artist?name=${encodeURIComponent(artistName)}`);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
       const data = await response.json();
       setQueryResult(data);
     } catch (err) {
       console.error("Query failed:", err);
+      setQueryResult({ error: err.message });
     } finally {
       setQueryLoading(false);
     }
@@ -92,10 +94,14 @@ export default function ReportsPanel() {
     setQueryLoading(true);
     try {
       const response = await fetch(`${BASE_URL}/queries/artworks-by-year?start=${startYear}&end=${endYear}`);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
       const data = await response.json();
       setQueryResult(data);
     } catch (err) {
       console.error("Query failed:", err);
+      setQueryResult({ error: err.message });
     } finally {
       setQueryLoading(false);
     }
@@ -106,10 +112,14 @@ export default function ReportsPanel() {
     setQueryLoading(true);
     try {
       const response = await fetch(`${BASE_URL}/queries/artworks-by-medium?medium=${encodeURIComponent(medium)}`);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
       const data = await response.json();
       setQueryResult(data);
     } catch (err) {
       console.error("Query failed:", err);
+      setQueryResult({ error: err.message });
     } finally {
       setQueryLoading(false);
     }
@@ -119,10 +129,14 @@ export default function ReportsPanel() {
     setQueryLoading(true);
     try {
       const response = await fetch(`${BASE_URL}/queries/top-valued-artworks?limit=${limit}`);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
       const data = await response.json();
       setQueryResult(data);
     } catch (err) {
       console.error("Query failed:", err);
+      setQueryResult({ error: err.message });
     } finally {
       setQueryLoading(false);
     }
@@ -148,6 +162,21 @@ export default function ReportsPanel() {
     else if (activeReport === "users") loadUserReport();
   }, [activeReport]);
 
+  // Load available mediums for dropdown
+    useEffect(() => {
+    const loadMediums = async () => {
+        try {
+        const response = await fetch(`${BASE_URL}/artwork`);
+        const data = await response.json();
+        const uniqueMediums = [...new Set(data.map(a => a.medium).filter(Boolean))];
+        setMediumsList(uniqueMediums.sort());
+        } catch (err) {
+        console.error("Failed to load mediums:", err);
+        }
+    };
+    loadMediums();
+    }, []);
+
   // Helper functions
   const formatCurrency = (value) => {
     if (!value && value !== 0) return '$0.00';
@@ -161,7 +190,6 @@ export default function ReportsPanel() {
 
   // ==================== RENDER FUNCTIONS ====================
 
-  // Render Revenue Report (Tickets + Donations)
   const renderRevenueReport = () => {
     if (!reportData) return null;
     return (
@@ -240,7 +268,6 @@ export default function ReportsPanel() {
     );
   };
 
-  // Render Art Collection Report (Artists + Artwork + Exhibitions)
   const renderArtCollectionReport = () => {
     if (!reportData) return null;
     return (
@@ -343,7 +370,6 @@ export default function ReportsPanel() {
     );
   };
 
-  // Render Gift Shop Report
   const renderGiftShopReport = () => {
     if (!reportData) return null;
     return (
@@ -415,7 +441,7 @@ export default function ReportsPanel() {
         <div className="query-card" style={{ marginTop: '20px' }}>
           <h4>🔍 Check Low Stock Items</h4>
           <div className="query-input">
-            <button onClick={searchGiftShopLowStock}>
+            <button type="button" onClick={searchGiftShopLowStock}>
               View Low Stock Items
             </button>
           </div>
@@ -424,7 +450,6 @@ export default function ReportsPanel() {
     );
   };
 
-  // Render User Summary Report
   const renderUserReport = () => {
     if (!reportData) return null;
     return (
@@ -492,50 +517,53 @@ export default function ReportsPanel() {
         </div>
 
         <div className="current-exhibition">
-          <span>📈 New Users (Last 30 Days):</span>
-          <strong>{formatNumber(reportData.new_users_last_30_days)}</strong>
+          <span>📊 Total Registered Users:</span>
+          <strong>{formatNumber(reportData.total_users)}</strong>
         </div>
       </div>
     );
   };
 
-  // Render Query Results
   const renderQueryResults = () => {
-    if (!queryResult) return null;
-    if (!Array.isArray(queryResult) || queryResult.length === 0) {
-      return <div className="no-results">No results found</div>;
-    }
-    return (
-      <div className="query-results-table">
-        <table>
-          <thead>
-            <tr>
-              {Object.keys(queryResult[0]).map(key => (
-                <th key={key}>{key.replace(/_/g, ' ').toUpperCase()}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {queryResult.map((row, idx) => (
-              <tr key={idx}>
-                {Object.values(row).map((value, i) => (
-                  <td key={i}>
-                    {typeof value === 'number' && key.includes('price') || key.includes('value') || key.includes('amount') 
-                      ? formatCurrency(value) 
-                      : value}
-                  </td>
-                ))}
-              </tr>
+  if (!queryResult) return null;
+  if (!Array.isArray(queryResult) || queryResult.length === 0) {
+    return <div className="no-results">No results found</div>;
+  }
+  return (
+    <div className="query-results-table">
+      <table>
+        <thead>
+          <tr>
+            {Object.keys(queryResult[0]).map(key => (
+              <th key={key}>{key.replace(/_/g, ' ').toUpperCase()}</th>
             ))}
-          </tbody>
-        </table>
-      </div>
-    );
-  };
+          </tr>
+        </thead>
+        <tbody>
+          {queryResult.map((row, idx) => (
+            <tr key={idx}>
+              {Object.entries(row).map(([key, value]) => {
+                // Format as currency only if it's an insurance_value or price field
+                const isCurrencyField = key.includes('value') || key.includes('price') || key.includes('amount') || key === 'insurance_value';
+                if (isCurrencyField && typeof value === 'number') {
+                  return <td key={key}>{formatCurrency(value)}</td>;
+                }
+                // Return regular number without formatting for IDs and years
+                if (typeof value === 'number') {
+                  return <td key={key}>{value}</td>;
+                }
+                return <td key={key}>{value}</td>;
+              })}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+};
 
   return (
     <div className="reports-panel">
-      {/* Report Buttons */}
       <div className="report-buttons">
         <button 
           className={activeReport === "revenue" ? "active" : ""} 
@@ -563,7 +591,6 @@ export default function ReportsPanel() {
         </button>
       </div>
 
-      {/* Report Display */}
       <div className="report-display">
         <h3>
           {activeReport === "revenue" && "💰 Revenue Report (Ticket Sales + Donations)"}
@@ -585,75 +612,70 @@ export default function ReportsPanel() {
         )}
       </div>
 
-      {/* Data Queries Section */}
       <div className="queries-section">
         <h3>🔍 Data Queries</h3>
-        
         <div className="queries-grid">
-          {/* Query 1: By Artist */}
           <div className="query-card">
             <h4>🎨 Find Artworks by Artist</h4>
             <div className="query-input">
-              <input 
-                type="text" 
-                placeholder="Enter artist name (e.g., Monet)"
-                id="artistName"
-              />
-              <button onClick={() => {
+              <input type="text" placeholder="Enter artist name (e.g., Monet)" id="artistName" />
+              <button type="button" onClick={() => {
                 const name = document.getElementById('artistName').value;
-                searchByArtist(name);
+                if (name) searchByArtist(name);
               }}>
                 Search
               </button>
             </div>
           </div>
 
-          {/* Query 2: By Year Range */}
           <div className="query-card">
             <h4>📅 Find Artworks by Year Range</h4>
             <div className="query-input">
               <input type="number" placeholder="Start Year" id="startYear" />
               <span>to</span>
               <input type="number" placeholder="End Year" id="endYear" />
-              <button onClick={() => {
+              <button type="button" onClick={() => {
                 const start = document.getElementById('startYear').value;
                 const end = document.getElementById('endYear').value;
-                searchByYearRange(start, end);
+                if (start && end) searchByYearRange(start, end);
               }}>
                 Search
               </button>
             </div>
           </div>
 
-          {/* Query 3: By Medium */}
-          <div className="query-card">
-            <h4>🖌️ Find Artworks by Medium</h4>
-            <div className="query-input">
-              <input 
-                type="text" 
-                placeholder="Enter medium (e.g., Oil on canvas)"
-                id="medium"
-              />
-              <button onClick={() => {
-                const medium = document.getElementById('medium').value;
-                searchByMedium(medium);
-              }}>
-                Search
-              </button>
-            </div>
-          </div>
+          {/* Query 3: By Medium - Dropdown */}
+        <div className="query-card">
+        <h4>🖌️ Find Artworks by Medium</h4>
+        <div className="query-input">
+            <select 
+            value={selectedMedium}
+            onChange={(e) => setSelectedMedium(e.target.value)}
+            className="medium-select"
+            >
+            <option value="">Select a medium</option>
+            {mediumsList.map(medium => (
+                <option key={medium} value={medium}>{medium}</option>
+            ))}
+            </select>
+            <button 
+            type="button"
+            onClick={() => {
+                if (selectedMedium) searchByMedium(selectedMedium);
+            }}
+            disabled={!selectedMedium}
+            className={!selectedMedium ? 'disabled-btn' : ''}
+            >
+            Search
+            </button>
+        </div>
+        </div>
 
-          {/* Query 4: Top Valued Artworks */}
           <div className="query-card">
             <h4>💎 Top Valued Artworks</h4>
             <div className="query-input">
-              <input 
-                type="number" 
-                placeholder="Number of results"
-                id="topLimit"
-                defaultValue="10"
-              />
-              <button onClick={() => {
+              <input type="number" placeholder="Number of results" id="topLimit" defaultValue="10" />
+              <button type="button" onClick={() => {
                 const limit = document.getElementById('topLimit').value;
                 searchTopValued(limit);
               }}>
@@ -663,7 +685,6 @@ export default function ReportsPanel() {
           </div>
         </div>
 
-        {/* Query Results */}
         {queryLoading && <div className="loading">Running query...</div>}
         {queryResult && (
           <div className="query-results">
