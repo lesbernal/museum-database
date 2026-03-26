@@ -1,0 +1,166 @@
+/* styles/Buildings.css */
+
+.buildings-page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem 2rem 5rem;
+}
+
+/* ── Hero ── */
+.buildings-hero {
+  padding: 3rem 0 2.5rem;
+  border-bottom: 1px solid #e5e7eb;
+  margin-bottom: 3rem;
+}
+
+.buildings-eyebrow {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #9ca3af;
+  margin: 0 0 0.5rem;
+}
+
+.buildings-title {
+  font-size: 3rem;
+  font-weight: 300;
+  letter-spacing: -0.03em;
+  margin: 0 0 0.75rem;
+  color: #111827;
+}
+
+.buildings-subtitle {
+  font-size: 1rem;
+  color: #6b7280;
+  margin: 0;
+}
+
+.buildings-loading,
+.buildings-empty {
+  text-align: center;
+  padding: 4rem 0;
+  color: #9ca3af;
+}
+
+/* ── Building card ── */
+.buildings-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4rem;
+}
+
+.building-card {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3rem;
+  align-items: center;
+}
+
+/* Alternate image left/right */
+.card-right {
+  direction: rtl;
+}
+
+.card-right .building-info {
+  direction: ltr;
+}
+
+/* ── Image ── */
+.building-image-wrap {
+  position: relative;
+  width: 100%;
+  height: 380px;
+  overflow: hidden;
+  border-radius: 4px;
+  background: #f3f4f6;
+}
+
+.building-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.4s ease;
+}
+
+.building-card:hover .building-image {
+  transform: scale(1.03);
+}
+
+.building-image-placeholder {
+  display: none;
+  width: 100%;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+  font-size: 3rem;
+  color: #d1d5db;
+  background: #f9fafb;
+}
+
+/* ── Text ── */
+.building-info {
+  padding: 1rem 0;
+}
+
+.building-name {
+  font-size: 1.6rem;
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  color: #111827;
+  margin: 0 0 0.5rem;
+}
+
+.building-address {
+  font-size: 0.82rem;
+  color: #9ca3af;
+  margin: 0 0 1.25rem;
+}
+
+.building-description {
+  font-size: 0.95rem;
+  color: #4b5563;
+  line-height: 1.75;
+  margin: 0 0 1.5rem;
+}
+
+.building-meta {
+  display: flex;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.building-stat {
+  font-size: 0.82rem;
+  color: #6b7280;
+  border-left: 2px solid #e5e7eb;
+  padding-left: 0.75rem;
+}
+
+.building-stat strong {
+  color: #111827;
+  font-weight: 600;
+}
+
+/* ── Divider between cards ── */
+.buildings-list .building-card + .building-card {
+  padding-top: 4rem;
+  border-top: 1px solid #f3f4f6;
+}
+
+/* ── Responsive ── */
+@media (max-width: 768px) {
+  .building-card,
+  .card-right {
+    grid-template-columns: 1fr;
+    direction: ltr;
+  }
+
+  .building-image-wrap {
+    height: 240px;
+  }
+
+  .buildings-title {
+    font-size: 2rem;
+  }
+}
