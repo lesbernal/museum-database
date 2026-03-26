@@ -58,7 +58,7 @@ export default function Home() {
         <div className="hero-overlay"></div>
         <div className="hero-content">
           <h1 className="hero-title">
-            Museum of Fine Art
+            Museum of Fine Arts,
             <span className="hero-subtitle">Houston</span>
           </h1>
           <p className="hero-description">
@@ -153,8 +153,8 @@ export default function Home() {
 
           <Link to="/membership" className="link-card">
             <div className="link-icon">⭐</div>
-            <h3>Membership</h3>
-            <p>Join today for exclusive benefits and support the arts</p>
+            <h3>Memberships</h3>
+            <p>Become a member for exclusive benefits and support the arts</p>
           </Link>
 
           <Link to="/events" className="link-card">
@@ -175,21 +175,21 @@ export default function Home() {
         <div className="extras-grid">
           <Link to="/gift-shop" className="extras-card">
             <div className="extras-icon">🛍️</div>
-            <h3>Gift Shop</h3>
+            <h3>MFAH Gift Shop</h3>
             <p>Unique art-inspired gifts, books, jewelry, and museum merchandise</p>
             <span className="extras-link">Shop Now →</span>
           </Link>
 
           <Link to="/cafe" className="extras-card">
             <div className="extras-icon">☕</div>
-            <h3>Café</h3>
-            <p>Enjoy coffee, pastries, and light meals in a beautiful setting</p>
+            <h3>Café Leonelli</h3>
+            <p>Place an order in advance and avoid the line at our cafe </p>
             <span className="extras-link">View Menu →</span>
           </Link>
 
           <Link to="/donations" className="extras-card">
             <div className="extras-icon">💝</div>
-            <h3>Donation</h3>
+            <h3>Make a Donation</h3>
             <p>Support exhibitions, education programs, and art conservation efforts</p>
             <span className="extras-link">Donate Now →</span>
           </Link>
@@ -214,15 +214,6 @@ export default function Home() {
             <h4>Contact</h4>
             <p>📞 (713) 639-7300</p>
             <p>📧 info@mfah.org</p>
-          </div>
-          <div className="footer-section">
-            <h4>Follow Us</h4>
-            <div className="social-links">
-              <a href="#" aria-label="Facebook">📘</a>
-              <a href="#" aria-label="Instagram">📷</a>
-              <a href="#" aria-label="Twitter">🐦</a>
-              <a href="#" aria-label="YouTube">📺</a>
-            </div>
           </div>
         </div>
       </footer>
