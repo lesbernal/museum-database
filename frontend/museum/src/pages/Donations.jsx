@@ -3,6 +3,8 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import "../styles/theme.css";
 
+const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+
 export default function Donations() {
   const [amount, setAmount] = useState("");
   const [donationType, setDonationType] = useState("General");
@@ -41,7 +43,7 @@ export default function Donations() {
     setLoading(true);
 
     try {
-      const res = await fetch("http://localhost:5000/donations", {
+      const res = await fetch(`${BASE_URL}/donations`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
