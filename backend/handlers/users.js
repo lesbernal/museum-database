@@ -6,33 +6,40 @@ const { verifyToken } = require("./authHelpers");
 module.exports = (req, res, parsedUrl) => {
   const urlParts = parsedUrl.pathname.split("/").filter(Boolean);
 
-  // DEBUG - Add these lines
+  // DEBUG
   console.log("📡 Users handler called");
   console.log("📡 Authorization header:", req.headers.authorization);
-  
+
   const user = verifyToken(req);
   console.log("📡 Verified user:", user);
   console.log("📡 User role:", user?.role);
-  
+
   const isSelfLookup =
     req.method === "GET" &&
     urlParts.length === 2 &&
     user &&
     String(user.user_id) === String(urlParts[1]);
 
+  const isSelfUpdate =
+    req.method === "PUT" &&
+    urlParts.length === 2 &&
+    user &&
+    String(user.user_id) === String(urlParts[1]);
+
   const isPrivileged = user && ["admin", "employee"].includes(user.role);
-  
+
   console.log("📡 isSelfLookup:", isSelfLookup);
+  console.log("📡 isSelfUpdate:", isSelfUpdate);
   console.log("📡 isPrivileged:", isPrivileged);
   console.log("📡 Request method:", req.method);
   console.log("📡 URL parts:", urlParts);
 
-  if (!user || (!isPrivileged && !isSelfLookup)) {
+  if (!user || (!isPrivileged && !isSelfLookup && !isSelfUpdate)) {
     console.log("❌ Access denied - user:", user, "isPrivileged:", isPrivileged);
     res.writeHead(403, { "Content-Type": "application/json" });
     return res.end(JSON.stringify({ error: "Forbidden: insufficient permissions" }));
   }
-  
+
   // ============================ USERS ============================
 
   // GET all users
@@ -68,7 +75,6 @@ module.exports = (req, res, parsedUrl) => {
          street_address, city, state, zip_code, date_of_birth)
         VALUES (?,?,?,?,?,?,?,?,?,?,?)
       `;
-
       db.query(sql, [
         data.first_name     || "",
         data.last_name      || "",
@@ -96,28 +102,57 @@ module.exports = (req, res, parsedUrl) => {
   // PUT user
   else if (req.method === "PUT" && urlParts.length === 2) {
     parseBody(req, data => {
-      const sql = `
-        UPDATE user SET
-        first_name=?, last_name=?, email=?, phone_number=?,
-        street_address=?, city=?, state=?, zip_code=?, date_of_birth=?
-        WHERE user_id=?
-      `;
 
-      db.query(sql, [
-        data.first_name     || "",
-        data.last_name      || "",
-        data.email          || "",
-        data.phone_number   || "",
-        data.street_address || "",
-        data.city           || "",
-        data.state          || "",
-        data.zip_code       || "",
-        data.date_of_birth  || null,
-        urlParts[1]
-      ], err => {
-        if (err) return sendError(res, err);
-        sendJSON(res, { message: "User updated" });
-      });
+      if (isPrivileged) {
+        // ── Admin / employee: can update role too ──────────────────────────
+        const sql = `
+          UPDATE user SET
+          first_name=?, last_name=?, email=?, phone_number=?,
+          street_address=?, city=?, state=?, zip_code=?, date_of_birth=?,
+          role=?
+          WHERE user_id=?
+        `;
+        db.query(sql, [
+          data.first_name     || "",
+          data.last_name      || "",
+          data.email          || "",
+          data.phone_number   || "",
+          data.street_address || "",
+          data.city           || "",
+          data.state          || "",
+          data.zip_code       || "",
+          data.date_of_birth  || null,
+          data.role           || "visitor",
+          urlParts[1]
+        ], err => {
+          if (err) return sendError(res, err);
+          sendJSON(res, { message: "User updated" });
+        });
+
+      } else {
+        // ── Self-update: personal info only, role stays unchanged ──────────
+        const sql = `
+          UPDATE user SET
+          first_name=?, last_name=?, email=?, phone_number=?,
+          street_address=?, city=?, state=?, zip_code=?, date_of_birth=?
+          WHERE user_id=?
+        `;
+        db.query(sql, [
+          data.first_name     || "",
+          data.last_name      || "",
+          data.email          || "",
+          data.phone_number   || "",
+          data.street_address || "",
+          data.city           || "",
+          data.state          || "",
+          data.zip_code       || "",
+          data.date_of_birth  || null,
+          urlParts[1]
+        ], err => {
+          if (err) return sendError(res, err);
+          sendJSON(res, { message: "User updated" });
+        });
+      }
     });
   }
 

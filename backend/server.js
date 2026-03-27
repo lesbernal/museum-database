@@ -24,6 +24,7 @@ const handleGalleries = require("./handlers/galleries");
 const handleBuildings = require("./handlers/buildings");
 const handleLogin = require("./handlers/auth");
 const handleReports = require("./handlers/reports"); // Make sure you have this
+const handleMembershipTransactions = require("./handlers/membershiptransactions");
 
 const server = http.createServer((req, res) => {
   // Enable CORS
@@ -131,6 +132,10 @@ const server = http.createServer((req, res) => {
 
   if (parsedUrl.pathname.startsWith("/departments")) {
     return handleDepartments(req, res, parsedUrl);
+  }
+
+  if (parsedUrl.pathname.startsWith("/membershiptransactions")) {
+    return handleMembershipTransactions(req, res, parsedUrl);
   }
 
   // 404 for anything else
