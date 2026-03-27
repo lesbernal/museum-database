@@ -1,3 +1,4 @@
+//adding comment to pull
 // src/pages/Events.jsx
 import { useEffect, useState } from "react";
 import "../styles/theme.css";
