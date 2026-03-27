@@ -1,6 +1,4 @@
-// pages/MemberDashboard.jsx — REPLACE existing file
-// Changes: all 6 tier colors, membership transaction history, renew/upgrade button
-
+// pages/MemberDashboard.jsx
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
@@ -10,6 +8,8 @@ import {
   getMyVisitorRecord,
   getMyMemberRecord,
   getMyMembershipTransactions,
+  getMyTickets,
+  getMyDonations,
 } from "../services/api";
 import "../styles/Dashboard.css";
 import "../styles/SelfService.css";
@@ -43,6 +43,8 @@ export default function MemberDashboard() {
   const [visitorRec, setVisitorRec] = useState(null);
   const [memberRec,  setMemberRec]  = useState(null);
   const [memberTxns, setMemberTxns] = useState([]);
+  const [tickets,    setTickets]    = useState([]);
+  const [donations,  setDonations]  = useState([]);
   const [loading,    setLoading]    = useState(true);
   const [saving,     setSaving]     = useState(false);
   const [feedback,   setFeedback]   = useState(null);
@@ -58,16 +60,20 @@ export default function MemberDashboard() {
     async function load() {
       setLoading(true);
       try {
-        const [prof, vis, mem, txns] = await Promise.allSettled([
+        const [prof, vis, mem, txns, tix, don] = await Promise.allSettled([
           getMyProfile(),
           getMyVisitorRecord(),
           getMyMemberRecord(),
           getMyMembershipTransactions(),
+          getMyTickets(),
+          getMyDonations(),
         ]);
         if (prof.status  === "fulfilled") { setProfile(prof.value); setForm(prof.value); }
         if (vis.status   === "fulfilled") setVisitorRec(vis.value);
         if (mem.status   === "fulfilled") setMemberRec(mem.value?.user_id ? mem.value : null);
         if (txns.status  === "fulfilled") setMemberTxns(Array.isArray(txns.value) ? txns.value : []);
+        if (tix.status   === "fulfilled") setTickets(Array.isArray(tix.value) ? tix.value : []);
+        if (don.status   === "fulfilled") setDonations(Array.isArray(don.value) ? don.value : []);
       } catch (e) { notify(e.message, "error"); }
       finally { setLoading(false); }
     }
@@ -200,7 +206,7 @@ export default function MemberDashboard() {
                       <div className="ss-stat">
                         <span className="ss-stat-value">
                           {memberRec.join_date
-                            ? new Date(memberRec.join_date).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
+                            ? new Date(memberRec.join_date.toString().slice(0, 10)).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
                             : "—"}
                         </span>
                         <span className="ss-stat-label">Member Since</span>
@@ -208,7 +214,7 @@ export default function MemberDashboard() {
                       <div className="ss-stat">
                         <span className="ss-stat-value">
                           {memberRec.expiration_date
-                            ? new Date(memberRec.expiration_date).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
+                            ? new Date(memberRec.expiration_date.toString().slice(0, 10)).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
                             : "—"}
                         </span>
                         <span className="ss-stat-label">Expires</span>
@@ -227,7 +233,6 @@ export default function MemberDashboard() {
                       </div>
                     </div>
 
-                    {/* Renew / Upgrade / Donation info */}
                     <div style={{ marginTop: 24 }}>
                       {isDonationTier ? (
                         <p style={{ fontSize: 13, color: "#6b7280", lineHeight: 1.6 }}>
@@ -247,7 +252,7 @@ export default function MemberDashboard() {
                       )}
                     </div>
 
-                    {/* Transaction history */}
+                    {/* ── Transaction history ── */}
                     {memberTxns.length > 0 && (
                       <div style={{ marginTop: 32 }}>
                         <h3 style={{ fontSize: 13, fontWeight: 600, color: "#6b7280", marginBottom: 12, textTransform: "uppercase", letterSpacing: "0.08em" }}>
@@ -266,12 +271,16 @@ export default function MemberDashboard() {
                               {memberTxns.map((t, i) => (
                                 <tr key={t.transaction_id} style={{ borderBottom: i < memberTxns.length - 1 ? "1px solid #f3f4f6" : "none" }}>
                                   <td style={{ padding: "0.625rem 1rem", color: "#374151" }}>
-                                    {new Date(t.transaction_date).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })}
+                                    {t.transaction_date
+                                      ? new Date(t.transaction_date.toString().slice(0, 10)).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })
+                                      : "—"}
                                   </td>
                                   <td style={{ padding: "0.625rem 1rem", color: "#374151" }}>{t.membership_level}</td>
                                   <td style={{ padding: "0.625rem 1rem", color: "#374151" }}>{t.transaction_type}</td>
                                   <td style={{ padding: "0.625rem 1rem", color: "#374151", textAlign: "right" }}>
-                                    ${Number(t.amount).toFixed(2)}
+                                    {t.amount !== undefined && t.amount !== null
+                                      ? `$${parseFloat(t.amount).toFixed(2)}`
+                                      : "—"}
                                   </td>
                                 </tr>
                               ))}
@@ -305,7 +314,7 @@ export default function MemberDashboard() {
                     <div className="ss-stat">
                       <span className="ss-stat-value">
                         {visitorRec.last_visit_date
-                          ? new Date(visitorRec.last_visit_date).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
+                          ? new Date(visitorRec.last_visit_date.toString().slice(0, 10)).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
                           : "—"}
                       </span>
                       <span className="ss-stat-label">Last Visit</span>
@@ -321,10 +330,108 @@ export default function MemberDashboard() {
             {activeTab === "purchases" && (
               <div className="ss-card">
                 <h2 className="ss-section-title">Purchase History</h2>
-                <div className="ss-placeholder">
-                  <div className="ss-placeholder-icon">🛍️</div>
-                  <p>Purchase history will appear here once the ticketing and shop features are completed.</p>
-                </div>
+
+                {/* Tickets */}
+                <h3 style={{ fontSize: 14, fontWeight: 600, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 12 }}>
+                  🎟️ Tickets
+                </h3>
+                {tickets.length === 0 ? (
+                  <div className="ss-empty" style={{ marginBottom: 24 }}>No tickets purchased yet.</div>
+                ) : (
+                  <div style={{ border: "1px solid #e5e7eb", overflow: "hidden", marginBottom: 32 }}>
+                    <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+                      <thead>
+                        <tr style={{ background: "#f9fafb", borderBottom: "1px solid #e5e7eb" }}>
+                          {["Purchase Date", "Visit Date", "Type", "Discount", "Price", "Payment"].map(h => (
+                            <th key={h} style={{ padding: "0.625rem 1rem", textAlign: h === "Price" ? "right" : "left", color: "#6b7280", fontWeight: 600, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.07em" }}>{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {tickets.map((t, i) => (
+                          <tr key={t.ticket_id} style={{ borderBottom: i < tickets.length - 1 ? "1px solid #f3f4f6" : "none" }}>
+                            <td style={{ padding: "0.625rem 1rem", color: "#374151" }}>
+                              {t.purchase_date
+                                ? new Date(t.purchase_date.toString().slice(0, 10)).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })
+                                : "—"}
+                            </td>
+                            <td style={{ padding: "0.625rem 1rem", color: "#374151" }}>
+                              {t.visit_date
+                                ? new Date(t.visit_date.toString().slice(0, 10)).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })
+                                : "—"}
+                            </td>
+                            <td style={{ padding: "0.625rem 1rem", color: "#374151" }}>{t.ticket_type}</td>
+                            <td style={{ padding: "0.625rem 1rem", color: "#374151" }}>{t.discount_type}</td>
+                            <td style={{ padding: "0.625rem 1rem", color: "#374151", textAlign: "right" }}>
+                              {t.final_price !== undefined && t.final_price !== null
+                                ? `$${parseFloat(t.final_price).toFixed(2)}`
+                                : "—"}
+                            </td>
+                            <td style={{ padding: "0.625rem 1rem", color: "#374151" }}>{t.payment_method}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                      <tfoot>
+                        <tr style={{ background: "#f9fafb", borderTop: "1px solid #e5e7eb" }}>
+                          <td colSpan={4} style={{ padding: "0.625rem 1rem", fontWeight: 600, fontSize: 12, color: "#374151" }}>
+                            Total Tickets: {tickets.length}
+                          </td>
+                          <td style={{ padding: "0.625rem 1rem", fontWeight: 600, fontSize: 12, color: "#374151", textAlign: "right" }}>
+                            ${tickets.reduce((sum, t) => sum + parseFloat(t.final_price || 0), 0).toFixed(2)}
+                          </td>
+                          <td />
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+                )}
+
+                {/* Donations */}
+                <h3 style={{ fontSize: 14, fontWeight: 600, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 12 }}>
+                  💝 Donations
+                </h3>
+                {donations.length === 0 ? (
+                  <div className="ss-empty">No donations made yet.</div>
+                ) : (
+                  <div style={{ border: "1px solid #e5e7eb", overflow: "hidden" }}>
+                    <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+                      <thead>
+                        <tr style={{ background: "#f9fafb", borderBottom: "1px solid #e5e7eb" }}>
+                          {["Date", "Type", "Amount"].map(h => (
+                            <th key={h} style={{ padding: "0.625rem 1rem", textAlign: h === "Amount" ? "right" : "left", color: "#6b7280", fontWeight: 600, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.07em" }}>{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {donations.map((d, i) => (
+                          <tr key={d.donation_id} style={{ borderBottom: i < donations.length - 1 ? "1px solid #f3f4f6" : "none" }}>
+                            <td style={{ padding: "0.625rem 1rem", color: "#374151" }}>
+                              {d.donation_date
+                                ? new Date(d.donation_date.toString().slice(0, 10)).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })
+                                : "—"}
+                            </td>
+                            <td style={{ padding: "0.625rem 1rem", color: "#374151" }}>{d.donation_type}</td>
+                            <td style={{ padding: "0.625rem 1rem", color: "#374151", textAlign: "right" }}>
+                              {d.amount !== undefined && d.amount !== null
+                                ? `$${parseFloat(d.amount).toFixed(2)}`
+                                : "—"}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                      <tfoot>
+                        <tr style={{ background: "#f9fafb", borderTop: "1px solid #e5e7eb" }}>
+                          <td colSpan={2} style={{ padding: "0.625rem 1rem", fontWeight: 600, fontSize: 12, color: "#374151" }}>
+                            Total Donated
+                          </td>
+                          <td style={{ padding: "0.625rem 1rem", fontWeight: 600, fontSize: 12, color: "#374151", textAlign: "right" }}>
+                            ${donations.reduce((sum, d) => sum + parseFloat(d.amount || 0), 0).toFixed(2)}
+                          </td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+                )}
               </div>
             )}
 

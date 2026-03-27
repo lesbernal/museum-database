@@ -16,8 +16,7 @@ export default function Tickets() {
   const userId = localStorage.getItem("user_id");
   const today = new Date().toISOString().split("T")[0];
 
-
-  // Check if the logged-in user is a member
+  // Check if logged-in user is a member
   useEffect(() => {
     if (!userId) return;
     fetch(`http://localhost:5000/members/${userId}`, {
@@ -55,7 +54,7 @@ export default function Tickets() {
     if (!visitDate) return setErrorMsg("Select a visit date.");
     if (visitDate < today) return setErrorMsg("Visit date must be today or a future date.");
 
-    // Block member discount if not a member
+    // Block non-members from using member discount
     if (discountType === "Member" && !isMember) {
       return setErrorMsg("You must be a museum member to use the Member discount.");
     }
@@ -94,6 +93,7 @@ export default function Tickets() {
       setSuccessMsg(`Successfully purchased ${quantity} ticket(s)!`);
       setVisitDate("");
       setQuantity(1);
+      setDiscountType("None");
     } catch (err) {
       setErrorMsg(err.message || "Purchase failed.");
     } finally {
@@ -142,7 +142,6 @@ export default function Tickets() {
             <option>Military</option>
             <option>Member</option>
           </select>
-          {/* Warn immediately if they pick Member and aren't one */}
           {discountType === "Member" && !isMember && (
             <p className="error-message" style={{ marginTop: "4px" }}>
               ⚠️ You are not a museum member. This discount will be blocked at checkout.

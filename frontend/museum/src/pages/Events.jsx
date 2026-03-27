@@ -9,14 +9,27 @@ export default function Events() {
   const [signingUp, setSigningUp] = useState(null);
   const [messages, setMessages] = useState({});
   const [quantities, setQuantities] = useState({});
+  const [isMember, setIsMember] = useState(false);
 
   const userId = localStorage.getItem("user_id");
+
+  // Check if logged-in user is a member
+  useEffect(() => {
+    if (!userId) return;
+    fetch(`http://localhost:5000/members/${userId}`, {
+      headers: { "Authorization": `Bearer ${userId}` }
+    })
+      .then(res => {
+        if (res.ok) setIsMember(true);
+        else setIsMember(false);
+      })
+      .catch(() => setIsMember(false));
+  }, [userId]);
 
   const loadEvents = () => {
     getEvents()
       .then(data => {
         setEvents(data);
-        // Initialize quantity to 1 for each event
         const initial = {};
         data.forEach(e => { initial[e.event_id] = 1; });
         setQuantities(initial);
@@ -29,9 +42,14 @@ export default function Events() {
     loadEvents();
   }, []);
 
-  async function handleSignup(eventId) {
+  async function handleSignup(eventId, isMemberOnly) {
     if (!userId) {
       setMessages(prev => ({ ...prev, [eventId]: { type: "error", text: "Please log in to sign up for events." } }));
+      return;
+    }
+
+    if (isMemberOnly && !isMember) {
+      setMessages(prev => ({ ...prev, [eventId]: { type: "error", text: "This event is for members only. Please purchase a membership to sign up." } }));
       return;
     }
 
@@ -77,6 +95,8 @@ export default function Events() {
           {events.map(e => {
             const spotsLeft = e.capacity - e.total_attendees;
             const isFull = spotsLeft <= 0;
+            const isMemberOnly = e.member_only === 1 || e.member_only === true;
+            const isLocked = isMemberOnly && !isMember;
             const msg = messages[e.event_id];
             const quantity = quantities[e.event_id] || 1;
 
@@ -94,10 +114,20 @@ export default function Events() {
                       ✅ {spotsLeft} spot{spotsLeft !== 1 ? "s" : ""} available
                     </span>
                   )}
-                  {e.member_only ? " · ⭐ Members Only" : ""}
+                  {isMemberOnly ? " · ⭐ Members Only" : ""}
                 </p>
 
-                {!isFull && (
+                {isLocked && (
+                  <p style={{ color: "#9a7d0a", fontSize: "0.9rem", marginTop: "4px" }}>
+                    🔒 This event is for members only.{" "}
+                    <a href="/membership" style={{ color: "#9a7d0a" }}>
+                      Purchase a membership
+                    </a>{" "}
+                    to sign up.
+                  </p>
+                )}
+
+                {!isFull && !isLocked && (
                   <div style={{ marginTop: "var(--spacing-sm)" }}>
                     <label>Number of Attendees</label>
                     <input
@@ -124,11 +154,17 @@ export default function Events() {
 
                 <button
                   className="btn btn-primary"
-                  disabled={isFull || signingUp === e.event_id}
-                  onClick={() => handleSignup(e.event_id)}
+                  disabled={isFull || isLocked || signingUp === e.event_id}
+                  onClick={() => handleSignup(e.event_id, isMemberOnly)}
                   style={{ marginTop: "var(--spacing-sm)" }}
                 >
-                  {signingUp === e.event_id ? "Signing up..." : isFull ? "Fully Booked" : "Sign Up"}
+                  {signingUp === e.event_id
+                    ? "Signing up..."
+                    : isLocked
+                    ? "🔒 Members Only"
+                    : isFull
+                    ? "Fully Booked"
+                    : "Sign Up"}
                 </button>
               </div>
             );

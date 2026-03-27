@@ -1,26 +1,31 @@
 const db = require("../db");
 
-// Check logged-in user
 function verifyUser(req) {
   const authHeader = req.headers["authorization"];
   if (!authHeader) return null;
-
   const parts = authHeader.split(" ");
   if (parts.length !== 2 || parts[0] !== "Bearer") return null;
-
-  return parts[1]; // user_id
+  return parts[1];
 }
 
-module.exports = (req, res) => {
+module.exports = (req, res, parsedUrl) => {
   const userId = verifyUser(req);
 
+  // GET /donations or GET /donations?user_id=X
   if (req.method === "GET") {
-    return db.query("SELECT * FROM donation", (err, results) => {
+    const filterUserId = parsedUrl.query?.user_id;
+
+    const sql = filterUserId
+      ? "SELECT * FROM donation WHERE user_id = ? ORDER BY donation_date DESC"
+      : "SELECT * FROM donation";
+
+    const params = filterUserId ? [filterUserId] : [];
+
+    return db.query(sql, params, (err, results) => {
       if (err) {
         res.writeHead(500, { "Content-Type": "application/json" });
         return res.end(JSON.stringify({ error: err.sqlMessage }));
       }
-
       res.writeHead(200, { "Content-Type": "application/json" });
       return res.end(JSON.stringify(results));
     });
@@ -44,7 +49,6 @@ module.exports = (req, res) => {
         return res.end(JSON.stringify({ error: "Invalid JSON" }));
       }
 
-      // Override user_id with logged-in user
       data.user_id = userId;
 
       const sql = `
@@ -52,18 +56,19 @@ module.exports = (req, res) => {
         VALUES (?, ?, ?, ?)
       `;
 
-      db.query(sql,
-        [data.user_id, data.donation_date, data.amount, data.donation_type],
-        (err) => {
-          if (err) {
-            res.writeHead(400, { "Content-Type": "application/json" });
-            return res.end(JSON.stringify({ error: err.sqlMessage }));
-          }
-
-          res.writeHead(201, { "Content-Type": "application/json" });
-          return res.end(JSON.stringify({ message: "Donation added" }));
+      db.query(sql, [
+        data.user_id,
+        data.donation_date,
+        data.amount,
+        data.donation_type
+      ], (err) => {
+        if (err) {
+          res.writeHead(400, { "Content-Type": "application/json" });
+          return res.end(JSON.stringify({ error: err.sqlMessage }));
         }
-      );
+        res.writeHead(201, { "Content-Type": "application/json" });
+        return res.end(JSON.stringify({ message: "Donation added" }));
+      });
     });
   }
 
