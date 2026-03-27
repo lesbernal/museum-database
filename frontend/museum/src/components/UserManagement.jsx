@@ -68,6 +68,18 @@ const API = {
   members:   { get: getMembers,   create: createMember,   update: updateMember,   del: deleteMember },
 };
 
+// Date fields that need ISO trimming to YYYY-MM-DD
+const DATE_FIELDS = ["date_of_birth", "hire_date", "last_visit_date", "join_date", "expiration_date"];
+
+// Trim all date fields in a record to YYYY-MM-DD
+function trimDates(record) {
+  const trimmed = { ...record };
+  DATE_FIELDS.forEach(f => {
+    if (trimmed[f]) trimmed[f] = String(trimmed[f]).slice(0, 10);
+  });
+  return trimmed;
+}
+
 const UserManagement = forwardRef(function UserManagement({ searchTerm = "", onSubTabChange }, ref) {
   const [subTab,       setSubTab]       = useState("users");
   const [records,      setRecords]      = useState([]);
@@ -79,7 +91,6 @@ const UserManagement = forwardRef(function UserManagement({ searchTerm = "", onS
   const [feedback,     setFeedback]     = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
 
-  // Stores pending pre-fill data when switching tabs programmatically
   const pendingForm = useRef(null);
 
   const notify = (msg, type = "success") => {
@@ -101,7 +112,7 @@ const UserManagement = forwardRef(function UserManagement({ searchTerm = "", onS
 
   useEffect(() => { load(); }, [load]);
 
-  // Fire pending pre-fill after sub-tab switches and data loads
+  // Fire pending pre-fill after sub-tab switches
   useEffect(() => {
     if (pendingForm.current) {
       const pending = pendingForm.current;
@@ -113,10 +124,9 @@ const UserManagement = forwardRef(function UserManagement({ searchTerm = "", onS
     }
   }, [subTab]);
 
-  // Expose openAdd and getSubTab to AdminDashboard via ref
   useImperativeHandle(ref, () => ({
-    openAdd:    () => { setForm({}); setModal("add"); },
-    getSubTab:  () => subTab,
+    openAdd:   () => { setForm({}); setModal("add"); },
+    getSubTab: () => subTab,
   }));
 
   const fields    = FIELDS[subTab];
@@ -128,7 +138,13 @@ const UserManagement = forwardRef(function UserManagement({ searchTerm = "", onS
     )
   );
 
-  const openEdit   = (r) => { setForm({ ...r }); setSelected(r); setModal("edit"); };
+  // ── FIX: trim ISO dates when opening edit modal ──
+  const openEdit = (r) => {
+    setForm(trimDates(r));
+    setSelected(r);
+    setModal("edit");
+  };
+
   const closeModal = () => { setModal(null); setSelected(null); setForm({}); };
 
   const handleSubTabChange = (id) => {
@@ -154,8 +170,7 @@ const UserManagement = forwardRef(function UserManagement({ searchTerm = "", onS
               `This will switch to the Employees tab with User ID (${createdId}) pre-filled.`
             );
             if (confirm) {
-              closeModal();
-              load();
+              closeModal(); load();
               pendingForm.current = { user_id: createdId };
               handleSubTabChange("employees");
               return;
@@ -168,8 +183,7 @@ const UserManagement = forwardRef(function UserManagement({ searchTerm = "", onS
               `This will switch to the Visitors tab with User ID (${createdId}) pre-filled.`
             );
             if (confirm) {
-              closeModal();
-              load();
+              closeModal(); load();
               pendingForm.current = { user_id: createdId };
               handleSubTabChange("visitors");
               return;
@@ -183,8 +197,7 @@ const UserManagement = forwardRef(function UserManagement({ searchTerm = "", onS
               `(You will then be prompted to add their membership details.)`
             );
             if (confirmVisitor) {
-              closeModal();
-              load();
+              closeModal(); load();
               pendingForm.current = { user_id: createdId };
               handleSubTabChange("visitors");
               return;
@@ -201,8 +214,7 @@ const UserManagement = forwardRef(function UserManagement({ searchTerm = "", onS
             `This will switch to the Members tab with User ID (${createdId}) pre-filled.`
           );
           if (confirmMember) {
-            closeModal();
-            load();
+            closeModal(); load();
             pendingForm.current = { user_id: createdId };
             handleSubTabChange("members");
             return;
@@ -210,7 +222,8 @@ const UserManagement = forwardRef(function UserManagement({ searchTerm = "", onS
         }
 
       } else {
-        await API[subTab].update(selected.user_id, form);
+        // ── FIX: trim ISO dates before sending to backend on update ──
+        await API[subTab].update(selected.user_id, trimDates(form));
         notify("Record updated");
       }
       closeModal();

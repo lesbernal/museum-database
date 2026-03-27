@@ -80,7 +80,7 @@ export default function VisitorDashboard() {
         city:           form.city,
         state:          form.state,
         zip_code:       form.zip_code,
-        date_of_birth:  form.date_of_birth,
+        date_of_birth: form.date_of_birth ? form.date_of_birth.slice(0, 10) : null,
       });
       setProfile({ ...profile, ...form });
       notify("Profile updated successfully");

@@ -400,3 +400,26 @@ export async function updateDepartment(id, data) {
 export async function deleteDepartment(id) {
   return authRequest(`/departments/${id}`, { method: "DELETE" }, "Failed to delete department");
 }
+// ── MEMBERSHIP TRANSACTIONS ───────────────────────────────────────────────────
+
+export async function getMembershipTransactions() {
+  return authRequest("/membershiptransactions", {}, "Failed to fetch membership transactions");
+}
+
+export async function getMyMembershipTransactions() {
+  const user_id = localStorage.getItem("user_id");
+  return authRequest(`/membershiptransactions?user_id=${user_id}`, {}, "Failed to fetch membership history");
+}
+
+export async function createMembershipTransaction(data) {
+  return authRequest("/membershiptransactions", {
+    method: "POST",
+    body: JSON.stringify(data),
+  }, "Failed to create membership transaction");
+}
+
+export async function deleteMembershipTransaction(id) {
+  return authRequest(`/membershiptransactions/${id}`, {
+    method: "DELETE",
+  }, "Failed to delete membership transaction");
+}
