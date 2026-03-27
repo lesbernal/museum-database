@@ -20,10 +20,15 @@ export default function Events() {
       headers: { "Authorization": `Bearer ${userId}` }
     })
       .then(res => {
+        console.log("Member check status:", res.status);
+        console.log("isMember set to:", res.ok);
         if (res.ok) setIsMember(true);
         else setIsMember(false);
       })
-      .catch(() => setIsMember(false));
+      .catch((err) => {
+        console.error("Member check error:", err);
+        setIsMember(false);
+      });
   }, [userId]);
 
   const loadEvents = () => {
@@ -34,7 +39,7 @@ export default function Events() {
         data.forEach(e => { initial[e.event_id] = 1; });
         setQuantities(initial);
       })
-      .catch(err => console.error(err))
+      .catch(err => console.error("Load events error:", err))
       .finally(() => setLoading(false));
   };
 
@@ -43,6 +48,8 @@ export default function Events() {
   }, []);
 
   async function handleSignup(eventId, isMemberOnly) {
+    console.log("Attempting signup for event:", eventId, "quantity:", quantities[eventId] || 1, "userId:", userId);
+
     if (!userId) {
       setMessages(prev => ({ ...prev, [eventId]: { type: "error", text: "Please log in to sign up for events." } }));
       return;
@@ -58,6 +65,8 @@ export default function Events() {
     setMessages(prev => ({ ...prev, [eventId]: null }));
 
     try {
+      console.log("Sending PATCH to:", `http://localhost:5000/events/${eventId}`);
+
       const res = await fetch(`http://localhost:5000/events/${eventId}`, {
         method: "PATCH",
         headers: {
@@ -67,7 +76,10 @@ export default function Events() {
         body: JSON.stringify({ quantity })
       });
 
+      console.log("Response status:", res.status);
+
       const data = await res.json();
+      console.log("Response data:", data);
 
       if (!res.ok) {
         setMessages(prev => ({ ...prev, [eventId]: { type: "error", text: data.error || "Signup failed." } }));
@@ -75,7 +87,8 @@ export default function Events() {
         setMessages(prev => ({ ...prev, [eventId]: { type: "success", text: data.message } }));
         loadEvents();
       }
-    } catch {
+    } catch (err) {
+      console.error("Signup error:", err);
       setMessages(prev => ({ ...prev, [eventId]: { type: "error", text: "Something went wrong." } }));
     } finally {
       setSigningUp(null);
