@@ -2,6 +2,8 @@
 import { useEffect, useState } from "react";
 import "../styles/theme.css";
 
+const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+
 export default function Tickets() {
   const [visitDate, setVisitDate] = useState("");
   const [ticketType, setTicketType] = useState("Adult 19+");
@@ -19,7 +21,7 @@ export default function Tickets() {
   // Check if logged-in user is a member
   useEffect(() => {
     if (!userId) return;
-    fetch(`http://localhost:5000/members/${userId}`, {
+    fetch(`${BASE_URL}/members/${userId}`, {
       headers: { "Authorization": `Bearer ${userId}` }
     })
       .then(res => {
@@ -54,7 +56,6 @@ export default function Tickets() {
     if (!visitDate) return setErrorMsg("Select a visit date.");
     if (visitDate < today) return setErrorMsg("Visit date must be today or a future date.");
 
-    // Block non-members from using member discount
     if (discountType === "Member" && !isMember) {
       return setErrorMsg("You must be a museum member to use the Member discount.");
     }
@@ -66,7 +67,7 @@ export default function Tickets() {
 
     try {
       for (let i = 0; i < quantity; i++) {
-        const res = await fetch("http://localhost:5000/tickets", {
+        const res = await fetch(`${BASE_URL}/tickets`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
