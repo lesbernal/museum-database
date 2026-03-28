@@ -25,6 +25,7 @@ import EventsPage from "./pages/Events";
 import VisitorDashboard  from "./pages/VisitorDashboard";
 import MemberDashboard   from "./pages/MemberDashboard";
 import EmployeeDashboard from "./pages/EmployeeDashboard";
+import MembershipPage from "./pages/MembershipPage";
 
 function App() {
   return (
@@ -39,6 +40,7 @@ function App() {
         <Route path="/tickets" element={<TicketPage />} />
         <Route path="/donations" element={<DonationPage />} />
         <Route path="/events" element={<EventsPage />} />
+        <Route path="/membership" element={<MembershipPage />} />
 
         {/* Admin Only Routes */}
         <Route

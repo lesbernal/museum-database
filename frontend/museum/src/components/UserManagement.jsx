@@ -1,8 +1,6 @@
 // components/UserManagement.jsx
-// Drop-in for the "coming soon" users tab in AdminDashboard.
-// Import and use where the coming-soon div is.
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useImperativeHandle, useRef, forwardRef } from "react";
 import {
   getUsers,     createUser,     updateUser,     deleteUser,
   getEmployees, createEmployee, updateEmployee, deleteEmployee,
@@ -43,9 +41,9 @@ const FIELDS = {
       options: ["Full-Time", "Part-Time", "Contract", "Intern"] },
   ],
   visitors: [
-    { key: "user_id",         label: "User ID",           required: true, editDisabled: true },
-    { key: "last_visit_date", label: "Last Visit Date",   required: true, type: "date" },
-    { key: "total_visits",    label: "Total Visits",      required: true, type: "number" },
+    { key: "user_id",         label: "User ID",         required: true, editDisabled: true },
+    { key: "last_visit_date", label: "Last Visit Date", required: true, type: "date" },
+    { key: "total_visits",    label: "Total Visits",    required: true, type: "number" },
   ],
   members: [
     { key: "user_id",          label: "User ID",          required: true, editDisabled: true },
@@ -70,17 +68,30 @@ const API = {
   members:   { get: getMembers,   create: createMember,   update: updateMember,   del: deleteMember },
 };
 
-export default function UserManagement() {
+// Date fields that need ISO trimming to YYYY-MM-DD
+const DATE_FIELDS = ["date_of_birth", "hire_date", "last_visit_date", "join_date", "expiration_date"];
+
+// Trim all date fields in a record to YYYY-MM-DD
+function trimDates(record) {
+  const trimmed = { ...record };
+  DATE_FIELDS.forEach(f => {
+    if (trimmed[f]) trimmed[f] = String(trimmed[f]).slice(0, 10);
+  });
+  return trimmed;
+}
+
+const UserManagement = forwardRef(function UserManagement({ searchTerm = "", onSubTabChange }, ref) {
   const [subTab,       setSubTab]       = useState("users");
   const [records,      setRecords]      = useState([]);
   const [loading,      setLoading]      = useState(true);
-  const [search,       setSearch]       = useState("");
   const [modal,        setModal]        = useState(null);
   const [selected,     setSelected]     = useState(null);
   const [form,         setForm]         = useState({});
   const [saving,       setSaving]       = useState(false);
   const [feedback,     setFeedback]     = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
+
+  const pendingForm = useRef(null);
 
   const notify = (msg, type = "success") => {
     setFeedback({ msg, type });
@@ -99,29 +110,120 @@ export default function UserManagement() {
     }
   }, [subTab]);
 
-  useEffect(() => { load(); setSearch(""); }, [load]);
+  useEffect(() => { load(); }, [load]);
+
+  // Fire pending pre-fill after sub-tab switches
+  useEffect(() => {
+    if (pendingForm.current) {
+      const pending = pendingForm.current;
+      pendingForm.current = null;
+      setTimeout(() => {
+        setForm(pending);
+        setModal("add");
+      }, 300);
+    }
+  }, [subTab]);
+
+  useImperativeHandle(ref, () => ({
+    openAdd:   () => { setForm({}); setModal("add"); },
+    getSubTab: () => subTab,
+  }));
 
   const fields    = FIELDS[subTab];
   const tableCols = TABLE_COLS[subTab];
 
   const filtered = records.filter(r =>
     tableCols.some(col =>
-      String(r[col] ?? "").toLowerCase().includes(search.toLowerCase())
+      String(r[col] ?? "").toLowerCase().includes(searchTerm.toLowerCase())
     )
   );
 
-  const openAdd    = () => { setForm({}); setModal("add"); };
-  const openEdit   = (r) => { setForm({ ...r }); setSelected(r); setModal("edit"); };
+  // ── FIX: trim ISO dates when opening edit modal ──
+  const openEdit = (r) => {
+    setForm(trimDates(r));
+    setSelected(r);
+    setModal("edit");
+  };
+
   const closeModal = () => { setModal(null); setSelected(null); setForm({}); };
+
+  const handleSubTabChange = (id) => {
+    setSubTab(id);
+    closeModal();
+    if (onSubTabChange) onSubTabChange(id);
+  };
 
   const handleSave = async () => {
     setSaving(true);
     try {
       if (modal === "add") {
-        await API[subTab].create(form);
+        const result = await API[subTab].create(form);
         notify("Record created");
+
+        // ── After creating a user, offer to add role-specific details ──
+        if (subTab === "users" && ["employee", "visitor", "member"].includes(form.role)) {
+          const createdId = result.user_id || form.user_id;
+
+          if (form.role === "employee") {
+            const confirm = window.confirm(
+              `User created! Would you like to add their employee details now?\n\n` +
+              `This will switch to the Employees tab with User ID (${createdId}) pre-filled.`
+            );
+            if (confirm) {
+              closeModal(); load();
+              pendingForm.current = { user_id: createdId };
+              handleSubTabChange("employees");
+              return;
+            }
+          }
+
+          if (form.role === "visitor") {
+            const confirm = window.confirm(
+              `User created! Would you like to add their visitor details now?\n\n` +
+              `This will switch to the Visitors tab with User ID (${createdId}) pre-filled.`
+            );
+            if (confirm) {
+              closeModal(); load();
+              pendingForm.current = { user_id: createdId };
+              handleSubTabChange("visitors");
+              return;
+            }
+          }
+
+          if (form.role === "member") {
+            const confirmVisitor = window.confirm(
+              `User created! Members require a visitor record first.\n\n` +
+              `Would you like to add their visitor details now?\n` +
+              `(You will then be prompted to add their membership details.)`
+            );
+            if (confirmVisitor) {
+              closeModal(); load();
+              pendingForm.current = { user_id: createdId };
+              handleSubTabChange("visitors");
+              return;
+            }
+          }
+        }
+
+        // ── After creating a visitor, offer to add member details ──
+        if (subTab === "visitors") {
+          const createdId = result.user_id || form.user_id;
+          const confirmMember = window.confirm(
+            `Visitor record created! Is this visitor also a member?\n\n` +
+            `Would you like to add their membership details now?\n` +
+            `This will switch to the Members tab with User ID (${createdId}) pre-filled.`
+          );
+          if (confirmMember) {
+            closeModal(); load();
+            pendingForm.current = { user_id: createdId };
+            handleSubTabChange("members");
+            return;
+          }
+        }
+
       } else {
-        await API[subTab].update(selected.user_id, form);
+        // ── FIX: trim ISO dates before sending to backend on update ──
+        await API[subTab].update(selected.user_id, trimDates(form));
         notify("Record updated");
       }
       closeModal();
@@ -147,6 +249,20 @@ export default function UserManagement() {
     }
   };
 
+  const renderCell = (r, col) => {
+    if (col === "salary" && r[col])
+      return `$${Number(r[col]).toLocaleString()}`;
+    if (col === "role")
+      return <span className={`um-badge um-badge-${r[col]}`}>{r[col]}</span>;
+    if (col === "membership_level")
+      return <span className="um-badge um-badge-member">{r[col]}</span>;
+    const val = r[col];
+    if (!val) return "—";
+    if (typeof val === "string" && /^\d{4}-\d{2}-\d{2}/.test(val))
+      return val.slice(0, 10);
+    return String(val);
+  };
+
   return (
     <div className="um-wrap">
       {/* Sub-tab bar */}
@@ -154,26 +270,16 @@ export default function UserManagement() {
         {SUB_TABS.map(t => (
           <button key={t.id}
             className={`um-subtab ${subTab === t.id ? "active" : ""}`}
-            onClick={() => { setSubTab(t.id); closeModal(); }}>
+            onClick={() => handleSubTabChange(t.id)}>
             <span>{t.icon}</span> {t.label}
           </button>
         ))}
       </div>
 
-      {/* Toolbar */}
-      <div className="um-toolbar">
-        <input className="um-search" placeholder={`Search ${subTab}…`}
-          value={search} onChange={e => setSearch(e.target.value)} />
-        <button className="um-btn um-btn-primary" onClick={openAdd}>
-          + Add {subTab.slice(0, -1)}
-        </button>
-        <button className="um-btn" onClick={load}>↻ Refresh</button>
-      </div>
-
       {feedback && <div className={`um-feedback ${feedback.type}`}>{feedback.msg}</div>}
 
       {/* Table */}
-      <div className="um-table-wrap">
+      <div className="um-table-container">
         {loading ? (
           <div className="um-empty">Loading…</div>
         ) : filtered.length === 0 ? (
@@ -189,21 +295,11 @@ export default function UserManagement() {
             <tbody>
               {filtered.map(r => (
                 <tr key={r.user_id}>
-                  {tableCols.map(c => (
-                    <td key={c}>
-                      {c === "salary" && r[c]
-                        ? `$${Number(r[c]).toLocaleString()}`
-                        : c === "role"
-                        ? <span className={`um-badge um-badge-${r[c]}`}>{r[c]}</span>
-                        : c === "membership_level"
-                        ? <span className="um-badge um-badge-member">{r[c]}</span>
-                        : String(r[c] ?? "—").slice(0, 10)}
-                    </td>
-                  ))}
+                  {tableCols.map(c => <td key={c}>{renderCell(r, c)}</td>)}
                   <td>
                     <div className="um-actions">
-                      <button className="um-btn um-btn-sm" onClick={() => openEdit(r)}>Edit</button>
-                      <button className="um-btn um-btn-sm um-btn-danger" onClick={() => confirmDelete(r)}>Delete</button>
+                      <button className="um-edit-btn" onClick={() => openEdit(r)} title="Edit">✏️</button>
+                      <button className="um-delete-btn" onClick={() => confirmDelete(r)} title="Delete">🗑️</button>
                     </div>
                   </td>
                 </tr>
@@ -247,8 +343,8 @@ export default function UserManagement() {
               </div>
             </div>
             <div className="um-modal-footer">
-              <button className="um-btn" onClick={closeModal}>Cancel</button>
-              <button className="um-btn um-btn-primary" onClick={handleSave} disabled={saving}>
+              <button className="um-cancel-btn" onClick={closeModal}>Cancel</button>
+              <button className="um-save-btn" onClick={handleSave} disabled={saving}>
                 {saving ? "Saving…" : "Save"}
               </button>
             </div>
@@ -259,7 +355,7 @@ export default function UserManagement() {
       {/* Confirm Delete */}
       {modal === "confirm" && deleteTarget && (
         <div className="um-overlay" onClick={() => { setModal(null); setDeleteTarget(null); }}>
-          <div className="um-modal" style={{ maxWidth: 380 }} onClick={e => e.stopPropagation()}>
+          <div className="um-modal" style={{ maxWidth: 400 }} onClick={e => e.stopPropagation()}>
             <div className="um-modal-header">
               <h3>Confirm Delete</h3>
               <button className="um-modal-close" onClick={() => { setModal(null); setDeleteTarget(null); }}>×</button>
@@ -270,12 +366,14 @@ export default function UserManagement() {
               </p>
             </div>
             <div className="um-modal-footer">
-              <button className="um-btn" onClick={() => { setModal(null); setDeleteTarget(null); }}>Cancel</button>
-              <button className="um-btn um-btn-danger" onClick={handleDelete}>Delete</button>
+              <button className="um-cancel-btn" onClick={() => { setModal(null); setDeleteTarget(null); }}>Cancel</button>
+              <button className="um-delete-btn" style={{ padding: "0.625rem 1.25rem", borderRadius: 4 }} onClick={handleDelete}>Delete</button>
             </div>
           </div>
         </div>
       )}
     </div>
   );
-}
+});
+
+export default UserManagement;

@@ -1,7 +1,4 @@
 // pages/MemberDashboard.jsx
-// PROTECTED — requires login with role "member"
-// Everything VisitorDashboard has, plus a Membership tab.
-
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
@@ -10,6 +7,9 @@ import {
   changeMyPassword,
   getMyVisitorRecord,
   getMyMemberRecord,
+  getMyMembershipTransactions,
+  getMyTickets,
+  getMyDonations,
 } from "../services/api";
 import "../styles/Dashboard.css";
 import "../styles/SelfService.css";
@@ -23,11 +23,15 @@ const TABS = [
 ];
 
 const LEVEL_COLORS = {
-  Bronze:   { bg: "#fdf2e9", color: "#a04000", border: "#f0a070" },
-  Silver:   { bg: "#f2f3f4", color: "#566573", border: "#aab7b8" },
-  Gold:     { bg: "#fef9e7", color: "#9a7d0a", border: "#f4d03f" },
-  Platinum: { bg: "#eaf4fb", color: "#1a5276", border: "#7fb3d3" },
+  Bronze:              { bg: "#fdf2e9", color: "#a04000", border: "#f0a070" },
+  Silver:              { bg: "#f2f3f4", color: "#566573", border: "#aab7b8" },
+  Gold:                { bg: "#fef9e7", color: "#9a7d0a", border: "#f4d03f" },
+  Platinum:            { bg: "#eaf4fb", color: "#1a5276", border: "#7fb3d3" },
+  Benefactor:          { bg: "#f3e8ff", color: "#6b21a8", border: "#c084fc" },
+  "Leadership Circle": { bg: "#fff1f2", color: "#9f1239", border: "#fb7185" },
 };
+const DEFAULT_STYLE = { bg: "#f3f4f6", color: "#374151", border: "#d1d5db" };
+const DONATION_TIERS = ["Benefactor", "Leadership Circle"];
 
 export default function MemberDashboard() {
   const navigate    = useNavigate();
@@ -38,6 +42,9 @@ export default function MemberDashboard() {
   const [profile,    setProfile]    = useState(null);
   const [visitorRec, setVisitorRec] = useState(null);
   const [memberRec,  setMemberRec]  = useState(null);
+  const [memberTxns, setMemberTxns] = useState([]);
+  const [tickets,    setTickets]    = useState([]);
+  const [donations,  setDonations]  = useState([]);
   const [loading,    setLoading]    = useState(true);
   const [saving,     setSaving]     = useState(false);
   const [feedback,   setFeedback]   = useState(null);
@@ -53,19 +60,22 @@ export default function MemberDashboard() {
     async function load() {
       setLoading(true);
       try {
-        const [prof, vis, mem] = await Promise.allSettled([
+        const [prof, vis, mem, txns, tix, don] = await Promise.allSettled([
           getMyProfile(),
           getMyVisitorRecord(),
           getMyMemberRecord(),
+          getMyMembershipTransactions(),
+          getMyTickets(),
+          getMyDonations(),
         ]);
-        if (prof.status === "fulfilled") { setProfile(prof.value); setForm(prof.value); }
-        if (vis.status  === "fulfilled") setVisitorRec(vis.value);
-        if (mem.status  === "fulfilled") setMemberRec(mem.value);
-      } catch (e) {
-        notify(e.message, "error");
-      } finally {
-        setLoading(false);
-      }
+        if (prof.status  === "fulfilled") { setProfile(prof.value); setForm(prof.value); }
+        if (vis.status   === "fulfilled") setVisitorRec(vis.value);
+        if (mem.status   === "fulfilled") setMemberRec(mem.value?.user_id ? mem.value : null);
+        if (txns.status  === "fulfilled") setMemberTxns(Array.isArray(txns.value) ? txns.value : []);
+        if (tix.status   === "fulfilled") setTickets(Array.isArray(tix.value) ? tix.value : []);
+        if (don.status   === "fulfilled") setDonations(Array.isArray(don.value) ? don.value : []);
+      } catch (e) { notify(e.message, "error"); }
+      finally { setLoading(false); }
     }
     load();
   }, []);
@@ -87,7 +97,7 @@ export default function MemberDashboard() {
         email: form.email, phone_number: form.phone_number,
         street_address: form.street_address, city: form.city,
         state: form.state, zip_code: form.zip_code,
-        date_of_birth: form.date_of_birth,
+        date_of_birth: form.date_of_birth ? form.date_of_birth.slice(0, 10) : null,
       });
       setProfile({ ...profile, ...form });
       notify("Profile updated successfully");
@@ -111,7 +121,8 @@ export default function MemberDashboard() {
   const daysUntilExpiry = memberRec?.expiration_date
     ? Math.ceil((new Date(memberRec.expiration_date) - new Date()) / (1000 * 60 * 60 * 24))
     : null;
-  const levelStyle = LEVEL_COLORS[memberRec?.membership_level] || LEVEL_COLORS.Bronze;
+  const levelStyle     = LEVEL_COLORS[memberRec?.membership_level] || DEFAULT_STYLE;
+  const isDonationTier = DONATION_TIERS.includes(memberRec?.membership_level);
 
   return (
     <div className="dashboard-page member-dashboard">
@@ -122,7 +133,7 @@ export default function MemberDashboard() {
           <h1>Welcome, {profile?.first_name || displayName}</h1>
           <p>Access your membership benefits and manage your account.</p>
           <div className="dashboard-hero-actions">
-            <Link to="/" className="dashboard-back-btn">← Back to Home</Link>
+            <Link to="/" className="dashboard-back-btn">Back to Home</Link>
             <button className="dashboard-logout-btn" onClick={handleLogout}>Sign Out</button>
           </div>
         </div>
@@ -150,42 +161,24 @@ export default function MemberDashboard() {
                 <h2 className="ss-section-title">My Profile</h2>
                 <form className="ss-form" onSubmit={handleProfileSave}>
                   <div className="ss-form-grid">
-                    <div className="ss-form-group">
-                      <label>First Name</label>
-                      <input value={form.first_name || ""} onChange={e => setForm(p => ({ ...p, first_name: e.target.value }))} />
-                    </div>
-                    <div className="ss-form-group">
-                      <label>Last Name</label>
-                      <input value={form.last_name || ""} onChange={e => setForm(p => ({ ...p, last_name: e.target.value }))} />
-                    </div>
-                    <div className="ss-form-group full">
-                      <label>Email</label>
-                      <input type="email" value={form.email || ""} onChange={e => setForm(p => ({ ...p, email: e.target.value }))} />
-                    </div>
-                    <div className="ss-form-group">
-                      <label>Phone Number</label>
-                      <input value={form.phone_number || ""} onChange={e => setForm(p => ({ ...p, phone_number: e.target.value }))} />
-                    </div>
-                    <div className="ss-form-group">
-                      <label>Date of Birth</label>
-                      <input type="date" value={form.date_of_birth?.slice(0,10) || ""} onChange={e => setForm(p => ({ ...p, date_of_birth: e.target.value }))} />
-                    </div>
-                    <div className="ss-form-group full">
-                      <label>Street Address</label>
-                      <input value={form.street_address || ""} onChange={e => setForm(p => ({ ...p, street_address: e.target.value }))} />
-                    </div>
-                    <div className="ss-form-group">
-                      <label>City</label>
-                      <input value={form.city || ""} onChange={e => setForm(p => ({ ...p, city: e.target.value }))} />
-                    </div>
-                    <div className="ss-form-group">
-                      <label>State</label>
-                      <input value={form.state || ""} onChange={e => setForm(p => ({ ...p, state: e.target.value }))} />
-                    </div>
-                    <div className="ss-form-group">
-                      <label>Zip Code</label>
-                      <input value={form.zip_code || ""} onChange={e => setForm(p => ({ ...p, zip_code: e.target.value }))} />
-                    </div>
+                    <div className="ss-form-group"><label>First Name</label>
+                      <input value={form.first_name || ""} onChange={e => setForm(p => ({ ...p, first_name: e.target.value }))} /></div>
+                    <div className="ss-form-group"><label>Last Name</label>
+                      <input value={form.last_name || ""} onChange={e => setForm(p => ({ ...p, last_name: e.target.value }))} /></div>
+                    <div className="ss-form-group full"><label>Email</label>
+                      <input type="email" value={form.email || ""} onChange={e => setForm(p => ({ ...p, email: e.target.value }))} /></div>
+                    <div className="ss-form-group"><label>Phone Number</label>
+                      <input value={form.phone_number || ""} onChange={e => setForm(p => ({ ...p, phone_number: e.target.value }))} /></div>
+                    <div className="ss-form-group"><label>Date of Birth</label>
+                      <input type="date" value={form.date_of_birth?.slice(0,10) || ""} onChange={e => setForm(p => ({ ...p, date_of_birth: e.target.value }))} /></div>
+                    <div className="ss-form-group full"><label>Street Address</label>
+                      <input value={form.street_address || ""} onChange={e => setForm(p => ({ ...p, street_address: e.target.value }))} /></div>
+                    <div className="ss-form-group"><label>City</label>
+                      <input value={form.city || ""} onChange={e => setForm(p => ({ ...p, city: e.target.value }))} /></div>
+                    <div className="ss-form-group"><label>State</label>
+                      <input value={form.state || ""} onChange={e => setForm(p => ({ ...p, state: e.target.value }))} /></div>
+                    <div className="ss-form-group"><label>Zip Code</label>
+                      <input value={form.zip_code || ""} onChange={e => setForm(p => ({ ...p, zip_code: e.target.value }))} /></div>
                   </div>
                   <div className="ss-form-actions">
                     <button type="submit" className="ss-btn ss-btn-primary" disabled={saving}>
@@ -203,17 +196,17 @@ export default function MemberDashboard() {
                 {memberRec ? (
                   <>
                     <div className="ss-membership-badge" style={{
-                      background: levelStyle.bg,
-                      color: levelStyle.color,
+                      background: levelStyle.bg, color: levelStyle.color,
                       border: `1px solid ${levelStyle.border}`
                     }}>
-                      ⭐ {memberRec.membership_level} Member
+                      {memberRec.membership_level} Member
                     </div>
+
                     <div className="ss-stat-grid" style={{ marginTop: 24 }}>
                       <div className="ss-stat">
                         <span className="ss-stat-value">
                           {memberRec.join_date
-                            ? new Date(memberRec.join_date).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
+                            ? new Date(memberRec.join_date.toString().slice(0, 10)).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
                             : "—"}
                         </span>
                         <span className="ss-stat-label">Member Since</span>
@@ -221,7 +214,7 @@ export default function MemberDashboard() {
                       <div className="ss-stat">
                         <span className="ss-stat-value">
                           {memberRec.expiration_date
-                            ? new Date(memberRec.expiration_date).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
+                            ? new Date(memberRec.expiration_date.toString().slice(0, 10)).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
                             : "—"}
                         </span>
                         <span className="ss-stat-label">Expires</span>
@@ -239,9 +232,71 @@ export default function MemberDashboard() {
                         <span className="ss-stat-label">Total Visits</span>
                       </div>
                     </div>
+
+                    <div style={{ marginTop: 24 }}>
+                      {isDonationTier ? (
+                        <p style={{ fontSize: 13, color: "#6b7280", lineHeight: 1.6 }}>
+                          Your <strong>{memberRec.membership_level}</strong> status was earned through your generous donations.
+                          Continue donating to maintain or advance your tier.{" "}
+                          <Link to="/donations" style={{ color: "#c9a84c" }}>Make a donation</Link>
+                        </p>
+                      ) : (
+                        <Link to="/membership" style={{
+                          display: "inline-block", padding: "0.625rem 1.5rem",
+                          background: "#c9a84c", color: "#000", fontSize: 13,
+                          fontWeight: 500, textTransform: "uppercase",
+                          letterSpacing: "0.06em", textDecoration: "none",
+                        }}>
+                          {daysUntilExpiry !== null && daysUntilExpiry <= 60 ? "Renew Membership" : "Upgrade or Renew"}
+                        </Link>
+                      )}
+                    </div>
+
+                    {/* ── Transaction history ── */}
+                    {memberTxns.length > 0 && (
+                      <div style={{ marginTop: 32 }}>
+                        <h3 style={{ fontSize: 13, fontWeight: 600, color: "#6b7280", marginBottom: 12, textTransform: "uppercase", letterSpacing: "0.08em" }}>
+                          Membership History
+                        </h3>
+                        <div style={{ border: "1px solid #e5e7eb", overflow: "hidden" }}>
+                          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+                            <thead>
+                              <tr style={{ background: "#f9fafb", borderBottom: "1px solid #e5e7eb" }}>
+                                {["Date", "Level", "Type", "Amount"].map(h => (
+                                  <th key={h} style={{ padding: "0.625rem 1rem", textAlign: h === "Amount" ? "right" : "left", color: "#6b7280", fontWeight: 600, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.07em" }}>{h}</th>
+                                ))}
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {memberTxns.map((t, i) => (
+                                <tr key={t.transaction_id} style={{ borderBottom: i < memberTxns.length - 1 ? "1px solid #f3f4f6" : "none" }}>
+                                  <td style={{ padding: "0.625rem 1rem", color: "#374151" }}>
+                                    {t.transaction_date
+                                      ? new Date(t.transaction_date.toString().slice(0, 10)).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })
+                                      : "—"}
+                                  </td>
+                                  <td style={{ padding: "0.625rem 1rem", color: "#374151" }}>{t.membership_level}</td>
+                                  <td style={{ padding: "0.625rem 1rem", color: "#374151" }}>{t.transaction_type}</td>
+                                  <td style={{ padding: "0.625rem 1rem", color: "#374151", textAlign: "right" }}>
+                                    {t.amount !== undefined && t.amount !== null
+                                      ? `$${parseFloat(t.amount).toFixed(2)}`
+                                      : "—"}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    )}
                   </>
                 ) : (
-                  <div className="ss-empty">No membership record found.</div>
+                  <div className="ss-empty">
+                    <p style={{ marginBottom: 12 }}>No membership record found.</p>
+                    <Link to="/membership" style={{ color: "#c9a84c", fontSize: 13 }}>
+                      Browse membership tiers
+                    </Link>
+                  </div>
                 )}
               </div>
             )}
@@ -259,7 +314,7 @@ export default function MemberDashboard() {
                     <div className="ss-stat">
                       <span className="ss-stat-value">
                         {visitorRec.last_visit_date
-                          ? new Date(visitorRec.last_visit_date).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
+                          ? new Date(visitorRec.last_visit_date.toString().slice(0, 10)).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
                           : "—"}
                       </span>
                       <span className="ss-stat-label">Last Visit</span>
@@ -275,10 +330,108 @@ export default function MemberDashboard() {
             {activeTab === "purchases" && (
               <div className="ss-card">
                 <h2 className="ss-section-title">Purchase History</h2>
-                <div className="ss-placeholder">
-                  <div className="ss-placeholder-icon">🛍️</div>
-                  <p>Purchase history will appear here once the ticketing and shop features are completed.</p>
-                </div>
+
+                {/* Tickets */}
+                <h3 style={{ fontSize: 14, fontWeight: 600, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 12 }}>
+                  🎟️ Tickets
+                </h3>
+                {tickets.length === 0 ? (
+                  <div className="ss-empty" style={{ marginBottom: 24 }}>No tickets purchased yet.</div>
+                ) : (
+                  <div style={{ border: "1px solid #e5e7eb", overflow: "hidden", marginBottom: 32 }}>
+                    <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+                      <thead>
+                        <tr style={{ background: "#f9fafb", borderBottom: "1px solid #e5e7eb" }}>
+                          {["Purchase Date", "Visit Date", "Type", "Discount", "Price", "Payment"].map(h => (
+                            <th key={h} style={{ padding: "0.625rem 1rem", textAlign: h === "Price" ? "right" : "left", color: "#6b7280", fontWeight: 600, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.07em" }}>{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {tickets.map((t, i) => (
+                          <tr key={t.ticket_id} style={{ borderBottom: i < tickets.length - 1 ? "1px solid #f3f4f6" : "none" }}>
+                            <td style={{ padding: "0.625rem 1rem", color: "#374151" }}>
+                              {t.purchase_date
+                                ? new Date(t.purchase_date.toString().slice(0, 10)).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })
+                                : "—"}
+                            </td>
+                            <td style={{ padding: "0.625rem 1rem", color: "#374151" }}>
+                              {t.visit_date
+                                ? new Date(t.visit_date.toString().slice(0, 10)).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })
+                                : "—"}
+                            </td>
+                            <td style={{ padding: "0.625rem 1rem", color: "#374151" }}>{t.ticket_type}</td>
+                            <td style={{ padding: "0.625rem 1rem", color: "#374151" }}>{t.discount_type}</td>
+                            <td style={{ padding: "0.625rem 1rem", color: "#374151", textAlign: "right" }}>
+                              {t.final_price !== undefined && t.final_price !== null
+                                ? `$${parseFloat(t.final_price).toFixed(2)}`
+                                : "—"}
+                            </td>
+                            <td style={{ padding: "0.625rem 1rem", color: "#374151" }}>{t.payment_method}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                      <tfoot>
+                        <tr style={{ background: "#f9fafb", borderTop: "1px solid #e5e7eb" }}>
+                          <td colSpan={4} style={{ padding: "0.625rem 1rem", fontWeight: 600, fontSize: 12, color: "#374151" }}>
+                            Total Tickets: {tickets.length}
+                          </td>
+                          <td style={{ padding: "0.625rem 1rem", fontWeight: 600, fontSize: 12, color: "#374151", textAlign: "right" }}>
+                            ${tickets.reduce((sum, t) => sum + parseFloat(t.final_price || 0), 0).toFixed(2)}
+                          </td>
+                          <td />
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+                )}
+
+                {/* Donations */}
+                <h3 style={{ fontSize: 14, fontWeight: 600, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 12 }}>
+                  💝 Donations
+                </h3>
+                {donations.length === 0 ? (
+                  <div className="ss-empty">No donations made yet.</div>
+                ) : (
+                  <div style={{ border: "1px solid #e5e7eb", overflow: "hidden" }}>
+                    <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+                      <thead>
+                        <tr style={{ background: "#f9fafb", borderBottom: "1px solid #e5e7eb" }}>
+                          {["Date", "Type", "Amount"].map(h => (
+                            <th key={h} style={{ padding: "0.625rem 1rem", textAlign: h === "Amount" ? "right" : "left", color: "#6b7280", fontWeight: 600, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.07em" }}>{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {donations.map((d, i) => (
+                          <tr key={d.donation_id} style={{ borderBottom: i < donations.length - 1 ? "1px solid #f3f4f6" : "none" }}>
+                            <td style={{ padding: "0.625rem 1rem", color: "#374151" }}>
+                              {d.donation_date
+                                ? new Date(d.donation_date.toString().slice(0, 10)).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })
+                                : "—"}
+                            </td>
+                            <td style={{ padding: "0.625rem 1rem", color: "#374151" }}>{d.donation_type}</td>
+                            <td style={{ padding: "0.625rem 1rem", color: "#374151", textAlign: "right" }}>
+                              {d.amount !== undefined && d.amount !== null
+                                ? `$${parseFloat(d.amount).toFixed(2)}`
+                                : "—"}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                      <tfoot>
+                        <tr style={{ background: "#f9fafb", borderTop: "1px solid #e5e7eb" }}>
+                          <td colSpan={2} style={{ padding: "0.625rem 1rem", fontWeight: 600, fontSize: 12, color: "#374151" }}>
+                            Total Donated
+                          </td>
+                          <td style={{ padding: "0.625rem 1rem", fontWeight: 600, fontSize: 12, color: "#374151", textAlign: "right" }}>
+                            ${donations.reduce((sum, d) => sum + parseFloat(d.amount || 0), 0).toFixed(2)}
+                          </td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+                )}
               </div>
             )}
 

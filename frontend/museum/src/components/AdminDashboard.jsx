@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import ArtistForm from "./ArtistForm";
 import ArtistTable from "./ArtistTable";
@@ -10,10 +10,13 @@ import ExhibitionForm from "./ExhibitionForm";
 import ExhibitionTable from "./ExhibitionTable";
 import GalleryForm from "./GalleryForm";
 import GalleryTable from "./GalleryTable";
+import EventForm from "./EventForm";
+import EventTable from "./EventTable";
 import CafeAdminPanel from "./CafeAdminPanel";
 import GiftShopAdminPanel from "./GiftShopAdminPanel";
 import UserManagement from "./UserManagement";
 import ReportsPanel from "./ReportsPanel";
+import DepartmentManagement from "./DepartmentManagement";
 
 import {
   getArtists,
@@ -36,6 +39,10 @@ import {
   createGallery,
   updateGallery,
   deleteGallery,
+  getEvents,
+  createEvent,
+  updateEvent,
+  deleteEvent,
 } from "../services/api";
 
 import "../styles/AdminDashboard.css";
@@ -43,6 +50,7 @@ import "../styles/UserManagement.css";
 
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState("artists");
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false); // Add this for mobile menu
 
   // Data
   const [artists, setArtists] = useState([]);
@@ -50,6 +58,7 @@ export default function AdminDashboard() {
   const [provenance, setProvenance] = useState([]);
   const [exhibitions, setExhibitions] = useState([]);
   const [galleries, setGalleries] = useState([]);
+  const [events, setEvents] = useState([]);
 
   // Artist states
   const [isArtistFormOpen, setIsArtistFormOpen] = useState(false);
@@ -71,6 +80,10 @@ export default function AdminDashboard() {
   const [isGalleryFormOpen, setIsGalleryFormOpen] = useState(false);
   const [editingGallery, setEditingGallery] = useState(null);
 
+  // Event states
+  const [isEventFormOpen, setIsEventFormOpen] = useState(false);
+  const [editingEvent, setEditingEvent] = useState(null);
+
   // UI states
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
@@ -79,7 +92,10 @@ export default function AdminDashboard() {
   const [provenanceError, setProvenanceError] = useState("");
   const [exhibitionsError, setExhibitionsError] = useState("");
   const [galleriesError, setGalleriesError] = useState("");
-
+  const [eventsError, setEventsError] = useState("");
+  const userMgmtRef = useRef(null);
+  const deptMgmtRef = useRef(null);
+  const [userMgmtSubTab, setUserMgmtSubTab] = useState("users");
   const navigate = useNavigate();
 
   const tabs = [
@@ -88,10 +104,12 @@ export default function AdminDashboard() {
     { id: "provenance", name: "Provenance", icon: "📜" },
     { id: "exhibitions", name: "Exhibitions", icon: "🏛️" },
     { id: "galleries", name: "Galleries", icon: "🗺️" },
+    { id: "events", name: "Events", icon: "🎉" },
     { id: "cafe", name: "Cafe", icon: "☕" },
     { id: "giftshop", name: "Gift Shop", icon: "🛍️" },
     { id: "reports", name: "Reports", icon: "📊" },
     { id: "users", name: "Users", icon: "👥" },
+    { id: "departments", name: "Departments", icon: "🏢" }
   ];
 
   // Load all data on mount
@@ -101,7 +119,21 @@ export default function AdminDashboard() {
     loadProvenance();
     loadExhibitions();
     loadGalleries();
+    loadEvents();
   }, []);
+
+  // Close mobile menu when clicking outside (optional)
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      const sidebar = document.querySelector('.admin-sidebar');
+      const toggleBtn = document.querySelector('.mobile-menu-toggle');
+      if (isMobileMenuOpen && sidebar && !sidebar.contains(event.target) && !toggleBtn?.contains(event.target)) {
+        setIsMobileMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isMobileMenuOpen]);
 
   const loadArtists = async () => {
     setLoading(true);
@@ -161,6 +193,17 @@ export default function AdminDashboard() {
     }
   };
 
+  const loadEvents = async () => {
+    try {
+      const data = await getEvents();
+      setEvents(data);
+      setEventsError("");
+    } catch (err) {
+      setEventsError("Failed to load events");
+      console.error("Events error:", err);
+    }
+  };
+
   // Artist handlers
   const handleAddArtist = () => {
     setEditingArtist(null);
@@ -188,11 +231,7 @@ export default function AdminDashboard() {
   };
 
   const handleDeleteArtist = async (artistId) => {
-    if (
-      window.confirm(
-        "Are you sure you want to delete this artist? This will also delete their artworks and provenance records."
-      )
-    ) {
+    if (window.confirm("Are you sure you want to delete this artist? This will also delete their artworks and provenance records.")) {
       try {
         await deleteArtist(artistId);
         await loadArtists();
@@ -230,11 +269,7 @@ export default function AdminDashboard() {
   };
 
   const handleDeleteArtwork = async (id) => {
-    if (
-      window.confirm(
-        "Are you sure you want to delete this artwork? This will also delete its provenance records."
-      )
-    ) {
+    if (window.confirm("Are you sure you want to delete this artwork? This will also delete its provenance records.")) {
       try {
         await deleteArtwork(id);
         await loadArtworks();
@@ -310,11 +345,7 @@ export default function AdminDashboard() {
   };
 
   const handleDeleteExhibition = async (id) => {
-    if (
-      window.confirm(
-        "Are you sure you want to delete this exhibition? This will also remove its artwork associations."
-      )
-    ) {
+    if (window.confirm("Are you sure you want to delete this exhibition? This will also remove its artwork associations.")) {
       try {
         await deleteExhibition(id);
         await loadExhibitions();
@@ -352,11 +383,7 @@ export default function AdminDashboard() {
   };
 
   const handleDeleteGallery = async (id) => {
-    if (
-      window.confirm(
-        "Are you sure you want to delete this gallery? This will also delete its exhibitions and events."
-      )
-    ) {
+    if (window.confirm("Are you sure you want to delete this gallery? This will also delete its exhibitions and events.")) {
       try {
         await deleteGallery(id);
         await loadGalleries();
@@ -367,21 +394,56 @@ export default function AdminDashboard() {
     }
   };
 
+  // Event handlers
+  const handleAddEvent = () => {
+    setEditingEvent(null);
+    setIsEventFormOpen(true);
+  };
+
+  const handleEditEvent = (event) => {
+    setEditingEvent(event);
+    setIsEventFormOpen(true);
+  };
+
+  const handleSaveEvent = async (eventData) => {
+    try {
+      if (editingEvent) {
+        await updateEvent(editingEvent.event_id, eventData);
+      } else {
+        await createEvent(eventData);
+      }
+      await loadEvents();
+      setIsEventFormOpen(false);
+    } catch (err) {
+      console.error("Error saving event:", err);
+      alert("Failed to save event");
+    }
+  };
+
+  const handleDeleteEvent = async (id) => {
+    if (window.confirm("Are you sure you want to delete this event?")) {
+      try {
+        await deleteEvent(id);
+        await loadEvents();
+      } catch (err) {
+        console.error("Error deleting event:", err);
+        alert("Failed to delete event");
+      }
+    }
+  };
+
   // General dispatcher for Add button
   const handleAdd = () => {
     switch (activeTab) {
-      case "artists":
-        return handleAddArtist();
-      case "artwork":
-        return handleAddArtwork();
-      case "provenance":
-        return handleAddProvenance();
-      case "exhibitions":
-        return handleAddExhibition();
-      case "galleries":
-        return handleAddGallery();
-      default:
-        return;
+      case "artists": return handleAddArtist();
+      case "artwork": return handleAddArtwork();
+      case "provenance": return handleAddProvenance();
+      case "exhibitions": return handleAddExhibition();
+      case "galleries": return handleAddGallery();
+      case "events": return handleAddEvent();
+      case "users":       return userMgmtRef.current?.openAdd();
+      case "departments": return deptMgmtRef.current?.openAdd(); 
+      default: return;
     }
   };
 
@@ -393,12 +455,17 @@ export default function AdminDashboard() {
     navigate("/login");
   };
 
+  // Handle tab click - closes mobile menu on selection
+  const handleTabClick = (tabId) => {
+    setActiveTab(tabId);
+    setSearchTerm("");
+    setIsMobileMenuOpen(false); // Close mobile menu after selection
+  };
+
   // Filtered data
   const filteredArtists = artists.filter(
     (artist) =>
-      `${artist.first_name} ${artist.last_name}`
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase()) ||
+      `${artist.first_name} ${artist.last_name}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
       artist.nationality?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -427,43 +494,50 @@ export default function AdminDashboard() {
       gallery.building_name?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const filteredEvents = events.filter(
+    (event) =>
+      event.event_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      event.description?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   const usesCustomManager = activeTab === "cafe" || activeTab === "giftshop";
 
   const getAddLabel = () => {
     switch (activeTab) {
-      case "artists":
-        return "Artist";
-      case "artwork":
-        return "Artwork";
-      case "provenance":
-        return "Provenance Record";
-      case "exhibitions":
-        return "Exhibition";
-      case "galleries":
-        return "Gallery";
-      default:
-        return "";
+      case "artists": return "Artist";
+      case "artwork": return "Artwork";
+      case "provenance": return "Provenance Record";
+      case "exhibitions": return "Exhibition";
+      case "galleries": return "Gallery";
+      case "events": return "Event";
+      case "users": return userMgmtSubTab.slice(0, -1);       
+      case "departments": return "Department";   
+      default: return "";
     }
   };
 
   return (
     <div className="admin-dashboard">
-      <aside className="admin-sidebar">
+      {/* Mobile Menu Toggle Button */}
+      <button 
+        className="mobile-menu-toggle" 
+        onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+        aria-label="Toggle menu"
+      >
+        ☰
+      </button>
+
+      <aside className={`admin-sidebar ${isMobileMenuOpen ? 'open' : ''}`}>
         <div className="sidebar-header">
           <h2>MFAH Admin</h2>
-          <Link to="/" className="back-to-site">
-            Back to Home
-          </Link>
+          <Link to="/" className="back-to-site" onClick={() => setIsMobileMenuOpen(false)}>Back to Home</Link>
         </div>
         <nav className="sidebar-nav">
           {tabs.map((tab) => (
             <button
               key={tab.id}
               className={`nav-item ${activeTab === tab.id ? "active" : ""}`}
-              onClick={() => {
-                setActiveTab(tab.id);
-                setSearchTerm("");
-              }}
+              onClick={() => handleTabClick(tab.id)}
             >
               <span className="nav-icon">{tab.icon}</span>
               <span className="nav-name">{tab.name}</span>
@@ -471,9 +545,7 @@ export default function AdminDashboard() {
           ))}
         </nav>
         <div className="sidebar-footer">
-          <button className="logout-btn" onClick={handleLogout}>
-            Logout
-          </button>
+          <button className="logout-btn" onClick={handleLogout}>Logout</button>
         </div>
       </aside>
 
@@ -484,21 +556,17 @@ export default function AdminDashboard() {
             <p className="admin-subtitle">
               Manage {activeTab} in the museum database
               {activeTab === "artists" && " - Add, edit, or remove artists"}
-              {activeTab === "artwork" &&
-                " - Add, edit, or remove artworks and link them to artists"}
-              {activeTab === "provenance" &&
-                " - Track ownership history of artworks"}
-              {activeTab === "exhibitions" &&
-                " - Manage exhibitions and their associated artworks"}
-              {activeTab === "galleries" &&
-                " - Manage gallery spaces and their climate settings"}
-              {activeTab === "cafe" &&
-                " - Manage cafe items, transactions, and line items"}
-              {activeTab === "giftshop" &&
-                " - Manage gift shop items, transactions, and line items"}
+              {activeTab === "artwork" && " - Add, edit, or remove artworks and link them to artists"}
+              {activeTab === "provenance" && " - Track ownership history of artworks"}
+              {activeTab === "exhibitions" && " - Manage exhibitions and their associated artworks"}
+              {activeTab === "galleries" && " - Manage gallery spaces and their climate settings"}
+              {activeTab === "events" && " - Add, edit, or remove museum events"}
+              {activeTab === "cafe" && " - Manage cafe items, transactions, and line items"}
+              {activeTab === "giftshop" && " - Manage gift shop items, transactions, and line items"}
+              {activeTab === "departments" && " - Manage museum departments and budgets"}
             </p>
           </div>
-          {!usesCustomManager && activeTab !== "users" && activeTab !== "reports" && (
+          {!usesCustomManager && activeTab !== "reports" && (
             <button className="add-btn" onClick={handleAdd}>
               + Add New {getAddLabel()}
             </button>
@@ -523,11 +591,7 @@ export default function AdminDashboard() {
               {artistsError ? (
                 <div className="error-message">{artistsError}</div>
               ) : (
-                <ArtistTable
-                  artists={filteredArtists}
-                  onEdit={handleEditArtist}
-                  onDelete={handleDeleteArtist}
-                />
+                <ArtistTable artists={filteredArtists} onEdit={handleEditArtist} onDelete={handleDeleteArtist} />
               )}
             </>
           )}
@@ -538,11 +602,7 @@ export default function AdminDashboard() {
               {artworksError ? (
                 <div className="error-message">{artworksError}</div>
               ) : (
-                <ArtworkTable
-                  artworks={filteredArtworks}
-                  onEdit={handleEditArtwork}
-                  onDelete={handleDeleteArtwork}
-                />
+                <ArtworkTable artworks={filteredArtworks} onEdit={handleEditArtwork} onDelete={handleDeleteArtwork} />
               )}
             </>
           )}
@@ -553,11 +613,7 @@ export default function AdminDashboard() {
               {provenanceError ? (
                 <div className="error-message">{provenanceError}</div>
               ) : (
-                <ProvenanceTable
-                  provenance={filteredProvenance}
-                  onEdit={handleEditProvenance}
-                  onDelete={handleDeleteProvenance}
-                />
+                <ProvenanceTable provenance={filteredProvenance} onEdit={handleEditProvenance} onDelete={handleDeleteProvenance} />
               )}
             </>
           )}
@@ -568,11 +624,7 @@ export default function AdminDashboard() {
               {exhibitionsError ? (
                 <div className="error-message">{exhibitionsError}</div>
               ) : (
-                <ExhibitionTable
-                  exhibitions={filteredExhibitions}
-                  onEdit={handleEditExhibition}
-                  onDelete={handleDeleteExhibition}
-                />
+                <ExhibitionTable exhibitions={filteredExhibitions} onEdit={handleEditExhibition} onDelete={handleDeleteExhibition} />
               )}
             </>
           )}
@@ -583,11 +635,18 @@ export default function AdminDashboard() {
               {galleriesError ? (
                 <div className="error-message">{galleriesError}</div>
               ) : (
-                <GalleryTable
-                  galleries={filteredGalleries}
-                  onEdit={handleEditGallery}
-                  onDelete={handleDeleteGallery}
-                />
+                <GalleryTable galleries={filteredGalleries} onEdit={handleEditGallery} onDelete={handleDeleteGallery} />
+              )}
+            </>
+          )}
+
+          {/* Events */}
+          {activeTab === "events" && (
+            <>
+              {eventsError ? (
+                <div className="error-message">{eventsError}</div>
+              ) : (
+                <EventTable events={filteredEvents} onEdit={handleEditEvent} onDelete={handleDeleteEvent} />
               )}
             </>
           )}
@@ -602,50 +661,36 @@ export default function AdminDashboard() {
           {activeTab === "reports" && <ReportsPanel />}
 
           {/* Users */}
-          {activeTab === "users" && <UserManagement />}
+          {activeTab === "users" && (
+            <UserManagement
+              ref={userMgmtRef}
+              searchTerm={searchTerm}
+              onSubTabChange={setUserMgmtSubTab}
+            />
+          )}
+          {/* Departments */}
+          {activeTab === "departments" && <DepartmentManagement ref={deptMgmtRef} searchTerm={searchTerm} />}
         </div>
       </main>
 
+      {/* Modals */}
       {isArtistFormOpen && (
-        <ArtistForm
-          onSubmit={handleSaveArtist}
-          initialData={editingArtist}
-          onCancel={() => setIsArtistFormOpen(false)}
-        />
+        <ArtistForm onSubmit={handleSaveArtist} initialData={editingArtist} onCancel={() => setIsArtistFormOpen(false)} />
       )}
-
       {isArtworkFormOpen && (
-        <ArtworkForm
-          onSubmit={handleSaveArtwork}
-          initialData={editingArtwork}
-          onCancel={() => setIsArtworkFormOpen(false)}
-        />
+        <ArtworkForm onSubmit={handleSaveArtwork} initialData={editingArtwork} onCancel={() => setIsArtworkFormOpen(false)} />
       )}
-
       {isProvenanceFormOpen && (
-        <ProvenanceForm
-          onSubmit={handleSaveProvenance}
-          initialData={editingProvenance}
-          onCancel={() => setIsProvenanceFormOpen(false)}
-        />
+        <ProvenanceForm onSubmit={handleSaveProvenance} initialData={editingProvenance} onCancel={() => setIsProvenanceFormOpen(false)} />
       )}
-
-      {/* Exhibition Form Modal */}
       {isExhibitionFormOpen && (
-        <ExhibitionForm
-          onSubmit={handleSaveExhibition}
-          initialData={editingExhibition}
-          onCancel={() => setIsExhibitionFormOpen(false)}
-        />
+        <ExhibitionForm onSubmit={handleSaveExhibition} initialData={editingExhibition} onCancel={() => setIsExhibitionFormOpen(false)} />
       )}
-
-      {/* Gallery Form Modal */}
       {isGalleryFormOpen && (
-        <GalleryForm
-          onSubmit={handleSaveGallery}
-          initialData={editingGallery}
-          onCancel={() => setIsGalleryFormOpen(false)}
-        />
+        <GalleryForm onSubmit={handleSaveGallery} initialData={editingGallery} onCancel={() => setIsGalleryFormOpen(false)} />
+      )}
+      {isEventFormOpen && (
+        <EventForm onSubmit={handleSaveEvent} initialData={editingEvent} onCancel={() => setIsEventFormOpen(false)} />
       )}
     </div>
   );

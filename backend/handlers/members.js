@@ -1,20 +1,9 @@
-// members
-
 const db = require("../db");
-//const { verifyToken } = require("./authHelpers");
 
 module.exports = (req, res, parsedUrl) => {
   const urlParts = parsedUrl.pathname.split("/").filter(Boolean);
 
-  /*const user = verifyToken(req);
-  if (!user || !["admin", "employee"].includes(user.role)) {
-    res.writeHead(403, { "Content-Type": "application/json" });
-    return res.end(JSON.stringify({ error: "Forbidden: insufficient permissions" }));
-  }
-    */
-  // ============================ MEMBERS ============================
-
-  // GET all members (joined with user + visitor)
+  // GET all members
   if (req.method === "GET" && urlParts.length === 1) {
     const sql = `
       SELECT m.user_id, u.first_name, u.last_name, u.email,
@@ -43,11 +32,18 @@ module.exports = (req, res, parsedUrl) => {
     `;
     db.query(sql, [urlParts[1]], (err, results) => {
       if (err) return sendError(res, err);
-      sendJSON(res, results[0] || {});
+
+      // ← key fix: return 404 instead of empty object
+      if (!results[0]) {
+        res.writeHead(404, { "Content-Type": "application/json" });
+        return res.end(JSON.stringify({ error: "Member not found" }));
+      }
+
+      sendJSON(res, results[0]);
     });
   }
 
-  // POST member (visitor must already exist)
+  // POST member
   else if (req.method === "POST") {
     parseBody(req, data => {
       const sql = `
@@ -55,7 +51,6 @@ module.exports = (req, res, parsedUrl) => {
         (user_id, membership_level, join_date, expiration_date)
         VALUES (?,?,?,?)
       `;
-
       db.query(sql, [
         data.user_id || null,
         data.membership_level || "",
@@ -76,7 +71,6 @@ module.exports = (req, res, parsedUrl) => {
         membership_level=?, join_date=?, expiration_date=?
         WHERE user_id=?
       `;
-
       db.query(sql, [
         data.membership_level || "",
         data.join_date || null,
@@ -101,14 +95,11 @@ module.exports = (req, res, parsedUrl) => {
     );
   }
 
-  // ============================ NOT FOUND ============================
   else {
     res.writeHead(404, { "Content-Type": "application/json" });
     res.end(JSON.stringify({ message: "Route not found" }));
   }
 };
-
-// ============================ HELPERS ============================
 
 function parseBody(req, callback) {
   let body = "";

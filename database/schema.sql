@@ -346,6 +346,28 @@ CREATE TABLE `member` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
+-- Table structure for table `membershipstransaction`
+--
+
+DROP TABLE IF EXISTS `membershiptransaction`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `membershiptransaction` (
+  `transaction_id`   int NOT NULL AUTO_INCREMENT,
+  `user_id`          int NOT NULL,
+  `membership_level` varchar(50) NOT NULL,
+  `transaction_date` datetime NOT NULL,
+  `amount`           decimal(10,2) NOT NULL,
+  `payment_method`   varchar(50) NOT NULL,
+  `transaction_type` enum('New','Renewal','Upgrade') NOT NULL DEFAULT 'New',
+  PRIMARY KEY (`transaction_id`),
+  KEY `user_id` (`user_id`),
+  CONSTRAINT `membershiptransaction_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `user` (`user_id`),
+  CONSTRAINT `membershiptransaction_chk_1` CHECK ((`amount` >= 0))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
 -- Table structure for table `museumbuilding`
 --
 

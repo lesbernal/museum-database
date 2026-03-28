@@ -55,12 +55,14 @@
 }
 
 .dashboard-btn {
+  border: 1px solid #c5a028;
   background: #c5a028;
   color: #000000;
 }
 
 .dashboard-btn:hover {
   background: #d4af37;
+  color: #000000;
 }
 
 .login-btn {

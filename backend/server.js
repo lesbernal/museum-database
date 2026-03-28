@@ -1,3 +1,4 @@
+//adding comment to pull
 const http = require("http");
 const url = require("url");
 
@@ -23,12 +24,13 @@ const handleExhibitions = require("./handlers/exhibitions");
 const handleGalleries = require("./handlers/galleries");
 const handleBuildings = require("./handlers/buildings");
 const handleLogin = require("./handlers/auth");
-const handleReports = require("./handlers/reports"); // Make sure you have this
+const handleReports = require("./handlers/reports");
+const handleMembershipTransactions = require("./handlers/membershiptransactions");
 
 const server = http.createServer((req, res) => {
   // Enable CORS
   res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
 
   if (req.method === "OPTIONS") {
@@ -81,6 +83,11 @@ const server = http.createServer((req, res) => {
     return handleGiftshop(req, res, parsedUrl);
   }
 
+  // Membership Transactions — must be BEFORE /members
+  if (parsedUrl.pathname.startsWith("/membershiptransactions")) {
+    return handleMembershipTransactions(req, res, parsedUrl);
+  }
+
   // Tickets, Events, Donations
   if (parsedUrl.pathname.startsWith("/tickets")) {
     return handleTickets(req, res, parsedUrl);
@@ -125,7 +132,6 @@ const server = http.createServer((req, res) => {
     parsedUrl.pathname.startsWith("/reports") ||
     parsedUrl.pathname.startsWith("/queries")
   ) {
-    console.log("✅ Reports route matched!");
     return handleReports(req, res, parsedUrl);
   }
 
