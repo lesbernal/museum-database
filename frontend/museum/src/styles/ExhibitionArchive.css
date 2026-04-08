@@ -1,0 +1,145 @@
+/* styles/ArchivedExhibitions.css */
+
+/* ── View Archived button toolbar (in AdminDashboard) ─────────────────────── */
+.exhibitions-admin-toolbar {
+  padding: 0 0 12px 0;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.btn-view-archived {
+  background: #1a1a1a;
+  color: #c9a84c;
+  border: 1.5px solid #c9a84c;
+  padding: 9px 20px;
+  border-radius: 8px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  letter-spacing: 0.03em;
+  transition: background 0.2s, color 0.2s;
+}
+.btn-view-archived:hover {
+  background: #c9a84c;
+  color: #1a1a1a;
+}
+
+/* ── Archived panel ───────────────────────────────────────────────────────── */
+.archived-exhibitions-panel {
+  background: #fafafa;
+  border: 1.5px solid #e0d9cc;
+  border-radius: 10px;
+  padding: 20px 24px;
+  margin-bottom: 24px;
+}
+
+.archived-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.archived-panel-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #333;
+  margin: 0;
+}
+
+.archived-panel-count {
+  font-size: 0.82rem;
+  color: #888;
+  background: #ece8e0;
+  padding: 3px 10px;
+  border-radius: 12px;
+}
+
+.archived-state-msg {
+  color: #888;
+  font-size: 0.9rem;
+  padding: 8px 0;
+}
+.archived-error {
+  color: #c0392b;
+}
+
+/* ── Archived table ───────────────────────────────────────────────────────── */
+.archived-table-wrap {
+  overflow-x: auto;
+}
+
+.archived-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.archived-table thead tr {
+  background: #ece8e0;
+}
+
+.archived-table th {
+  text-align: left;
+  padding: 9px 12px;
+  font-weight: 600;
+  color: #555;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+
+.archived-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid #ece8e0;
+  color: #444;
+  vertical-align: middle;
+}
+
+.archived-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.archived-table tbody tr:hover {
+  background: #f5f0e8;
+}
+
+.archived-title {
+  font-weight: 500;
+  color: #222;
+}
+
+/* ── Restore button ───────────────────────────────────────────────────────── */
+.btn-restore {
+  background: #1a1a1a;
+  color: #c9a84c;
+  border: 1px solid #c9a84c;
+  padding: 5px 14px;
+  border-radius: 16px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.2s, color 0.2s;
+}
+.btn-restore:hover {
+  background: #c9a84c;
+  color: #1a1a1a;
+}
+
+/* ── Archive button in ExhibitionTable ────────────────────────────────────── */
+.archive-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1rem;
+  padding: 4px 6px;
+  border-radius: 4px;
+  transition: background 0.15s;
+  opacity: 0.7;
+}
+.archive-btn:hover {
+  background: #fff3cd;
+  opacity: 1;
+}
