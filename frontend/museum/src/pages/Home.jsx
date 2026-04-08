@@ -10,7 +10,7 @@ export default function Home() {
 
   // Fetch real events from the database
   useEffect(() => {
-    fetch("http://localhost:5000/events")
+    fetch("http://localhost:5001/events")
       .then(res => res.json())
       .then(data => {
         setEvents(data);
