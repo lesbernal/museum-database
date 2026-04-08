@@ -12,7 +12,7 @@ export default function ReportsPanel() {
 
   // Dynamic BASE_URL - works locally and in production
   const BASE_URL = window.location.hostname === 'localhost' 
-    ? 'http://localhost:5000' 
+    ? 'http://localhost:5001' 
     : 'https://museum-backend-lck5.onrender.com';
 
   // ==================== DATA REPORTS ====================

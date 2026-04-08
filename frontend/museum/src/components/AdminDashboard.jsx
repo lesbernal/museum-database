@@ -483,8 +483,8 @@ export default function AdminDashboard() {
 
   const filteredExhibitions = exhibitions.filter(
     (exhibition) =>
-      exhibition.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      exhibition.type?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      exhibition.exhibition_title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      exhibition.exhibition_type?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       exhibition.gallery_name?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 

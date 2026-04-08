@@ -57,11 +57,11 @@ export default function ExhibitionTable({ exhibitions, onEdit, onDelete }) {
             return (
               <tr key={exhibition.exhibition_id}>
                 <td>{exhibition.exhibition_id}</td>
-                <td className="title-cell">{exhibition.title}</td>
+                <td className="title-cell">{exhibition.exhibition_name}</td>
                 <td>{exhibition.gallery_name || "—"}</td>
                 <td>
-                  <span className={`status-badge ${getTypeBadgeClass(exhibition.type)}`}>
-                    {exhibition.type || "Unknown"}
+                  <span className={`status-badge ${getTypeBadgeClass(exhibition.exhibition_type)}`}>
+                    {exhibition.exhibition_type || "Unknown"}
                   </span>
                 </td>
                 <td>{formatDate(exhibition.start_date)}</td>

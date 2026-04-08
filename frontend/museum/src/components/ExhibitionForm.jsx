@@ -7,32 +7,24 @@ const EXHIBITION_TYPES = [
   "Permanent",
   "Temporary",
   "Traveling",
-  "Retrospective",
-  "Group Show",
-  "Solo Show",
-  "Thematic",
 ];
 
 export default function ExhibitionForm({ onSubmit, initialData = null, onCancel, isOpen = true }) {
   const [form, setForm] = useState({
     gallery_id: "",
-    title: "",
+    exhibition_name: "",
     start_date: "",
     end_date: "",
-    type: "",
-    description: "",
+    exhibition_type: "",
   });
 
-  // Each entry: { artwork_id, display_start_date, display_end_date }
   const [exhibitionArtworks, setExhibitionArtworks] = useState([]);
-
   const [galleries, setGalleries] = useState([]);
   const [artworks, setArtworks] = useState([]);
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccessToast, setShowSuccessToast] = useState(false);
 
-  // Load dropdowns
   useEffect(() => {
     loadGalleries();
     loadArtworks();
@@ -43,17 +35,15 @@ export default function ExhibitionForm({ onSubmit, initialData = null, onCancel,
     if (initialData) {
       setForm({
         gallery_id: initialData.gallery_id || "",
-        title: initialData.title || "",
+        exhibition_name: initialData.exhibition_name || "",
         start_date: initialData.start_date
           ? new Date(initialData.start_date).toISOString().split("T")[0]
           : "",
         end_date: initialData.end_date
           ? new Date(initialData.end_date).toISOString().split("T")[0]
           : "",
-        type: initialData.type || "",
-        description: initialData.description || "",
+        exhibition_type: initialData.exhibition_type || "",
       });
-      // Prefill junction rows if provided
       if (initialData.artworks) {
         setExhibitionArtworks(
           initialData.artworks.map((a) => ({
@@ -88,22 +78,16 @@ export default function ExhibitionForm({ onSubmit, initialData = null, onCancel,
     }
   };
 
-  // ── Validation ──────────────────────────────────────────────────────────────
-
   const validateForm = () => {
     const newErrors = {};
-
     if (!form.gallery_id) newErrors.gallery_id = "Gallery is required";
-    if (!form.title.trim()) newErrors.title = "Title is required";
+    if (!form.exhibition_name.trim()) newErrors.exhibition_name = "Title is required";
     if (!form.start_date) newErrors.start_date = "Start date is required";
     if (!form.end_date) newErrors.end_date = "End date is required";
-    if (!form.type) newErrors.type = "Exhibition type is required";
-
+    if (!form.exhibition_type) newErrors.exhibition_type = "Exhibition type is required";
     if (form.start_date && form.end_date && form.end_date < form.start_date) {
       newErrors.end_date = "End date must be after start date";
     }
-
-    // Validate each artwork row
     const artworkErrors = {};
     exhibitionArtworks.forEach((row, idx) => {
       const rowErrors = {};
@@ -114,20 +98,15 @@ export default function ExhibitionForm({ onSubmit, initialData = null, onCancel,
       if (Object.keys(rowErrors).length > 0) artworkErrors[idx] = rowErrors;
     });
     if (Object.keys(artworkErrors).length > 0) newErrors.artworks = artworkErrors;
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
-
-  // ── Form field handlers ──────────────────────────────────────────────────────
 
   function handleChange(e) {
     const { name, value } = e.target;
     setForm({ ...form, [name]: value });
     if (errors[name]) setErrors({ ...errors, [name]: null });
   }
-
-  // ── Exhibition–Artwork junction handlers ────────────────────────────────────
 
   function handleAddArtworkRow() {
     setExhibitionArtworks([
@@ -138,7 +117,6 @@ export default function ExhibitionForm({ onSubmit, initialData = null, onCancel,
 
   function handleRemoveArtworkRow(idx) {
     setExhibitionArtworks(exhibitionArtworks.filter((_, i) => i !== idx));
-    // Clear any errors for removed row
     if (errors.artworks?.[idx]) {
       const updated = { ...errors.artworks };
       delete updated[idx];
@@ -151,7 +129,6 @@ export default function ExhibitionForm({ onSubmit, initialData = null, onCancel,
       i === idx ? { ...row, [field]: value } : row
     );
     setExhibitionArtworks(updated);
-    // Clear row-level error
     if (errors.artworks?.[idx]?.[field]) {
       const updatedErrors = {
         ...errors,
@@ -164,26 +141,21 @@ export default function ExhibitionForm({ onSubmit, initialData = null, onCancel,
     }
   }
 
-  // ── Submit ───────────────────────────────────────────────────────────────────
-
   async function handleSubmit(e) {
     e.preventDefault();
     if (!validateForm()) return;
-
     setIsSubmitting(true);
     try {
       await onSubmit({ ...form, artworks: exhibitionArtworks });
       setShowSuccessToast(true);
       setTimeout(() => setShowSuccessToast(false), 3000);
-
       if (!initialData) {
         setForm({
           gallery_id: "",
-          title: "",
+          exhibition_name: "",
           start_date: "",
           end_date: "",
-          type: "",
-          description: "",
+          exhibition_type: "",
         });
         setExhibitionArtworks([]);
       }
@@ -197,7 +169,6 @@ export default function ExhibitionForm({ onSubmit, initialData = null, onCancel,
 
   if (!isOpen) return null;
 
-  // Artwork IDs already selected (to avoid duplicates in dropdowns)
   const selectedArtworkIds = exhibitionArtworks.map((r) => String(r.artwork_id)).filter(Boolean);
 
   return (
@@ -242,30 +213,30 @@ export default function ExhibitionForm({ onSubmit, initialData = null, onCancel,
                 <label>Title *</label>
                 <input
                   type="text"
-                  name="title"
-                  value={form.title}
+                  name="exhibition_name"
+                  value={form.exhibition_name}
                   onChange={handleChange}
-                  className={errors.title ? "error" : ""}
+                  className={errors.exhibition_name ? "error" : ""}
                   placeholder="e.g., Impressionism and the Sea"
                 />
-                {errors.title && <span className="error-message">{errors.title}</span>}
+                {errors.exhibition_name && <span className="error-message">{errors.exhibition_name}</span>}
               </div>
 
               {/* Type */}
               <div className="form-group full-width">
                 <label>Exhibition Type *</label>
                 <select
-                  name="type"
-                  value={form.type}
+                  name="exhibition_type"
+                  value={form.exhibition_type}
                   onChange={handleChange}
-                  className={errors.type ? "error" : ""}
+                  className={errors.exhibition_type ? "error" : ""}
                 >
                   <option value="">Select Type</option>
                   {EXHIBITION_TYPES.map((t) => (
                     <option key={t} value={t}>{t}</option>
                   ))}
                 </select>
-                {errors.type && <span className="error-message">{errors.type}</span>}
+                {errors.exhibition_type && <span className="error-message">{errors.exhibition_type}</span>}
               </div>
 
               {/* Dates */}
@@ -281,7 +252,6 @@ export default function ExhibitionForm({ onSubmit, initialData = null, onCancel,
                   />
                   {errors.start_date && <span className="error-message">{errors.start_date}</span>}
                 </div>
-
                 <div className="form-group">
                   <label>End Date *</label>
                   <input
@@ -295,34 +265,17 @@ export default function ExhibitionForm({ onSubmit, initialData = null, onCancel,
                 </div>
               </div>
 
-              {/* Description */}
-              <div className="form-group full-width">
-                <label>Description</label>
-                <textarea
-                  name="description"
-                  value={form.description}
-                  onChange={handleChange}
-                  placeholder="Describe the exhibition..."
-                  rows="4"
-                />
-              </div>
-
-              {/* ── ExhibitionArtwork junction rows ── */}
+              {/* Artworks */}
               <div className="form-group full-width">
                 <div className="section-header">
                   <label>Artworks in this Exhibition</label>
-                  <button
-                    type="button"
-                    className="add-row-btn"
-                    onClick={handleAddArtworkRow}
-                  >
+                  <button type="button" className="add-row-btn" onClick={handleAddArtworkRow}>
                     + Add Artwork
                   </button>
                 </div>
                 <p className="field-hint">
                   Optionally set display dates per artwork — leave blank to inherit the exhibition dates.
                 </p>
-
                 {exhibitionArtworks.length === 0 ? (
                   <p className="empty-hint">No artworks added yet.</p>
                 ) : (
@@ -330,7 +283,6 @@ export default function ExhibitionForm({ onSubmit, initialData = null, onCancel,
                     {exhibitionArtworks.map((row, idx) => (
                       <div key={idx} className="artwork-row">
                         <div className="artwork-row-fields">
-                          {/* Artwork selector */}
                           <div className="form-group artwork-select-group">
                             <label>Artwork *</label>
                             <select
@@ -359,8 +311,6 @@ export default function ExhibitionForm({ onSubmit, initialData = null, onCancel,
                               <span className="error-message">{errors.artworks[idx].artwork_id}</span>
                             )}
                           </div>
-
-                          {/* Display start date */}
                           <div className="form-group">
                             <label>Display Start</label>
                             <input
@@ -369,8 +319,6 @@ export default function ExhibitionForm({ onSubmit, initialData = null, onCancel,
                               onChange={(e) => handleArtworkRowChange(idx, "display_start_date", e.target.value)}
                             />
                           </div>
-
-                          {/* Display end date */}
                           <div className="form-group">
                             <label>Display End</label>
                             <input
@@ -384,7 +332,6 @@ export default function ExhibitionForm({ onSubmit, initialData = null, onCancel,
                             )}
                           </div>
                         </div>
-
                         <button
                           type="button"
                           className="remove-row-btn"
