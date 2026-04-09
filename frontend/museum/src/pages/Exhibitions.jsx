@@ -9,9 +9,7 @@ const MONTHS = [
   "July", "August", "September", "October", "November", "December"
 ];
 
-// ─── helpers ────────────────────────────────────────────────────────────────
-
-const API_BASE = "http://localhost:5000"; // adjust to your backend URL
+const API_BASE = "http://localhost:5001";
 
 async function fetchExhibitionPaintings(exhibitionId) {
   try {
@@ -21,22 +19,6 @@ async function fetchExhibitionPaintings(exhibitionId) {
   } catch {
     return [];
   }
-}
-
-async function fetchArchivedExhibitions() {
-  const res = await fetch(`${API_BASE}/exhibitions/archived`);
-  if (!res.ok) throw new Error("Failed to fetch archived exhibitions");
-  return res.json();
-}
-
-async function deactivateExhibition(id) {
-  const res = await fetch(`${API_BASE}/exhibitions/${id}/deactivate`, { method: "PATCH" });
-  if (!res.ok) throw new Error("Failed to deactivate");
-}
-
-async function reactivateExhibition(id) {
-  const res = await fetch(`${API_BASE}/exhibitions/${id}/reactivate`, { method: "PATCH" });
-  if (!res.ok) throw new Error("Failed to reactivate");
 }
 
 // ─── ExhibitionCalendar modal ────────────────────────────────────────────────
@@ -75,7 +57,7 @@ function ExhibitionCalendar({ exhibition, onClose }) {
 
   const classForDay = (day) => {
     if (!day) return "";
-    const date   = new Date(viewYear, viewMonth, day);
+    const date    = new Date(viewYear, viewMonth, day);
     const isStart = date.toDateString() === start.toDateString();
     const isEnd   = !isOngoing && date.toDateString() === end.toDateString();
     const inRange = date >= start && (isOngoing || date <= end);
@@ -95,7 +77,6 @@ function ExhibitionCalendar({ exhibition, onClose }) {
       <div className="cal-modal" onClick={e => e.stopPropagation()}>
         <button className="cal-close" onClick={onClose}>&times;</button>
 
-        {/* Exhibition info */}
         <div className="cal-header">
           <h2 className="cal-title">{exhibition.exhibition_name}</h2>
           {exhibition.gallery_name && (
@@ -110,7 +91,6 @@ function ExhibitionCalendar({ exhibition, onClose }) {
           </div>
         </div>
 
-        {/* Calendar */}
         <div className="cal-body">
           <div className="cal-nav">
             <button className="cal-nav-btn" onClick={prevMonth}>‹</button>
@@ -137,7 +117,6 @@ function ExhibitionCalendar({ exhibition, onClose }) {
           </div>
         </div>
 
-        {/* ── Paintings in this exhibition ── */}
         <div className="cal-paintings-section">
           <h3 className="cal-paintings-heading">Works in this Exhibition</h3>
           {loadingArt ? (
@@ -147,13 +126,9 @@ function ExhibitionCalendar({ exhibition, onClose }) {
           ) : (
             <div className="cal-paintings-grid">
               {paintings.map((p) => (
-                <div key={p.artwork_id ?? p.painting_id} className="cal-painting-card">
+                <div key={p.artwork_id} className="cal-painting-card">
                   {p.image_url ? (
-                    <img
-                      src={p.image_url}
-                      alt={p.title}
-                      className="cal-painting-img"
-                    />
+                    <img src={p.image_url} alt={p.title} className="cal-painting-img" />
                   ) : (
                     <div className="cal-painting-placeholder" />
                   )}
@@ -164,7 +139,6 @@ function ExhibitionCalendar({ exhibition, onClose }) {
                     )}
                     {p.description && (
                       <p className="cal-painting-desc">
-                        {/* show only the first sentence */}
                         {p.description.split(/[.!?]/)[0].trim()}.
                       </p>
                     )}
@@ -179,25 +153,20 @@ function ExhibitionCalendar({ exhibition, onClose }) {
   );
 }
 
-// ─── PaintingBanner — fetches up to 3 paintings for a card ──────────────────
+// ─── PaintingBanner ──────────────────────────────────────────────────────────
 
 function PaintingBanner({ exhibitionId, accentColor }) {
-  const [images, setImages]   = useState([]);
-  const [loaded, setLoaded]   = useState(false);
+  const [images, setImages] = useState([]);
+  const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     fetchExhibitionPaintings(exhibitionId).then((paintings) => {
-      // grab only those with an image_url, max 3
       setImages(paintings.filter(p => p.image_url).slice(0, 3));
       setLoaded(true);
     });
   }, [exhibitionId]);
 
-  if (!loaded) {
-    return <div className="card-visual" style={{ background: accentColor }} />;
-  }
-
-  if (images.length === 0) {
+  if (!loaded || images.length === 0) {
     return <div className="card-visual" style={{ background: accentColor }} />;
   }
 
@@ -205,7 +174,7 @@ function PaintingBanner({ exhibitionId, accentColor }) {
     <div className="card-visual card-paintings-banner">
       {images.map((p, i) => (
         <div
-          key={p.artwork_id ?? p.painting_id}
+          key={p.artwork_id}
           className="banner-img-wrap"
           style={{ zIndex: images.length - i }}
         >
@@ -216,100 +185,21 @@ function PaintingBanner({ exhibitionId, accentColor }) {
   );
 }
 
-// ─── ArchivedExhibitions panel ───────────────────────────────────────────────
-
-function ArchivedPanel({ onRestored }) {
-  const [archived, setArchived] = useState([]);
-  const [loading,  setLoading]  = useState(true);
-
-  useEffect(() => {
-    fetchArchivedExhibitions()
-      .then(setArchived)
-      .catch(console.error)
-      .finally(() => setLoading(false));
-  }, []);
-
-  const handleRestore = async (id) => {
-    try {
-      await reactivateExhibition(id);
-      setArchived(prev => prev.filter(e => e.exhibition_id !== id));
-      onRestored();
-    } catch (err) {
-      alert("Failed to restore exhibition: " + err.message);
-    }
-  };
-
-  const formatDate = (dateStr) => {
-    if (!dateStr) return "";
-    const d = new Date(dateStr);
-    if (d.getFullYear() >= 2099) return "Ongoing";
-    return d.toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
-  };
-
-  return (
-    <div className="archived-panel">
-      <h2 className="archived-heading">🗄 Archived Exhibitions</h2>
-      {loading ? (
-        <p className="archived-loading">Loading…</p>
-      ) : archived.length === 0 ? (
-        <p className="archived-empty">No archived exhibitions.</p>
-      ) : (
-        <div className="archived-list">
-          {archived.map(e => (
-            <div key={e.exhibition_id} className="archived-row">
-              <div className="archived-info">
-                <span className="archived-name">{e.exhibition_name}</span>
-                {e.gallery_name && (
-                  <span className="archived-gallery">📍 {e.gallery_name}</span>
-                )}
-                <span className="archived-dates">
-                  {formatDate(e.start_date)} → {formatDate(e.end_date)}
-                </span>
-              </div>
-              <button
-                className="btn-restore"
-                onClick={() => handleRestore(e.exhibition_id)}
-              >
-                ↩ Restore
-              </button>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
 // ─── Main Exhibitions page ───────────────────────────────────────────────────
 
 export default function Exhibitions() {
-  const [exhibitions,        setExhibitions]       = useState([]);
-  const [loading,            setLoading]            = useState(true);
-  const [filter,             setFilter]             = useState("All");
-  const [selectedExhibition, setSelected]           = useState(null);
-  const [showArchived,       setShowArchived]       = useState(false);
-  const [refreshKey,         setRefreshKey]         = useState(0);
+  const [exhibitions,        setExhibitions] = useState([]);
+  const [loading,            setLoading]     = useState(true);
+  const [filter,             setFilter]      = useState("All");
+  const [selectedExhibition, setSelected]    = useState(null);
 
-  const loadExhibitions = () => {
+  useEffect(() => {
     setLoading(true);
     getExhibitions()
       .then(data => setExhibitions(data))
       .catch(err => console.error(err))
       .finally(() => setLoading(false));
-  };
-
-  useEffect(() => { loadExhibitions(); }, [refreshKey]);
-
-  const handleDeactivate = async (e, exhibition) => {
-    e.stopPropagation(); // don't open calendar
-    if (!window.confirm(`Archive "${exhibition.exhibition_name}"?`)) return;
-    try {
-      await deactivateExhibition(exhibition.exhibition_id);
-      setRefreshKey(k => k + 1);
-    } catch (err) {
-      alert("Failed to archive: " + err.message);
-    }
-  };
+  }, []);
 
   const getDateStatus = (start, end) => {
     const now = new Date();
@@ -365,7 +255,7 @@ export default function Exhibitions() {
         </p>
       </div>
 
-      {/* Top bar: filters + archived toggle */}
+      {/* Filters */}
       <div className="exhibitions-toolbar">
         <div className="exhibitions-filters">
           {["All", "Permanent", "Temporary", "Traveling"].map(type => (
@@ -378,20 +268,7 @@ export default function Exhibitions() {
             </button>
           ))}
         </div>
-
-        {/* Toggle archived panel */}
-        <button
-          className={`btn-archived-toggle ${showArchived ? "archived-toggle-active" : ""}`}
-          onClick={() => setShowArchived(v => !v)}
-        >
-          🗄 {showArchived ? "Hide Archived" : "View Archived"}
-        </button>
       </div>
-
-      {/* Archived panel (shown/hidden) */}
-      {showArchived && (
-        <ArchivedPanel onRestored={() => { setRefreshKey(k => k + 1); }} />
-      )}
 
       <p className="exhibitions-count">
         {filtered.length} exhibition{filtered.length !== 1 ? "s" : ""}
@@ -402,7 +279,7 @@ export default function Exhibitions() {
       ) : (
         <div className="exhibitions-grid">
           {filtered.map((e, i) => {
-            const status     = getDateStatus(e.start_date, e.end_date);
+            const status      = getDateStatus(e.start_date, e.end_date);
             const accentColor = cardAccents[i % cardAccents.length];
             return (
               <div
@@ -412,13 +289,11 @@ export default function Exhibitions() {
                 onClick={() => setSelected(e)}
                 title="Click to view calendar"
               >
-                {/* ── Painting banner (3 images) or solid color fallback ── */}
                 <PaintingBanner
                   exhibitionId={e.exhibition_id}
                   accentColor={accentColor}
                 />
 
-                {/* Badges on top of the banner */}
                 <div className="card-badges">
                   <span className={`card-type-badge ${typeBadgeClass(e.exhibition_type)}`}>
                     {e.exhibition_type}
@@ -438,16 +313,7 @@ export default function Exhibitions() {
                     <span className="card-dates-sep">→</span>
                     <span>{formatDate(e.end_date)}</span>
                   </div>
-                  <div className="card-actions">
-                    <p className="card-cta">📅 View calendar</p>
-                    <button
-                      className="btn-archive"
-                      onClick={(ev) => handleDeactivate(ev, e)}
-                      title="Archive this exhibition"
-                    >
-                      🗄 Archive
-                    </button>
-                  </div>
+                  <p className="card-cta">View calendar</p>
                 </div>
               </div>
             );
@@ -455,7 +321,6 @@ export default function Exhibitions() {
         </div>
       )}
 
-      {/* Calendar modal */}
       {selectedExhibition && (
         <ExhibitionCalendar
           exhibition={selectedExhibition}

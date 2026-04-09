@@ -10,6 +10,7 @@ import ExhibitionForm from "./ExhibitionForm";
 import ExhibitionTable from "./ExhibitionTable";
 import GalleryForm from "./GalleryForm";
 import GalleryTable from "./GalleryTable";
+import GalleryArchive from "./GalleryArchive";
 import EventForm from "./EventForm";
 import EventTable from "./EventTable";
 import CafeAdminPanel from "./CafeAdminPanel";
@@ -37,6 +38,7 @@ export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState("artists");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showExhibitionArchive, setShowExhibitionArchive] = useState(false);
+  const [showGalleryArchive, setShowGalleryArchive] = useState(false);
 
   // Data
   const [artists, setArtists] = useState([]);
@@ -61,14 +63,18 @@ export default function AdminDashboard() {
   // Exhibition states
   const [isExhibitionFormOpen, setIsExhibitionFormOpen] = useState(false);
   const [editingExhibition, setEditingExhibition] = useState(null);
-  const [exhibitionTypeFilter,    setExhibitionTypeFilter]    = useState("All");
-  const [exhibitionStatusFilter,  setExhibitionStatusFilter]  = useState("All");
+  const [exhibitionTypeFilter, setExhibitionTypeFilter] = useState("All");
+  const [exhibitionStatusFilter, setExhibitionStatusFilter] = useState("All");
   const [exhibitionGalleryFilter, setExhibitionGalleryFilter] = useState("All");
-  const [exhibitionSort,          setExhibitionSort]          = useState("title");
+  const [exhibitionSort, setExhibitionSort] = useState("title");
 
   // Gallery states
   const [isGalleryFormOpen, setIsGalleryFormOpen] = useState(false);
   const [editingGallery, setEditingGallery] = useState(null);
+  const [galleryBuildingFilter, setGalleryBuildingFilter] = useState("All");
+  const [galleryClimateFilter, setGalleryClimateFilter] = useState("All");
+  const [galleryFloorFilter, setGalleryFloorFilter] = useState("All");
+  const [gallerySort, setGallerySort] = useState("name");
 
   // Event states
   const [isEventFormOpen, setIsEventFormOpen] = useState(false);
@@ -89,17 +95,17 @@ export default function AdminDashboard() {
   const navigate = useNavigate();
 
   const tabs = [
-    { id: "artists",     name: "Artists",     icon: "🎨" },
-    { id: "artwork",     name: "Artwork",      icon: "🖼️" },
-    { id: "provenance",  name: "Provenance",   icon: "📜" },
-    { id: "exhibitions", name: "Exhibitions",  icon: "🏛️" },
-    { id: "galleries",   name: "Galleries",    icon: "🗺️" },
-    { id: "events",      name: "Events",       icon: "🎉" },
-    { id: "cafe",        name: "Cafe",         icon: "☕" },
-    { id: "giftshop",    name: "Gift Shop",    icon: "🛍️" },
-    { id: "reports",     name: "Reports",      icon: "📊" },
-    { id: "users",       name: "Users",        icon: "👥" },
-    { id: "departments", name: "Departments",  icon: "🏢" },
+    { id: "artists",     name: "Artists" },
+    { id: "artwork",     name: "Artwork" },
+    { id: "provenance",  name: "Provenance" },
+    { id: "exhibitions", name: "Exhibitions" },
+    { id: "galleries",   name: "Galleries" },
+    { id: "events",      name: "Events" },
+    { id: "cafe",        name: "Cafe" },
+    { id: "giftshop",    name: "Gift Shop" },
+    { id: "reports",     name: "Reports" },
+    { id: "users",       name: "Users" },
+    { id: "departments", name: "Departments" },
   ];
 
   useEffect(() => {
@@ -155,10 +161,15 @@ export default function AdminDashboard() {
     try {
       await fetch(`${API_BASE}/exhibitions/${id}/deactivate`, { method: "PATCH" });
       await loadExhibitions();
-    } catch (err) {
-      console.error("Error archiving exhibition:", err);
-      alert("Failed to archive exhibition");
-    }
+    } catch (err) { console.error(err); alert("Failed to archive exhibition"); }
+  };
+
+  const handleGalleryArchive = async (id) => {
+    if (!window.confirm("Archive this gallery? It can be restored later.")) return;
+    try {
+      await fetch(`${API_BASE}/galleries/${id}/deactivate`, { method: "PATCH" });
+      await loadGalleries();
+    } catch (err) { console.error(err); alert("Failed to archive gallery"); }
   };
 
   // Artist handlers
@@ -290,7 +301,10 @@ export default function AdminDashboard() {
     setSearchTerm("");
     setIsMobileMenuOpen(false);
     if (tabId !== "exhibitions") setShowExhibitionArchive(false);
+    if (tabId !== "galleries")   setShowGalleryArchive(false);
   };
+
+  // ── Filtered data ────────────────────────────────────────────────────────
 
   const filteredArtists = artists.filter((a) =>
     `${a.first_name} ${a.last_name}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -335,10 +349,30 @@ export default function AdminDashboard() {
       }
     });
 
-  const filteredGalleries = galleries.filter((g) =>
-    g.gallery_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    g.building_name?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const galleryBuildings = [...new Set(galleries.map(g => g.building_name).filter(Boolean))].sort();
+  const galleryFloors    = [...new Set(galleries.map(g => g.floor_number).filter(v => v !== null && v !== undefined))].sort((a, b) => a - b);
+
+  const filteredGalleries = galleries
+    .filter((g) => {
+      const matchesSearch   = g.gallery_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                              g.building_name?.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesBuilding = galleryBuildingFilter === "All" || g.building_name === galleryBuildingFilter;
+      const matchesClimate  = galleryClimateFilter === "All"  ||
+        (galleryClimateFilter === "Yes" ? g.climate_controlled : !g.climate_controlled);
+      const matchesFloor    = galleryFloorFilter === "All"    || String(g.floor_number) === galleryFloorFilter;
+      return matchesSearch && matchesBuilding && matchesClimate && matchesFloor;
+    })
+    .sort((a, b) => {
+      switch (gallerySort) {
+        case "name":       return (a.gallery_name || "").localeCompare(b.gallery_name || "");
+        case "name_desc":  return (b.gallery_name || "").localeCompare(a.gallery_name || "");
+        case "floor_asc":  return (a.floor_number ?? 0) - (b.floor_number ?? 0);
+        case "floor_desc": return (b.floor_number ?? 0) - (a.floor_number ?? 0);
+        case "sqft_desc":  return (b.square_footage ?? 0) - (a.square_footage ?? 0);
+        default: return 0;
+      }
+    });
+
   const filteredEvents = events.filter((e) =>
     e.event_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     e.description?.toLowerCase().includes(searchTerm.toLowerCase())
@@ -384,7 +418,6 @@ export default function AdminDashboard() {
               className={`nav-item ${activeTab === tab.id ? "active" : ""}`}
               onClick={() => handleTabClick(tab.id)}
             >
-              <span className="nav-icon">{tab.icon}</span>
               <span className="nav-name">{tab.name}</span>
             </button>
           ))}
@@ -469,16 +502,76 @@ export default function AdminDashboard() {
                 </button>
               )}
             </div>
-
             <div className="exhibitions-admin-toolbar">
               <p className="ex-results-count">
                 {filteredExhibitions.length} exhibition{filteredExhibitions.length !== 1 ? "s" : ""}
               </p>
-              <button
-                className="btn-view-archived"
-                onClick={() => setShowExhibitionArchive((v) => !v)}
-              >
+              <button className="btn-view-archived" onClick={() => setShowExhibitionArchive((v) => !v)}>
                 🗄 {showExhibitionArchive ? "Hide Archived" : "View Archived Exhibitions"}
+              </button>
+            </div>
+          </>
+        )}
+
+        {/* ── Galleries: filter bar + archived toggle ── */}
+        {activeTab === "galleries" && (
+          <>
+            <div className="exhibition-filters-bar">
+              <div className="ex-filter-group">
+                <label>Building</label>
+                <select value={galleryBuildingFilter} onChange={(e) => setGalleryBuildingFilter(e.target.value)}>
+                  <option value="All">All Buildings</option>
+                  {galleryBuildings.map((b) => (
+                    <option key={b} value={b}>{b}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="ex-filter-group">
+                <label>Floor</label>
+                <select value={galleryFloorFilter} onChange={(e) => setGalleryFloorFilter(e.target.value)}>
+                  <option value="All">All Floors</option>
+                  {galleryFloors.map((f) => (
+                    <option key={f} value={String(f)}>
+                      {f === 0 ? "Ground" : f < 0 ? `Basement ${Math.abs(f)}` : `Floor ${f}`}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="ex-filter-group">
+                <label>Climate Controlled</label>
+                <select value={galleryClimateFilter} onChange={(e) => setGalleryClimateFilter(e.target.value)}>
+                  <option value="All">All</option>
+                  <option value="Yes">Yes</option>
+                  <option value="No">No</option>
+                </select>
+              </div>
+              <div className="ex-filter-group">
+                <label>Sort By</label>
+                <select value={gallerySort} onChange={(e) => setGallerySort(e.target.value)}>
+                  <option value="name">Name A–Z</option>
+                  <option value="name_desc">Name Z–A</option>
+                  <option value="floor_asc">Floor (Low–High)</option>
+                  <option value="floor_desc">Floor (High–Low)</option>
+                  <option value="sqft_desc">Largest First</option>
+                </select>
+              </div>
+              {(galleryBuildingFilter !== "All" || galleryClimateFilter !== "All" || galleryFloorFilter !== "All" || gallerySort !== "name") && (
+                <button className="ex-filter-clear" onClick={() => {
+                  setGalleryBuildingFilter("All");
+                  setGalleryClimateFilter("All");
+                  setGalleryFloorFilter("All");
+                  setGallerySort("name");
+                }}>
+                  Clear Filters
+                </button>
+              )}
+            </div>
+            <div className="exhibitions-admin-toolbar">
+              <p className="ex-results-count">
+                {filteredGalleries.length} galler{filteredGalleries.length !== 1 ? "ies" : "y"}
+              </p>
+              <button className="btn-view-archived" onClick={() => setShowGalleryArchive((v) => !v)}>
+                🗄 {showGalleryArchive ? "Hide Archived" : "View Archived Galleries"}
               </button>
             </div>
           </>
@@ -521,30 +614,36 @@ export default function AdminDashboard() {
           {activeTab === "exhibitions" && (
             <>
               {showExhibitionArchive && (
-                <ExhibitionArchive
-                  apiBase={API_BASE}
-                  onRestored={() => loadExhibitions()}
-                />
+                <ExhibitionArchive apiBase={API_BASE} onRestored={() => loadExhibitions()} />
               )}
               {exhibitionsError
                 ? <div className="error-message">{exhibitionsError}</div>
-                : (
-                  <ExhibitionTable
+                : <ExhibitionTable
                     exhibitions={filteredExhibitions}
                     onEdit={handleEditExhibition}
                     onDelete={handleDeleteExhibition}
                     onArchive={handleExhibitionArchive}
                   />
-                )
               }
             </>
           )}
 
           {/* Galleries */}
           {activeTab === "galleries" && (
-            galleriesError
-              ? <div className="error-message">{galleriesError}</div>
-              : <GalleryTable galleries={filteredGalleries} onEdit={handleEditGallery} onDelete={handleDeleteGallery} />
+            <>
+              {showGalleryArchive && (
+                <GalleryArchive apiBase={API_BASE} onRestored={() => loadGalleries()} />
+              )}
+              {galleriesError
+                ? <div className="error-message">{galleriesError}</div>
+                : <GalleryTable
+                    galleries={filteredGalleries}
+                    onEdit={handleEditGallery}
+                    onDelete={handleDeleteGallery}
+                    onArchive={handleGalleryArchive}
+                  />
+              }
+            </>
           )}
 
           {/* Events */}

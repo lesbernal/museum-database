@@ -193,7 +193,7 @@
   background: #fff;
   border-radius: 16px;
   width: 100%;
-  max-width: 480px;
+  max-width: 800px;
   overflow: hidden;
   position: relative;
   box-shadow: 0 24px 60px rgba(0, 0, 0, 0.2);
@@ -550,9 +550,13 @@
 
 /* ── Calendar paintings section ──────────────────────────────────────────── */
 .cal-paintings-section {
-  padding: 24px 0 8px;
-  border-top: 1px solid #2a2a2a;
+  border-top: 1px solid #1a1a1a;
   margin-top: 20px;
+  text-align: center;
+  background: #1a1a1a;
+  padding: 24px;
+  margin: 0 -24px -24px;
+  border-top: 1px solid #222;
 }
 .cal-paintings-heading {
   font-size: 1rem;
@@ -566,26 +570,24 @@
   font-size: 0.88rem;
 }
 .cal-paintings-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  grid-template-columns: repeat(3, 1fr);
   gap: 16px;
+  padding: 0 16px 16px;
 }
 .cal-painting-card {
   background: #1a1a1a;
   border-radius: 8px;
   overflow: hidden;
-  border: 1px solid #2a2a2a;
+  /*border: 1px solid #2a2a2a;*/
 }
 .cal-painting-img {
-  width: 100%;
-  height: 120px;
-  object-fit: cover;
-  display: block;
+  height: 160px;
+  object-fit: contain;
+  background: #f5f5f5;
 }
 .cal-painting-placeholder {
-  width: 100%;
-  height: 120px;
-  background: #222;
+  height: 160px;
+  background: #f5f5f5;
 }
 .cal-painting-info {
   padding: 8px 10px 10px;
@@ -603,7 +605,7 @@
 }
 .cal-painting-desc {
   font-size: 0.73rem;
-  color: #666;
+  color: #7e7e7e;
   line-height: 1.4;
   margin: 0;
 }
@@ -612,11 +614,6 @@
 .cal-modal {
   overflow-y: auto;
   max-height: 90vh;
-}
-
-/* Center the paintings section */
-.cal-paintings-section {
-  text-align: center;
 }
 
 .cal-paintings-grid {

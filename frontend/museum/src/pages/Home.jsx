@@ -146,21 +146,24 @@ export default function Home() {
 
         <div className="links-grid">
           <Link to="/tickets" className="link-card">
-            <div className="link-icon">📍</div>
+            {/*<d<div className="link-icon">📍</div>*/}
             <h3>Hours & Admission</h3>
             <p>Plan your visit with hours, tickets, and directions</p>
+            <span className="extras-link">Book Now →</span>
           </Link>
 
           <Link to="/membership" className="link-card">
-            <div className="link-icon">⭐</div>
+            {/*<d<div className="link-icon">⭐</div>*/}
             <h3>Memberships</h3>
             <p>Become a member for exclusive benefits and support the arts</p>
+            <span className="extras-link">View Memberships →</span>
           </Link>
 
           <Link to="/events" className="link-card">
-            <div className="link-icon">🎉</div>
+            {/*<d<div className="link-icon">🎉</div>*/}
             <h3>Events</h3>
             <p>Special exhibitions, lectures, workshops, and family programs</p>
+            <span className="extras-link">View Itenerary →</span>
           </Link>
         </div>
       </section>
@@ -174,21 +177,21 @@ export default function Home() {
 
         <div className="extras-grid">
           <Link to="/gift-shop" className="extras-card">
-            <div className="extras-icon">🛍️</div>
+            {/*<div className="extras-icon">🛍️</div>*/}
             <h3>MFAH Gift Shop</h3>
             <p>Unique art-inspired gifts, books, jewelry, and museum merchandise</p>
             <span className="extras-link">Shop Now →</span>
           </Link>
 
           <Link to="/cafe" className="extras-card">
-            <div className="extras-icon">☕</div>
+            {/*<d<div className="extras-icon">☕</div>*/}
             <h3>Café Leonelli</h3>
             <p>Place an order in advance and avoid the line at our cafe </p>
             <span className="extras-link">View Menu →</span>
           </Link>
 
           <Link to="/donations" className="extras-card">
-            <div className="extras-icon">💝</div>
+            {/*<div className="extras-icon">💝</div>*/}
             <h3>Make a Donation</h3>
             <p>Support exhibitions, education programs, and art conservation efforts</p>
             <span className="extras-link">Donate Now →</span>
