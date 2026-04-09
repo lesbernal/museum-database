@@ -29,7 +29,7 @@ export default function EventTable({ events, onEdit, onDelete }) {
               <td style={{ color: spotsLeft <= 0 ? "red" : spotsLeft <= 5 ? "orange" : "green" }}>
                 {spotsLeft <= 0 ? "Full" : spotsLeft}
               </td>
-              <td>{e.member_only ? "⭐ Yes" : "No"}</td>
+              <td>{e.member_only ? "Yes" : "No"}</td>
               <td>
                 <button className="btn btn-secondary" onClick={() => onEdit(e)}>
                   Edit

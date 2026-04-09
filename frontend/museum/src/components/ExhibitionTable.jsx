@@ -4,14 +4,14 @@ import "../styles/ExhibitionTable.css";
 export default function ExhibitionTable({ exhibitions, onEdit, onDelete, onArchive }) {
   const getTypeBadgeClass = (type) => {
     switch (type) {
-      case "Permanent":     return "badge-permanent";
-      case "Temporary":     return "badge-temporary";
-      case "Traveling":     return "badge-traveling";
+      case "Permanent": return "badge-permanent";
+      case "Temporary": return "badge-temporary";
+      case "Traveling": return "badge-traveling";
       case "Retrospective": return "badge-retrospective";
-      case "Group Show":    return "badge-group";
-      case "Solo Show":     return "badge-solo";
-      case "Thematic":      return "badge-thematic";
-      default:              return "";
+      case "Group Show": return "badge-group";
+      case "Solo Show": return "badge-solo";
+      case "Thematic": return "badge-thematic";
+      default: return "";
     }
   };
 
@@ -23,12 +23,12 @@ export default function ExhibitionTable({ exhibitions, onEdit, onDelete, onArchi
   };
 
   const getDateRangeStatus = (startDate, endDate) => {
-    const now   = new Date();
+    const now = new Date();
     const start = new Date(startDate);
-    const end   = new Date(endDate);
+    const end = new Date(endDate);
     if (now < start) return { label: "Upcoming", cls: "date-upcoming" };
-    if (now > end)   return { label: "Ended",    cls: "date-ended" };
-    return               { label: "Active",    cls: "date-active" };
+    if (now > end) return { label: "Ended", cls: "date-ended" };
+    return { label: "Active", cls: "date-active" };
   };
 
   if (exhibitions.length === 0) {
@@ -76,21 +76,21 @@ export default function ExhibitionTable({ exhibitions, onEdit, onDelete, onArchi
                     onClick={() => onEdit(exhibition)}
                     title="Edit"
                   >
-                    ✏️
+                    Edit
                   </button>
                   <button
                     className="archive-btn"
                     onClick={() => onArchive(exhibition.exhibition_id)}
                     title="Archive"
                   >
-                    🗄️
+                    Archive
                   </button>
                   <button
                     className="delete-btn"
                     onClick={() => onDelete(exhibition.exhibition_id)}
                     title="Permanently delete"
                   >
-                    🗑️
+                    Delete
                   </button>
                 </td>
               </tr>

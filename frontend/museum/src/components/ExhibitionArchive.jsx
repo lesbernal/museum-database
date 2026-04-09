@@ -46,7 +46,7 @@ export default function ArchivedExhibitions({ apiBase, onRestored }) {
   return (
     <div className="archived-exhibitions-panel">
       <div className="archived-panel-header">
-        <h3 className="archived-panel-title">🗄 Archived Exhibitions</h3>
+        <h3 className="archived-panel-title">Archived Exhibitions</h3>
         <span className="archived-panel-count">
           {archived.length} archived
         </span>

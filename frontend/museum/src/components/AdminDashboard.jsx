@@ -4,6 +4,7 @@ import ArtistForm from "./ArtistForm";
 import ArtistTable from "./ArtistTable";
 import ArtworkForm from "./ArtworkForm";
 import ArtworkTable from "./ArtworkTable";
+import ArtworkArchive from "./ArtworkArchive";
 import ProvenanceForm from "./ProvenanceForm";
 import ProvenanceTable from "./ProvenanceTable";
 import ExhibitionForm from "./ExhibitionForm";
@@ -19,6 +20,7 @@ import UserManagement from "./UserManagement";
 import ReportsPanel from "./ReportsPanel";
 import DepartmentManagement from "./DepartmentManagement";
 import ExhibitionArchive from "./ExhibitionArchive";
+
 
 import {
   getArtists, createArtist, updateArtist, deleteArtist,
@@ -55,6 +57,11 @@ export default function AdminDashboard() {
   // Artwork states
   const [isArtworkFormOpen, setIsArtworkFormOpen] = useState(false);
   const [editingArtwork, setEditingArtwork] = useState(null);
+  const [showArtworkArchive, setShowArtworkArchive] = useState(false);
+  const [artworkArtistFilter, setArtworkArtistFilter] = useState("All");
+  const [artworkMediumFilter, setArtworkMediumFilter] = useState("All");
+  const [artworkStatusFilter, setArtworkStatusFilter] = useState("All");
+  const [artworkSort, setArtworkSort] = useState("title");
 
   // Provenance states
   const [isProvenanceFormOpen, setIsProvenanceFormOpen] = useState(false);
@@ -95,16 +102,16 @@ export default function AdminDashboard() {
   const navigate = useNavigate();
 
   const tabs = [
-    { id: "artists",     name: "Artists" },
-    { id: "artwork",     name: "Artwork" },
-    { id: "provenance",  name: "Provenance" },
+    { id: "artists", name: "Artists" },
+    { id: "artwork", name: "Artwork" },
+    { id: "provenance", name: "Provenance" },
     { id: "exhibitions", name: "Exhibitions" },
-    { id: "galleries",   name: "Galleries" },
-    { id: "events",      name: "Events" },
-    { id: "cafe",        name: "Cafe" },
-    { id: "giftshop",    name: "Gift Shop" },
-    { id: "reports",     name: "Reports" },
-    { id: "users",       name: "Users" },
+    { id: "galleries", name: "Galleries" },
+    { id: "events", name: "Events" },
+    { id: "cafe", name: "Cafe" },
+    { id: "giftshop", name: "Gift Shop" },
+    { id: "reports", name: "Reports" },
+    { id: "users", name: "Users" },
     { id: "departments", name: "Departments" },
   ];
 
@@ -170,6 +177,14 @@ export default function AdminDashboard() {
       await fetch(`${API_BASE}/galleries/${id}/deactivate`, { method: "PATCH" });
       await loadGalleries();
     } catch (err) { console.error(err); alert("Failed to archive gallery"); }
+  };
+
+  const handleArtworkArchive = async (id) => {
+    if (!window.confirm("Archive this artwork? It can be restored later.")) return;
+    try {
+      await fetch(`${API_BASE}/artwork/${id}/deactivate`, { method: "PATCH" });
+      await loadArtworks();
+    } catch (err) { alert("Failed to archive artwork"); }
   };
 
   // Artist handlers
@@ -276,13 +291,13 @@ export default function AdminDashboard() {
 
   const handleAdd = () => {
     switch (activeTab) {
-      case "artists":     return handleAddArtist();
-      case "artwork":     return handleAddArtwork();
-      case "provenance":  return handleAddProvenance();
+      case "artists": return handleAddArtist();
+      case "artwork": return handleAddArtwork();
+      case "provenance": return handleAddProvenance();
       case "exhibitions": return handleAddExhibition();
-      case "galleries":   return handleAddGallery();
-      case "events":      return handleAddEvent();
-      case "users":       return userMgmtRef.current?.openAdd();
+      case "galleries": return handleAddGallery();
+      case "events": return handleAddEvent();
+      case "users": return userMgmtRef.current?.openAdd();
       case "departments": return deptMgmtRef.current?.openAdd();
       default: return;
     }
@@ -301,7 +316,8 @@ export default function AdminDashboard() {
     setSearchTerm("");
     setIsMobileMenuOpen(false);
     if (tabId !== "exhibitions") setShowExhibitionArchive(false);
-    if (tabId !== "galleries")   setShowGalleryArchive(false);
+    if (tabId !== "galleries") setShowGalleryArchive(false);
+    if (tabId !== "artwork") setShowArtworkArchive(false);
   };
 
   // ── Filtered data ────────────────────────────────────────────────────────
@@ -310,10 +326,27 @@ export default function AdminDashboard() {
     `${a.first_name} ${a.last_name}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
     a.nationality?.toLowerCase().includes(searchTerm.toLowerCase())
   );
-  const filteredArtworks = artworks.filter((a) =>
-    a.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    a.medium?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const artworkArtists = [...new Set(artworks.map(a => a.artist_name).filter(Boolean))].sort();
+  const artworkMediums = [...new Set(artworks.map(a => a.medium).filter(Boolean))].sort();
+
+  const filteredArtworks = artworks
+    .filter((a) => {
+      const matchesSearch = a.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        a.medium?.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesArtist = artworkArtistFilter === "All" || a.artist_name === artworkArtistFilter;
+      const matchesMedium = artworkMediumFilter === "All" || a.medium === artworkMediumFilter;
+      const matchesStatus = artworkStatusFilter === "All" || a.current_display_status === artworkStatusFilter;
+      return matchesSearch && matchesArtist && matchesMedium && matchesStatus;
+    })
+    .sort((a, b) => {
+      switch (artworkSort) {
+        case "title": return (a.title || "").localeCompare(b.title || "");
+        case "title_desc": return (b.title || "").localeCompare(a.title || "");
+        case "year_asc": return (a.creation_year ?? 0) - (b.creation_year ?? 0);
+        case "year_desc": return (b.creation_year ?? 0) - (a.creation_year ?? 0);
+        default: return 0;
+      }
+    });
   const filteredProvenance = provenance.filter((r) =>
     r.owner_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     r.acquisition_method?.toLowerCase().includes(searchTerm.toLowerCase())
@@ -322,7 +355,7 @@ export default function AdminDashboard() {
   const getExhibitionStatus = (start, end) => {
     const now = new Date();
     if (now < new Date(start)) return "Upcoming";
-    if (now > new Date(end))   return "Ended";
+    if (now > new Date(end)) return "Ended";
     return "Active";
   };
 
@@ -334,41 +367,41 @@ export default function AdminDashboard() {
         e.exhibition_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         e.exhibition_type?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         e.gallery_name?.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesType    = exhibitionTypeFilter === "All"    || e.exhibition_type === exhibitionTypeFilter;
-      const matchesStatus  = exhibitionStatusFilter === "All"  || getExhibitionStatus(e.start_date, e.end_date) === exhibitionStatusFilter;
+      const matchesType = exhibitionTypeFilter === "All" || e.exhibition_type === exhibitionTypeFilter;
+      const matchesStatus = exhibitionStatusFilter === "All" || getExhibitionStatus(e.start_date, e.end_date) === exhibitionStatusFilter;
       const matchesGallery = exhibitionGalleryFilter === "All" || e.gallery_name === exhibitionGalleryFilter;
       return matchesSearch && matchesType && matchesStatus && matchesGallery;
     })
     .sort((a, b) => {
       switch (exhibitionSort) {
-        case "title":      return (a.exhibition_name || "").localeCompare(b.exhibition_name || "");
+        case "title": return (a.exhibition_name || "").localeCompare(b.exhibition_name || "");
         case "title_desc": return (b.exhibition_name || "").localeCompare(a.exhibition_name || "");
-        case "date_asc":   return new Date(a.start_date) - new Date(b.start_date);
-        case "date_desc":  return new Date(b.start_date) - new Date(a.start_date);
+        case "date_asc": return new Date(a.start_date) - new Date(b.start_date);
+        case "date_desc": return new Date(b.start_date) - new Date(a.start_date);
         default: return 0;
       }
     });
 
   const galleryBuildings = [...new Set(galleries.map(g => g.building_name).filter(Boolean))].sort();
-  const galleryFloors    = [...new Set(galleries.map(g => g.floor_number).filter(v => v !== null && v !== undefined))].sort((a, b) => a - b);
+  const galleryFloors = [...new Set(galleries.map(g => g.floor_number).filter(v => v !== null && v !== undefined))].sort((a, b) => a - b);
 
   const filteredGalleries = galleries
     .filter((g) => {
-      const matchesSearch   = g.gallery_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                              g.building_name?.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesSearch = g.gallery_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        g.building_name?.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesBuilding = galleryBuildingFilter === "All" || g.building_name === galleryBuildingFilter;
-      const matchesClimate  = galleryClimateFilter === "All"  ||
+      const matchesClimate = galleryClimateFilter === "All" ||
         (galleryClimateFilter === "Yes" ? g.climate_controlled : !g.climate_controlled);
-      const matchesFloor    = galleryFloorFilter === "All"    || String(g.floor_number) === galleryFloorFilter;
+      const matchesFloor = galleryFloorFilter === "All" || String(g.floor_number) === galleryFloorFilter;
       return matchesSearch && matchesBuilding && matchesClimate && matchesFloor;
     })
     .sort((a, b) => {
       switch (gallerySort) {
-        case "name":       return (a.gallery_name || "").localeCompare(b.gallery_name || "");
-        case "name_desc":  return (b.gallery_name || "").localeCompare(a.gallery_name || "");
-        case "floor_asc":  return (a.floor_number ?? 0) - (b.floor_number ?? 0);
+        case "name": return (a.gallery_name || "").localeCompare(b.gallery_name || "");
+        case "name_desc": return (b.gallery_name || "").localeCompare(a.gallery_name || "");
+        case "floor_asc": return (a.floor_number ?? 0) - (b.floor_number ?? 0);
         case "floor_desc": return (b.floor_number ?? 0) - (a.floor_number ?? 0);
-        case "sqft_desc":  return (b.square_footage ?? 0) - (a.square_footage ?? 0);
+        case "sqft_desc": return (b.square_footage ?? 0) - (a.square_footage ?? 0);
         default: return 0;
       }
     });
@@ -382,13 +415,13 @@ export default function AdminDashboard() {
 
   const getAddLabel = () => {
     switch (activeTab) {
-      case "artists":     return "Artist";
-      case "artwork":     return "Artwork";
-      case "provenance":  return "Provenance Record";
+      case "artists": return "Artist";
+      case "artwork": return "Artwork";
+      case "provenance": return "Provenance Record";
       case "exhibitions": return "Exhibition";
-      case "galleries":   return "Gallery";
-      case "events":      return "Event";
-      case "users":       return userMgmtSubTab.slice(0, -1);
+      case "galleries": return "Gallery";
+      case "events": return "Event";
+      case "users": return userMgmtSubTab.slice(0, -1);
       case "departments": return "Department";
       default: return "";
     }
@@ -433,14 +466,14 @@ export default function AdminDashboard() {
             <h1>{tabs.find((t) => t.id === activeTab)?.name}</h1>
             <p className="admin-subtitle">
               Manage {activeTab} in the museum database
-              {activeTab === "artists"     && " - Add, edit, or remove artists"}
-              {activeTab === "artwork"     && " - Add, edit, or remove artworks and link them to artists"}
-              {activeTab === "provenance"  && " - Track ownership history of artworks"}
+              {activeTab === "artists" && " - Add, edit, or remove artists"}
+              {activeTab === "artwork" && " - Add, edit, or remove artworks and link them to artists"}
+              {activeTab === "provenance" && " - Track ownership history of artworks"}
               {activeTab === "exhibitions" && " - Manage exhibitions and their associated artworks"}
-              {activeTab === "galleries"   && " - Manage gallery spaces and their climate settings"}
-              {activeTab === "events"      && " - Add, edit, or remove museum events"}
-              {activeTab === "cafe"        && " - Manage cafe items, transactions, and line items"}
-              {activeTab === "giftshop"    && " - Manage gift shop items, transactions, and line items"}
+              {activeTab === "galleries" && " - Manage gallery spaces and their climate settings"}
+              {activeTab === "events" && " - Add, edit, or remove museum events"}
+              {activeTab === "cafe" && " - Manage cafe items, transactions, and line items"}
+              {activeTab === "giftshop" && " - Manage gift shop items, transactions, and line items"}
               {activeTab === "departments" && " - Manage museum departments and budgets"}
             </p>
           </div>
@@ -577,6 +610,61 @@ export default function AdminDashboard() {
           </>
         )}
 
+        {/* ── Artists: filter bar + archived toggle ── */}
+        {activeTab === "artwork" && (
+          <>
+            <div className="exhibition-filters-bar">
+              <div className="ex-filter-group">
+                <label>Artist</label>
+                <select value={artworkArtistFilter} onChange={(e) => setArtworkArtistFilter(e.target.value)}>
+                  <option value="All">All Artists</option>
+                  {artworkArtists.map(a => <option key={a} value={a}>{a}</option>)}
+                </select>
+              </div>
+              <div className="ex-filter-group">
+                <label>Medium</label>
+                <select value={artworkMediumFilter} onChange={(e) => setArtworkMediumFilter(e.target.value)}>
+                  <option value="All">All Mediums</option>
+                  {artworkMediums.map(m => <option key={m} value={m}>{m}</option>)}
+                </select>
+              </div>
+              <div className="ex-filter-group">
+                <label>Status</label>
+                <select value={artworkStatusFilter} onChange={(e) => setArtworkStatusFilter(e.target.value)}>
+                  <option value="All">All Statuses</option>
+                  <option value="On Display">On Display</option>
+                  <option value="In Storage">In Storage</option>
+                  <option value="On Loan">On Loan</option>
+                  <option value="Under Restoration">Under Restoration</option>
+                </select>
+              </div>
+              <div className="ex-filter-group">
+                <label>Sort By</label>
+                <select value={artworkSort} onChange={(e) => setArtworkSort(e.target.value)}>
+                  <option value="title">Title A–Z</option>
+                  <option value="title_desc">Title Z–A</option>
+                  <option value="year_asc">Year (Oldest)</option>
+                  <option value="year_desc">Year (Newest)</option>
+                </select>
+              </div>
+              {(artworkArtistFilter !== "All" || artworkMediumFilter !== "All" || artworkStatusFilter !== "All" || artworkSort !== "title") && (
+                <button className="ex-filter-clear" onClick={() => {
+                  setArtworkArtistFilter("All");
+                  setArtworkMediumFilter("All");
+                  setArtworkStatusFilter("All");
+                  setArtworkSort("title");
+                }}>Clear Filters</button>
+              )}
+            </div>
+            <div className="exhibitions-admin-toolbar">
+              <p className="ex-results-count">{filteredArtworks.length} artwork{filteredArtworks.length !== 1 ? "s" : ""}</p>
+              <button className="btn-view-archived" onClick={() => setShowArtworkArchive(v => !v)}>
+                🗄 {showArtworkArchive ? "Hide Archived" : "View Archived Artworks"}
+              </button>
+            </div>
+          </>
+        )}
+
         {!usesCustomManager && activeTab !== "reports" && (
           <div className="search-bar">
             <input
@@ -597,11 +685,6 @@ export default function AdminDashboard() {
           )}
 
           {/* Artwork */}
-          {activeTab === "artwork" && (
-            artworksError
-              ? <div className="error-message">{artworksError}</div>
-              : <ArtworkTable artworks={filteredArtworks} onEdit={handleEditArtwork} onDelete={handleDeleteArtwork} />
-          )}
 
           {/* Provenance */}
           {activeTab === "provenance" && (
@@ -619,11 +702,11 @@ export default function AdminDashboard() {
               {exhibitionsError
                 ? <div className="error-message">{exhibitionsError}</div>
                 : <ExhibitionTable
-                    exhibitions={filteredExhibitions}
-                    onEdit={handleEditExhibition}
-                    onDelete={handleDeleteExhibition}
-                    onArchive={handleExhibitionArchive}
-                  />
+                  exhibitions={filteredExhibitions}
+                  onEdit={handleEditExhibition}
+                  onDelete={handleDeleteExhibition}
+                  onArchive={handleExhibitionArchive}
+                />
               }
             </>
           )}
@@ -637,11 +720,29 @@ export default function AdminDashboard() {
               {galleriesError
                 ? <div className="error-message">{galleriesError}</div>
                 : <GalleryTable
-                    galleries={filteredGalleries}
-                    onEdit={handleEditGallery}
-                    onDelete={handleDeleteGallery}
-                    onArchive={handleGalleryArchive}
-                  />
+                  galleries={filteredGalleries}
+                  onEdit={handleEditGallery}
+                  onDelete={handleDeleteGallery}
+                  onArchive={handleGalleryArchive}
+                />
+              }
+            </>
+          )}
+
+          {/* Artworks*/}
+          {activeTab === "artwork" && (
+            <>
+              {showArtworkArchive && (
+                <ArtworkArchive apiBase={API_BASE} onRestored={() => loadArtworks()} />
+              )}
+              {artworksError
+                ? <div className="error-message">{artworksError}</div>
+                : <ArtworkTable
+                  artworks={filteredArtworks}
+                  onEdit={handleEditArtwork}
+                  onDelete={handleDeleteArtwork}
+                  onArchive={handleArtworkArchive}
+                />
               }
             </>
           )}
@@ -653,21 +754,21 @@ export default function AdminDashboard() {
               : <EventTable events={filteredEvents} onEdit={handleEditEvent} onDelete={handleDeleteEvent} />
           )}
 
-          {activeTab === "cafe"        && <CafeAdminPanel />}
-          {activeTab === "giftshop"    && <GiftShopAdminPanel />}
-          {activeTab === "reports"     && <ReportsPanel />}
-          {activeTab === "users"       && <UserManagement ref={userMgmtRef} searchTerm={searchTerm} onSubTabChange={setUserMgmtSubTab} />}
+          {activeTab === "cafe" && <CafeAdminPanel />}
+          {activeTab === "giftshop" && <GiftShopAdminPanel />}
+          {activeTab === "reports" && <ReportsPanel />}
+          {activeTab === "users" && <UserManagement ref={userMgmtRef} searchTerm={searchTerm} onSubTabChange={setUserMgmtSubTab} />}
           {activeTab === "departments" && <DepartmentManagement ref={deptMgmtRef} searchTerm={searchTerm} />}
         </div>
       </main>
 
       {/* Modals */}
-      {isArtistFormOpen     && <ArtistForm     onSubmit={handleSaveArtist}     initialData={editingArtist}     onCancel={() => setIsArtistFormOpen(false)} />}
-      {isArtworkFormOpen    && <ArtworkForm    onSubmit={handleSaveArtwork}    initialData={editingArtwork}    onCancel={() => setIsArtworkFormOpen(false)} />}
+      {isArtistFormOpen && <ArtistForm onSubmit={handleSaveArtist} initialData={editingArtist} onCancel={() => setIsArtistFormOpen(false)} />}
+      {isArtworkFormOpen && <ArtworkForm onSubmit={handleSaveArtwork} initialData={editingArtwork} onCancel={() => setIsArtworkFormOpen(false)} />}
       {isProvenanceFormOpen && <ProvenanceForm onSubmit={handleSaveProvenance} initialData={editingProvenance} onCancel={() => setIsProvenanceFormOpen(false)} />}
       {isExhibitionFormOpen && <ExhibitionForm onSubmit={handleSaveExhibition} initialData={editingExhibition} onCancel={() => setIsExhibitionFormOpen(false)} />}
-      {isGalleryFormOpen    && <GalleryForm    onSubmit={handleSaveGallery}    initialData={editingGallery}    onCancel={() => setIsGalleryFormOpen(false)} />}
-      {isEventFormOpen      && <EventForm      onSubmit={handleSaveEvent}      initialData={editingEvent}      onCancel={() => setIsEventFormOpen(false)} />}
+      {isGalleryFormOpen && <GalleryForm onSubmit={handleSaveGallery} initialData={editingGallery} onCancel={() => setIsGalleryFormOpen(false)} />}
+      {isEventFormOpen && <EventForm onSubmit={handleSaveEvent} initialData={editingEvent} onCancel={() => setIsEventFormOpen(false)} />}
     </div>
   );
 }

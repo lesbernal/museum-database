@@ -175,14 +175,14 @@ export default function ExhibitionForm({ onSubmit, initialData = null, onCancel,
     <>
       {showSuccessToast && (
         <div className="toast success">
-          ✅ Exhibition {initialData ? "updated" : "added"} successfully!
+          Exhibition {initialData ? "updated" : "added"} successfully!
         </div>
       )}
 
       <div className="modal-overlay" onClick={onCancel}>
         <div className="modal-content exhibition-modal" onClick={(e) => e.stopPropagation()}>
           <div className="modal-header">
-            <h2>{initialData ? "✏️ Edit Exhibition" : "➕ Add New Exhibition"}</h2>
+            <h2>{initialData ? "Edit Exhibition" : "➕ Add New Exhibition"}</h2>
             <button className="close-btn" onClick={onCancel}>&times;</button>
           </div>
 

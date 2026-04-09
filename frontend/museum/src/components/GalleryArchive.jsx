@@ -49,7 +49,7 @@ export default function GalleryArchive({ apiBase, onRestored }) {
   return (
     <div className="archived-exhibitions-panel">
       <div className="archived-panel-header">
-        <h3 className="archived-panel-title">🗄 Archived Galleries</h3>
+        <h3 className="archived-panel-title">Archived Galleries</h3>
         <span className="archived-panel-count">{archived.length} archived</span>
       </div>
 

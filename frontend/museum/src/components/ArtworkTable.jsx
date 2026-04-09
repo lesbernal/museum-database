@@ -1,13 +1,14 @@
+// components/ArtworkTable.jsx
 import "../styles/ArtworkTable.css";
 
-export default function ArtworkTable({ artworks, onEdit, onDelete }) {
+export default function ArtworkTable({ artworks, onEdit, onDelete, onArchive }) {
   const getStatusBadgeClass = (status) => {
-    switch(status) {
-      case 'On Display': return 'badge-display';
-      case 'In Storage': return 'badge-storage';
-      case 'On Loan': return 'badge-loan';
-      case 'Under Restoration': return 'badge-restoration';
-      default: return '';
+    switch (status) {
+      case "On Display":        return "badge-display";
+      case "In Storage":        return "badge-storage";
+      case "On Loan":           return "badge-loan";
+      case "Under Restoration": return "badge-restoration";
+      default: return "";
     }
   };
 
@@ -35,14 +36,14 @@ export default function ArtworkTable({ artworks, onEdit, onDelete }) {
             <tr key={artwork.artwork_id}>
               <td className="image-cell">
                 {artwork.image_url ? (
-                  <img 
-                    src={artwork.image_url} 
+                  <img
+                    src={artwork.image_url}
                     alt={artwork.title}
                     className="thumbnail-image"
                     onError={(e) => {
                       e.target.onerror = null;
-                      e.target.src = '';
-                      e.target.style.display = 'none';
+                      e.target.src = "";
+                      e.target.style.display = "none";
                       e.target.parentElement.innerHTML = '<div class="thumbnail-placeholder">🖼️</div>';
                     }}
                   />
@@ -61,8 +62,9 @@ export default function ArtworkTable({ artworks, onEdit, onDelete }) {
                 </span>
               </td>
               <td className="actions">
-                <button className="edit-btn" onClick={() => onEdit(artwork)} title="Edit">✏️</button>
-                <button className="delete-btn" onClick={() => onDelete(artwork.artwork_id)} title="Delete">🗑️</button>
+                <button className="edit-btn"    onClick={() => onEdit(artwork)}              title="Edit">Edit</button>
+                <button className="archive-btn" onClick={() => onArchive(artwork.artwork_id)} title="Archive">Archive</button>
+                <button className="delete-btn"  onClick={() => onDelete(artwork.artwork_id)}  title="Permanently delete">Delete</button>
               </td>
             </tr>
           ))}
