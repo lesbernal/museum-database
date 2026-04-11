@@ -8,6 +8,32 @@ const db = require("../db");
 module.exports = (req, res, parsedUrl) => {
   const urlParts = parsedUrl.pathname.split("/").filter(Boolean);
 
+  if (urlParts[0] === "exhibitionartwork" && req.method === "GET" && urlParts.length === 2) {
+    const sql = `
+    SELECT
+      ea.exhibition_id,
+      ea.artwork_id,
+      ea.display_start_date,
+      ea.display_end_date,
+      a.title,
+      a.image_url,
+      a.description,
+      a.medium,
+      a.creation_year,
+      CONCAT(ar.first_name, ' ', ar.last_name) AS artist_name
+    FROM exhibitionartwork ea
+    JOIN artwork a ON ea.artwork_id = a.artwork_id
+    LEFT JOIN artist ar ON a.artist_id = ar.artist_id
+    WHERE ea.exhibition_id = ?
+    ORDER BY a.title
+  `;
+    db.query(sql, [urlParts[1]], (err, results) => {
+      if (err) return sendError(res, err);
+      sendJSON(res, results);
+    });
+    return;
+  }
+
   // GET all ACTIVE exhibitions with gallery name
   // e.g. GET /exhibitions
   if (req.method === "GET" && urlParts.length === 1) {

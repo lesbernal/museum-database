@@ -118,10 +118,10 @@ const server = http.createServer((req, res) => {
   }
 
   // Exhibitions, Galleries, Buildings
-  if (parsedUrl.pathname.startsWith("/exhibitionartwork")) {
-  return handleExhibitionArtwork(req, res, parsedUrl);
-  }
-  if (parsedUrl.pathname.startsWith("/exhibitions")) {
+  if (
+    parsedUrl.pathname.startsWith("/exhibitions") ||
+    parsedUrl.pathname.startsWith("/exhibitionartwork")
+  ) {
     return handleExhibitions(req, res, parsedUrl);
   }
   if (parsedUrl.pathname.startsWith("/galleries")) {
