@@ -21,6 +21,7 @@ const handleDepartments = require("./handlers/departments");
 const handleGiftshop = require("./handlers/giftshop");
 const handleCafe = require("./handlers/cafe");
 const handleExhibitions = require("./handlers/exhibitions");
+const handleExhibitionArtwork = require("./handlers/exhibitionartwork");
 const handleGalleries = require("./handlers/galleries");
 const handleBuildings = require("./handlers/buildings");
 const handleLogin = require("./handlers/auth");
