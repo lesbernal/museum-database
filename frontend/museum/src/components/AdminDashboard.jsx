@@ -540,7 +540,7 @@ export default function AdminDashboard() {
                 {filteredExhibitions.length} exhibition{filteredExhibitions.length !== 1 ? "s" : ""}
               </p>
               <button className="btn-view-archived" onClick={() => setShowExhibitionArchive((v) => !v)}>
-                🗄 {showExhibitionArchive ? "Hide Archived" : "View Archived Exhibitions"}
+                 {showExhibitionArchive ? "Hide Archived" : "View Archived Exhibitions"}
               </button>
             </div>
           </>
@@ -604,7 +604,7 @@ export default function AdminDashboard() {
                 {filteredGalleries.length} galler{filteredGalleries.length !== 1 ? "ies" : "y"}
               </p>
               <button className="btn-view-archived" onClick={() => setShowGalleryArchive((v) => !v)}>
-                🗄 {showGalleryArchive ? "Hide Archived" : "View Archived Galleries"}
+                {showGalleryArchive ? "Hide Archived" : "View Archived Galleries"}
               </button>
             </div>
           </>
@@ -659,7 +659,7 @@ export default function AdminDashboard() {
             <div className="exhibitions-admin-toolbar">
               <p className="ex-results-count">{filteredArtworks.length} artwork{filteredArtworks.length !== 1 ? "s" : ""}</p>
               <button className="btn-view-archived" onClick={() => setShowArtworkArchive(v => !v)}>
-                🗄 {showArtworkArchive ? "Hide Archived" : "View Archived Artworks"}
+                {showArtworkArchive ? "Hide Archived" : "View Archived Artworks"}
               </button>
             </div>
           </>
