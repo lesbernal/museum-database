@@ -7,7 +7,7 @@ module.exports = (req, res, parsedUrl) => {
 
   // GET /exhibitionartwork/:exhibition_id
   // Returns all artworks for a given exhibition with artwork + artist details
-  if (req.method === "GET" && urlParts.length === 2) {
+  if (req.method === "GET" && urlParts.length >= 2 && urlParts[1]) {
     const sql = `
       SELECT
         ea.exhibition_id,
