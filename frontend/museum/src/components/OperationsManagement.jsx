@@ -281,14 +281,14 @@ export default function OperationsManagement({ title, description, resources }) 
                         }}
                         title="Edit"
                       >
-                        ✏️
+                        Edit
                       </button>
                       <button
                         className="delete-btn"
                         onClick={() => handleDelete(record[activeResource.idKey])}
                         title="Delete"
                       >
-                        🗑️
+                        Delete
                       </button>
                     </td>
                   </tr>
