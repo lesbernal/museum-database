@@ -9,7 +9,7 @@ const MONTHS = [
   "July", "August", "September", "October", "November", "December"
 ];
 
-const API_BASE = "http://localhost:5001";
+const API_BASE = "http://localhost:5000";
 
 async function fetchExhibitionPaintings(exhibitionId) {
   try {
