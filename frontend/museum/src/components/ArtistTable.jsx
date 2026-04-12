@@ -32,8 +32,8 @@ export default function ArtistTable({ artists, onEdit, onDelete }) {
               <td>{artist.birth_year || "—"}</td>
               <td>{artist.death_year || "—"}</td>
               <td className="actions">
-                <button className="edit-btn" onClick={() => onEdit(artist)} title="Edit">✏️</button>
-                <button className="delete-btn" onClick={() => onDelete(artist.artist_id)} title="Delete">🗑️</button>
+                <button className="edit-btn" onClick={() => onEdit(artist)} title="Edit">Edit</button>
+                <button className="delete-btn" onClick={() => onDelete(artist.artist_id)} title="Delete">Delete</button>
               </td>
             </tr>
           ))}

@@ -46,8 +46,8 @@ export default function ProvenanceTable({ provenance, onEdit, onDelete }) {
               <td>{formatPrice(record.price_paid)}</td>
               <td>{record.transfer_date || "—"}</td>
               <td className="actions">
-                <button className="edit-btn" onClick={() => onEdit(record)} title="Edit">✏️</button>
-                <button className="delete-btn" onClick={() => onDelete(record.provenance_id)} title="Delete">🗑️</button>
+                <button className="edit-btn" onClick={() => onEdit(record)} title="Edit">Edit</button>
+                <button className="delete-btn" onClick={() => onDelete(record.provenance_id)} title="Delete">Delete</button>
               </td>
             </tr>
           ))}

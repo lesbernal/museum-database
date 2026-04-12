@@ -127,15 +127,15 @@ export default function Login() {
           {mode === "login" && (
             <>
               <div className="login-header">
-                <div className="login-icon">🎨</div>
-                <h2>Sign In</h2>
+                {/*<div className="login-icon">🎨</div>*/}
+                <h2>SIGN IN</h2>
                 <p>Enter your credentials to continue</p>
               </div>
               <form className="login-form" onSubmit={handleLogin}>
                 <div className="form-group">
                   <label>Email Address</label>
                   <div className="input-wrapper">
-                    <span className="input-icon">📧</span>
+                    {/*<span className="input-icon">📧</span>*/}
                     <input type="email" value={email} onChange={e => setEmail(e.target.value)}
                       placeholder="you@museum.com" required />
                   </div>
@@ -143,7 +143,7 @@ export default function Login() {
                 <div className="form-group">
                   <label>Password</label>
                   <div className="input-wrapper">
-                    <span className="input-icon">🔒</span>
+                    {/*<span className="input-icon">🔒</span>*/}
                     <input type="password" value={password} onChange={e => setPassword(e.target.value)}
                       placeholder="Enter your password" required />
                   </div>
@@ -166,8 +166,8 @@ export default function Login() {
           {mode === "signup" && (
             <>
               <div className="login-header">
-                <div className="login-icon">✨</div>
-                <h2>Create Account</h2>
+                {/*<div className="login-icon">✨</div>*/}
+                <h2>CREATE ACCOUNT</h2>
                 <p>Fill in your details to register</p>
               </div>
               <form className="login-form signup-form" onSubmit={handleSignup}>

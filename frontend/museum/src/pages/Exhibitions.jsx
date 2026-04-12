@@ -9,41 +9,59 @@ const MONTHS = [
   "July", "August", "September", "October", "November", "December"
 ];
 
+const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5000";
+
+async function fetchExhibitionPaintings(exhibitionId) {
+  try {
+    const res = await fetch(`${API_BASE}/exhibitionartwork/${exhibitionId}`);
+    if (!res.ok) return [];
+    return await res.json();
+  } catch {
+    return [];
+  }
+}
+
+// ─── ExhibitionCalendar modal ────────────────────────────────────────────────
+
 function ExhibitionCalendar({ exhibition, onClose }) {
   const start = new Date(exhibition.start_date);
   const end   = new Date(exhibition.end_date);
   const isOngoing = end.getFullYear() >= 2099;
 
-  // Start the calendar view on the exhibition's start month
-  const [viewYear,  setViewYear]  = useState(start.getFullYear());
-  const [viewMonth, setViewMonth] = useState(start.getMonth());
+  const [viewYear,   setViewYear]   = useState(start.getFullYear());
+  const [viewMonth,  setViewMonth]  = useState(start.getMonth());
+  const [paintings,  setPaintings]  = useState([]);
+  const [loadingArt, setLoadingArt] = useState(true);
+
+  useEffect(() => {
+    setLoadingArt(true);
+    fetchExhibitionPaintings(exhibition.exhibition_id)
+      .then(setPaintings)
+      .finally(() => setLoadingArt(false));
+  }, [exhibition.exhibition_id]);
 
   const prevMonth = () => {
     if (viewMonth === 0) { setViewMonth(11); setViewYear(y => y - 1); }
     else setViewMonth(m => m - 1);
   };
-
   const nextMonth = () => {
     if (viewMonth === 11) { setViewMonth(0); setViewYear(y => y + 1); }
     else setViewMonth(m => m + 1);
   };
 
-  // Build calendar grid
-  const firstDay = new Date(viewYear, viewMonth, 1).getDay();
+  const firstDay    = new Date(viewYear, viewMonth, 1).getDay();
   const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
-
   const cells = [];
   for (let i = 0; i < firstDay; i++) cells.push(null);
   for (let d = 1; d <= daysInMonth; d++) cells.push(d);
 
   const classForDay = (day) => {
     if (!day) return "";
-    const date = new Date(viewYear, viewMonth, day);
+    const date    = new Date(viewYear, viewMonth, day);
     const isStart = date.toDateString() === start.toDateString();
     const isEnd   = !isOngoing && date.toDateString() === end.toDateString();
     const inRange = date >= start && (isOngoing || date <= end);
     const isToday = date.toDateString() === new Date().toDateString();
-
     if (isStart) return "cal-day start-day";
     if (isEnd)   return "cal-day end-day";
     if (inRange) return "cal-day in-range";
@@ -59,7 +77,6 @@ function ExhibitionCalendar({ exhibition, onClose }) {
       <div className="cal-modal" onClick={e => e.stopPropagation()}>
         <button className="cal-close" onClick={onClose}>&times;</button>
 
-        {/* Exhibition info */}
         <div className="cal-header">
           <h2 className="cal-title">{exhibition.exhibition_name}</h2>
           {exhibition.gallery_name && (
@@ -74,22 +91,17 @@ function ExhibitionCalendar({ exhibition, onClose }) {
           </div>
         </div>
 
-        {/* Calendar */}
         <div className="cal-body">
-          {/* Month navigation */}
           <div className="cal-nav">
             <button className="cal-nav-btn" onClick={prevMonth}>‹</button>
             <span className="cal-month-label">{MONTHS[viewMonth]} {viewYear}</span>
             <button className="cal-nav-btn" onClick={nextMonth}>›</button>
           </div>
 
-          {/* Day headers */}
           <div className="cal-grid">
             {DAYS.map(d => (
               <div key={d} className="cal-day-header">{d}</div>
             ))}
-
-            {/* Day cells */}
             {cells.map((day, idx) => (
               <div key={idx} className={day ? classForDay(day) : "cal-empty"}>
                 {day || ""}
@@ -97,7 +109,6 @@ function ExhibitionCalendar({ exhibition, onClose }) {
             ))}
           </div>
 
-          {/* Legend */}
           <div className="cal-legend">
             <span className="legend-dot start-dot" /> Start date
             <span className="legend-dot end-dot" /> End date
@@ -105,18 +116,85 @@ function ExhibitionCalendar({ exhibition, onClose }) {
             <span className="legend-dot today-dot" /> Today
           </div>
         </div>
+
+        <div className="cal-paintings-section">
+          <h3 className="cal-paintings-heading">Works in this Exhibition</h3>
+          {loadingArt ? (
+            <p className="cal-paintings-loading">Loading artworks…</p>
+          ) : paintings.length === 0 ? (
+            <p className="cal-paintings-empty">No artworks listed for this exhibition.</p>
+          ) : (
+            <div className="cal-paintings-grid">
+              {paintings.map((p) => (
+                <div key={p.artwork_id} className="cal-painting-card">
+                  {p.image_url ? (
+                    <img src={p.image_url} alt={p.title} className="cal-painting-img" />
+                  ) : (
+                    <div className="cal-painting-placeholder" />
+                  )}
+                  <div className="cal-painting-info">
+                    <p className="cal-painting-title">{p.title}</p>
+                    {p.artist_name && (
+                      <p className="cal-painting-artist">{p.artist_name}</p>
+                    )}
+                    {p.description && (
+                      <p className="cal-painting-desc">
+                        {p.description.split(/[.!?]/)[0].trim()}.
+                      </p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
 }
 
-export default function Exhibitions() {
-  const [exhibitions, setExhibitions]       = useState([]);
-  const [loading, setLoading]               = useState(true);
-  const [filter, setFilter]                 = useState("All");
-  const [selectedExhibition, setSelected]   = useState(null);
+// ─── PaintingBanner ──────────────────────────────────────────────────────────
+
+function PaintingBanner({ exhibitionId, accentColor }) {
+  const [images, setImages] = useState([]);
+  const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
+    fetchExhibitionPaintings(exhibitionId).then((paintings) => {
+      setImages(paintings.filter(p => p.image_url).slice(0, 3));
+      setLoaded(true);
+    });
+  }, [exhibitionId]);
+
+  if (!loaded || images.length === 0) {
+    return <div className="card-visual" style={{ background: accentColor }} />;
+  }
+
+  return (
+    <div className="card-visual card-paintings-banner">
+      {images.map((p, i) => (
+        <div
+          key={p.artwork_id}
+          className="banner-img-wrap"
+          style={{ zIndex: images.length - i }}
+        >
+          <img src={p.image_url} alt={p.title} className="banner-img" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ─── Main Exhibitions page ───────────────────────────────────────────────────
+
+export default function Exhibitions() {
+  const [exhibitions,        setExhibitions] = useState([]);
+  const [loading,            setLoading]     = useState(true);
+  const [filter,             setFilter]      = useState("All");
+  const [selectedExhibition, setSelected]    = useState(null);
+
+  useEffect(() => {
+    setLoading(true);
     getExhibitions()
       .then(data => setExhibitions(data))
       .catch(err => console.error(err))
@@ -163,7 +241,7 @@ export default function Exhibitions() {
   ];
 
   if (loading) return (
-    <div className="exhibitions-loading"><p>Loading exhibitions...</p></div>
+    <div className="exhibitions-loading"><p>Loading exhibitions…</p></div>
   );
 
   return (
@@ -178,16 +256,18 @@ export default function Exhibitions() {
       </div>
 
       {/* Filters */}
-      <div className="exhibitions-filters">
-        {["All", "Permanent", "Temporary", "Traveling"].map(type => (
-          <button
-            key={type}
-            className={`filter-btn ${filter === type ? "filter-active" : ""}`}
-            onClick={() => setFilter(type)}
-          >
-            {type}
-          </button>
-        ))}
+      <div className="exhibitions-toolbar">
+        <div className="exhibitions-filters">
+          {["All", "Permanent", "Temporary", "Traveling"].map(type => (
+            <button
+              key={type}
+              className={`filter-btn ${filter === type ? "filter-active" : ""}`}
+              onClick={() => setFilter(type)}
+            >
+              {type}
+            </button>
+          ))}
+        </div>
       </div>
 
       <p className="exhibitions-count">
@@ -199,16 +279,22 @@ export default function Exhibitions() {
       ) : (
         <div className="exhibitions-grid">
           {filtered.map((e, i) => {
-            const status = getDateStatus(e.start_date, e.end_date);
+            const status      = getDateStatus(e.start_date, e.end_date);
+            const accentColor = cardAccents[i % cardAccents.length];
             return (
               <div
                 key={e.exhibition_id}
                 className="exhibition-card"
-                style={{ "--card-accent": cardAccents[i % cardAccents.length] }}
+                style={{ "--card-accent": accentColor }}
                 onClick={() => setSelected(e)}
                 title="Click to view calendar"
               >
-                <div className="card-visual">
+                <PaintingBanner
+                  exhibitionId={e.exhibition_id}
+                  accentColor={accentColor}
+                />
+
+                <div className="card-badges">
                   <span className={`card-type-badge ${typeBadgeClass(e.exhibition_type)}`}>
                     {e.exhibition_type}
                   </span>
@@ -216,6 +302,7 @@ export default function Exhibitions() {
                     {status}
                   </span>
                 </div>
+
                 <div className="card-body">
                   <h2 className="card-title">{e.exhibition_name}</h2>
                   {e.gallery_name && (
@@ -226,7 +313,7 @@ export default function Exhibitions() {
                     <span className="card-dates-sep">→</span>
                     <span>{formatDate(e.end_date)}</span>
                   </div>
-                  <p className="card-cta">📅 View calendar</p>
+                  <p className="card-cta">View calendar</p>
                 </div>
               </div>
             );
@@ -234,7 +321,6 @@ export default function Exhibitions() {
         </div>
       )}
 
-      {/* Calendar modal */}
       {selectedExhibition && (
         <ExhibitionCalendar
           exhibition={selectedExhibition}

@@ -76,7 +76,7 @@
   gap: 0.5rem;
 }
 
-.edit-btn, .delete-btn {
+.edit-btn, .delete-btn, .archive-btn {
   padding: 0.375rem 0.75rem;
   border: none;
   border-radius: 8px;
@@ -101,6 +101,16 @@
 
 .delete-btn:hover {
   background: #fecaca;
+  transform: scale(1.05);
+}
+
+.artwork-table .archive-btn {
+  background: #ffeeb5;
+  color: #816c31;
+}
+
+.artwork-table .archive-btn:hover {
+  background: #fff5d6;
   transform: scale(1.05);
 }
 

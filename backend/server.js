@@ -21,6 +21,7 @@ const handleDepartments = require("./handlers/departments");
 const handleGiftshop = require("./handlers/giftshop");
 const handleCafe = require("./handlers/cafe");
 const handleExhibitions = require("./handlers/exhibitions");
+const handleExhibitionArtwork = require("./handlers/exhibitionartwork");
 const handleGalleries = require("./handlers/galleries");
 const handleBuildings = require("./handlers/buildings");
 const handleLogin = require("./handlers/auth");
@@ -117,7 +118,10 @@ const server = http.createServer((req, res) => {
   }
 
   // Exhibitions, Galleries, Buildings
-  if (parsedUrl.pathname.startsWith("/exhibitions")) {
+  if (
+    parsedUrl.pathname.startsWith("/exhibitions") ||
+    parsedUrl.pathname.startsWith("/exhibitionartwork")
+  ) {
     return handleExhibitions(req, res, parsedUrl);
   }
   if (parsedUrl.pathname.startsWith("/galleries")) {

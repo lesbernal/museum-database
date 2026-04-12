@@ -1,4 +1,6 @@
 // src/components/EventTable.jsx
+import "../styles/GalleryTable.css";
+
 export default function EventTable({ events, onEdit, onDelete }) {
   if (events.length === 0) return <p>No events found.</p>;
 
@@ -29,18 +31,12 @@ export default function EventTable({ events, onEdit, onDelete }) {
               <td style={{ color: spotsLeft <= 0 ? "red" : spotsLeft <= 5 ? "orange" : "green" }}>
                 {spotsLeft <= 0 ? "Full" : spotsLeft}
               </td>
-              <td>{e.member_only ? "⭐ Yes" : "No"}</td>
+              <td>{e.member_only ? "Yes" : "No"}</td>
               <td>
-                <button className="btn btn-secondary" onClick={() => onEdit(e)}>
-                  Edit
-                </button>
-                <button
-                  className="btn btn-danger"
-                  onClick={() => onDelete(e.event_id)}
-                  style={{ marginLeft: "8px" }}
-                >
-                  Delete
-                </button>
+                <td className="actions">
+                  <button className="edit-btn" onClick={() => onEdit(e)} title="Edit">Edit</button>
+                  <button className="delete-btn" onClick={() => onDelete(e.event_id)} title="Delete">Delete</button>
+                </td>
               </td>
             </tr>
           );

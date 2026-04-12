@@ -4,12 +4,14 @@ import ArtistForm from "./ArtistForm";
 import ArtistTable from "./ArtistTable";
 import ArtworkForm from "./ArtworkForm";
 import ArtworkTable from "./ArtworkTable";
+import ArtworkArchive from "./ArtworkArchive";
 import ProvenanceForm from "./ProvenanceForm";
 import ProvenanceTable from "./ProvenanceTable";
 import ExhibitionForm from "./ExhibitionForm";
 import ExhibitionTable from "./ExhibitionTable";
 import GalleryForm from "./GalleryForm";
 import GalleryTable from "./GalleryTable";
+import GalleryArchive from "./GalleryArchive";
 import EventForm from "./EventForm";
 import EventTable from "./EventTable";
 import CafeAdminPanel from "./CafeAdminPanel";
@@ -17,40 +19,28 @@ import GiftShopAdminPanel from "./GiftShopAdminPanel";
 import UserManagement from "./UserManagement";
 import ReportsPanel from "./ReportsPanel";
 import DepartmentManagement from "./DepartmentManagement";
+import ExhibitionArchive from "./ExhibitionArchive";
+
 
 import {
-  getArtists,
-  createArtist,
-  updateArtist,
-  deleteArtist,
-  getArtworks,
-  createArtwork,
-  updateArtwork,
-  deleteArtwork,
-  getProvenance,
-  createProvenance,
-  updateProvenance,
-  deleteProvenance,
-  getExhibitions,
-  createExhibition,
-  updateExhibition,
-  deleteExhibition,
-  getGalleries,
-  createGallery,
-  updateGallery,
-  deleteGallery,
-  getEvents,
-  createEvent,
-  updateEvent,
-  deleteEvent,
+  getArtists, createArtist, updateArtist, deleteArtist,
+  getArtworks, createArtwork, updateArtwork, deleteArtwork,
+  getProvenance, createProvenance, updateProvenance, deleteProvenance,
+  getExhibitions, createExhibition, updateExhibition, deleteExhibition,
+  getGalleries, createGallery, updateGallery, deleteGallery,
+  getEvents, createEvent, updateEvent, deleteEvent,
 } from "../services/api";
 
 import "../styles/AdminDashboard.css";
 import "../styles/UserManagement.css";
 
+const API_BASE = "http://localhost:5001";
+
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState("artists");
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false); // Add this for mobile menu
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [showExhibitionArchive, setShowExhibitionArchive] = useState(false);
+  const [showGalleryArchive, setShowGalleryArchive] = useState(false);
 
   // Data
   const [artists, setArtists] = useState([]);
@@ -67,6 +57,11 @@ export default function AdminDashboard() {
   // Artwork states
   const [isArtworkFormOpen, setIsArtworkFormOpen] = useState(false);
   const [editingArtwork, setEditingArtwork] = useState(null);
+  const [showArtworkArchive, setShowArtworkArchive] = useState(false);
+  const [artworkArtistFilter, setArtworkArtistFilter] = useState("All");
+  const [artworkMediumFilter, setArtworkMediumFilter] = useState("All");
+  const [artworkStatusFilter, setArtworkStatusFilter] = useState("All");
+  const [artworkSort, setArtworkSort] = useState("title");
 
   // Provenance states
   const [isProvenanceFormOpen, setIsProvenanceFormOpen] = useState(false);
@@ -75,10 +70,18 @@ export default function AdminDashboard() {
   // Exhibition states
   const [isExhibitionFormOpen, setIsExhibitionFormOpen] = useState(false);
   const [editingExhibition, setEditingExhibition] = useState(null);
+  const [exhibitionTypeFilter, setExhibitionTypeFilter] = useState("All");
+  const [exhibitionStatusFilter, setExhibitionStatusFilter] = useState("All");
+  const [exhibitionGalleryFilter, setExhibitionGalleryFilter] = useState("All");
+  const [exhibitionSort, setExhibitionSort] = useState("title");
 
   // Gallery states
   const [isGalleryFormOpen, setIsGalleryFormOpen] = useState(false);
   const [editingGallery, setEditingGallery] = useState(null);
+  const [galleryBuildingFilter, setGalleryBuildingFilter] = useState("All");
+  const [galleryClimateFilter, setGalleryClimateFilter] = useState("All");
+  const [galleryFloorFilter, setGalleryFloorFilter] = useState("All");
+  const [gallerySort, setGallerySort] = useState("name");
 
   // Event states
   const [isEventFormOpen, setIsEventFormOpen] = useState(false);
@@ -99,20 +102,19 @@ export default function AdminDashboard() {
   const navigate = useNavigate();
 
   const tabs = [
-    { id: "artists", name: "Artists", icon: "🎨" },
-    { id: "artwork", name: "Artwork", icon: "🖼️" },
-    { id: "provenance", name: "Provenance", icon: "📜" },
-    { id: "exhibitions", name: "Exhibitions", icon: "🏛️" },
-    { id: "galleries", name: "Galleries", icon: "🗺️" },
-    { id: "events", name: "Events", icon: "🎉" },
-    { id: "cafe", name: "Cafe", icon: "☕" },
-    { id: "giftshop", name: "Gift Shop", icon: "🛍️" },
-    { id: "reports", name: "Reports", icon: "📊" },
-    { id: "users", name: "Users", icon: "👥" },
-    { id: "departments", name: "Departments", icon: "🏢" }
+    { id: "artists", name: "Artists" },
+    { id: "artwork", name: "Artwork" },
+    { id: "provenance", name: "Provenance" },
+    { id: "exhibitions", name: "Exhibitions" },
+    { id: "galleries", name: "Galleries" },
+    { id: "events", name: "Events" },
+    { id: "cafe", name: "Cafe" },
+    { id: "giftshop", name: "Gift Shop" },
+    { id: "reports", name: "Reports" },
+    { id: "users", name: "Users" },
+    { id: "departments", name: "Departments" },
   ];
 
-  // Load all data on mount
   useEffect(() => {
     loadArtists();
     loadArtworks();
@@ -122,317 +124,171 @@ export default function AdminDashboard() {
     loadEvents();
   }, []);
 
-  // Close mobile menu when clicking outside (optional)
   useEffect(() => {
     const handleClickOutside = (event) => {
-      const sidebar = document.querySelector('.admin-sidebar');
-      const toggleBtn = document.querySelector('.mobile-menu-toggle');
+      const sidebar = document.querySelector(".admin-sidebar");
+      const toggleBtn = document.querySelector(".mobile-menu-toggle");
       if (isMobileMenuOpen && sidebar && !sidebar.contains(event.target) && !toggleBtn?.contains(event.target)) {
         setIsMobileMenuOpen(false);
       }
     };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isMobileMenuOpen]);
 
   const loadArtists = async () => {
     setLoading(true);
-    try {
-      const data = await getArtists();
-      setArtists(data);
-      setArtistsError("");
-    } catch (err) {
-      setArtistsError("Failed to load artists");
-      console.error("Artists error:", err);
-    } finally {
-      setLoading(false);
-    }
+    try { const data = await getArtists(); setArtists(data); setArtistsError(""); }
+    catch (err) { setArtistsError("Failed to load artists"); console.error(err); }
+    finally { setLoading(false); }
   };
-
   const loadArtworks = async () => {
-    try {
-      const data = await getArtworks();
-      setArtworks(data);
-      setArtworksError("");
-    } catch (err) {
-      setArtworksError("Failed to load artworks");
-      console.error("Artworks error:", err);
-    }
+    try { const data = await getArtworks(); setArtworks(data); setArtworksError(""); }
+    catch (err) { setArtworksError("Failed to load artworks"); console.error(err); }
   };
-
   const loadProvenance = async () => {
-    try {
-      const data = await getProvenance();
-      setProvenance(data);
-      setProvenanceError("");
-    } catch (err) {
-      setProvenanceError("Failed to load provenance");
-      console.error("Provenance error:", err);
-    }
+    try { const data = await getProvenance(); setProvenance(data); setProvenanceError(""); }
+    catch (err) { setProvenanceError("Failed to load provenance"); console.error(err); }
   };
-
   const loadExhibitions = async () => {
-    try {
-      const data = await getExhibitions();
-      setExhibitions(data);
-      setExhibitionsError("");
-    } catch (err) {
-      setExhibitionsError("Failed to load exhibitions");
-      console.error("Exhibitions error:", err);
-    }
+    try { const data = await getExhibitions(); setExhibitions(data); setExhibitionsError(""); }
+    catch (err) { setExhibitionsError("Failed to load exhibitions"); console.error(err); }
   };
-
   const loadGalleries = async () => {
-    try {
-      const data = await getGalleries();
-      setGalleries(data);
-      setGalleriesError("");
-    } catch (err) {
-      setGalleriesError("Failed to load galleries");
-      console.error("Galleries error:", err);
-    }
+    try { const data = await getGalleries(); setGalleries(data); setGalleriesError(""); }
+    catch (err) { setGalleriesError("Failed to load galleries"); console.error(err); }
+  };
+  const loadEvents = async () => {
+    try { const data = await getEvents(); setEvents(data); setEventsError(""); }
+    catch (err) { setEventsError("Failed to load events"); console.error(err); }
   };
 
-  const loadEvents = async () => {
+  const handleExhibitionArchive = async (id) => {
+    if (!window.confirm("Archive this exhibition? It can be restored later.")) return;
     try {
-      const data = await getEvents();
-      setEvents(data);
-      setEventsError("");
-    } catch (err) {
-      setEventsError("Failed to load events");
-      console.error("Events error:", err);
-    }
+      await fetch(`${API_BASE}/exhibitions/${id}/deactivate`, { method: "PATCH" });
+      await loadExhibitions();
+    } catch (err) { console.error(err); alert("Failed to archive exhibition"); }
+  };
+
+  const handleGalleryArchive = async (id) => {
+    if (!window.confirm("Archive this gallery? It can be restored later.")) return;
+    try {
+      await fetch(`${API_BASE}/galleries/${id}/deactivate`, { method: "PATCH" });
+      await loadGalleries();
+    } catch (err) { console.error(err); alert("Failed to archive gallery"); }
+  };
+
+  const handleArtworkArchive = async (id) => {
+    if (!window.confirm("Archive this artwork? It can be restored later.")) return;
+    try {
+      await fetch(`${API_BASE}/artwork/${id}/deactivate`, { method: "PATCH" });
+      await loadArtworks();
+    } catch (err) { alert("Failed to archive artwork"); }
   };
 
   // Artist handlers
-  const handleAddArtist = () => {
-    setEditingArtist(null);
-    setIsArtistFormOpen(true);
-  };
-
-  const handleEditArtist = (artist) => {
-    setEditingArtist(artist);
-    setIsArtistFormOpen(true);
-  };
-
+  const handleAddArtist = () => { setEditingArtist(null); setIsArtistFormOpen(true); };
+  const handleEditArtist = (artist) => { setEditingArtist(artist); setIsArtistFormOpen(true); };
   const handleSaveArtist = async (artistData) => {
     try {
-      if (editingArtist) {
-        await updateArtist(editingArtist.artist_id, artistData);
-      } else {
-        await createArtist(artistData);
-      }
-      await loadArtists();
-      setIsArtistFormOpen(false);
-    } catch (err) {
-      console.error("Error saving artist:", err);
-      alert("Failed to save artist");
-    }
+      if (editingArtist) await updateArtist(editingArtist.artist_id, artistData);
+      else await createArtist(artistData);
+      await loadArtists(); setIsArtistFormOpen(false);
+    } catch (err) { console.error(err); alert("Failed to save artist"); }
   };
-
   const handleDeleteArtist = async (artistId) => {
-    if (window.confirm("Are you sure you want to delete this artist? This will also delete their artworks and provenance records.")) {
-      try {
-        await deleteArtist(artistId);
-        await loadArtists();
-      } catch (err) {
-        console.error("Error deleting artist:", err);
-        alert("Failed to delete artist");
-      }
+    if (window.confirm("Delete this artist? This will also delete their artworks and provenance records.")) {
+      try { await deleteArtist(artistId); await loadArtists(); }
+      catch (err) { console.error(err); alert("Failed to delete artist"); }
     }
   };
 
   // Artwork handlers
-  const handleAddArtwork = () => {
-    setEditingArtwork(null);
-    setIsArtworkFormOpen(true);
-  };
-
-  const handleEditArtwork = (artwork) => {
-    setEditingArtwork(artwork);
-    setIsArtworkFormOpen(true);
-  };
-
+  const handleAddArtwork = () => { setEditingArtwork(null); setIsArtworkFormOpen(true); };
+  const handleEditArtwork = (artwork) => { setEditingArtwork(artwork); setIsArtworkFormOpen(true); };
   const handleSaveArtwork = async (artworkData) => {
     try {
-      if (editingArtwork) {
-        await updateArtwork(editingArtwork.artwork_id, artworkData);
-      } else {
-        await createArtwork(artworkData);
-      }
-      await loadArtworks();
-      setIsArtworkFormOpen(false);
-    } catch (err) {
-      console.error("Error saving artwork:", err);
-      alert("Failed to save artwork");
-    }
+      if (editingArtwork) await updateArtwork(editingArtwork.artwork_id, artworkData);
+      else await createArtwork(artworkData);
+      await loadArtworks(); setIsArtworkFormOpen(false);
+    } catch (err) { console.error(err); alert("Failed to save artwork"); }
   };
-
   const handleDeleteArtwork = async (id) => {
-    if (window.confirm("Are you sure you want to delete this artwork? This will also delete its provenance records.")) {
-      try {
-        await deleteArtwork(id);
-        await loadArtworks();
-      } catch (err) {
-        console.error("Error deleting artwork:", err);
-        alert("Failed to delete artwork");
-      }
+    if (window.confirm("Delete this artwork? This will also delete its provenance records.")) {
+      try { await deleteArtwork(id); await loadArtworks(); }
+      catch (err) { console.error(err); alert("Failed to delete artwork"); }
     }
   };
 
   // Provenance handlers
-  const handleAddProvenance = () => {
-    setEditingProvenance(null);
-    setIsProvenanceFormOpen(true);
-  };
-
-  const handleEditProvenance = (record) => {
-    setEditingProvenance(record);
-    setIsProvenanceFormOpen(true);
-  };
-
+  const handleAddProvenance = () => { setEditingProvenance(null); setIsProvenanceFormOpen(true); };
+  const handleEditProvenance = (record) => { setEditingProvenance(record); setIsProvenanceFormOpen(true); };
   const handleSaveProvenance = async (recordData) => {
     try {
-      if (editingProvenance) {
-        await updateProvenance(editingProvenance.provenance_id, recordData);
-      } else {
-        await createProvenance(recordData);
-      }
-      await loadProvenance();
-      setIsProvenanceFormOpen(false);
-    } catch (err) {
-      console.error("Error saving provenance:", err);
-      alert("Failed to save provenance record");
-    }
+      if (editingProvenance) await updateProvenance(editingProvenance.provenance_id, recordData);
+      else await createProvenance(recordData);
+      await loadProvenance(); setIsProvenanceFormOpen(false);
+    } catch (err) { console.error(err); alert("Failed to save provenance record"); }
   };
-
   const handleDeleteProvenance = async (id) => {
-    if (window.confirm("Are you sure you want to delete this provenance record?")) {
-      try {
-        await deleteProvenance(id);
-        await loadProvenance();
-      } catch (err) {
-        console.error("Error deleting provenance:", err);
-        alert("Failed to delete provenance record");
-      }
+    if (window.confirm("Delete this provenance record?")) {
+      try { await deleteProvenance(id); await loadProvenance(); }
+      catch (err) { console.error(err); alert("Failed to delete provenance record"); }
     }
   };
 
   // Exhibition handlers
-  const handleAddExhibition = () => {
-    setEditingExhibition(null);
-    setIsExhibitionFormOpen(true);
-  };
-
-  const handleEditExhibition = (exhibition) => {
-    setEditingExhibition(exhibition);
-    setIsExhibitionFormOpen(true);
-  };
-
+  const handleAddExhibition = () => { setEditingExhibition(null); setIsExhibitionFormOpen(true); };
+  const handleEditExhibition = (exhibition) => { setEditingExhibition(exhibition); setIsExhibitionFormOpen(true); };
   const handleSaveExhibition = async (exhibitionData) => {
     try {
-      if (editingExhibition) {
-        await updateExhibition(editingExhibition.exhibition_id, exhibitionData);
-      } else {
-        await createExhibition(exhibitionData);
-      }
-      await loadExhibitions();
-      setIsExhibitionFormOpen(false);
-    } catch (err) {
-      console.error("Error saving exhibition:", err);
-      alert("Failed to save exhibition");
-    }
+      if (editingExhibition) await updateExhibition(editingExhibition.exhibition_id, exhibitionData);
+      else await createExhibition(exhibitionData);
+      await loadExhibitions(); setIsExhibitionFormOpen(false);
+    } catch (err) { console.error(err); alert("Failed to save exhibition"); }
   };
-
   const handleDeleteExhibition = async (id) => {
-    if (window.confirm("Are you sure you want to delete this exhibition? This will also remove its artwork associations.")) {
-      try {
-        await deleteExhibition(id);
-        await loadExhibitions();
-      } catch (err) {
-        console.error("Error deleting exhibition:", err);
-        alert("Failed to delete exhibition");
-      }
+    if (window.confirm("Permanently delete this exhibition? This cannot be undone.")) {
+      try { await deleteExhibition(id); await loadExhibitions(); }
+      catch (err) { console.error(err); alert("Failed to delete exhibition"); }
     }
   };
 
   // Gallery handlers
-  const handleAddGallery = () => {
-    setEditingGallery(null);
-    setIsGalleryFormOpen(true);
-  };
-
-  const handleEditGallery = (gallery) => {
-    setEditingGallery(gallery);
-    setIsGalleryFormOpen(true);
-  };
-
+  const handleAddGallery = () => { setEditingGallery(null); setIsGalleryFormOpen(true); };
+  const handleEditGallery = (gallery) => { setEditingGallery(gallery); setIsGalleryFormOpen(true); };
   const handleSaveGallery = async (galleryData) => {
     try {
-      if (editingGallery) {
-        await updateGallery(editingGallery.gallery_id, galleryData);
-      } else {
-        await createGallery(galleryData);
-      }
-      await loadGalleries();
-      setIsGalleryFormOpen(false);
-    } catch (err) {
-      console.error("Error saving gallery:", err);
-      alert("Failed to save gallery");
-    }
+      if (editingGallery) await updateGallery(editingGallery.gallery_id, galleryData);
+      else await createGallery(galleryData);
+      await loadGalleries(); setIsGalleryFormOpen(false);
+    } catch (err) { console.error(err); alert("Failed to save gallery"); }
   };
-
   const handleDeleteGallery = async (id) => {
-    if (window.confirm("Are you sure you want to delete this gallery? This will also delete its exhibitions and events.")) {
-      try {
-        await deleteGallery(id);
-        await loadGalleries();
-      } catch (err) {
-        console.error("Error deleting gallery:", err);
-        alert("Failed to delete gallery");
-      }
+    if (window.confirm("Delete this gallery? This will also delete its exhibitions and events.")) {
+      try { await deleteGallery(id); await loadGalleries(); }
+      catch (err) { console.error(err); alert("Failed to delete gallery"); }
     }
   };
 
   // Event handlers
-  const handleAddEvent = () => {
-    setEditingEvent(null);
-    setIsEventFormOpen(true);
-  };
-
-  const handleEditEvent = (event) => {
-    setEditingEvent(event);
-    setIsEventFormOpen(true);
-  };
-
+  const handleAddEvent = () => { setEditingEvent(null); setIsEventFormOpen(true); };
+  const handleEditEvent = (event) => { setEditingEvent(event); setIsEventFormOpen(true); };
   const handleSaveEvent = async (eventData) => {
     try {
-      if (editingEvent) {
-        await updateEvent(editingEvent.event_id, eventData);
-      } else {
-        await createEvent(eventData);
-      }
-      await loadEvents();
-      setIsEventFormOpen(false);
-    } catch (err) {
-      console.error("Error saving event:", err);
-      alert("Failed to save event");
-    }
+      if (editingEvent) await updateEvent(editingEvent.event_id, eventData);
+      else await createEvent(eventData);
+      await loadEvents(); setIsEventFormOpen(false);
+    } catch (err) { console.error(err); alert("Failed to save event"); }
   };
-
   const handleDeleteEvent = async (id) => {
-    if (window.confirm("Are you sure you want to delete this event?")) {
-      try {
-        await deleteEvent(id);
-        await loadEvents();
-      } catch (err) {
-        console.error("Error deleting event:", err);
-        alert("Failed to delete event");
-      }
+    if (window.confirm("Delete this event?")) {
+      try { await deleteEvent(id); await loadEvents(); }
+      catch (err) { console.error(err); alert("Failed to delete event"); }
     }
   };
 
-  // General dispatcher for Add button
   const handleAdd = () => {
     switch (activeTab) {
       case "artists": return handleAddArtist();
@@ -441,8 +297,8 @@ export default function AdminDashboard() {
       case "exhibitions": return handleAddExhibition();
       case "galleries": return handleAddGallery();
       case "events": return handleAddEvent();
-      case "users":       return userMgmtRef.current?.openAdd();
-      case "departments": return deptMgmtRef.current?.openAdd(); 
+      case "users": return userMgmtRef.current?.openAdd();
+      case "departments": return deptMgmtRef.current?.openAdd();
       default: return;
     }
   };
@@ -455,49 +311,104 @@ export default function AdminDashboard() {
     navigate("/login");
   };
 
-  // Handle tab click - closes mobile menu on selection
   const handleTabClick = (tabId) => {
     setActiveTab(tabId);
     setSearchTerm("");
-    setIsMobileMenuOpen(false); // Close mobile menu after selection
+    setIsMobileMenuOpen(false);
+    if (tabId !== "exhibitions") setShowExhibitionArchive(false);
+    if (tabId !== "galleries") setShowGalleryArchive(false);
+    if (tabId !== "artwork") setShowArtworkArchive(false);
   };
 
-  // Filtered data
-  const filteredArtists = artists.filter(
-    (artist) =>
-      `${artist.first_name} ${artist.last_name}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      artist.nationality?.toLowerCase().includes(searchTerm.toLowerCase())
+  // ── Filtered data ────────────────────────────────────────────────────────
+
+  const filteredArtists = artists.filter((a) =>
+    `${a.first_name} ${a.last_name}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    a.nationality?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+  const artworkArtists = [...new Set(artworks.map(a => a.artist_name).filter(Boolean))].sort();
+  const artworkMediums = [...new Set(artworks.map(a => a.medium).filter(Boolean))].sort();
+
+  const filteredArtworks = artworks
+    .filter((a) => {
+      const matchesSearch = a.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        a.medium?.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesArtist = artworkArtistFilter === "All" || a.artist_name === artworkArtistFilter;
+      const matchesMedium = artworkMediumFilter === "All" || a.medium === artworkMediumFilter;
+      const matchesStatus = artworkStatusFilter === "All" || a.current_display_status === artworkStatusFilter;
+      return matchesSearch && matchesArtist && matchesMedium && matchesStatus;
+    })
+    .sort((a, b) => {
+      switch (artworkSort) {
+        case "title": return (a.title || "").localeCompare(b.title || "");
+        case "title_desc": return (b.title || "").localeCompare(a.title || "");
+        case "year_asc": return (a.creation_year ?? 0) - (b.creation_year ?? 0);
+        case "year_desc": return (b.creation_year ?? 0) - (a.creation_year ?? 0);
+        default: return 0;
+      }
+    });
+  const filteredProvenance = provenance.filter((r) =>
+    r.owner_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    r.acquisition_method?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const filteredArtworks = artworks.filter(
-    (artwork) =>
-      artwork.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      artwork.medium?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const getExhibitionStatus = (start, end) => {
+    const now = new Date();
+    if (now < new Date(start)) return "Upcoming";
+    if (now > new Date(end)) return "Ended";
+    return "Active";
+  };
 
-  const filteredProvenance = provenance.filter(
-    (record) =>
-      record.owner_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      record.acquisition_method?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const exhibitionGalleries = [...new Set(exhibitions.map(e => e.gallery_name).filter(Boolean))].sort();
 
-  const filteredExhibitions = exhibitions.filter(
-    (exhibition) =>
-      exhibition.exhibition_title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      exhibition.exhibition_type?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      exhibition.gallery_name?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredExhibitions = exhibitions
+    .filter((e) => {
+      const matchesSearch =
+        e.exhibition_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        e.exhibition_type?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        e.gallery_name?.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesType = exhibitionTypeFilter === "All" || e.exhibition_type === exhibitionTypeFilter;
+      const matchesStatus = exhibitionStatusFilter === "All" || getExhibitionStatus(e.start_date, e.end_date) === exhibitionStatusFilter;
+      const matchesGallery = exhibitionGalleryFilter === "All" || e.gallery_name === exhibitionGalleryFilter;
+      return matchesSearch && matchesType && matchesStatus && matchesGallery;
+    })
+    .sort((a, b) => {
+      switch (exhibitionSort) {
+        case "title": return (a.exhibition_name || "").localeCompare(b.exhibition_name || "");
+        case "title_desc": return (b.exhibition_name || "").localeCompare(a.exhibition_name || "");
+        case "date_asc": return new Date(a.start_date) - new Date(b.start_date);
+        case "date_desc": return new Date(b.start_date) - new Date(a.start_date);
+        default: return 0;
+      }
+    });
 
-  const filteredGalleries = galleries.filter(
-    (gallery) =>
-      gallery.gallery_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      gallery.building_name?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const galleryBuildings = [...new Set(galleries.map(g => g.building_name).filter(Boolean))].sort();
+  const galleryFloors = [...new Set(galleries.map(g => g.floor_number).filter(v => v !== null && v !== undefined))].sort((a, b) => a - b);
 
-  const filteredEvents = events.filter(
-    (event) =>
-      event.event_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      event.description?.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredGalleries = galleries
+    .filter((g) => {
+      const matchesSearch = g.gallery_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        g.building_name?.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesBuilding = galleryBuildingFilter === "All" || g.building_name === galleryBuildingFilter;
+      const matchesClimate = galleryClimateFilter === "All" ||
+        (galleryClimateFilter === "Yes" ? g.climate_controlled : !g.climate_controlled);
+      const matchesFloor = galleryFloorFilter === "All" || String(g.floor_number) === galleryFloorFilter;
+      return matchesSearch && matchesBuilding && matchesClimate && matchesFloor;
+    })
+    .sort((a, b) => {
+      switch (gallerySort) {
+        case "name": return (a.gallery_name || "").localeCompare(b.gallery_name || "");
+        case "name_desc": return (b.gallery_name || "").localeCompare(a.gallery_name || "");
+        case "floor_asc": return (a.floor_number ?? 0) - (b.floor_number ?? 0);
+        case "floor_desc": return (b.floor_number ?? 0) - (a.floor_number ?? 0);
+        case "sqft_desc": return (b.square_footage ?? 0) - (a.square_footage ?? 0);
+        default: return 0;
+      }
+    });
+
+  const filteredEvents = events.filter((e) =>
+    e.event_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    e.description?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const usesCustomManager = activeTab === "cafe" || activeTab === "giftshop";
@@ -510,27 +421,28 @@ export default function AdminDashboard() {
       case "exhibitions": return "Exhibition";
       case "galleries": return "Gallery";
       case "events": return "Event";
-      case "users": return userMgmtSubTab.slice(0, -1);       
-      case "departments": return "Department";   
+      case "users": return userMgmtSubTab.slice(0, -1);
+      case "departments": return "Department";
       default: return "";
     }
   };
 
   return (
     <div className="admin-dashboard">
-      {/* Mobile Menu Toggle Button */}
-      <button 
-        className="mobile-menu-toggle" 
+      <button
+        className="mobile-menu-toggle"
         onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
         aria-label="Toggle menu"
       >
         ☰
       </button>
 
-      <aside className={`admin-sidebar ${isMobileMenuOpen ? 'open' : ''}`}>
+      <aside className={`admin-sidebar ${isMobileMenuOpen ? "open" : ""}`}>
         <div className="sidebar-header">
           <h2>MFAH Admin</h2>
-          <Link to="/" className="back-to-site" onClick={() => setIsMobileMenuOpen(false)}>Back to Home</Link>
+          <Link to="/" className="back-to-site" onClick={() => setIsMobileMenuOpen(false)}>
+            Back to Home
+          </Link>
         </div>
         <nav className="sidebar-nav">
           {tabs.map((tab) => (
@@ -539,7 +451,6 @@ export default function AdminDashboard() {
               className={`nav-item ${activeTab === tab.id ? "active" : ""}`}
               onClick={() => handleTabClick(tab.id)}
             >
-              <span className="nav-icon">{tab.icon}</span>
               <span className="nav-name">{tab.name}</span>
             </button>
           ))}
@@ -573,6 +484,187 @@ export default function AdminDashboard() {
           )}
         </header>
 
+        {/* ── Exhibitions: filter bar + archived toggle ── */}
+        {activeTab === "exhibitions" && (
+          <>
+            <div className="exhibition-filters-bar">
+              <div className="ex-filter-group">
+                <label>Type</label>
+                <select value={exhibitionTypeFilter} onChange={(e) => setExhibitionTypeFilter(e.target.value)}>
+                  <option value="All">All Types</option>
+                  <option value="Permanent">Permanent</option>
+                  <option value="Temporary">Temporary</option>
+                  <option value="Traveling">Traveling</option>
+                </select>
+              </div>
+              <div className="ex-filter-group">
+                <label>Status</label>
+                <select value={exhibitionStatusFilter} onChange={(e) => setExhibitionStatusFilter(e.target.value)}>
+                  <option value="All">All Statuses</option>
+                  <option value="Active">Active</option>
+                  <option value="Upcoming">Upcoming</option>
+                  <option value="Ended">Ended</option>
+                </select>
+              </div>
+              <div className="ex-filter-group">
+                <label>Gallery</label>
+                <select value={exhibitionGalleryFilter} onChange={(e) => setExhibitionGalleryFilter(e.target.value)}>
+                  <option value="All">All Galleries</option>
+                  {exhibitionGalleries.map((g) => (
+                    <option key={g} value={g}>{g}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="ex-filter-group">
+                <label>Sort By</label>
+                <select value={exhibitionSort} onChange={(e) => setExhibitionSort(e.target.value)}>
+                  <option value="title">Title A–Z</option>
+                  <option value="title_desc">Title Z–A</option>
+                  <option value="date_asc">Start Date (Oldest)</option>
+                  <option value="date_desc">Start Date (Newest)</option>
+                </select>
+              </div>
+              {(exhibitionTypeFilter !== "All" || exhibitionStatusFilter !== "All" || exhibitionGalleryFilter !== "All" || exhibitionSort !== "title") && (
+                <button className="ex-filter-clear" onClick={() => {
+                  setExhibitionTypeFilter("All");
+                  setExhibitionStatusFilter("All");
+                  setExhibitionGalleryFilter("All");
+                  setExhibitionSort("title");
+                }}>
+                  Clear Filters
+                </button>
+              )}
+            </div>
+            <div className="exhibitions-admin-toolbar">
+              <p className="ex-results-count">
+                {filteredExhibitions.length} exhibition{filteredExhibitions.length !== 1 ? "s" : ""}
+              </p>
+              <button className="btn-view-archived" onClick={() => setShowExhibitionArchive((v) => !v)}>
+                 {showExhibitionArchive ? "Hide Archived" : "View Archived Exhibitions"}
+              </button>
+            </div>
+          </>
+        )}
+
+        {/* ── Galleries: filter bar + archived toggle ── */}
+        {activeTab === "galleries" && (
+          <>
+            <div className="exhibition-filters-bar">
+              <div className="ex-filter-group">
+                <label>Building</label>
+                <select value={galleryBuildingFilter} onChange={(e) => setGalleryBuildingFilter(e.target.value)}>
+                  <option value="All">All Buildings</option>
+                  {galleryBuildings.map((b) => (
+                    <option key={b} value={b}>{b}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="ex-filter-group">
+                <label>Floor</label>
+                <select value={galleryFloorFilter} onChange={(e) => setGalleryFloorFilter(e.target.value)}>
+                  <option value="All">All Floors</option>
+                  {galleryFloors.map((f) => (
+                    <option key={f} value={String(f)}>
+                      {f === 0 ? "Ground" : f < 0 ? `Basement ${Math.abs(f)}` : `Floor ${f}`}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="ex-filter-group">
+                <label>Climate Controlled</label>
+                <select value={galleryClimateFilter} onChange={(e) => setGalleryClimateFilter(e.target.value)}>
+                  <option value="All">All</option>
+                  <option value="Yes">Yes</option>
+                  <option value="No">No</option>
+                </select>
+              </div>
+              <div className="ex-filter-group">
+                <label>Sort By</label>
+                <select value={gallerySort} onChange={(e) => setGallerySort(e.target.value)}>
+                  <option value="name">Name A–Z</option>
+                  <option value="name_desc">Name Z–A</option>
+                  <option value="floor_asc">Floor (Low–High)</option>
+                  <option value="floor_desc">Floor (High–Low)</option>
+                  <option value="sqft_desc">Largest First</option>
+                </select>
+              </div>
+              {(galleryBuildingFilter !== "All" || galleryClimateFilter !== "All" || galleryFloorFilter !== "All" || gallerySort !== "name") && (
+                <button className="ex-filter-clear" onClick={() => {
+                  setGalleryBuildingFilter("All");
+                  setGalleryClimateFilter("All");
+                  setGalleryFloorFilter("All");
+                  setGallerySort("name");
+                }}>
+                  Clear Filters
+                </button>
+              )}
+            </div>
+            <div className="exhibitions-admin-toolbar">
+              <p className="ex-results-count">
+                {filteredGalleries.length} galler{filteredGalleries.length !== 1 ? "ies" : "y"}
+              </p>
+              <button className="btn-view-archived" onClick={() => setShowGalleryArchive((v) => !v)}>
+                {showGalleryArchive ? "Hide Archived" : "View Archived Galleries"}
+              </button>
+            </div>
+          </>
+        )}
+
+        {/* ── Artists: filter bar + archived toggle ── */}
+        {activeTab === "artwork" && (
+          <>
+            <div className="exhibition-filters-bar">
+              <div className="ex-filter-group">
+                <label>Artist</label>
+                <select value={artworkArtistFilter} onChange={(e) => setArtworkArtistFilter(e.target.value)}>
+                  <option value="All">All Artists</option>
+                  {artworkArtists.map(a => <option key={a} value={a}>{a}</option>)}
+                </select>
+              </div>
+              <div className="ex-filter-group">
+                <label>Medium</label>
+                <select value={artworkMediumFilter} onChange={(e) => setArtworkMediumFilter(e.target.value)}>
+                  <option value="All">All Mediums</option>
+                  {artworkMediums.map(m => <option key={m} value={m}>{m}</option>)}
+                </select>
+              </div>
+              <div className="ex-filter-group">
+                <label>Status</label>
+                <select value={artworkStatusFilter} onChange={(e) => setArtworkStatusFilter(e.target.value)}>
+                  <option value="All">All Statuses</option>
+                  <option value="On Display">On Display</option>
+                  <option value="In Storage">In Storage</option>
+                  <option value="On Loan">On Loan</option>
+                  <option value="Under Restoration">Under Restoration</option>
+                </select>
+              </div>
+              <div className="ex-filter-group">
+                <label>Sort By</label>
+                <select value={artworkSort} onChange={(e) => setArtworkSort(e.target.value)}>
+                  <option value="title">Title A–Z</option>
+                  <option value="title_desc">Title Z–A</option>
+                  <option value="year_asc">Year (Oldest)</option>
+                  <option value="year_desc">Year (Newest)</option>
+                </select>
+              </div>
+              {(artworkArtistFilter !== "All" || artworkMediumFilter !== "All" || artworkStatusFilter !== "All" || artworkSort !== "title") && (
+                <button className="ex-filter-clear" onClick={() => {
+                  setArtworkArtistFilter("All");
+                  setArtworkMediumFilter("All");
+                  setArtworkStatusFilter("All");
+                  setArtworkSort("title");
+                }}>Clear Filters</button>
+              )}
+            </div>
+            <div className="exhibitions-admin-toolbar">
+              <p className="ex-results-count">{filteredArtworks.length} artwork{filteredArtworks.length !== 1 ? "s" : ""}</p>
+              <button className="btn-view-archived" onClick={() => setShowArtworkArchive(v => !v)}>
+                {showArtworkArchive ? "Hide Archived" : "View Archived Artworks"}
+              </button>
+            </div>
+          </>
+        )}
+
         {!usesCustomManager && activeTab !== "reports" && (
           <div className="search-bar">
             <input
@@ -587,111 +679,96 @@ export default function AdminDashboard() {
         <div className="content-area">
           {/* Artists */}
           {activeTab === "artists" && (
-            <>
-              {artistsError ? (
-                <div className="error-message">{artistsError}</div>
-              ) : (
-                <ArtistTable artists={filteredArtists} onEdit={handleEditArtist} onDelete={handleDeleteArtist} />
-              )}
-            </>
+            artistsError
+              ? <div className="error-message">{artistsError}</div>
+              : <ArtistTable artists={filteredArtists} onEdit={handleEditArtist} onDelete={handleDeleteArtist} />
           )}
 
           {/* Artwork */}
-          {activeTab === "artwork" && (
-            <>
-              {artworksError ? (
-                <div className="error-message">{artworksError}</div>
-              ) : (
-                <ArtworkTable artworks={filteredArtworks} onEdit={handleEditArtwork} onDelete={handleDeleteArtwork} />
-              )}
-            </>
-          )}
 
           {/* Provenance */}
           {activeTab === "provenance" && (
-            <>
-              {provenanceError ? (
-                <div className="error-message">{provenanceError}</div>
-              ) : (
-                <ProvenanceTable provenance={filteredProvenance} onEdit={handleEditProvenance} onDelete={handleDeleteProvenance} />
-              )}
-            </>
+            provenanceError
+              ? <div className="error-message">{provenanceError}</div>
+              : <ProvenanceTable provenance={filteredProvenance} onEdit={handleEditProvenance} onDelete={handleDeleteProvenance} />
           )}
 
           {/* Exhibitions */}
           {activeTab === "exhibitions" && (
             <>
-              {exhibitionsError ? (
-                <div className="error-message">{exhibitionsError}</div>
-              ) : (
-                <ExhibitionTable exhibitions={filteredExhibitions} onEdit={handleEditExhibition} onDelete={handleDeleteExhibition} />
+              {showExhibitionArchive && (
+                <ExhibitionArchive apiBase={API_BASE} onRestored={() => loadExhibitions()} />
               )}
+              {exhibitionsError
+                ? <div className="error-message">{exhibitionsError}</div>
+                : <ExhibitionTable
+                  exhibitions={filteredExhibitions}
+                  onEdit={handleEditExhibition}
+                  onDelete={handleDeleteExhibition}
+                  onArchive={handleExhibitionArchive}
+                />
+              }
             </>
           )}
 
           {/* Galleries */}
           {activeTab === "galleries" && (
             <>
-              {galleriesError ? (
-                <div className="error-message">{galleriesError}</div>
-              ) : (
-                <GalleryTable galleries={filteredGalleries} onEdit={handleEditGallery} onDelete={handleDeleteGallery} />
+              {showGalleryArchive && (
+                <GalleryArchive apiBase={API_BASE} onRestored={() => loadGalleries()} />
               )}
+              {galleriesError
+                ? <div className="error-message">{galleriesError}</div>
+                : <GalleryTable
+                  galleries={filteredGalleries}
+                  onEdit={handleEditGallery}
+                  onDelete={handleDeleteGallery}
+                  onArchive={handleGalleryArchive}
+                />
+              }
+            </>
+          )}
+
+          {/* Artworks*/}
+          {activeTab === "artwork" && (
+            <>
+              {showArtworkArchive && (
+                <ArtworkArchive apiBase={API_BASE} onRestored={() => loadArtworks()} />
+              )}
+              {artworksError
+                ? <div className="error-message">{artworksError}</div>
+                : <ArtworkTable
+                  artworks={filteredArtworks}
+                  onEdit={handleEditArtwork}
+                  onDelete={handleDeleteArtwork}
+                  onArchive={handleArtworkArchive}
+                />
+              }
             </>
           )}
 
           {/* Events */}
           {activeTab === "events" && (
-            <>
-              {eventsError ? (
-                <div className="error-message">{eventsError}</div>
-              ) : (
-                <EventTable events={filteredEvents} onEdit={handleEditEvent} onDelete={handleDeleteEvent} />
-              )}
-            </>
+            eventsError
+              ? <div className="error-message">{eventsError}</div>
+              : <EventTable events={filteredEvents} onEdit={handleEditEvent} onDelete={handleDeleteEvent} />
           )}
 
-          {/* Cafe */}
           {activeTab === "cafe" && <CafeAdminPanel />}
-
-          {/* Gift Shop */}
           {activeTab === "giftshop" && <GiftShopAdminPanel />}
-
-          {/* Reports */}
           {activeTab === "reports" && <ReportsPanel />}
-
-          {/* Users */}
-          {activeTab === "users" && (
-            <UserManagement
-              ref={userMgmtRef}
-              searchTerm={searchTerm}
-              onSubTabChange={setUserMgmtSubTab}
-            />
-          )}
-          {/* Departments */}
+          {activeTab === "users" && <UserManagement ref={userMgmtRef} searchTerm={searchTerm} onSubTabChange={setUserMgmtSubTab} />}
           {activeTab === "departments" && <DepartmentManagement ref={deptMgmtRef} searchTerm={searchTerm} />}
         </div>
       </main>
 
       {/* Modals */}
-      {isArtistFormOpen && (
-        <ArtistForm onSubmit={handleSaveArtist} initialData={editingArtist} onCancel={() => setIsArtistFormOpen(false)} />
-      )}
-      {isArtworkFormOpen && (
-        <ArtworkForm onSubmit={handleSaveArtwork} initialData={editingArtwork} onCancel={() => setIsArtworkFormOpen(false)} />
-      )}
-      {isProvenanceFormOpen && (
-        <ProvenanceForm onSubmit={handleSaveProvenance} initialData={editingProvenance} onCancel={() => setIsProvenanceFormOpen(false)} />
-      )}
-      {isExhibitionFormOpen && (
-        <ExhibitionForm onSubmit={handleSaveExhibition} initialData={editingExhibition} onCancel={() => setIsExhibitionFormOpen(false)} />
-      )}
-      {isGalleryFormOpen && (
-        <GalleryForm onSubmit={handleSaveGallery} initialData={editingGallery} onCancel={() => setIsGalleryFormOpen(false)} />
-      )}
-      {isEventFormOpen && (
-        <EventForm onSubmit={handleSaveEvent} initialData={editingEvent} onCancel={() => setIsEventFormOpen(false)} />
-      )}
+      {isArtistFormOpen && <ArtistForm onSubmit={handleSaveArtist} initialData={editingArtist} onCancel={() => setIsArtistFormOpen(false)} />}
+      {isArtworkFormOpen && <ArtworkForm onSubmit={handleSaveArtwork} initialData={editingArtwork} onCancel={() => setIsArtworkFormOpen(false)} />}
+      {isProvenanceFormOpen && <ProvenanceForm onSubmit={handleSaveProvenance} initialData={editingProvenance} onCancel={() => setIsProvenanceFormOpen(false)} />}
+      {isExhibitionFormOpen && <ExhibitionForm onSubmit={handleSaveExhibition} initialData={editingExhibition} onCancel={() => setIsExhibitionFormOpen(false)} />}
+      {isGalleryFormOpen && <GalleryForm onSubmit={handleSaveGallery} initialData={editingGallery} onCancel={() => setIsGalleryFormOpen(false)} />}
+      {isEventFormOpen && <EventForm onSubmit={handleSaveEvent} initialData={editingEvent} onCancel={() => setIsEventFormOpen(false)} />}
     </div>
   );
 }

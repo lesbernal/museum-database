@@ -290,6 +290,7 @@
   padding: 5rem 2rem;
   background: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url('https://365thingsinhouston.com/wp-content/uploads/2017/08/museum-of-fine-arts-houston-Beck-Interior-Gallery.jpeg') no-repeat center center/cover;
   background-attachment: fixed;
+  border-top: none;
 }
 
 .quick-links-section .section-header h2,
@@ -311,13 +312,19 @@
 
 .link-card {
   background: rgba(255, 255, 255, 0.95);
-  padding: 2rem;
+  padding: 2.5rem;
   border-radius: 0;
   text-decoration: none;
   text-align: center;
   transition: all 0.3s ease;
   border: 1px solid rgba(229, 229, 229, 0.3);
   backdrop-filter: blur(5px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+  gap: 12px;
 }
 
 .link-card:hover {
@@ -333,7 +340,7 @@
 }
 
 .link-card h3 {
-  font-size: 1rem;
+  font-size: 1.25rem;
   margin-bottom: 0.5rem;
   color: #000000;
   font-weight: 500;
@@ -343,7 +350,7 @@
 
 .link-card p {
   color: #666666;
-  font-size: 0.75rem;
+  font-size: 0.875rem;
   line-height: 1.5;
 }
 
@@ -367,7 +374,7 @@
   max-width: 1200px;
   margin: 0 auto;
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
   gap: 2rem;
   position: relative;
   z-index: 2;

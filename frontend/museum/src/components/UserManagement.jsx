@@ -298,8 +298,8 @@ const UserManagement = forwardRef(function UserManagement({ searchTerm = "", onS
                   {tableCols.map(c => <td key={c}>{renderCell(r, c)}</td>)}
                   <td>
                     <div className="um-actions">
-                      <button className="um-edit-btn" onClick={() => openEdit(r)} title="Edit">✏️</button>
-                      <button className="um-delete-btn" onClick={() => confirmDelete(r)} title="Delete">🗑️</button>
+                      <button className="um-edit-btn" onClick={() => openEdit(r)} title="Edit">Edit</button>
+                      <button className="um-delete-btn" onClick={() => confirmDelete(r)} title="Delete">Delete</button>
                     </div>
                   </td>
                 </tr>

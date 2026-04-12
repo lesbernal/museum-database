@@ -125,18 +125,18 @@ export default function ArtworkForm({ onSubmit, initialData = null, onCancel, is
       
       if (data.success) {
         const imageUrl = data.data.url;
-        console.log("✅ Image uploaded! URL:", imageUrl);
+        console.log("Image uploaded! URL:", imageUrl);
         setImagePreview(imageUrl);
         setForm(prev => {
           console.log("Updating form with image_url:", imageUrl);
           return { ...prev, image_url: imageUrl };
         });
       } else {
-        console.error("❌ ImgBB upload failed:", data);
+        console.error("ImgBB upload failed:", data);
         alert("Upload failed: " + (data.error?.message || "Unknown error"));
       }
     } catch (error) {
-      console.error("❌ Upload error:", error);
+      console.error("Upload error:", error);
       alert("Upload failed: " + error.message);
     } finally {
       setUploading(false);
@@ -146,18 +146,18 @@ export default function ArtworkForm({ onSubmit, initialData = null, onCancel, is
   async function handleSubmit(e) {
     e.preventDefault();
     
-    console.log("🚀 Submitting artwork with image_url:", form.image_url);
+    console.log("Submitting artwork with image_url:", form.image_url);
     
     if (!validateForm()) return;
     
     setIsSubmitting(true);
     try {
-      console.log("📤 Sending to backend:", {
+      console.log("Sending to backend:", {
         title: form.title,
         image_url: form.image_url
       });
       await onSubmit(form);
-      console.log("✅ Submit successful!");
+      console.log("Submit successful!");
       setShowSuccessToast(true);
       setTimeout(() => setShowSuccessToast(false), 3000);
       
@@ -178,7 +178,7 @@ export default function ArtworkForm({ onSubmit, initialData = null, onCancel, is
         if (fileInputRef.current) fileInputRef.current.value = "";
       }
     } catch (error) {
-      console.error("❌ Error saving artwork:", error);
+      console.error("Error saving artwork:", error);
       setErrors({ submit: "Failed to save artwork. Please try again." });
     } finally {
       setIsSubmitting(false);
@@ -191,14 +191,14 @@ export default function ArtworkForm({ onSubmit, initialData = null, onCancel, is
     <>
       {showSuccessToast && (
         <div className="toast success">
-          ✅ Artwork {initialData ? "updated" : "added"} successfully!
+          Artwork {initialData ? "updated" : "added"} successfully!
         </div>
       )}
       
       <div className="modal-overlay" onClick={onCancel}>
         <div className="modal-content artwork-modal" onClick={(e) => e.stopPropagation()}>
           <div className="modal-header">
-            <h2>{initialData ? "✏️ Edit Artwork" : "➕ Add New Artwork"}</h2>
+            <h2>{initialData ? "Edit Artwork" : "➕ Add New Artwork"}</h2>
             <button className="close-btn" onClick={onCancel}>&times;</button>
           </div>
           
@@ -222,7 +222,7 @@ export default function ArtworkForm({ onSubmit, initialData = null, onCancel, is
                   onClick={() => fileInputRef.current?.click()}
                   disabled={uploading}
                 >
-                  {uploading ? "📤 Uploading..." : "📸 Upload Image"}
+                  {uploading ? "Uploading..." : " Upload Image"}
                 </button>
                 <input
                   ref={fileInputRef}

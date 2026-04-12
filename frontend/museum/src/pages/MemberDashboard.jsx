@@ -15,11 +15,11 @@ import "../styles/Dashboard.css";
 import "../styles/SelfService.css";
 
 const TABS = [
-  { id: "profile",    label: "My Profile",      icon: "👤" },
-  { id: "membership", label: "Membership",       icon: "⭐" },
-  { id: "visits",     label: "Visit History",    icon: "🏛️" },
-  { id: "purchases",  label: "Purchase History", icon: "🛍️" },
-  { id: "password",   label: "Change Password",  icon: "🔒" },
+  { id: "profile",    label: "My Profile"       },
+  { id: "membership", label: "Membership"       },
+  { id: "visits",     label: "Visit History"    },
+  { id: "purchases",  label: "Purchase History" },
+  { id: "password",   label: "Change Password"  },
 ];
 
 const LEVEL_COLORS = {
@@ -333,7 +333,7 @@ export default function MemberDashboard() {
 
                 {/* Tickets */}
                 <h3 style={{ fontSize: 14, fontWeight: 600, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 12 }}>
-                  🎟️ Tickets
+                  Tickets
                 </h3>
                 {tickets.length === 0 ? (
                   <div className="ss-empty" style={{ marginBottom: 24 }}>No tickets purchased yet.</div>
@@ -388,7 +388,7 @@ export default function MemberDashboard() {
 
                 {/* Donations */}
                 <h3 style={{ fontSize: 14, fontWeight: 600, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 12 }}>
-                  💝 Donations
+                  Donations
                 </h3>
                 {donations.length === 0 ? (
                   <div className="ss-empty">No donations made yet.</div>

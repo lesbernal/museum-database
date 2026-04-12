@@ -1,17 +1,34 @@
 // handlers/galleries.js
+// NOTE: Run this migration first:
+//   ALTER TABLE gallery ADD COLUMN is_active TINYINT(1) NOT NULL DEFAULT 1;
 
 const db = require("../db");
 
 module.exports = (req, res, parsedUrl) => {
   const urlParts = parsedUrl.pathname.split("/").filter(Boolean);
 
-  // GET all galleries with building name
+  // GET all ACTIVE galleries with building name
   if (req.method === "GET" && urlParts.length === 1) {
     const sql = `
-      SELECT g.*,
-             mb.building_name
+      SELECT g.*, mb.building_name
       FROM gallery g
       LEFT JOIN museumbuilding mb ON g.building_id = mb.building_id
+      WHERE g.is_active = 1
+      ORDER BY g.gallery_id
+    `;
+    db.query(sql, (err, results) => {
+      if (err) return sendError(res, err);
+      sendJSON(res, results);
+    });
+  }
+
+  // GET all ARCHIVED galleries
+  else if (req.method === "GET" && urlParts.length === 2 && urlParts[1] === "archived") {
+    const sql = `
+      SELECT g.*, mb.building_name
+      FROM gallery g
+      LEFT JOIN museumbuilding mb ON g.building_id = mb.building_id
+      WHERE g.is_active = 0
       ORDER BY g.gallery_id
     `;
     db.query(sql, (err, results) => {
@@ -23,8 +40,7 @@ module.exports = (req, res, parsedUrl) => {
   // GET gallery by id
   else if (req.method === "GET" && urlParts.length === 2) {
     const sql = `
-      SELECT g.*,
-             mb.building_name
+      SELECT g.*, mb.building_name
       FROM gallery g
       LEFT JOIN museumbuilding mb ON g.building_id = mb.building_id
       WHERE g.gallery_id = ?
@@ -36,12 +52,12 @@ module.exports = (req, res, parsedUrl) => {
   }
 
   // POST gallery
-  else if (req.method === "POST") {
+  else if (req.method === "POST" && urlParts.length === 1) {
     parseBody(req, (data) => {
       const sql = `
         INSERT INTO gallery
-        (building_id, gallery_name, floor_number, square_footage, climate_controlled)
-        VALUES (?, ?, ?, ?, ?)
+        (building_id, gallery_name, floor_number, square_footage, climate_controlled, is_active)
+        VALUES (?, ?, ?, ?, ?, 1)
       `;
       db.query(sql, [
         data.building_id || null,
@@ -59,7 +75,6 @@ module.exports = (req, res, parsedUrl) => {
   // PUT gallery
   else if (req.method === "PUT" && urlParts.length === 2) {
     parseBody(req, (data) => {
-      console.log("PUT gallery data:", data);
       const sql = `
         UPDATE gallery SET
         building_id=?, gallery_name=?, floor_number=?,
@@ -80,11 +95,35 @@ module.exports = (req, res, parsedUrl) => {
     });
   }
 
-  // DELETE gallery
+  // PATCH /galleries/:id/deactivate — soft delete
+  else if (req.method === "PATCH" && urlParts.length === 3 && urlParts[2] === "deactivate") {
+    db.query(
+      "UPDATE gallery SET is_active = 0 WHERE gallery_id = ?",
+      [urlParts[1]],
+      (err) => {
+        if (err) return sendError(res, err);
+        sendJSON(res, { message: "Gallery archived" });
+      }
+    );
+  }
+
+  // PATCH /galleries/:id/reactivate — restore
+  else if (req.method === "PATCH" && urlParts.length === 3 && urlParts[2] === "reactivate") {
+    db.query(
+      "UPDATE gallery SET is_active = 1 WHERE gallery_id = ?",
+      [urlParts[1]],
+      (err) => {
+        if (err) return sendError(res, err);
+        sendJSON(res, { message: "Gallery restored" });
+      }
+    );
+  }
+
+  // Hard DELETE
   else if (req.method === "DELETE" && urlParts.length === 2) {
     db.query("DELETE FROM gallery WHERE gallery_id=?", [urlParts[1]], (err) => {
       if (err) return sendError(res, err);
-      sendJSON(res, { message: "Gallery deleted" });
+      sendJSON(res, { message: "Gallery permanently deleted" });
     });
   }
 

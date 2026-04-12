@@ -127,14 +127,14 @@ export default function GalleryForm({ onSubmit, initialData = null, onCancel, is
         <>
             {showSuccessToast && (
                 <div className="toast success">
-                    ✅ Gallery {initialData ? "updated" : "added"} successfully!
+                    Gallery {initialData ? "updated" : "added"} successfully!
                 </div>
             )}
 
             <div className="modal-overlay" onClick={onCancel}>
                 <div className="modal-content gallery-modal" onClick={(e) => e.stopPropagation()}>
                     <div className="modal-header">
-                        <h2>{initialData ? "✏️ Edit Gallery" : "➕ Add New Gallery"}</h2>
+                        <h2>{initialData ? "Edit Gallery" : "➕ Add New Gallery"}</h2>
                         <button className="close-btn" onClick={onCancel}>&times;</button>
                     </div>
 
