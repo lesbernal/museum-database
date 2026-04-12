@@ -146,18 +146,18 @@ export default function ArtworkForm({ onSubmit, initialData = null, onCancel, is
   async function handleSubmit(e) {
     e.preventDefault();
     
-    console.log("🚀 Submitting artwork with image_url:", form.image_url);
+    console.log("Submitting artwork with image_url:", form.image_url);
     
     if (!validateForm()) return;
     
     setIsSubmitting(true);
     try {
-      console.log("📤 Sending to backend:", {
+      console.log("Sending to backend:", {
         title: form.title,
         image_url: form.image_url
       });
       await onSubmit(form);
-      console.log("✅ Submit successful!");
+      console.log("Submit successful!");
       setShowSuccessToast(true);
       setTimeout(() => setShowSuccessToast(false), 3000);
       
@@ -178,7 +178,7 @@ export default function ArtworkForm({ onSubmit, initialData = null, onCancel, is
         if (fileInputRef.current) fileInputRef.current.value = "";
       }
     } catch (error) {
-      console.error("❌ Error saving artwork:", error);
+      console.error("Error saving artwork:", error);
       setErrors({ submit: "Failed to save artwork. Please try again." });
     } finally {
       setIsSubmitting(false);
@@ -222,7 +222,7 @@ export default function ArtworkForm({ onSubmit, initialData = null, onCancel, is
                   onClick={() => fileInputRef.current?.click()}
                   disabled={uploading}
                 >
-                  {uploading ? "📤 Uploading..." : "📸 Upload Image"}
+                  {uploading ? "Uploading..." : " Upload Image"}
                 </button>
                 <input
                   ref={fileInputRef}
