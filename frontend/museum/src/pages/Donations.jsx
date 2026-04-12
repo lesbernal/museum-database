@@ -1,44 +1,56 @@
 // src/pages/Donations.jsx
 import { useState } from "react";
-import { Link } from "react-router-dom";
-import "../styles/theme.css";
+import "../styles/Donations.css";
 
 const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
+const QUICK_AMOUNTS = [25, 50, 100, 250, 500, 1000];
+
+function getMembershipEarned(amount) {
+  const amt = parseFloat(amount);
+  if (amt >= 5000) return "Leadership Circle";
+  if (amt >= 1500) return "Benefactor";
+  return null;
+}
+
+function getTierClass(tier) {
+  if (tier === "Leadership Circle") return "leadership";
+  if (tier === "Benefactor") return "benefactor";
+  return "";
+}
+
+function getTierIcon(tier) {
+  if (tier === "Leadership Circle") return "👑";
+  if (tier === "Benefactor") return "⭐";
+  return "🎉";
+}
+
 export default function Donations() {
-  const [amount, setAmount] = useState("");
-  const [donationType, setDonationType] = useState("General");
-  const [method, setMethod] = useState("Credit Card");
-  const [msg, setMsg] = useState("");
-  const [errorMsg, setErrorMsg] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [membershipEarned, setMembershipEarned] = useState(null); // tracks what tier was earned
+  const [amount,           setAmount]           = useState("");
+  const [donationType,     setDonationType]     = useState("General");
+  const [method,           setMethod]           = useState("Credit Card");
+  const [loading,          setLoading]          = useState(false);
+  const [feedback,         setFeedback]         = useState(null);
+  const [membershipEarned, setMembershipEarned] = useState(null);
+  const [showEarnedToast,  setShowEarnedToast]  = useState(false);
 
-  const userId = localStorage.getItem("user_id");
+  const userId       = localStorage.getItem("user_id");
+  const parsedAmount = parseFloat(amount) || 0;
+  const tierEarned   = getMembershipEarned(amount);
+  const tierClass    = getTierClass(tierEarned);
 
-  // Check if donation amount qualifies for a membership tier
-  function getMembershipEarned(donationAmount) {
-    const amt = parseFloat(donationAmount);
-    if (amt >= 5000) return "Leadership Circle";
-    if (amt >= 1500) return "Benefactor";
-    return null;
-  }
-
-  // Tier styling
-  function getTierStyle(tier) {
-    if (tier === "Leadership Circle") return { bg: "#fff1f2", color: "#9f1239", border: "#fb7185", icon: "👑" };
-    if (tier === "Benefactor") return { bg: "#f3e8ff", color: "#6b21a8", border: "#c084fc", icon: "⭐" };
-    return { bg: "#f3f4f6", color: "#374151", border: "#d1d5db", icon: "🎉" };
+  function handleQuickAmount(val) {
+    setAmount(String(val));
   }
 
   async function handleDonate(e) {
     e.preventDefault();
-    setMsg("");
-    setErrorMsg("");
+    setFeedback(null);
     setMembershipEarned(null);
+    setShowEarnedToast(false);
 
-    if (!userId) return setErrorMsg("Please log in first.");
-    if (!amount || amount <= 0) return setErrorMsg("Enter a valid amount.");
+    if (!userId)                    return setFeedback({ type: "error", text: "Please log in first." });
+    if (!amount || parsedAmount <= 0) return setFeedback({ type: "error", text: "Enter a valid donation amount." });
 
     setLoading(true);
 
@@ -50,9 +62,9 @@ export default function Donations() {
           "Authorization": `Bearer ${userId}`
         },
         body: JSON.stringify({
-          donation_date: new Date().toISOString().split("T")[0],
-          amount: amount,
-          donation_type: donationType,
+          donation_date:  new Date().toISOString().split("T")[0],
+          amount:         parsedAmount,
+          donation_type:  donationType,
           payment_method: method
         })
       });
@@ -62,139 +74,156 @@ export default function Donations() {
         throw new Error(err.error || "Donation failed");
       }
 
-      // Check if they earned a membership tier
+      // Check if single donation amount earns a tier
       const earned = getMembershipEarned(amount);
       if (earned) {
         setMembershipEarned(earned);
-        // Update localStorage role so rest of app reflects member status
+        setShowEarnedToast(true);
         localStorage.setItem("role", "member");
+        setTimeout(() => setShowEarnedToast(false), 5000);
       }
 
-      setMsg("Thank you for your donation!");
+      setFeedback({ type: "success", text: `Thank you! Your donation of $${parsedAmount.toLocaleString()} has been received.` });
       setAmount("");
     } catch (err) {
-      setErrorMsg(err.message || "Donation failed.");
+      setFeedback({ type: "error", text: err.message || "Donation failed." });
     } finally {
       setLoading(false);
     }
   }
 
-  const tierStyle = membershipEarned ? getTierStyle(membershipEarned) : null;
-
   return (
-    <div style={{ padding: "var(--spacing-3xl)" }}>
-      <h1>Support the Museum</h1>
-
-      <form
-        className="card"
-        style={{ padding: "var(--spacing-xl)", maxWidth: "400px" }}
-        onSubmit={handleDonate}
-      >
-        <div>
-          <label>Donation Amount</label>
-          <input
-            type="number"
-            min="1"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-          />
-        </div>
-
-        {/* Live tier preview based on amount typed */}
-        {parseFloat(amount) >= 1500 && (
-          <div style={{
-            marginTop: "8px",
-            padding: "8px 12px",
-            background: parseFloat(amount) >= 5000 ? "#fff1f2" : "#f3e8ff",
-            color: parseFloat(amount) >= 5000 ? "#9f1239" : "#6b21a8",
-            border: `1px solid ${parseFloat(amount) >= 5000 ? "#fb7185" : "#c084fc"}`,
-            borderRadius: "6px",
-            fontSize: "0.85rem"
-          }}>
-            {parseFloat(amount) >= 5000
-              ? "👑 This donation qualifies you for Leadership Circle membership!"
-              : "⭐ This donation qualifies you for Benefactor membership!"}
-          </div>
-        )}
-
-        <div>
-          <label>Donation Type</label>
-          <select value={donationType} onChange={(e) => setDonationType(e.target.value)}>
-            <option>General</option>
-            <option>Scholarship</option>
-            <option>Exhibition</option>
-            <option>Conservation</option>
-          </select>
-        </div>
-
-        <div>
-          <label>Payment Method</label>
-          <select value={method} onChange={(e) => setMethod(e.target.value)}>
-            <option>Credit Card</option>
-            <option>Debit Card</option>
-            <option>Cash</option>
-          </select>
-        </div>
-
-        {errorMsg && <p className="error-message">{errorMsg}</p>}
-        {msg && <p className="success-message">{msg}</p>}
-
-        <button className="btn btn-primary" disabled={loading}>
-          {loading ? "Processing..." : "Donate"}
-        </button>
-      </form>
-
-      {/* Membership earned widget */}
-      {membershipEarned && tierStyle && (
+    <>
+      {/* Membership upgrade toast */}
+      {showEarnedToast && membershipEarned && (
         <div style={{
-          marginTop: "var(--spacing-xl)",
-          maxWidth: "400px",
-          padding: "var(--spacing-xl)",
-          background: tierStyle.bg,
-          border: `2px solid ${tierStyle.border}`,
-          borderRadius: "12px",
-          textAlign: "center",
+          position: "fixed",
+          top: 0,
+          left: 0,
+          right: 0,
+          zIndex: 9999,
+          padding: "0.875rem 2rem",
+          background: "rgba(187, 247, 208, 0.92)",
+          backdropFilter: "blur(4px)",
+          borderBottom: "1px solid rgba(134, 239, 172, 0.6)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: "0.5rem",
+          animation: "slideDown 0.3s ease",
         }}>
-          <div style={{ fontSize: "3rem", marginBottom: "8px" }}>{tierStyle.icon}</div>
-          <h2 style={{ color: tierStyle.color, marginBottom: "8px" }}>
-            You're now a {membershipEarned} Member!
-          </h2>
-          <p style={{ color: tierStyle.color, fontSize: "0.95rem", marginBottom: "16px" }}>
-            Your generous donation of ${parseFloat(amount || 0).toLocaleString()} has unlocked{" "}
-            <strong>{membershipEarned}</strong> membership status. Thank you for supporting the museum!
-          </p>
-          <div style={{ display: "flex", gap: "12px", justifyContent: "center", flexWrap: "wrap" }}>
-            <Link
-              to="/member-dashboard"
-              style={{
-                padding: "0.625rem 1.25rem",
-                background: tierStyle.color,
-                color: "#fff",
-                borderRadius: "6px",
-                textDecoration: "none",
-                fontSize: "0.9rem",
-                fontWeight: 500
-              }}
-            >
-              View My Dashboard
-            </Link>
-            <Link
-              to="/membership"
-              style={{
-                padding: "0.625rem 1.25rem",
-                border: `1px solid ${tierStyle.border}`,
-                color: tierStyle.color,
-                borderRadius: "6px",
-                textDecoration: "none",
-                fontSize: "0.9rem",
-                fontWeight: 500
-              }}
-            >
-              View Membership Benefits
-            </Link>
-          </div>
+          <span style={{ fontSize: "0.88rem", fontWeight: 500, color: "#14532d", letterSpacing: "0.03em" }}>
+            {getTierIcon(membershipEarned)} You have been upgraded to the <strong>{membershipEarned}</strong> philanthropy level
+          </span>
         </div>
       )}
-    </div>
+
+      <div className="donations-page">
+
+        {/* Hero */}
+        <div className="donations-hero">
+          <p className="donations-eyebrow">Museum of Fine Arts, Houston</p>
+          <h1 className="donations-title">Support the Museum</h1>
+          <p className="donations-subtitle">Your generosity helps preserve art and culture for future generations</p>
+        </div>
+
+        <form onSubmit={handleDonate}>
+
+          {/* Quick amounts */}
+          <p className="donations-section-label">Select an Amount</p>
+          <div className="donations-quick-amounts">
+            {QUICK_AMOUNTS.map(val => (
+              <button
+                key={val}
+                type="button"
+                className={`quick-amount-btn ${String(val) === amount ? "active" : ""}`}
+                onClick={() => handleQuickAmount(val)}
+              >
+                ${val.toLocaleString()}
+              </button>
+            ))}
+          </div>
+
+          {/* Custom amount */}
+          <div className="donations-form-row-single donations-field">
+            <label>Custom Amount</label>
+            <input
+              type="number"
+              min="1"
+              value={amount}
+              onChange={e => setAmount(e.target.value)}
+              placeholder="Enter amount"
+              className="amount-input"
+            />
+          </div>
+
+          {/* Tier preview */}
+          {parsedAmount >= 1500 && (
+            <div className={`donations-tier-preview ${tierClass}`}>
+              <span className="tier-preview-icon">{getTierIcon(tierEarned)}</span>
+              <span className={`tier-preview-text ${tierClass}`}>
+                This donation qualifies you for <strong>{tierEarned}</strong> membership!
+              </span>
+            </div>
+          )}
+
+          {/* Donation details */}
+          <p className="donations-section-label">Donation Details</p>
+          <div className="donations-form-row">
+            <div className="donations-field">
+              <label>Donation Type</label>
+              <select value={donationType} onChange={e => setDonationType(e.target.value)}>
+                <option>General</option>
+                <option>Scholarship</option>
+                <option>Exhibition</option>
+                <option>Conservation</option>
+              </select>
+            </div>
+            <div className="donations-field">
+              <label>Payment Method</label>
+              <select value={method} onChange={e => setMethod(e.target.value)}>
+                <option>Credit Card</option>
+                <option>Debit Card</option>
+                <option>Cash</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Summary */}
+          {parsedAmount > 0 && (
+            <div className="donations-summary">
+              <div className="donations-summary-row">
+                <span>Donation Type</span>
+                <span>{donationType}</span>
+              </div>
+              <div className="donations-summary-row">
+                <span>Payment Method</span>
+                <span>{method}</span>
+              </div>
+              <div className="donations-summary-total">
+                <span>Total</span>
+                <span>${parsedAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+              </div>
+            </div>
+          )}
+
+          {/* Feedback */}
+          {feedback && (
+            <div className={`donations-feedback ${feedback.type}`}>
+              {feedback.text}
+            </div>
+          )}
+
+          <button
+            className="donations-submit-btn"
+            type="submit"
+            disabled={loading || parsedAmount <= 0}
+          >
+            {loading ? "Processing..." : parsedAmount > 0 ? `Donate $${parsedAmount.toLocaleString()}` : "Donate"}
+          </button>
+
+        </form>
+      </div>
+    </>
   );
 }
