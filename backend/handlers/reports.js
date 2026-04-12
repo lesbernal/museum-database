@@ -14,304 +14,432 @@ module.exports = (req, res, parsedUrl) => {
     return;
   }
 
-  // ==================== REPORT 1: REVENUE (Tickets + Donations) ====================
-  if (parsedUrl.pathname === "/reports/revenue-summary") {
-    const sql = `
-      SELECT 
-        -- Ticket Summary
-        (SELECT ROUND(SUM(final_price), 2) FROM ticket) as total_ticket_revenue,
-        (SELECT COUNT(*) FROM ticket) as total_tickets_sold,
-        (SELECT ROUND(AVG(final_price), 2) FROM ticket) as avg_ticket_price,
-        
-        -- Ticket breakdown by type
-        (SELECT ROUND(SUM(final_price), 2) FROM ticket WHERE ticket_type = 'Adult 19+') as adult_ticket_revenue,
-        (SELECT COUNT(*) FROM ticket WHERE ticket_type = 'Adult 19+') as adult_tickets_sold,
-        (SELECT ROUND(SUM(final_price), 2) FROM ticket WHERE ticket_type = 'Senior 65+') as senior_ticket_revenue,
-        (SELECT COUNT(*) FROM ticket WHERE ticket_type = 'Senior 65+') as senior_tickets_sold,
-        (SELECT ROUND(SUM(final_price), 2) FROM ticket WHERE ticket_type = 'Youth 13-18') as youth_ticket_revenue,
-        (SELECT COUNT(*) FROM ticket WHERE ticket_type = 'Youth 13-18') as youth_tickets_sold,
-        (SELECT ROUND(SUM(final_price), 2) FROM ticket WHERE ticket_type = 'Child 12 & Under') as child_ticket_revenue,
-        (SELECT COUNT(*) FROM ticket WHERE ticket_type = 'Child 12 & Under') as child_tickets_sold,
-        
-        -- Donation Summary
-        (SELECT ROUND(SUM(amount), 2) FROM donation) as total_donation_revenue,
-        (SELECT COUNT(*) FROM donation) as total_donations,
-        (SELECT ROUND(AVG(amount), 2) FROM donation) as avg_donation_amount,
-        
-        -- Donation breakdown by type
-        (SELECT ROUND(SUM(amount), 2) FROM donation WHERE donation_type = 'One-time') as one_time_donations,
-        (SELECT COUNT(*) FROM donation WHERE donation_type = 'One-time') as one_time_donation_count,
-        (SELECT ROUND(SUM(amount), 2) FROM donation WHERE donation_type = 'Recurring') as recurring_donations,
-        (SELECT COUNT(*) FROM donation WHERE donation_type = 'Recurring') as recurring_donation_count,
-        
-        -- Combined Totals
-        (COALESCE((SELECT ROUND(SUM(final_price), 2) FROM ticket), 0) + 
-         COALESCE((SELECT ROUND(SUM(amount), 2) FROM donation), 0)) as total_revenue,
-        
-        -- Date range
-        (SELECT MIN(purchase_date) FROM ticket) as first_ticket_date,
-        (SELECT MAX(purchase_date) FROM ticket) as latest_ticket_date,
-        (SELECT MIN(donation_date) FROM donation) as first_donation_date,
-        (SELECT MAX(donation_date) FROM donation) as latest_donation_date
-    `;
-    db.query(sql, (err, results) => {
+  // ==================== REPORT 1: REVENUE REPORT ====================
+  // Tables: ticket, donation, cafetransaction, giftshoptransaction
+  // Filter: startDate, endDate, type (ticket/donation/cafe/gift)
+  
+  if (parsedUrl.pathname === "/reports/revenue-data") {
+    const startDate = query.startDate || "1900-01-01";
+    const endDate = query.endDate || new Date().toISOString().split('T')[0];
+    const type = query.type || "all";
+    
+    let sql = "";
+    
+    if (type === "ticket" || type === "all") {
+      sql += `
+        SELECT 'Ticket' as source, ticket_id as id, purchase_date as date, 
+               ticket_type, final_price as amount, payment_method, 
+               CONCAT(first_name, ' ', last_name) as customer_name
+        FROM ticket t
+        JOIN user u ON t.user_id = u.user_id
+        WHERE purchase_date BETWEEN ? AND ?
+      `;
+      if (type === "ticket") {
+        db.query(sql + " ORDER BY purchase_date DESC", [startDate, endDate], (err, results) => {
+          if (err) return sendError(res, err);
+          sendJSON(res, results);
+        });
+        return;
+      }
+      sql += " UNION ALL ";
+    }
+    
+    if (type === "donation" || type === "all") {
+      sql += `
+        SELECT 'Donation' as source, donation_id as id, donation_date as date,
+               donation_type, amount, NULL as payment_method,
+               CONCAT(first_name, ' ', last_name) as customer_name
+        FROM donation d
+        JOIN user u ON d.user_id = u.user_id
+        WHERE donation_date BETWEEN ? AND ?
+      `;
+      if (type === "donation") {
+        db.query(sql + " ORDER BY date DESC", [startDate, endDate], (err, results) => {
+          if (err) return sendError(res, err);
+          sendJSON(res, results);
+        });
+        return;
+      }
+      sql += " UNION ALL ";
+    }
+    
+    if (type === "cafe" || type === "all") {
+      sql += `
+        SELECT 'Cafe' as source, cafe_transaction_id as id, transaction_datetime as date,
+               payment_method, total_amount as amount, NULL as donation_type,
+               CONCAT(first_name, ' ', last_name) as customer_name
+        FROM cafetransaction ct
+        JOIN user u ON ct.user_id = u.user_id
+        WHERE transaction_datetime BETWEEN ? AND ?
+      `;
+      if (type === "cafe") {
+        db.query(sql + " ORDER BY date DESC", [startDate, endDate], (err, results) => {
+          if (err) return sendError(res, err);
+          sendJSON(res, results);
+        });
+        return;
+      }
+      sql += " UNION ALL ";
+    }
+    
+    if (type === "gift" || type === "all") {
+      sql += `
+        SELECT 'Gift Shop' as source, transaction_id as id, transaction_datetime as date,
+               payment_method, total_amount as amount, NULL as donation_type,
+               CONCAT(first_name, ' ', last_name) as customer_name
+        FROM giftshoptransaction gt
+        JOIN user u ON gt.user_id = u.user_id
+        WHERE transaction_datetime BETWEEN ? AND ?
+      `;
+    }
+    
+    db.query(sql + " ORDER BY date DESC", [startDate, endDate, startDate, endDate, startDate, endDate, startDate, endDate], (err, results) => {
       if (err) return sendError(res, err);
-      sendJSON(res, results[0]);
+      sendJSON(res, results);
     });
     return;
   }
 
-  // ==================== REPORT 2: ART COLLECTION (Artists + Artwork + Exhibitions) ====================
-  if (parsedUrl.pathname === "/reports/art-collection-summary") {
-    const sql = `
+  // ==================== REPORT 2: ART COLLECTION REPORT ====================
+  // Tables: artwork, artist, exhibition, provenance
+  // Filter: artistId, startYear, endYear, status, medium
+  
+  if (parsedUrl.pathname === "/reports/art-collection-data") {
+    const artistId = query.artistId || "";
+    const startYear = query.startYear || "";
+    const endYear = query.endYear || "";
+    const status = query.status || "";
+    const medium = query.medium || "";
+    
+    let sql = `
       SELECT 
-        -- Artwork Summary
-        (SELECT COUNT(*) FROM artwork) as total_artworks,
-        (SELECT COUNT(*) FROM artist) as total_artists,
-        (SELECT COUNT(DISTINCT nationality) FROM artist) as total_nationalities,
-        (SELECT ROUND(SUM(insurance_value), 2) FROM artwork) as total_collection_value,
-        (SELECT ROUND(AVG(insurance_value), 2) FROM artwork) as avg_artwork_value,
-        
-        -- Display Status
-        (SELECT COUNT(*) FROM artwork WHERE current_display_status = 'On Display') as artworks_on_display,
-        (SELECT COUNT(*) FROM artwork WHERE current_display_status = 'In Storage') as artworks_in_storage,
-        (SELECT COUNT(*) FROM artwork WHERE current_display_status = 'On Loan') as artworks_on_loan,
-        (SELECT COUNT(*) FROM artwork WHERE current_display_status = 'Under Restoration') as artworks_under_restoration,
-        
-        -- Date Range
-        (SELECT MIN(creation_year) FROM artwork) as oldest_artwork,
-        (SELECT MAX(creation_year) FROM artwork) as newest_artwork,
-        
-        -- Top Artists
-        (SELECT CONCAT(first_name, ' ', last_name) FROM artist a 
-         JOIN artwork art ON a.artist_id = art.artist_id 
-         GROUP BY a.artist_id ORDER BY COUNT(art.artwork_id) DESC LIMIT 1) as top_artist_by_count,
-        (SELECT COUNT(art.artwork_id) FROM artist a 
-         JOIN artwork art ON a.artist_id = art.artist_id 
-         GROUP BY a.artist_id ORDER BY COUNT(art.artwork_id) DESC LIMIT 1) as top_artist_count,
-        
-        -- Exhibition Summary
-        (SELECT COUNT(*) FROM exhibition) as total_exhibitions,
-        (SELECT COUNT(*) FROM exhibition WHERE exhibition_type = 'Permanent') as permanent_exhibitions,
-        (SELECT COUNT(*) FROM exhibition WHERE exhibition_type = 'Temporary') as temporary_exhibitions,
-        (SELECT COUNT(*) FROM exhibition WHERE exhibition_type = 'Traveling') as traveling_exhibitions,
-        (SELECT COUNT(DISTINCT artwork_id) FROM exhibitionartwork) as artworks_in_exhibitions,
-        
-        -- Current Exhibition
-        (SELECT exhibition_name FROM exhibition WHERE start_date <= CURDATE() AND end_date >= CURDATE() LIMIT 1) as current_exhibition
+        a.artwork_id,
+        a.title,
+        a.creation_year,
+        a.medium,
+        a.dimensions,
+        a.current_display_status,
+        a.insurance_value,
+        CONCAT(ar.first_name, ' ', ar.last_name) as artist_name,
+        ar.nationality as artist_nationality,
+        (SELECT owner_name FROM provenance 
+         WHERE artwork_id = a.artwork_id 
+         ORDER BY transfer_date DESC LIMIT 1) as current_owner,
+        (SELECT exhibition_name FROM exhibition e
+         JOIN exhibitionartwork ea ON e.exhibition_id = ea.exhibition_id
+         WHERE ea.artwork_id = a.artwork_id
+         AND e.start_date <= CURDATE() AND e.end_date >= CURDATE()
+         LIMIT 1) as current_exhibition
+      FROM artwork a
+      JOIN artist ar ON a.artist_id = ar.artist_id
+      WHERE 1=1
     `;
-    db.query(sql, (err, results) => {
+    
+    const params = [];
+    
+    if (artistId) {
+      sql += ` AND a.artist_id = ?`;
+      params.push(artistId);
+    }
+    if (startYear) {
+      sql += ` AND a.creation_year >= ?`;
+      params.push(startYear);
+    }
+    if (endYear) {
+      sql += ` AND a.creation_year <= ?`;
+      params.push(endYear);
+    }
+    if (status) {
+      sql += ` AND a.current_display_status = ?`;
+      params.push(status);
+    }
+    if (medium) {
+      sql += ` AND a.medium = ?`;
+      params.push(medium);
+    }
+    
+    sql += ` ORDER BY a.creation_year DESC`;
+    
+    db.query(sql, params, (err, results) => {
       if (err) return sendError(res, err);
-      sendJSON(res, results[0]);
+      
+      // Also get summary statistics
+      const statsSql = `
+        SELECT 
+          COUNT(*) as total_artworks,
+          ROUND(SUM(insurance_value), 2) as total_value,
+          ROUND(AVG(insurance_value), 2) as avg_value,
+          COUNT(DISTINCT a.artist_id) as total_artists,
+          COUNT(DISTINCT a.medium) as total_mediums
+        FROM artwork a
+        WHERE 1=1
+      `;
+      db.query(statsSql, (err, stats) => {
+        if (err) return sendError(res, err);
+        sendJSON(res, { data: results, summary: stats[0] });
+      });
     });
     return;
   }
 
   // ==================== REPORT 3: GIFT SHOP REPORT ====================
-  if (parsedUrl.pathname === "/reports/giftshop-summary") {
-    const sql = `
-      SELECT 
-        -- Revenue Summary
-        (SELECT ROUND(SUM(total_amount), 2) FROM giftshoptransaction) as total_revenue,
-        (SELECT COUNT(*) FROM giftshoptransaction) as total_transactions,
-        (SELECT ROUND(AVG(total_amount), 2) FROM giftshoptransaction) as avg_transaction_value,
-        (SELECT ROUND(MAX(total_amount), 2) FROM giftshoptransaction) as max_transaction,
-        (SELECT ROUND(MIN(total_amount), 2) FROM giftshoptransaction) as min_transaction,
-        
-        -- Items Summary
-        (SELECT COUNT(*) FROM giftshopitem) as total_items,
-        (SELECT SUM(stock_quantity) FROM giftshopitem) as total_stock,
-        (SELECT COUNT(*) FROM giftshopitem WHERE stock_quantity < 10) as low_stock_items,
-        (SELECT COUNT(*) FROM giftshopitem WHERE stock_quantity = 0) as out_of_stock_items,
-        
-        -- Top Selling Items
-        (SELECT item_name FROM giftshopitem i 
-         JOIN giftshoptransactionitem ti ON i.item_id = ti.item_id 
-         GROUP BY i.item_id ORDER BY SUM(ti.quantity) DESC LIMIT 1) as top_selling_item,
-        (SELECT SUM(ti.quantity) FROM giftshopitem i 
-         JOIN giftshoptransactionitem ti ON i.item_id = ti.item_id 
-         GROUP BY i.item_id ORDER BY SUM(ti.quantity) DESC LIMIT 1) as top_selling_quantity,
-        
-        -- Best Revenue Item
-        (SELECT item_name FROM giftshopitem i 
-         JOIN giftshoptransactionitem ti ON i.item_id = ti.item_id 
-         GROUP BY i.item_id ORDER BY SUM(ti.subtotal) DESC LIMIT 1) as top_revenue_item,
-        (SELECT ROUND(SUM(ti.subtotal), 2) FROM giftshopitem i 
-         JOIN giftshoptransactionitem ti ON i.item_id = ti.item_id 
-         GROUP BY i.item_id ORDER BY SUM(ti.subtotal) DESC LIMIT 1) as top_revenue_amount,
-        
-        -- Category Summary
-        (SELECT category FROM giftshopitem 
-         GROUP BY category ORDER BY COUNT(*) DESC LIMIT 1) as most_common_category,
-        
-        -- Payment Methods
-        (SELECT payment_method FROM giftshoptransaction 
-         GROUP BY payment_method ORDER BY COUNT(*) DESC LIMIT 1) as most_used_payment,
-        
-        -- Date Range
-        (SELECT MIN(transaction_datetime) FROM giftshoptransaction) as first_sale_date,
-        (SELECT MAX(transaction_datetime) FROM giftshoptransaction) as latest_sale_date
-    `;
-    db.query(sql, (err, results) => {
-      if (err) return sendError(res, err);
-      sendJSON(res, results[0]);
-    });
-    return;
-  }
-
-  // ==================== REPORT 4: USER SUMMARY ====================
-  if (parsedUrl.pathname === "/reports/user-summary") {
-  const sql = `
-    SELECT 
-      -- User Counts
-      (SELECT COUNT(*) FROM user) as total_users,
-      (SELECT COUNT(*) FROM user WHERE role = 'admin') as admin_count,
-      (SELECT COUNT(*) FROM user WHERE role = 'employee') as employee_count,
-      (SELECT COUNT(*) FROM user WHERE role = 'member') as member_count,
-      (SELECT COUNT(*) FROM user WHERE role = 'visitor') as visitor_count,
-      
-      -- Visitor Info
-      (SELECT COUNT(*) FROM visitor) as visitors_with_visits,
-      (SELECT ROUND(COALESCE(AVG(total_visits), 0), 2) FROM visitor) as avg_visits_per_visitor,
-      (SELECT COALESCE(MAX(total_visits), 0) FROM visitor) as max_visits,
-      
-      -- Member Info
-      (SELECT COUNT(*) FROM member) as active_members,
-      (SELECT COUNT(*) FROM member WHERE expiration_date < CURDATE()) as expired_members,
-      (SELECT COALESCE(
-        (SELECT membership_level FROM member GROUP BY membership_level ORDER BY COUNT(*) DESC LIMIT 1), 
-        'None'
-      )) as most_common_membership
-    `;
-    db.query(sql, (err, results) => {
-        if (err) {
-        console.error("❌ User report error:", err);
-        return sendError(res, err);
-        }
-        sendJSON(res, results[0]);
-    });
-    return;
-    }
-
-// ==================== DATA QUERIES ====================
+  // Tables: giftshopitem, giftshoptransaction, giftshoptransactionitem
+  // Filter: startDate, endDate, category
   
-  // Query 1: Artworks by Artist
-  if (parsedUrl.pathname === "/queries/artworks-by-artist") {
-    const artistName = query.name || "";
-    const sql = `
+  if (parsedUrl.pathname === "/reports/giftshop-data") {
+    const startDate = query.startDate || "1900-01-01";
+    const endDate = query.endDate || new Date().toISOString().split('T')[0];
+    const category = query.category || "";
+    
+    let sql = `
       SELECT 
-        a.artwork_id, 
-        a.title, 
-        a.creation_year, 
-        a.medium, 
-        a.dimensions,
-        a.current_display_status,
-        CONCAT(ar.first_name, ' ', ar.last_name) as artist_name,
-        a.insurance_value
-      FROM artwork a
-      JOIN artist ar ON a.artist_id = ar.artist_id
-      WHERE CONCAT(ar.first_name, ' ', ar.last_name) LIKE ?
-      ORDER BY a.creation_year
+        ti.shop_item_id,
+        i.item_name,
+        i.category,
+        i.price,
+        ti.quantity,
+        ti.subtotal,
+        t.transaction_datetime,
+        t.payment_method,
+        CONCAT(u.first_name, ' ', u.last_name) as customer_name
+      FROM giftshoptransactionitem ti
+      JOIN giftshopitem i ON ti.item_id = i.item_id
+      JOIN giftshoptransaction t ON ti.transaction_id = t.transaction_id
+      JOIN user u ON t.user_id = u.user_id
+      WHERE t.transaction_datetime BETWEEN ? AND ?
     `;
-    db.query(sql, [`%${artistName}%`], (err, results) => {
+    
+    const params = [startDate, endDate];
+    
+    if (category) {
+      sql += ` AND i.category = ?`;
+      params.push(category);
+    }
+    
+    sql += ` ORDER BY t.transaction_datetime DESC`;
+    
+    db.query(sql, params, (err, results) => {
       if (err) return sendError(res, err);
-      sendJSON(res, results);
+      
+      // Also get summary statistics
+      const statsSql = `
+        SELECT 
+          (SELECT COUNT(*) FROM giftshoptransaction 
+           WHERE transaction_datetime BETWEEN ? AND ?) as total_transactions,
+          (SELECT ROUND(SUM(total_amount), 2) FROM giftshoptransaction 
+           WHERE transaction_datetime BETWEEN ? AND ?) as total_revenue,
+          (SELECT ROUND(AVG(total_amount), 2) FROM giftshoptransaction 
+           WHERE transaction_datetime BETWEEN ? AND ?) as avg_transaction,
+          (SELECT COUNT(DISTINCT category) FROM giftshopitem) as total_categories,
+          (SELECT COUNT(*) FROM giftshopitem WHERE stock_quantity < 10) as low_stock_items
+      `;
+      db.query(statsSql, [startDate, endDate, startDate, endDate, startDate, endDate], (err, stats) => {
+        if (err) return sendError(res, err);
+        sendJSON(res, { data: results, summary: stats[0] });
+      });
     });
     return;
   }
 
-  // Query 2: Artworks by Year Range
-  if (parsedUrl.pathname === "/queries/artworks-by-year") {
-    const startYear = query.start || 0;
-    const endYear = query.end || new Date().getFullYear();
-    const sql = `
+    // ==================== REPORT: VISITOR ANALYTICS ====================
+  // Tables: user, visitor, member, ticket, event
+  // Filter: startDate, endDate, membershipLevel, ticketType
+  
+  if (parsedUrl.pathname === "/reports/visitor-analytics") {
+    const startDate = query.startDate || "1900-01-01";
+    const endDate = query.endDate || new Date().toISOString().split('T')[0];
+    const membershipLevel = query.membershipLevel || "";
+    const ticketType = query.ticketType || "";
+    
+    // 1. Get list of visitors with their details
+    const visitorsSql = `
       SELECT 
-        a.artwork_id, 
-        a.title, 
-        a.creation_year, 
-        a.medium,
-        a.insurance_value,
-        CONCAT(ar.first_name, ' ', ar.last_name) as artist_name
-      FROM artwork a
-      JOIN artist ar ON a.artist_id = ar.artist_id
-      WHERE a.creation_year BETWEEN ? AND ?
-      ORDER BY a.creation_year
+        u.user_id,
+        u.first_name,
+        u.last_name,
+        u.email,
+        u.city,
+        u.state,
+        DATE(u.date_of_birth) as date_of_birth,
+        v.total_visits,
+        v.last_visit_date,
+        CASE WHEN m.user_id IS NOT NULL THEN 'Yes' ELSE 'No' END as is_member,
+        m.membership_level,
+        m.join_date,
+        m.expiration_date
+      FROM user u
+      LEFT JOIN visitor v ON u.user_id = v.user_id
+      LEFT JOIN member m ON u.user_id = m.user_id
+      WHERE u.role IN ('visitor', 'member')
+      ORDER BY v.total_visits DESC
     `;
-    db.query(sql, [startYear, endYear], (err, results) => {
-      if (err) return sendError(res, err);
-      sendJSON(res, results);
-    });
-    return;
-  }
-
-  // Query 3: Artworks by Medium
-  if (parsedUrl.pathname === "/queries/artworks-by-medium") {
-    const medium = query.medium || "";
-    console.log("📊 Medium query received:", medium);
-    const sql = `
+    
+    // 2. Get ticket sales summary
+    const ticketsSql = `
       SELECT 
-        a.artwork_id, 
-        a.title, 
-        a.creation_year,
-        a.dimensions,
-        CONCAT(ar.first_name, ' ', ar.last_name) as artist_name,
-        a.current_display_status,
-        a.medium
-      FROM artwork a
-      JOIN artist ar ON a.artist_id = ar.artist_id
-      WHERE a.medium = ?
-      ORDER BY a.title
+        ticket_type,
+        COUNT(*) as count,
+        ROUND(SUM(final_price), 2) as total_revenue,
+        ROUND(AVG(final_price), 2) as avg_price,
+        DATE(purchase_date) as purchase_date
+      FROM ticket
+      WHERE purchase_date BETWEEN ? AND ?
+      GROUP BY ticket_type, DATE(purchase_date)
+      ORDER BY purchase_date DESC
     `;
-    db.query(sql, [medium], (err, results) => {
-      if (err) {
-        console.error("Medium query error:", err);
-        return sendError(res, err);
-      }
-      console.log("📊 Medium query found:", results.length, "results");
-      sendJSON(res, results);
-    });
-    return;
-  }
-
-  // Query 4: Gift Shop Low Stock Items
-  if (parsedUrl.pathname === "/queries/giftshop-low-stock") {
-    const sql = `
-      SELECT item_id, item_name, category, price, stock_quantity
-      FROM giftshopitem
-      WHERE stock_quantity < 10
-      ORDER BY stock_quantity ASC
-    `;
-    db.query(sql, (err, results) => {
-      if (err) return sendError(res, err);
-      sendJSON(res, results);
-    });
-    return;
-  }
-
-  // Query 5: Top Valued Artworks
-  if (parsedUrl.pathname === "/queries/top-valued-artworks") {
-    const limit = query.limit || 10;
-    const sql = `
+    
+    // 3. Get daily attendance (visits)
+    const attendanceSql = `
       SELECT 
-        a.title,
-        a.insurance_value,
-        CONCAT(ar.first_name, ' ', ar.last_name) as artist_name,
-        a.creation_year,
-        a.medium,
-        a.current_display_status
-      FROM artwork a
-      JOIN artist ar ON a.artist_id = ar.artist_id
-      WHERE a.insurance_value IS NOT NULL
-      ORDER BY a.insurance_value DESC
-      LIMIT ?
+        DATE(t.purchase_date) as date,
+        COUNT(DISTINCT t.user_id) as unique_visitors,
+        COUNT(*) as total_tickets_sold,
+        ROUND(SUM(t.final_price), 2) as daily_revenue
+      FROM ticket t
+      WHERE t.purchase_date BETWEEN ? AND ?
+      GROUP BY DATE(t.purchase_date)
+      ORDER BY date DESC
     `;
-    db.query(sql, [parseInt(limit)], (err, results) => {
-      if (err) return sendError(res, err);
-      sendJSON(res, results);
-    });
+    
+    // 4. Get member statistics
+    const memberStatsSql = `
+      SELECT 
+        membership_level,
+        COUNT(*) as count,
+        ROUND(AVG(DATEDIFF(expiration_date, join_date))) as avg_membership_days
+      FROM member
+      GROUP BY membership_level
+    `;
+    
+    // 5. Get event attendance
+    const eventSql = `
+      SELECT 
+        e.event_name,
+        e.event_date,
+        e.capacity,
+        e.total_attendees,
+        ROUND((e.total_attendees / e.capacity) * 100, 1) as attendance_percentage
+      FROM event e
+      WHERE e.event_date BETWEEN ? AND ?
+      ORDER BY e.event_date DESC
+    `;
+    
+    // Execute all queries in parallel
+    Promise.all([
+      new Promise((resolve, reject) => {
+        db.query(visitorsSql, (err, results) => {
+          if (err) reject(err);
+          else resolve(results);
+        });
+      }),
+      new Promise((resolve, reject) => {
+        db.query(ticketsSql, [startDate, endDate], (err, results) => {
+          if (err) reject(err);
+          else resolve(results);
+        });
+      }),
+      new Promise((resolve, reject) => {
+        db.query(attendanceSql, [startDate, endDate], (err, results) => {
+          if (err) reject(err);
+          else resolve(results);
+        });
+      }),
+      new Promise((resolve, reject) => {
+        db.query(memberStatsSql, (err, results) => {
+          if (err) reject(err);
+          else resolve(results);
+        });
+      }),
+      new Promise((resolve, reject) => {
+        db.query(eventSql, [startDate, endDate], (err, results) => {
+          if (err) reject(err);
+          else resolve(results);
+        });
+      })
+    ])
+    .then(([visitors, tickets, attendance, memberStats, events]) => {
+      // Calculate summary statistics
+      const summary = {
+        total_visitors: visitors.length,
+        total_members: visitors.filter(v => v.is_member === 'Yes').length,
+        total_visits: visitors.reduce((sum, v) => sum + (v.total_visits || 0), 0),
+        avg_visits_per_visitor: (visitors.reduce((sum, v) => sum + (v.total_visits || 0), 0) / visitors.length || 0).toFixed(1),
+        total_tickets_sold: tickets.reduce((sum, t) => sum + t.count, 0),
+        total_ticket_revenue: tickets.reduce((sum, t) => sum + t.total_revenue, 0),
+        most_popular_ticket: tickets.reduce((a, b) => a.count > b.count ? a : b, { ticket_type: 'None', count: 0 }).ticket_type,
+        total_events: events.length,
+        avg_event_attendance: (events.reduce((sum, e) => sum + e.total_attendees, 0) / events.length || 0).toFixed(1)
+      };
+      
+      sendJSON(res, {
+        summary,
+        visitors,
+        tickets,
+        attendance,
+        memberStats,
+        events
+      });
+    })
+    .catch(err => sendError(res, err));
     return;
   }
 
+  // ==================== HELPER: Get filter options ====================
+  
+  if (parsedUrl.pathname === "/reports/filter-options") {
+    const type = query.type || "";
+    
+    if (type === "artists") {
+      db.query("SELECT artist_id, first_name, last_name FROM artist ORDER BY last_name", (err, results) => {
+        if (err) return sendError(res, err);
+        sendJSON(res, results);
+      });
+      return;
+    }
+    
+    if (type === "mediums") {
+      db.query("SELECT DISTINCT medium FROM artwork WHERE medium IS NOT NULL AND medium != '' ORDER BY medium", (err, results) => {
+        if (err) return sendError(res, err);
+        sendJSON(res, results.map(r => r.medium));
+      });
+      return;
+    }
+    
+    if (type === "statuses") {
+      sendJSON(res, ["On Display", "In Storage", "On Loan", "Under Restoration"]);
+      return;
+    }
+    
+    if (type === "categories") {
+      db.query("SELECT DISTINCT category FROM giftshopitem ORDER BY category", (err, results) => {
+        if (err) return sendError(res, err);
+        sendJSON(res, results.map(r => r.category));
+      });
+      return;
+    }
+    
+    sendJSON(res, { message: "No options found" });
+    return;
+  }
+
+    // Helper: Get ticket types
+  if (parsedUrl.pathname === "/reports/filter-options" && query.type === "ticket-types") {
+    db.query("SELECT DISTINCT ticket_type FROM ticket ORDER BY ticket_type", (err, results) => {
+      if (err) return sendError(res, err);
+      sendJSON(res, results.map(r => r.ticket_type));
+    });
+    return;
+  }
+  
+  // Helper: Get membership levels
+  if (parsedUrl.pathname === "/reports/filter-options" && query.type === "membership-levels") {
+    db.query("SELECT DISTINCT membership_level FROM member ORDER BY membership_level", (err, results) => {
+      if (err) return sendError(res, err);
+      sendJSON(res, results.map(r => r.membership_level));
+    });
+    return;
+  }
+  
   // 404 for unmatched routes
   res.writeHead(404, { "Content-Type": "application/json" });
   res.end(JSON.stringify({ message: "Report endpoint not found" }));
