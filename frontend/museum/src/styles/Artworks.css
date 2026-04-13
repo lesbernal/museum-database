@@ -568,3 +568,100 @@
     min-height: 250px;
   }
 }
+
+/* Location Styles */
+.artwork-modal-location {
+  font-size: 0.9rem;
+  color: #4b5563;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.artwork-modal-location strong {
+  color: #111827;
+  font-weight: 600;
+}
+/* Location Styles */
+.artwork-modal-location {
+  margin-top: 0.5rem;
+}
+
+.location-building {
+  font-size: 0.9rem;
+  color: #111827;
+  margin: 0 0 0.25rem 0;
+}
+
+.location-building strong {
+  font-weight: 600;
+}
+
+.location-gallery {
+  font-size: 0.85rem;
+  color: #6b7280;
+  margin: 0;
+}
+
+.location-floor {
+  color: #9ca3af;
+}
+
+.location-not-available {
+  font-size: 0.85rem;
+  color: #9ca3af;
+  font-style: italic;
+  margin: 0;
+}
+
+/* Artist Biography - Full version */
+.artwork-modal-bio-full {
+  font-size: 0.85rem;
+  color: #4b5563;
+  line-height: 1.7;
+  margin: 0;
+  max-height: none;
+  overflow: visible;
+  white-space: normal;
+}
+
+/* Location Styles */
+.artwork-modal-location {
+  margin-top: 0.5rem;
+}
+
+.location-building {
+  font-size: 0.9rem;
+  color: #111827;
+  margin: 0 0 0.25rem 0;
+  font-weight: 500;
+}
+
+.location-gallery {
+  font-size: 0.85rem;
+  color: #6b7280;
+  margin: 0;
+}
+
+.location-floor {
+  color: #9ca3af;
+}
+
+/* Modal info section - allow scrolling for long content */
+.artwork-modal-info {
+  padding: 2rem;
+  overflow-y: auto;
+  max-height: calc(90vh - 48px);
+}
+
+/* Ensure biography doesn't get cut off */
+.artwork-modal-section {
+  margin-bottom: 1.5rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.artwork-modal-section:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}

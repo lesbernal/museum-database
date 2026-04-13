@@ -1,10 +1,10 @@
 // pages/Artworks.jsx
 import { useEffect, useState } from "react";
-import { getArtworks, getArtists } from "../services/api";
+import { getArtworks, getArtists, getBuildings, getGalleries, getExhibitions } from "../services/api";
 import "../styles/Artworks.css";
 
 // ── Artwork Detail Modal ─────────────────────────────────────
-function ArtworkModal({ artwork, artist, onClose }) {
+function ArtworkModal({ artwork, artist, building, gallery, onClose }) {
   const [closing, setClosing] = useState(false);
 
   const handleClose = () => {
@@ -12,13 +12,10 @@ function ArtworkModal({ artwork, artist, onClose }) {
     setTimeout(onClose, 200);
   };
 
-  const statusColors = {
-    "On Display": { bg: "#d1fae5", color: "#065f46" },
-    "In Storage": { bg: "#f3f4f6", color: "#374151" },
-    "On Loan": { bg: "#fef3c7", color: "#92400e" },
-    "Under Restoration": { bg: "#fee2e2", color: "#991b1b" },
-  };
-  const statusStyle = statusColors[artwork.current_display_status] || {};
+  // Simplified status: only "On Display" or "Not On Display"
+  const isOnDisplay = artwork.current_display_status === "On Display";
+  const displayStatus = isOnDisplay ? "On Display" : "Not On Display";
+  const statusColor = isOnDisplay ? { bg: "#d1fae5", color: "#065f46" } : { bg: "#f3f4f6", color: "#6b7280" };
 
   return (
     <div className={`artwork-modal-overlay ${closing ? "closing" : ""}`}>
@@ -45,13 +42,32 @@ function ArtworkModal({ artwork, artist, onClose }) {
           <div className="artwork-modal-info">
             <h2 className="artwork-modal-title">{artwork.title}</h2>
 
-            {artwork.current_display_status && (
-              <span
-                className="artwork-modal-status"
-                style={{ background: statusStyle.bg, color: statusStyle.color }}
-              >
-                {artwork.current_display_status}
-              </span>
+            {/* Simplified Status Badge */}
+            <span
+              className="artwork-modal-status"
+              style={{ background: statusColor.bg, color: statusColor.color }}
+            >
+              {displayStatus}
+            </span>
+
+            {/* Location Information - Fixed to display correctly */}
+            {(building || gallery) && (
+              <div className="artwork-modal-section">
+                <h3 className="artwork-modal-section-title">Location</h3>
+                <div className="artwork-modal-location">
+                  {building && building.building_name && (
+                    <p className="location-building">{building.building_name}</p>
+                  )}
+                  {gallery && gallery.gallery_name && (
+                    <p className="location-gallery">
+                      {gallery.gallery_name}
+                      {gallery.floor_number !== undefined && gallery.floor_number !== null && (
+                        <span className="location-floor"> · Floor {gallery.floor_number}</span>
+                      )}
+                    </p>
+                  )}
+                </div>
+              </div>
             )}
 
             {artist && (
@@ -67,7 +83,7 @@ function ArtworkModal({ artwork, artist, onClose }) {
                   </p>
                 )}
                 {artist.biography && (
-                  <p className="artwork-modal-bio">{artist.biography}</p>
+                  <p className="artwork-modal-bio-full">{artist.biography}</p>
                 )}
               </div>
             )}
@@ -106,6 +122,9 @@ function ArtworkModal({ artwork, artist, onClose }) {
 export default function Artworks() {
   const [artworks, setArtworks] = useState([]);
   const [artists, setArtists] = useState([]);
+  const [museumbuildings, setMuseumbuildings] = useState([]);
+  const [galleries, setGalleries] = useState([]);
+  const [exhibitions, setExhibitions] = useState([]);
   const [filteredArtworks, setFilteredArtworks] = useState([]);
   const [selectedArtists, setSelectedArtists] = useState([]);
   const [selectedMediums, setSelectedMediums] = useState([]);
@@ -121,19 +140,50 @@ export default function Artworks() {
 
   async function loadData() {
     try {
-      const [artworksData, artistsData] = await Promise.all([
+      const [artworksData, artistsData, buildingsData, galleriesData, exhibitionsData] = await Promise.all([
         getArtworks(),
         getArtists(),
+        getBuildings(),
+        getGalleries(),
+        getExhibitions(),
       ]);
       setArtworks(artworksData);
       setArtists(artistsData);
+      setMuseumbuildings(buildingsData);
+      setGalleries(galleriesData);
+      setExhibitions(exhibitionsData);
       setFilteredArtworks(artworksData);
+      
+      console.log("Buildings data:", buildingsData);
+      console.log("Galleries data:", galleriesData);
     } catch (err) {
-      console.error("Failed to load artworks:", err);
+      console.error("Failed to load data:", err);
     } finally {
       setLoading(false);
     }
   }
+
+  // Helper to get current location for an artwork
+  const getArtworkLocation = (artwork) => {
+    console.log("Getting location for artwork:", artwork);
+    
+    if (!artwork) return { building: null, gallery: null };
+    
+    // If artwork has a gallery_id directly
+    if (artwork.gallery_id) {
+      const gallery = galleries.find(g => g.gallery_id === artwork.gallery_id);
+      console.log("Found gallery:", gallery);
+      if (gallery) {
+        const building = museumbuildings.find(b => b.building_id === gallery.building_id);
+        console.log("Found building:", building);
+        return { building, gallery };
+      }
+    }
+    
+    // You can add exhibition-based location lookup here if needed
+    
+    return { building: null, gallery: null };
+  };
 
   const mediums = [...new Set(artworks.map(a => a.medium).filter(Boolean))];
 
@@ -378,6 +428,8 @@ export default function Artworks() {
         <ArtworkModal
           artwork={selectedArtwork}
           artist={getArtistObject(selectedArtwork.artist_id)}
+          building={getArtworkLocation(selectedArtwork).building}
+          gallery={getArtworkLocation(selectedArtwork).gallery}
           onClose={() => setSelectedArtwork(null)}
         />
       )}
