@@ -12,16 +12,18 @@ module.exports = (req, res, parsedUrl) => {
     return res.end(JSON.stringify({ error: "Forbidden: insufficient permissions" }));
   }
   */
+
   // ============================ EMPLOYEES ============================
 
-  // GET all employees (joined with user for full info)
+  // GET all employees (joined with user + department)
   if (req.method === "GET" && urlParts.length === 1) {
     const sql = `
       SELECT e.user_id, u.first_name, u.last_name, u.email, u.phone_number,
-             u.city, u.state, e.department_id, e.job_title, e.hire_date,
-             e.salary, e.employment_type
+             u.city, u.state, e.department_id, d.department_name,
+             e.job_title, e.hire_date, e.salary, e.employment_type, e.is_manager
       FROM employee e
       JOIN user u ON e.user_id = u.user_id
+      LEFT JOIN department d ON e.department_id = d.department_id
     `;
     db.query(sql, (err, results) => {
       if (err) return sendError(res, err);
@@ -33,10 +35,11 @@ module.exports = (req, res, parsedUrl) => {
   else if (req.method === "GET" && urlParts.length === 2) {
     const sql = `
       SELECT e.user_id, u.first_name, u.last_name, u.email, u.phone_number,
-             u.city, u.state, e.department_id, e.job_title, e.hire_date,
-             e.salary, e.employment_type
+             u.city, u.state, e.department_id, d.department_name,
+             e.job_title, e.hire_date, e.salary, e.employment_type, e.is_manager
       FROM employee e
       JOIN user u ON e.user_id = u.user_id
+      LEFT JOIN department d ON e.department_id = d.department_id
       WHERE e.user_id=?
     `;
     db.query(sql, [urlParts[1]], (err, results) => {
@@ -50,17 +53,17 @@ module.exports = (req, res, parsedUrl) => {
     parseBody(req, data => {
       const sql = `
         INSERT INTO employee
-        (user_id, department_id, job_title, hire_date, salary, employment_type)
-        VALUES (?,?,?,?,?,?)
+        (user_id, department_id, job_title, hire_date, salary, employment_type, is_manager)
+        VALUES (?,?,?,?,?,?,?)
       `;
-
       db.query(sql, [
-        data.user_id || null,
-        data.department_id || null,
-        data.job_title || "",
-        data.hire_date || null,
-        data.salary || null,
-        data.employment_type || ""
+        data.user_id         || null,
+        data.department_id   || null,
+        data.job_title       || "",
+        data.hire_date       || null,
+        data.salary          || null,
+        data.employment_type || "",
+        data.is_manager      ? 1 : 0,
       ], err => {
         if (err) return sendError(res, err);
         sendJSON(res, { message: "Employee added" }, 201);
@@ -73,16 +76,17 @@ module.exports = (req, res, parsedUrl) => {
     parseBody(req, data => {
       const sql = `
         UPDATE employee SET
-        department_id=?, job_title=?, hire_date=?, salary=?, employment_type=?
+        department_id=?, job_title=?, hire_date=?, salary=?,
+        employment_type=?, is_manager=?
         WHERE user_id=?
       `;
-
       db.query(sql, [
-        data.department_id || null,
-        data.job_title || "",
-        data.hire_date || null,
-        data.salary || null,
+        data.department_id   || null,
+        data.job_title       || "",
+        data.hire_date       || null,
+        data.salary          || null,
         data.employment_type || "",
+        data.is_manager      ? 1 : 0,
         urlParts[1]
       ], err => {
         if (err) return sendError(res, err);
