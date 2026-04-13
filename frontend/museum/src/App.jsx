@@ -7,6 +7,7 @@ import "./App.css";
 
 import Login from "./pages/Login";
 import Home from "./pages/Home";
+import Visit from "./pages/Visit";
 import ArtistsGallery from "./pages/ArtistsGallery";
 import Artworks from "./pages/Artworks";
 import Exhibitions from "./pages/Exhibitions";
@@ -35,6 +36,7 @@ function App() {
         {/* ── Public ── */}
         <Route path="/"        element={<Home />} />
         <Route path="/home"    element={<Navigate to="/" replace />} />
+        <Route path="/visit"   element={<Visit />} />
         <Route path="/login"   element={<Login />} />
         <Route path="/artists" element={<ArtistsGallery />} />
         <Route path="/tickets" element={<TicketPage />} />
