@@ -1,0 +1,349 @@
+/* src/styles/Visit.css */
+
+.visit-page {
+  background: var(--color-background);
+  font-family: var(--font-primary);
+}
+
+/* Common Section Styles */
+.visit-section {
+  padding: 5rem 2rem;
+}
+
+.section-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4rem;
+}
+
+.section-content {
+  flex: 1;
+  min-width: 300px;
+}
+
+.visit-section h2 {
+  font-size: 2.5rem;
+  font-weight: 400;
+  color: var(--color-black);
+  margin-bottom: 1rem;
+  letter-spacing: -0.02em;
+}
+
+.section-subtitle {
+  font-size: 1.1rem;
+  color: var(--color-gray);
+  margin-bottom: 2rem;
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: 1rem;
+}
+
+/* Section 1: Directions & Map */
+.directions-section {
+  background: var(--color-white);
+}
+
+.directions-info h3 {
+  font-size: 1.2rem;
+  font-weight: 500;
+  color: var(--color-black);
+  margin: 1.5rem 0 0.5rem 0;
+}
+
+.directions-info h3:first-of-type {
+  margin-top: 0;
+}
+
+.directions-info p {
+  color: var(--color-gray);
+  line-height: 1.6;
+  margin-bottom: 0.5rem;
+}
+
+.section-image {
+  flex: 1;
+  min-width: 300px;
+  background: var(--color-cream);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.map-placeholder {
+  width: 100%;
+  height: 100%;
+  min-height: 400px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-cream);
+}
+
+.map-placeholder img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Section 2: Ticket Information */
+.tickets-section {
+  background: var(--color-cream);
+}
+
+.ticket-prices {
+  margin-bottom: 1.5rem;
+  overflow-x: auto;
+}
+
+.price-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--color-white);
+  border: 1px solid var(--color-border);
+}
+
+.price-table th {
+  text-align: left;
+  padding: 1rem;
+  background: var(--color-gold);
+  color: var(--color-black);
+  font-weight: 500;
+  text-transform: uppercase;
+  font-size: 0.85rem;
+  letter-spacing: 0.05em;
+}
+
+.price-table td {
+  padding: 1rem;
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-gray);
+}
+
+.price-table td.price {
+  font-weight: 600;
+  color: var(--color-gold);
+  font-size: 1.1rem;
+}
+
+.price-table td.details {
+  font-size: 0.85rem;
+  color: var(--color-gray-light);
+}
+
+.ticket-notes {
+  margin: 1rem 0;
+  padding: 1rem;
+  background: var(--color-white);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+}
+
+.ticket-notes p {
+  margin: 0.5rem 0;
+  color: var(--color-gray);
+  font-size: 0.9rem;
+}
+
+.ticket-action {
+  flex: 1;
+  min-width: 280px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-white);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  padding: 2rem;
+  text-align: center;
+}
+
+.purchase-btn {
+  padding: 1rem 2rem;
+  background: var(--color-gold);
+  color: var(--color-black);
+  border: none;
+  font-size: 1.1rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  margin-bottom: 1rem;
+}
+
+.purchase-btn:hover {
+  background: var(--color-gold-light);
+  transform: translateY(-2px);
+}
+
+.member-note {
+  font-size: 0.85rem;
+  color: var(--color-gray-light);
+}
+
+/* Section 3: Hours */
+.hours-section {
+  background: var(--color-white);
+}
+
+.hours-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.hour-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  background: var(--color-cream);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+}
+
+.hour-card .day {
+  font-weight: 600;
+  color: var(--color-black);
+}
+
+.hour-card .hours {
+  color: var(--color-gray);
+}
+
+.hour-card .note {
+  font-size: 0.75rem;
+  color: var(--color-gold);
+  margin-left: 0.5rem;
+}
+
+.hour-card.closed {
+  background: #fee2e2;
+  border-color: #fecaca;
+}
+
+.hour-card.closed .hours {
+  color: #dc2626;
+  font-weight: 500;
+}
+
+.holiday-info {
+  padding: 1rem;
+  background: var(--color-cream);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+}
+
+.holiday-info p {
+  margin: 0.5rem 0;
+  color: var(--color-gray);
+  font-size: 0.9rem;
+}
+
+/* Section 4: Extra Buttons */
+.extras-section {
+  background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), 
+              url('https://images.unsplash.com/photo-1534430480872-3498386e7856?auto=format&fit=crop&w=1400&q=80');
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+  color: var(--color-white);
+}
+
+.extras-section .section-container {
+  flex-direction: column;
+  text-align: center;
+}
+
+.extras-section h2,
+.extras-section .section-subtitle {
+  color: var(--color-white);
+}
+
+.extra-buttons-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2rem;
+  margin-top: 2rem;
+}
+
+.extra-card {
+  background: rgba(255, 255, 255, 0.95);
+  padding: 2rem;
+  text-decoration: none;
+  text-align: center;
+  transition: all var(--transition-normal);
+  border-radius: 4px;
+  backdrop-filter: blur(5px);
+}
+
+.extra-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  background: var(--color-white);
+}
+
+.extra-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+.extra-card h3 {
+  font-size: 1.3rem;
+  margin-bottom: 0.75rem;
+  color: var(--color-black);
+}
+
+.extra-card p {
+  color: var(--color-gray);
+  font-size: 0.9rem;
+  line-height: 1.5;
+  margin-bottom: 1rem;
+}
+
+.extra-link {
+  color: var(--color-gold);
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .extra-buttons-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .visit-section {
+    padding: 3rem 1rem;
+  }
+  
+  .section-container {
+    flex-direction: column;
+    gap: 2rem;
+  }
+  
+  .extra-buttons-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .hours-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .hour-card {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  
+  .visit-section h2 {
+    font-size: 1.8rem;
+  }
+}
