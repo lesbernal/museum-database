@@ -1,6 +1,4 @@
-/* styles/SelfService.css
-   Shared styles for VisitorDashboard and MemberDashboard self-service UI.
-   Save as src/styles/SelfService.css                                       */
+/* styles/SelfService.css */
 
 /* ── Tab nav ── */
 .ss-tabs {
@@ -82,7 +80,10 @@
   color: #6b7280;
   font-weight: 500;
 }
-.ss-form-group input {
+
+/* Input AND select share the same style */
+.ss-form-group input,
+.ss-form-group select {
   padding: 9px 12px;
   border: 1px solid #e5e7eb;
   border-radius: 4px;
@@ -92,8 +93,16 @@
   outline: none;
   transition: border-color 0.15s;
   width: 100%;
+  background: #fff;
+  appearance: auto;
 }
-.ss-form-group input:focus { border-color: #c9a84c; }
+.ss-form-group input:focus,
+.ss-form-group select:focus { border-color: #c9a84c; }
+
+/* PhoneInput / ZipInput wrappers inside ss-form-group */
+.ss-form-group .fu-field-wrap { width: 100%; }
+.ss-form-group .fu-field-wrap input { width: 100%; }
+.ss-form-group .fu-password-wrap input { width: 100%; }
 
 .ss-form-actions { display: flex; justify-content: flex-end; }
 
@@ -118,7 +127,7 @@
 .ss-btn-primary:hover { background: #b8973d; border-color: #b8973d; }
 .ss-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
-/* ── Stats grid (visit history / membership) ── */
+/* ── Stats grid ── */
 .ss-stat-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));

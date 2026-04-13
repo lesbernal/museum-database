@@ -322,6 +322,11 @@ export async function deleteEmployee(id) {
   return authRequest(`/employees/${id}`, { method: "DELETE" }, "Failed to delete employee");
 }
 
+// ── EMPLOYEE SELF-SERVICE ─────────────────────────────────────────────────────
+export async function getMyEmployeeRecord() {
+  const user_id = localStorage.getItem("user_id");
+  return authRequest(`/employees/${user_id}`, {}, "Failed to fetch employee record");
+}
 // ── VISITORS (auth-protected) ─────────────────────────────────────────────────
 export async function getVisitors() {
   return authRequest("/visitors", {}, "Failed to fetch visitors");

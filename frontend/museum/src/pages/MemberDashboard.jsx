@@ -1,25 +1,21 @@
 // pages/MemberDashboard.jsx
+
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
-  getMyProfile,
-  updateMyProfile,
-  changeMyPassword,
-  getMyVisitorRecord,
-  getMyMemberRecord,
-  getMyMembershipTransactions,
-  getMyTickets,
-  getMyDonations,
+  getMyProfile, updateMyProfile, changeMyPassword,
+  getMyVisitorRecord, getMyMemberRecord, getMyMembershipTransactions,
 } from "../services/api";
+import { PasswordInput, PhoneInput, StateSelect, ZipInput } from "../components/FormUtils";
 import "../styles/Dashboard.css";
 import "../styles/SelfService.css";
 
 const TABS = [
-  { id: "profile",    label: "My Profile"       },
-  { id: "membership", label: "Membership"       },
-  { id: "visits",     label: "Visit History"    },
-  { id: "purchases",  label: "Purchase History" },
-  { id: "password",   label: "Change Password"  },
+  { id: "profile",    label: "My Profile",      icon: "👤" },
+  { id: "membership", label: "Membership",       icon: "⭐" },
+  { id: "visits",     label: "Visit History",    icon: "🏛️" },
+  { id: "purchases",  label: "Purchase History", icon: "🛍️" },
+  { id: "password",   label: "Change Password",  icon: "🔒" },
 ];
 
 const LEVEL_COLORS = {
@@ -33,6 +29,12 @@ const LEVEL_COLORS = {
 const DEFAULT_STYLE = { bg: "#f3f4f6", color: "#374151", border: "#d1d5db" };
 const DONATION_TIERS = ["Benefactor", "Leadership Circle"];
 
+const fmt = dateStr => {
+  if (!dateStr) return "—";
+  return new Date(String(dateStr).slice(0, 10))
+    .toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+};
+
 export default function MemberDashboard() {
   const navigate    = useNavigate();
   const userEmail   = localStorage.getItem("user_email") || "";
@@ -43,13 +45,12 @@ export default function MemberDashboard() {
   const [visitorRec, setVisitorRec] = useState(null);
   const [memberRec,  setMemberRec]  = useState(null);
   const [memberTxns, setMemberTxns] = useState([]);
-  const [tickets,    setTickets]    = useState([]);
-  const [donations,  setDonations]  = useState([]);
   const [loading,    setLoading]    = useState(true);
   const [saving,     setSaving]     = useState(false);
   const [feedback,   setFeedback]   = useState(null);
   const [form,       setForm]       = useState({});
   const [pwForm,     setPwForm]     = useState({ new_password: "", confirm_password: "" });
+  const [pwErrors,   setPwErrors]   = useState({});
 
   const notify = (msg, type = "success") => {
     setFeedback({ msg, type });
@@ -60,20 +61,14 @@ export default function MemberDashboard() {
     async function load() {
       setLoading(true);
       try {
-        const [prof, vis, mem, txns, tix, don] = await Promise.allSettled([
-          getMyProfile(),
-          getMyVisitorRecord(),
-          getMyMemberRecord(),
-          getMyMembershipTransactions(),
-          getMyTickets(),
-          getMyDonations(),
+        const [prof, vis, mem, txns] = await Promise.allSettled([
+          getMyProfile(), getMyVisitorRecord(),
+          getMyMemberRecord(), getMyMembershipTransactions(),
         ]);
         if (prof.status  === "fulfilled") { setProfile(prof.value); setForm(prof.value); }
         if (vis.status   === "fulfilled") setVisitorRec(vis.value);
         if (mem.status   === "fulfilled") setMemberRec(mem.value?.user_id ? mem.value : null);
         if (txns.status  === "fulfilled") setMemberTxns(Array.isArray(txns.value) ? txns.value : []);
-        if (tix.status   === "fulfilled") setTickets(Array.isArray(tix.value) ? tix.value : []);
-        if (don.status   === "fulfilled") setDonations(Array.isArray(don.value) ? don.value : []);
       } catch (e) { notify(e.message, "error"); }
       finally { setLoading(false); }
     }
@@ -81,11 +76,13 @@ export default function MemberDashboard() {
   }, []);
 
   function handleLogout() {
-    localStorage.removeItem("token");
-    localStorage.removeItem("role");
-    localStorage.removeItem("user_id");
-    localStorage.removeItem("user_email");
+    ["token","role","user_id","user_email"].forEach(k => localStorage.removeItem(k));
     navigate("/login");
+  }
+
+  function handleFormChange(e) {
+    const { name, value } = e.target;
+    setForm(p => ({ ...p, [name]: value }));
   }
 
   async function handleProfileSave(e) {
@@ -93,11 +90,15 @@ export default function MemberDashboard() {
     setSaving(true);
     try {
       await updateMyProfile({
-        first_name: form.first_name, last_name: form.last_name,
-        email: form.email, phone_number: form.phone_number,
-        street_address: form.street_address, city: form.city,
-        state: form.state, zip_code: form.zip_code,
-        date_of_birth: form.date_of_birth ? form.date_of_birth.slice(0, 10) : null,
+        first_name:     form.first_name,
+        last_name:      form.last_name,
+        email:          form.email,
+        phone_number:   form.phone_number,
+        street_address: form.street_address,
+        city:           form.city,
+        state:          form.state,
+        zip_code:       form.zip_code,
+        date_of_birth:  form.date_of_birth ? form.date_of_birth.slice(0, 10) : null,
       });
       setProfile({ ...profile, ...form });
       notify("Profile updated successfully");
@@ -107,8 +108,11 @@ export default function MemberDashboard() {
 
   async function handlePasswordChange(e) {
     e.preventDefault();
-    if (pwForm.new_password.length < 6) { notify("Password must be at least 6 characters", "error"); return; }
-    if (pwForm.new_password !== pwForm.confirm_password) { notify("Passwords do not match", "error"); return; }
+    const errs = {};
+    if (pwForm.new_password.length < 6) errs.new_password = "Min. 6 characters";
+    if (pwForm.new_password !== pwForm.confirm_password) errs.confirm_password = "Passwords do not match";
+    if (Object.keys(errs).length > 0) { setPwErrors(errs); return; }
+    setPwErrors({});
     setSaving(true);
     try {
       await changeMyPassword(pwForm.new_password);
@@ -151,9 +155,7 @@ export default function MemberDashboard() {
 
         {feedback && <div className={`ss-feedback ${feedback.type}`}>{feedback.msg}</div>}
 
-        {loading ? (
-          <div className="ss-loading">Loading your information…</div>
-        ) : (
+        {loading ? <div className="ss-loading">Loading your information…</div> : (
           <>
             {/* ── PROFILE TAB ── */}
             {activeTab === "profile" && (
@@ -161,24 +163,44 @@ export default function MemberDashboard() {
                 <h2 className="ss-section-title">My Profile</h2>
                 <form className="ss-form" onSubmit={handleProfileSave}>
                   <div className="ss-form-grid">
-                    <div className="ss-form-group"><label>First Name</label>
-                      <input value={form.first_name || ""} onChange={e => setForm(p => ({ ...p, first_name: e.target.value }))} /></div>
-                    <div className="ss-form-group"><label>Last Name</label>
-                      <input value={form.last_name || ""} onChange={e => setForm(p => ({ ...p, last_name: e.target.value }))} /></div>
-                    <div className="ss-form-group full"><label>Email</label>
-                      <input type="email" value={form.email || ""} onChange={e => setForm(p => ({ ...p, email: e.target.value }))} /></div>
-                    <div className="ss-form-group"><label>Phone Number</label>
-                      <input value={form.phone_number || ""} onChange={e => setForm(p => ({ ...p, phone_number: e.target.value }))} /></div>
-                    <div className="ss-form-group"><label>Date of Birth</label>
-                      <input type="date" value={form.date_of_birth?.slice(0,10) || ""} onChange={e => setForm(p => ({ ...p, date_of_birth: e.target.value }))} /></div>
-                    <div className="ss-form-group full"><label>Street Address</label>
-                      <input value={form.street_address || ""} onChange={e => setForm(p => ({ ...p, street_address: e.target.value }))} /></div>
-                    <div className="ss-form-group"><label>City</label>
-                      <input value={form.city || ""} onChange={e => setForm(p => ({ ...p, city: e.target.value }))} /></div>
-                    <div className="ss-form-group"><label>State</label>
-                      <input value={form.state || ""} onChange={e => setForm(p => ({ ...p, state: e.target.value }))} /></div>
-                    <div className="ss-form-group"><label>Zip Code</label>
-                      <input value={form.zip_code || ""} onChange={e => setForm(p => ({ ...p, zip_code: e.target.value }))} /></div>
+                    <div className="ss-form-group">
+                      <label>First Name</label>
+                      <input name="first_name" value={form.first_name || ""} onChange={handleFormChange} />
+                    </div>
+                    <div className="ss-form-group">
+                      <label>Last Name</label>
+                      <input name="last_name" value={form.last_name || ""} onChange={handleFormChange} />
+                    </div>
+                    <div className="ss-form-group full">
+                      <label>Email</label>
+                      <input name="email" type="email" value={form.email || ""} onChange={handleFormChange} />
+                    </div>
+                    <div className="ss-form-group">
+                      <label>Phone Number</label>
+                      <PhoneInput name="phone_number" value={form.phone_number || ""} onChange={handleFormChange} />
+                    </div>
+                    <div className="ss-form-group">
+                      <label>Date of Birth</label>
+                      <input name="date_of_birth" type="date"
+                        value={form.date_of_birth?.slice(0, 10) || ""}
+                        onChange={handleFormChange} />
+                    </div>
+                    <div className="ss-form-group full">
+                      <label>Street Address</label>
+                      <input name="street_address" value={form.street_address || ""} onChange={handleFormChange} />
+                    </div>
+                    <div className="ss-form-group">
+                      <label>City</label>
+                      <input name="city" value={form.city || ""} onChange={handleFormChange} />
+                    </div>
+                    <div className="ss-form-group">
+                      <label>State</label>
+                      <StateSelect name="state" value={form.state || ""} onChange={handleFormChange} />
+                    </div>
+                    <div className="ss-form-group">
+                      <label>Zip Code</label>
+                      <ZipInput name="zip_code" value={form.zip_code || ""} onChange={handleFormChange} />
+                    </div>
                   </div>
                   <div className="ss-form-actions">
                     <button type="submit" className="ss-btn ss-btn-primary" disabled={saving}>
@@ -197,26 +219,17 @@ export default function MemberDashboard() {
                   <>
                     <div className="ss-membership-badge" style={{
                       background: levelStyle.bg, color: levelStyle.color,
-                      border: `1px solid ${levelStyle.border}`
+                      border: `1px solid ${levelStyle.border}`,
                     }}>
                       {memberRec.membership_level} Member
                     </div>
-
                     <div className="ss-stat-grid" style={{ marginTop: 24 }}>
                       <div className="ss-stat">
-                        <span className="ss-stat-value">
-                          {memberRec.join_date
-                            ? new Date(memberRec.join_date.toString().slice(0, 10)).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
-                            : "—"}
-                        </span>
+                        <span className="ss-stat-value">{fmt(memberRec.join_date)}</span>
                         <span className="ss-stat-label">Member Since</span>
                       </div>
                       <div className="ss-stat">
-                        <span className="ss-stat-value">
-                          {memberRec.expiration_date
-                            ? new Date(memberRec.expiration_date.toString().slice(0, 10)).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
-                            : "—"}
-                        </span>
+                        <span className="ss-stat-value">{fmt(memberRec.expiration_date)}</span>
                         <span className="ss-stat-label">Expires</span>
                       </div>
                       {daysUntilExpiry !== null && (
@@ -232,12 +245,10 @@ export default function MemberDashboard() {
                         <span className="ss-stat-label">Total Visits</span>
                       </div>
                     </div>
-
                     <div style={{ marginTop: 24 }}>
                       {isDonationTier ? (
                         <p style={{ fontSize: 13, color: "#6b7280", lineHeight: 1.6 }}>
-                          Your <strong>{memberRec.membership_level}</strong> status was earned through your generous donations.
-                          Continue donating to maintain or advance your tier.{" "}
+                          Your <strong>{memberRec.membership_level}</strong> status was earned through your generous donations.{" "}
                           <Link to="/donations" style={{ color: "#c9a84c" }}>Make a donation</Link>
                         </p>
                       ) : (
@@ -251,8 +262,6 @@ export default function MemberDashboard() {
                         </Link>
                       )}
                     </div>
-
-                    {/* ── Transaction history ── */}
                     {memberTxns.length > 0 && (
                       <div style={{ marginTop: 32 }}>
                         <h3 style={{ fontSize: 13, fontWeight: 600, color: "#6b7280", marginBottom: 12, textTransform: "uppercase", letterSpacing: "0.08em" }}>
@@ -262,7 +271,7 @@ export default function MemberDashboard() {
                           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
                             <thead>
                               <tr style={{ background: "#f9fafb", borderBottom: "1px solid #e5e7eb" }}>
-                                {["Date", "Level", "Type", "Amount"].map(h => (
+                                {["Date","Level","Type","Amount"].map(h => (
                                   <th key={h} style={{ padding: "0.625rem 1rem", textAlign: h === "Amount" ? "right" : "left", color: "#6b7280", fontWeight: 600, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.07em" }}>{h}</th>
                                 ))}
                               </tr>
@@ -271,16 +280,12 @@ export default function MemberDashboard() {
                               {memberTxns.map((t, i) => (
                                 <tr key={t.transaction_id} style={{ borderBottom: i < memberTxns.length - 1 ? "1px solid #f3f4f6" : "none" }}>
                                   <td style={{ padding: "0.625rem 1rem", color: "#374151" }}>
-                                    {t.transaction_date
-                                      ? new Date(t.transaction_date.toString().slice(0, 10)).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })
-                                      : "—"}
+                                    {new Date(t.transaction_date).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })}
                                   </td>
                                   <td style={{ padding: "0.625rem 1rem", color: "#374151" }}>{t.membership_level}</td>
                                   <td style={{ padding: "0.625rem 1rem", color: "#374151" }}>{t.transaction_type}</td>
                                   <td style={{ padding: "0.625rem 1rem", color: "#374151", textAlign: "right" }}>
-                                    {t.amount !== undefined && t.amount !== null
-                                      ? `$${parseFloat(t.amount).toFixed(2)}`
-                                      : "—"}
+                                    ${Number(t.amount).toFixed(2)}
                                   </td>
                                 </tr>
                               ))}
@@ -293,9 +298,7 @@ export default function MemberDashboard() {
                 ) : (
                   <div className="ss-empty">
                     <p style={{ marginBottom: 12 }}>No membership record found.</p>
-                    <Link to="/membership" style={{ color: "#c9a84c", fontSize: 13 }}>
-                      Browse membership tiers
-                    </Link>
+                    <Link to="/membership" style={{ color: "#c9a84c", fontSize: 13 }}>Browse membership tiers</Link>
                   </div>
                 )}
               </div>
@@ -312,11 +315,7 @@ export default function MemberDashboard() {
                       <span className="ss-stat-label">Total Visits</span>
                     </div>
                     <div className="ss-stat">
-                      <span className="ss-stat-value">
-                        {visitorRec.last_visit_date
-                          ? new Date(visitorRec.last_visit_date.toString().slice(0, 10)).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
-                          : "—"}
-                      </span>
+                      <span className="ss-stat-value">{fmt(visitorRec.last_visit_date)}</span>
                       <span className="ss-stat-label">Last Visit</span>
                     </div>
                   </div>
@@ -330,108 +329,10 @@ export default function MemberDashboard() {
             {activeTab === "purchases" && (
               <div className="ss-card">
                 <h2 className="ss-section-title">Purchase History</h2>
-
-                {/* Tickets */}
-                <h3 style={{ fontSize: 14, fontWeight: 600, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 12 }}>
-                  Tickets
-                </h3>
-                {tickets.length === 0 ? (
-                  <div className="ss-empty" style={{ marginBottom: 24 }}>No tickets purchased yet.</div>
-                ) : (
-                  <div style={{ border: "1px solid #e5e7eb", overflow: "hidden", marginBottom: 32 }}>
-                    <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
-                      <thead>
-                        <tr style={{ background: "#f9fafb", borderBottom: "1px solid #e5e7eb" }}>
-                          {["Purchase Date", "Visit Date", "Type", "Discount", "Price", "Payment"].map(h => (
-                            <th key={h} style={{ padding: "0.625rem 1rem", textAlign: h === "Price" ? "right" : "left", color: "#6b7280", fontWeight: 600, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.07em" }}>{h}</th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {tickets.map((t, i) => (
-                          <tr key={t.ticket_id} style={{ borderBottom: i < tickets.length - 1 ? "1px solid #f3f4f6" : "none" }}>
-                            <td style={{ padding: "0.625rem 1rem", color: "#374151" }}>
-                              {t.purchase_date
-                                ? new Date(t.purchase_date.toString().slice(0, 10)).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })
-                                : "—"}
-                            </td>
-                            <td style={{ padding: "0.625rem 1rem", color: "#374151" }}>
-                              {t.visit_date
-                                ? new Date(t.visit_date.toString().slice(0, 10)).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })
-                                : "—"}
-                            </td>
-                            <td style={{ padding: "0.625rem 1rem", color: "#374151" }}>{t.ticket_type}</td>
-                            <td style={{ padding: "0.625rem 1rem", color: "#374151" }}>{t.discount_type}</td>
-                            <td style={{ padding: "0.625rem 1rem", color: "#374151", textAlign: "right" }}>
-                              {t.final_price !== undefined && t.final_price !== null
-                                ? `$${parseFloat(t.final_price).toFixed(2)}`
-                                : "—"}
-                            </td>
-                            <td style={{ padding: "0.625rem 1rem", color: "#374151" }}>{t.payment_method}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                      <tfoot>
-                        <tr style={{ background: "#f9fafb", borderTop: "1px solid #e5e7eb" }}>
-                          <td colSpan={4} style={{ padding: "0.625rem 1rem", fontWeight: 600, fontSize: 12, color: "#374151" }}>
-                            Total Tickets: {tickets.length}
-                          </td>
-                          <td style={{ padding: "0.625rem 1rem", fontWeight: 600, fontSize: 12, color: "#374151", textAlign: "right" }}>
-                            ${tickets.reduce((sum, t) => sum + parseFloat(t.final_price || 0), 0).toFixed(2)}
-                          </td>
-                          <td />
-                        </tr>
-                      </tfoot>
-                    </table>
-                  </div>
-                )}
-
-                {/* Donations */}
-                <h3 style={{ fontSize: 14, fontWeight: 600, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 12 }}>
-                  Donations
-                </h3>
-                {donations.length === 0 ? (
-                  <div className="ss-empty">No donations made yet.</div>
-                ) : (
-                  <div style={{ border: "1px solid #e5e7eb", overflow: "hidden" }}>
-                    <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
-                      <thead>
-                        <tr style={{ background: "#f9fafb", borderBottom: "1px solid #e5e7eb" }}>
-                          {["Date", "Type", "Amount"].map(h => (
-                            <th key={h} style={{ padding: "0.625rem 1rem", textAlign: h === "Amount" ? "right" : "left", color: "#6b7280", fontWeight: 600, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.07em" }}>{h}</th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {donations.map((d, i) => (
-                          <tr key={d.donation_id} style={{ borderBottom: i < donations.length - 1 ? "1px solid #f3f4f6" : "none" }}>
-                            <td style={{ padding: "0.625rem 1rem", color: "#374151" }}>
-                              {d.donation_date
-                                ? new Date(d.donation_date.toString().slice(0, 10)).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })
-                                : "—"}
-                            </td>
-                            <td style={{ padding: "0.625rem 1rem", color: "#374151" }}>{d.donation_type}</td>
-                            <td style={{ padding: "0.625rem 1rem", color: "#374151", textAlign: "right" }}>
-                              {d.amount !== undefined && d.amount !== null
-                                ? `$${parseFloat(d.amount).toFixed(2)}`
-                                : "—"}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                      <tfoot>
-                        <tr style={{ background: "#f9fafb", borderTop: "1px solid #e5e7eb" }}>
-                          <td colSpan={2} style={{ padding: "0.625rem 1rem", fontWeight: 600, fontSize: 12, color: "#374151" }}>
-                            Total Donated
-                          </td>
-                          <td style={{ padding: "0.625rem 1rem", fontWeight: 600, fontSize: 12, color: "#374151", textAlign: "right" }}>
-                            ${donations.reduce((sum, d) => sum + parseFloat(d.amount || 0), 0).toFixed(2)}
-                          </td>
-                        </tr>
-                      </tfoot>
-                    </table>
-                  </div>
-                )}
+                <div className="ss-placeholder">
+                  <div className="ss-placeholder-icon">🛍️</div>
+                  <p>Purchase history will appear here once the ticketing and shop features are completed.</p>
+                </div>
               </div>
             )}
 
@@ -442,16 +343,20 @@ export default function MemberDashboard() {
                 <form className="ss-form" onSubmit={handlePasswordChange}>
                   <div className="ss-form-grid" style={{ gridTemplateColumns: "1fr" }}>
                     <div className="ss-form-group">
-                      <label>New Password</label>
-                      <input type="password" placeholder="Min. 6 characters"
+                      <label>New Password <span style={{ fontSize: 10, color: "#9ca3af" }}>(min. 6 characters)</span></label>
+                      <PasswordInput
                         value={pwForm.new_password}
-                        onChange={e => setPwForm(p => ({ ...p, new_password: e.target.value }))} required />
+                        onChange={e => setPwForm(p => ({ ...p, new_password: e.target.value }))}
+                        placeholder="Min. 6 characters" required />
+                      {pwErrors.new_password && <span style={{ fontSize: 11, color: "#dc2626" }}>{pwErrors.new_password}</span>}
                     </div>
                     <div className="ss-form-group">
                       <label>Confirm New Password</label>
-                      <input type="password" placeholder="Repeat new password"
+                      <PasswordInput
                         value={pwForm.confirm_password}
-                        onChange={e => setPwForm(p => ({ ...p, confirm_password: e.target.value }))} required />
+                        onChange={e => setPwForm(p => ({ ...p, confirm_password: e.target.value }))}
+                        placeholder="Repeat new password" required />
+                      {pwErrors.confirm_password && <span style={{ fontSize: 11, color: "#dc2626" }}>{pwErrors.confirm_password}</span>}
                     </div>
                   </div>
                   <div className="ss-form-actions">
