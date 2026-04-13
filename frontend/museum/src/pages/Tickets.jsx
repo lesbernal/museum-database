@@ -1,191 +1,239 @@
 // src/pages/Tickets.jsx
 import { useEffect, useState } from "react";
-import "../styles/theme.css";
+import "../styles/Tickets.css";
 
 const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
+const TICKET_TYPES = [
+  { type: "Adult 19+",        label: "Adult",  desc: "Ages 19+",          basePrice: 20,  discountType: "None"    },
+  { type: "Senior 65+",       label: "Senior", desc: "Ages 65+",          basePrice: 15,  discountType: "None"    },
+  { type: "Youth 13-18",      label: "Youth",  desc: "Ages 13–18",        basePrice: 12,  discountType: "None"    },
+  { type: "Child 12 & Under", label: "Child",  desc: "Ages 12 & under",   basePrice: 0,   discountType: "None"    },
+];
+
+function getDiscountedPrice(basePrice, discount) {
+  if (discount === "Student")  return basePrice * 0.8;
+  if (discount === "Military") return basePrice * 0.85;
+  if (discount === "Member")   return basePrice * 0.75;
+  return basePrice;
+}
+
 export default function Tickets() {
-  const [visitDate, setVisitDate] = useState("");
-  const [ticketType, setTicketType] = useState("Adult 19+");
-  const [discountType, setDiscountType] = useState("None");
-  const [quantity, setQuantity] = useState(1);
+  const [visitDate,     setVisitDate]     = useState("");
   const [paymentMethod, setPaymentMethod] = useState("Credit Card");
-  const [loading, setLoading] = useState(false);
-  const [isMember, setIsMember] = useState(false);
-  const [successMsg, setSuccessMsg] = useState("");
-  const [errorMsg, setErrorMsg] = useState("");
+  const [discount,      setDiscount]      = useState("None");
+  const [quantities,    setQuantities]    = useState({ "Adult 19+": 0, "Senior 65+": 0, "Youth 13-18": 0, "Child 12 & Under": 0 });
+  const [isMember,      setIsMember]      = useState(false);
+  const [loading,       setLoading]       = useState(false);
+  const [feedback,      setFeedback]      = useState(null);
 
   const userId = localStorage.getItem("user_id");
-  const today = new Date().toISOString().split("T")[0];
+  const today  = new Date().toISOString().split("T")[0];
 
-  // Check if logged-in user is a member
   useEffect(() => {
     if (!userId) return;
     fetch(`${BASE_URL}/members/${userId}`, {
       headers: { "Authorization": `Bearer ${userId}` }
     })
-      .then(res => {
-        if (res.ok) setIsMember(true);
-        else setIsMember(false);
-      })
+      .then(res => setIsMember(res.ok))
       .catch(() => setIsMember(false));
   }, [userId]);
 
-  function getBasePrice(type) {
-    if (type === "Adult 19+") return 20;
-    if (type === "Senior 65+") return 15;
-    if (type === "Youth 13-18") return 12;
-    if (type === "Child 12 & Under") return 0;
-    return 20;
+  function adjust(type, delta) {
+    setQuantities(prev => ({
+      ...prev,
+      [type]: Math.max(0, (prev[type] || 0) + delta)
+    }));
   }
 
-  function calculateFinalPrice(type, discount) {
-    const base = getBasePrice(type);
-    if (discount === "Student") return base * 0.8;
-    if (discount === "Military") return base * 0.85;
-    if (discount === "Member") return base * 0.75;
-    return base;
-  }
+  // Build summary lines
+  const summaryLines = TICKET_TYPES.filter(t => quantities[t.type] > 0).map(t => ({
+    label: `${quantities[t.type]}x ${t.label}`,
+    price: getDiscountedPrice(t.basePrice, discount) * quantities[t.type],
+  }));
+
+  const total = summaryLines.reduce((sum, l) => sum + l.price, 0);
+  const totalTickets = Object.values(quantities).reduce((a, b) => a + b, 0);
 
   async function handleSubmit(e) {
     e.preventDefault();
-    setErrorMsg("");
-    setSuccessMsg("");
+    setFeedback(null);
 
-    if (!userId) return setErrorMsg("Please log in first.");
-    if (!visitDate) return setErrorMsg("Select a visit date.");
-    if (visitDate < today) return setErrorMsg("Visit date must be today or a future date.");
-
-    if (discountType === "Member" && !isMember) {
-      return setErrorMsg("You must be a museum member to use the Member discount.");
-    }
-
-    const base = getBasePrice(ticketType);
-    const final = calculateFinalPrice(ticketType, discountType);
+    if (!userId)           return setFeedback({ type: "error", text: "Please log in first." });
+    if (!visitDate)        return setFeedback({ type: "error", text: "Select a visit date." });
+    if (visitDate < today) return setFeedback({ type: "error", text: "Visit date must be today or a future date." });
+    if (totalTickets === 0) return setFeedback({ type: "error", text: "Please select at least one ticket." });
+    if (discount === "Member" && !isMember) return setFeedback({ type: "error", text: "You must be a museum member to use the Member discount." });
 
     setLoading(true);
 
     try {
-      for (let i = 0; i < quantity; i++) {
-        const res = await fetch(`${BASE_URL}/tickets`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${userId}`
-          },
-          body: JSON.stringify({
-            user_id: userId,
-            purchase_date: new Date().toISOString().split("T")[0],
-            visit_date: visitDate,
-            ticket_type: ticketType,
-            base_price: base,
-            discount_type: discountType,
-            final_price: final,
-            payment_method: paymentMethod
-          })
-        });
+      const purchaseDate = new Date().toISOString().split("T")[0];
 
-        if (!res.ok) {
-          const err = await res.json();
-          throw new Error(err.error || "Purchase failed");
+      // Submit one POST per ticket type that has quantity > 0
+      for (const t of TICKET_TYPES) {
+        const qty = quantities[t.type];
+        if (qty === 0) continue;
+
+        for (let i = 0; i < qty; i++) {
+          const res = await fetch(`${BASE_URL}/tickets`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${userId}`
+            },
+            body: JSON.stringify({
+              user_id:        userId,
+              purchase_date:  purchaseDate,
+              visit_date:     visitDate,
+              ticket_type:    t.type,
+              base_price:     t.basePrice,
+              discount_type:  discount,
+              final_price:    getDiscountedPrice(t.basePrice, discount),
+              payment_method: paymentMethod
+            })
+          });
+
+          if (!res.ok) {
+            const err = await res.json();
+            throw new Error(err.error || "Purchase failed");
+          }
         }
       }
 
-      setSuccessMsg(`Successfully purchased ${quantity} ticket(s)!`);
+      setFeedback({ type: "success", text: `Successfully purchased ${totalTickets} ticket(s)!` });
+      setQuantities({ "Adult 19+": 0, "Senior 65+": 0, "Youth 13-18": 0, "Child 12 & Under": 0 });
       setVisitDate("");
-      setQuantity(1);
-      setDiscountType("None");
+      setDiscount("None");
     } catch (err) {
-      setErrorMsg(err.message || "Purchase failed.");
+      setFeedback({ type: "error", text: err.message || "Purchase failed." });
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <div style={{ padding: "var(--spacing-3xl)" }}>
-      <h1>Buy Tickets</h1>
+    <div className="tickets-page">
+      <div className="tickets-hero">
+        <p className="tickets-eyebrow">Museum of Fine Arts, Houston</p>
+        <h1 className="tickets-title">Buy Tickets</h1>
+        <p className="tickets-subtitle">Purchase admission tickets for your visit</p>
+      </div>
 
-      <form
-        className="card"
-        style={{ padding: "var(--spacing-xl)", maxWidth: "500px" }}
-        onSubmit={handleSubmit}
-      >
-        <div>
-          <label>Visit Date</label>
-          <input
-            type="date"
-            value={visitDate}
-            min={today}
-            onChange={(e) => setVisitDate(e.target.value)}
-            required
-          />
+      <form onSubmit={handleSubmit}>
+
+        {/* Visit Details */}
+        <p className="tickets-section-label">Visit Details</p>
+        <div className="tickets-details-row">
+          <div className="tickets-field">
+            <label>Visit Date</label>
+            <input
+              type="date"
+              value={visitDate}
+              min={today}
+              onChange={e => setVisitDate(e.target.value)}
+              required
+            />
+          </div>
+
+          <div className="tickets-field">
+            <label>Payment Method</label>
+            <select value={paymentMethod} onChange={e => setPaymentMethod(e.target.value)}>
+              <option>Credit Card</option>
+              <option>Debit Card</option>
+              <option>Cash</option>
+            </select>
+          </div>
+
+          <div className="tickets-field">
+            <label>Discount</label>
+            <select value={discount} onChange={e => setDiscount(e.target.value)}>
+              <option>None</option>
+              <option>Student</option>
+              <option>Military</option>
+              <option>Member</option>
+            </select>
+            {discount === "Member" && !isMember && (
+              <p className="member-warning">Not a member — blocked at checkout</p>
+            )}
+            {discount === "Member" && isMember && (
+              <p className="member-success">Member discount applied (25% off)</p>
+            )}
+          </div>
         </div>
 
-        <div>
-          <label>Ticket Type</label>
-          <select value={ticketType} onChange={(e) => setTicketType(e.target.value)}>
-            <option>Adult 19+</option>
-            <option>Senior 65+</option>
-            <option>Youth 13-18</option>
-            <option>Child 12 & Under</option>
-          </select>
+        {/* Ticket Types */}
+        <p className="tickets-section-label">Select Tickets</p>
+        <div className="ticket-rows">
+          {TICKET_TYPES.map(t => {
+            const finalPrice = getDiscountedPrice(t.basePrice, discount);
+            return (
+              <div className="ticket-row" key={t.type}>
+                <div className="ticket-row-info">
+                  <div className="ticket-row-name">{t.label}</div>
+                  <div className="ticket-row-desc">{t.desc}</div>
+                </div>
+                <div className="ticket-row-price">
+                  ${finalPrice.toFixed(2)}
+                </div>
+                <div className="ticket-counter">
+                  <button
+                    type="button"
+                    className="counter-btn"
+                    onClick={() => adjust(t.type, -1)}
+                    disabled={quantities[t.type] === 0}
+                  >
+                    −
+                  </button>
+                  <span className="counter-val">{quantities[t.type]}</span>
+                  <button
+                    type="button"
+                    className="counter-btn"
+                    onClick={() => adjust(t.type, 1)}
+                  >
+                    +
+                  </button>
+                </div>
+              </div>
+            );
+          })}
         </div>
 
-        <div>
-          <label>Discount</label>
-          <select
-            value={discountType}
-            onChange={(e) => setDiscountType(e.target.value)}
-          >
-            <option>None</option>
-            <option>Student</option>
-            <option>Military</option>
-            <option>Member</option>
-          </select>
-          {discountType === "Member" && !isMember && (
-            <p className="error-message" style={{ marginTop: "4px" }}>
-              ⚠️ You are not a museum member. This discount will be blocked at checkout.
-            </p>
+        {/* Summary */}
+        <div className="tickets-summary">
+          {summaryLines.length === 0 ? (
+            <p className="tickets-empty-summary">No tickets selected</p>
+          ) : (
+            <>
+              {summaryLines.map(l => (
+                <div className="summary-line" key={l.label}>
+                  <span>{l.label}</span>
+                  <span>${l.price.toFixed(2)}</span>
+                </div>
+              ))}
+              <div className="summary-total">
+                <span>Total</span>
+                <span>${total.toFixed(2)}</span>
+              </div>
+            </>
           )}
-          {discountType === "Member" && isMember && (
-            <p className="success-message" style={{ marginTop: "4px" }}>
-              ✅ Member discount applied!
-            </p>
-          )}
         </div>
 
-        <div>
-          <label>Quantity</label>
-          <input
-            type="number"
-            min="1"
-            value={quantity}
-            onChange={(e) => setQuantity(Number(e.target.value))}
-          />
-        </div>
+        {/* Feedback */}
+        {feedback && (
+          <div className={`tickets-feedback ${feedback.type}`}>
+            {feedback.text}
+          </div>
+        )}
 
-        <div>
-          <label>Payment Method</label>
-          <select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)}>
-            <option>Credit Card</option>
-            <option>Debit Card</option>
-            <option>Cash</option>
-          </select>
-        </div>
-
-        <div style={{ marginTop: "var(--spacing-md)" }}>
-          <strong>Base price: ${getBasePrice(ticketType).toFixed(2)}</strong><br />
-          <strong>Price per ticket: ${calculateFinalPrice(ticketType, discountType).toFixed(2)}</strong><br />
-          <strong>Total: ${(calculateFinalPrice(ticketType, discountType) * quantity).toFixed(2)}</strong>
-        </div>
-
-        {errorMsg && <p className="error-message">{errorMsg}</p>}
-        {successMsg && <p className="success-message">{successMsg}</p>}
-
-        <button className="btn btn-primary" disabled={loading}>
-          {loading ? "Processing..." : "Buy Tickets"}
+        <button
+          className="tickets-purchase-btn"
+          type="submit"
+          disabled={loading || totalTickets === 0}
+        >
+          {loading ? "Processing..." : `Purchase ${totalTickets > 0 ? `${totalTickets} Ticket${totalTickets !== 1 ? "s" : ""}` : "Tickets"} ${totalTickets > 0 ? `— $${total.toFixed(2)}` : ""}`}
         </button>
+
       </form>
     </div>
   );
