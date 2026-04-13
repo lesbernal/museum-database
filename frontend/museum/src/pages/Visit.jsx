@@ -4,12 +4,12 @@ import "../styles/Visit.css";
 
 export default function Visit() {
   const ticketPrices = [
-    { type: "Adult (19+)", price: 19, description: "Ages 19 and above" },
-    { type: "Senior (65+)", price: 16, description: "Ages 65 and above" },
-    { type: "Youth (13-18)", price: 12, description: "Ages 13-18" },
-    { type: "Child (12 & under)", price: 0, description: "FREE" },
-    { type: "Member", price: 0, description: "FREE (Members only)" },
-    { type: "Student (with ID)", price: 12, description: "Valid student ID required" }
+    { type: "Adult", price: 19, description: "Ages 19 and above" },
+    { type: "Senior", price: 16, description: "Ages 65 and above" },
+    { type: "Youth", price: 12, description: "Ages 13-18" },
+    { type: "Child", price: 0, description: "Ages 12 and under" },
+    { type: "Member", price: 0, description: "Members only" },
+    { type: "Student", price: 12, description: "Valid student ID required" }
   ];
 
   const hours = [
@@ -23,29 +23,36 @@ export default function Visit() {
   ];
 
   const handlePurchaseTickets = () => {
-    // Navigate to ticket purchase page
     window.location.href = "/tickets";
   };
 
   return (
     <div className="visit-page">
+      {/* Hero Section */}
+      <div className="visit-hero">
+        <p className="visit-eyebrow">Museum of Fine Arts, Houston</p>
+        <h1 className="visit-title">Plan Your Visit</h1>
+        <p className="visit-subtitle">
+          Directions, hours, and admission
+        </p>
+      </div>
+
       {/* Section 1: Directions & Map */}
-      <section className="visit-section directions-section">
+      <div className="visit-section directions-section">
         <div className="section-container">
           <div className="section-content">
-            <h2>Plan Your Visit</h2>
-            <p className="section-subtitle">Discover the Museum of Fine Arts, Houston</p>
+            <h2>Directory</h2>
+            <p className="section-subtitle">The Sarofim Campus includes three main gallery buildings</p>
             
             <div className="directions-info">
-              <h3>📍 Museum Location</h3>
+              <h3>Museum of Fine Arts, Houston</h3>
               <p>1001 Bissonnet Street</p>
               <p>Houston, Texas 77005</p>
               
-              <h3>🚗 Getting Here</h3>
-              <p><strong>By Car:</strong> Take I-69/US-59 to the Montrose Blvd exit. The museum is located in the Museum District.</p>
+              <h3></h3>
               <p><strong>Parking:</strong> On-site parking garage available at $15 per vehicle. Free street parking available on surrounding streets.</p>
               
-              <h3>🚇 Public Transportation</h3>
+              <h3>Public transportation</h3>
               <p><strong>METRO Rail:</strong> Red Line to the Museum District Station</p>
               <p><strong>METRO Bus:</strong> Routes 56, 60, 65, 68 serve the Museum District</p>
             </div>
@@ -54,7 +61,7 @@ export default function Visit() {
           <div className="section-image">
             <div className="map-placeholder">
               <img 
-                src="https://www.mfah.org/sites/default/files/styles/max_width_1920/public/2023-12/mfah_campus_map_2022_updated_2023.png" 
+                src="https://static.mfah.com/images/-campus-plans---map-of-old-buildings-new-buildings-with-names.8713965514606499740.jpg?width=1100" 
                 alt="MFAH Campus Map"
                 onError={(e) => {
                   e.target.onerror = null;
@@ -64,13 +71,13 @@ export default function Visit() {
             </div>
           </div>
         </div>
-      </section>
+      </div>
 
       {/* Section 2: Ticket Information */}
-      <section className="visit-section tickets-section">
+      <div className="visit-section tickets-section">
         <div className="section-container">
           <div className="section-content">
-            <h2>🎟️ Ticket Information</h2>
+            <h2>Ticket Information</h2>
             <p className="section-subtitle">General admission tickets give you access to all galleries</p>
             
             <div className="ticket-prices">
@@ -93,28 +100,22 @@ export default function Visit() {
                 </tbody>
               </table>
             </div>
-            
-            <div className="ticket-notes">
-              <p>✨ Members always get FREE admission</p>
-              <p>🎓 Student discounts available with valid ID</p>
-              <p>👨‍👩‍👧‍👦 Family passes available at the box office</p>
-            </div>
           </div>
           
           <div className="ticket-action">
             <button className="purchase-btn" onClick={handlePurchaseTickets}>
-              🎟️ Purchase Tickets
+              Purchase Tickets
             </button>
             <p className="member-note">Members: Log in to access your free tickets</p>
           </div>
         </div>
-      </section>
+      </div>
 
-      {/* Section 3: Hours of Operation */}
-      <section className="visit-section hours-section">
+      {/* Section 3: Hours */}
+      <div className="visit-section hours-section">
         <div className="section-container">
-          <div className="section-content">
-            <h2>🕐 Hours of Operation</h2>
+          <div className="section-content full-width">
+            <h2>Hours</h2>
             <p className="section-subtitle">Plan your visit around our operating hours</p>
             
             <div className="hours-grid">
@@ -128,18 +129,18 @@ export default function Visit() {
             </div>
             
             <div className="holiday-info">
-              <p>📅 The museum is closed on Thanksgiving, Christmas Eve, Christmas Day, and New Year's Day.</p>
-              <p>🎄 Special holiday hours may apply - check our calendar for updates.</p>
-            </div>
+              <p>The museum is closed on Thanksgiving, Christmas Eve, Christmas Day, and New Year's Day.</p>            </div>
           </div>
         </div>
-      </section>
+      </div>
 
       {/* Section 4: Extra Buttons - Events, Cafe, Gift Shop */}
-      <section className="visit-section extras-section">
+      <div className="visit-section extras-section">
         <div className="section-container">
-          <h2>Explore More</h2>
-          <p className="section-subtitle">Enhance your museum experience</p>
+          <div className="extras-header">
+            <h2>Explore More</h2>
+            <p className="extras-subtitle">Enhance your museum experience</p>
+          </div>
           
           <div className="extra-buttons-grid">
             <Link to="/events" className="extra-card">
@@ -164,7 +165,7 @@ export default function Visit() {
             </Link>
           </div>
         </div>
-      </section>
+      </div>
     </div>
   );
 }

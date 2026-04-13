@@ -1,54 +1,89 @@
-/* src/styles/Visit.css */
+/* styles/Visit.css */
 
 .visit-page {
-  background: var(--color-background);
-  font-family: var(--font-primary);
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem 2rem 5rem;
 }
 
-/* Common Section Styles */
+/* ── Hero ── */
+.visit-hero {
+  padding: 3rem 0 2.5rem;
+  border-bottom: 1px solid #e5e7eb;
+  margin-bottom: 3rem;
+}
+
+.visit-eyebrow {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #9ca3af;
+  margin: 0 0 0.5rem;
+}
+
+.visit-title {
+  font-size: 3rem;
+  font-weight: 300;
+  letter-spacing: -0.03em;
+  margin: 0 0 0.75rem;
+  color: #111827;
+}
+
+.visit-subtitle {
+  font-size: 1rem;
+  color: #6b7280;
+  margin: 0;
+}
+
+/* ── Sections ── */
 .visit-section {
-  padding: 5rem 2rem;
+  margin-bottom: 4rem;
+  padding: 2rem 0;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.visit-section:last-child {
+  border-bottom: none;
 }
 
 .section-container {
-  max-width: 1400px;
-  margin: 0 auto;
   display: flex;
   flex-wrap: wrap;
-  gap: 4rem;
+  gap: 3rem;
 }
 
 .section-content {
   flex: 1;
-  min-width: 300px;
+  min-width: 280px;
+}
+
+.section-content.full-width {
+  width: 100%;
+  flex: 100%;
 }
 
 .visit-section h2 {
-  font-size: 2.5rem;
+  font-size: 1.6rem;
   font-weight: 400;
-  color: var(--color-black);
-  margin-bottom: 1rem;
   letter-spacing: -0.02em;
+  color: #111827;
+  margin: 0 0 0.5rem;
 }
 
 .section-subtitle {
-  font-size: 1.1rem;
-  color: var(--color-gray);
-  margin-bottom: 2rem;
-  border-bottom: 1px solid var(--color-border);
-  padding-bottom: 1rem;
+  font-size: 0.85rem;
+  color: #9ca3af;
+  margin: 0 0 1.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
-/* Section 1: Directions & Map */
-.directions-section {
-  background: var(--color-white);
-}
-
+/* ── Directions Section ── */
 .directions-info h3 {
-  font-size: 1.2rem;
+  font-size: 1.1rem;
   font-weight: 500;
-  color: var(--color-black);
-  margin: 1.5rem 0 0.5rem 0;
+  color: #111827;
+  margin: 1.5rem 0 0.5rem;
 }
 
 .directions-info h3:first-of-type {
@@ -56,16 +91,16 @@
 }
 
 .directions-info p {
-  color: var(--color-gray);
+  color: #4b5563;
   line-height: 1.6;
   margin-bottom: 0.5rem;
+  font-size: 0.95rem;
 }
 
 .section-image {
   flex: 1;
-  min-width: 300px;
-  background: var(--color-cream);
-  border: 1px solid var(--color-border);
+  min-width: 280px;
+  background: #f3f4f6;
   border-radius: 4px;
   overflow: hidden;
 }
@@ -73,11 +108,11 @@
 .map-placeholder {
   width: 100%;
   height: 100%;
-  min-height: 400px;
+  min-height: 380px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--color-cream);
+  background: #f9fafb;
 }
 
 .map-placeholder img {
@@ -86,11 +121,7 @@
   object-fit: cover;
 }
 
-/* Section 2: Ticket Information */
-.tickets-section {
-  background: var(--color-cream);
-}
-
+/* ── Ticket Section ── */
 .ticket-prices {
   margin-bottom: 1.5rem;
   overflow-x: auto;
@@ -99,98 +130,95 @@
 .price-table {
   width: 100%;
   border-collapse: collapse;
-  background: var(--color-white);
-  border: 1px solid var(--color-border);
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
 }
 
 .price-table th {
   text-align: left;
   padding: 1rem;
-  background: var(--color-gold);
-  color: var(--color-black);
+  background: #f9fafb;
+  color: #374151;
   font-weight: 500;
   text-transform: uppercase;
-  font-size: 0.85rem;
+  font-size: 0.75rem;
   letter-spacing: 0.05em;
+  border-bottom: 1px solid #e5e7eb;
 }
 
 .price-table td {
-  padding: 1rem;
-  border-bottom: 1px solid var(--color-border);
-  color: var(--color-gray);
+  padding: 0.875rem 1rem;
+  border-bottom: 1px solid #f3f4f6;
+  color: #4b5563;
+  font-size: 0.9rem;
 }
 
 .price-table td.price {
   font-weight: 600;
-  color: var(--color-gold);
-  font-size: 1.1rem;
+  color: #c5a028;
 }
 
 .price-table td.details {
-  font-size: 0.85rem;
-  color: var(--color-gray-light);
+  font-size: 0.8rem;
+  color: #9ca3af;
 }
 
 .ticket-notes {
   margin: 1rem 0;
   padding: 1rem;
-  background: var(--color-white);
-  border: 1px solid var(--color-border);
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
   border-radius: 4px;
 }
 
 .ticket-notes p {
   margin: 0.5rem 0;
-  color: var(--color-gray);
-  font-size: 0.9rem;
+  color: #6b7280;
+  font-size: 0.85rem;
 }
 
 .ticket-action {
-  flex: 1;
-  min-width: 280px;
+  flex: 0.8;
+  min-width: 250px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: var(--color-white);
-  border: 1px solid var(--color-border);
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
   border-radius: 4px;
   padding: 2rem;
   text-align: center;
 }
 
 .purchase-btn {
-  padding: 1rem 2rem;
-  background: var(--color-gold);
-  color: var(--color-black);
+  padding: 0.875rem 2rem;
+  background: #c5a028;
+  color: #000000;
   border: none;
-  font-size: 1.1rem;
+  font-size: 1rem;
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   cursor: pointer;
-  transition: all var(--transition-fast);
+  transition: all 0.2s ease;
   margin-bottom: 1rem;
 }
 
 .purchase-btn:hover {
-  background: var(--color-gold-light);
+  background: #d4af37;
   transform: translateY(-2px);
 }
 
 .member-note {
-  font-size: 0.85rem;
-  color: var(--color-gray-light);
+  font-size: 0.75rem;
+  color: #9ca3af;
 }
 
-/* Section 3: Hours */
-.hours-section {
-  background: var(--color-white);
-}
-
+/* ── Hours Section ── */
 .hours-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 1rem;
   margin-bottom: 2rem;
 }
@@ -200,28 +228,28 @@
   justify-content: space-between;
   align-items: center;
   padding: 1rem;
-  background: var(--color-cream);
-  border: 1px solid var(--color-border);
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
   border-radius: 4px;
 }
 
 .hour-card .day {
-  font-weight: 600;
-  color: var(--color-black);
+  font-weight: 500;
+  color: #111827;
 }
 
 .hour-card .hours {
-  color: var(--color-gray);
+  color: #6b7280;
 }
 
 .hour-card .note {
-  font-size: 0.75rem;
-  color: var(--color-gold);
+  font-size: 0.7rem;
+  color: #c5a028;
   margin-left: 0.5rem;
 }
 
 .hour-card.closed {
-  background: #fee2e2;
+  background: #fef2f2;
   border-color: #fecaca;
 }
 
@@ -232,118 +260,140 @@
 
 .holiday-info {
   padding: 1rem;
-  background: var(--color-cream);
-  border: 1px solid var(--color-border);
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
   border-radius: 4px;
 }
 
 .holiday-info p {
   margin: 0.5rem 0;
-  color: var(--color-gray);
-  font-size: 0.9rem;
+  color: #6b7280;
+  font-size: 0.85rem;
 }
 
-/* Section 4: Extra Buttons */
-.extras-section {
-  background: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), 
-              url('https://images.unsplash.com/photo-1534430480872-3498386e7856?auto=format&fit=crop&w=1400&q=80');
-  background-size: cover;
-  background-position: center;
-  background-attachment: fixed;
-  color: var(--color-white);
-}
-
-.extras-section .section-container {
-  flex-direction: column;
+/* ── Extras Section ── */
+.extras-header {
   text-align: center;
+  margin-bottom: 2.5rem;
 }
 
-.extras-section h2,
-.extras-section .section-subtitle {
-  color: var(--color-white);
+.extras-header h2 {
+  font-size: 1.6rem;
+  font-weight: 400;
+  letter-spacing: -0.02em;
+  color: #111827;
+  margin: 0 0 0.5rem;
+}
+
+.extras-subtitle {
+  font-size: 0.85rem;
+  color: #9ca3af;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 0;
 }
 
 .extra-buttons-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 2rem;
-  margin-top: 2rem;
 }
 
 .extra-card {
-  background: rgba(255, 255, 255, 0.95);
+  background: #ffffff;
   padding: 2rem;
   text-decoration: none;
   text-align: center;
-  transition: all var(--transition-normal);
+  transition: all 0.3s ease;
+  border: 1px solid #e5e7eb;
   border-radius: 4px;
-  backdrop-filter: blur(5px);
 }
 
 .extra-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-  background: var(--color-white);
+  transform: translateY(-4px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+  border-color: #c5a028;
 }
 
 .extra-icon {
-  font-size: 3rem;
+  font-size: 2.5rem;
   margin-bottom: 1rem;
 }
 
 .extra-card h3 {
-  font-size: 1.3rem;
+  font-size: 1.2rem;
+  font-weight: 500;
   margin-bottom: 0.75rem;
-  color: var(--color-black);
+  color: #111827;
 }
 
 .extra-card p {
-  color: var(--color-gray);
-  font-size: 0.9rem;
+  color: #6b7280;
+  font-size: 0.85rem;
   line-height: 1.5;
   margin-bottom: 1rem;
 }
 
 .extra-link {
-  color: var(--color-gold);
+  color: #c5a028;
   text-decoration: none;
   font-weight: 500;
-  font-size: 0.85rem;
+  font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
+  display: inline-block;
+  border-bottom: 1px solid #c5a028;
+  padding-bottom: 2px;
 }
 
-/* Responsive */
-@media (max-width: 1024px) {
-  .extra-buttons-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
+.extra-link:hover {
+  color: #d4af37;
 }
 
+/* ── Responsive ── */
 @media (max-width: 768px) {
-  .visit-section {
-    padding: 3rem 1rem;
+  .visit-page {
+    padding: 1rem 1rem 3rem;
   }
-  
+
+  .visit-title {
+    font-size: 2rem;
+  }
+
+  .visit-hero {
+    padding: 2rem 0 1.5rem;
+    margin-bottom: 2rem;
+  }
+
   .section-container {
     flex-direction: column;
-    gap: 2rem;
+    gap: 1.5rem;
   }
-  
+
   .extra-buttons-grid {
     grid-template-columns: 1fr;
+    gap: 1rem;
   }
-  
+
   .hours-grid {
     grid-template-columns: 1fr;
   }
-  
+
   .hour-card {
     flex-wrap: wrap;
     gap: 0.5rem;
   }
-  
-  .visit-section h2 {
-    font-size: 1.8rem;
+
+  .ticket-action {
+    flex: 1;
+  }
+
+  .map-placeholder {
+    min-height: 250px;
+  }
+
+  .visit-section {
+    padding: 1rem 0;
+    margin-bottom: 2rem;
   }
 }
