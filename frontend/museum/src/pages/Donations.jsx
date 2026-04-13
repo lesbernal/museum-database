@@ -20,9 +20,9 @@ function getTierClass(tier) {
 }
 
 function getTierIcon(tier) {
-  if (tier === "Leadership Circle") return "👑";
-  if (tier === "Benefactor") return "⭐";
-  return "🎉";
+  if (tier === "Leadership Circle") return "";
+  if (tier === "Benefactor") return "";
+  return "";
 }
 
 export default function Donations() {
