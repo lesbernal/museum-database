@@ -10,7 +10,13 @@ function formatValue(value, field) {
     return String(value).replace("T", " ").slice(0, 19);
   }
 
-  return String(value);
+  const formatted = String(value);
+
+  if (field?.maxLength && formatted.length > field.maxLength) {
+    return `${formatted.slice(0, field.maxLength)}...`;
+  }
+
+  return formatted;
 }
 
 function buildInitialForm(fields, record = null) {
@@ -268,7 +274,7 @@ export default function OperationsManagement({ title, description, resources }) 
                 {filteredRecords.map((record) => (
                   <tr key={record[activeResource.idKey]}>
                     {activeResource.columns.map((column) => (
-                      <td key={column.key}>
+                      <td key={column.key} title={record[column.key] ?? ""}>
                         {formatValue(record[column.key], column)}
                       </td>
                     ))}

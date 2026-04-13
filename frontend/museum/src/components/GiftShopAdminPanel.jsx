@@ -31,7 +31,7 @@ const resources = [
       { key: "category", label: "Category" },
       { key: "price", label: "Price" },
       { key: "stock_quantity", label: "Stock" },
-      { key: "image_url", label: "Image URL" },
+      { key: "image_url", label: "Image URL", maxLength: 28 },
     ],
     fields: [
       { name: "item_id", label: "Item ID", required: true, readOnlyOnEdit: true, placeholder: "30" },

@@ -1,5 +1,6 @@
 .operations-management {
   padding: var(--spacing-xl);
+  min-width: 0;
 }
 
 .operations-header {
@@ -30,19 +31,24 @@
 }
 
 .operations-toolbar {
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   gap: var(--spacing-md);
   align-items: center;
   margin-bottom: var(--spacing-lg);
-  flex-wrap: wrap;
+  width: 100%;
 }
 
 .operations-toolbar input {
   width: 100%;
-  max-width: 420px;
+  max-width: none;
+  min-width: 0;
   padding: var(--spacing-md);
   border: var(--border-width) solid var(--color-border);
+}
+
+.operations-toolbar .add-btn {
+  white-space: nowrap;
 }
 
 .dashboard-error {
@@ -132,6 +138,14 @@
 @media (max-width: 768px) {
   .operations-management {
     padding: var(--spacing-md);
+  }
+
+  .operations-toolbar {
+    grid-template-columns: 1fr;
+  }
+
+  .operations-toolbar .add-btn {
+    width: 100%;
   }
 
   .operations-form-grid {

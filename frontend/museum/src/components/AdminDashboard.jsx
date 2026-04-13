@@ -29,6 +29,7 @@ import {
   getExhibitions, createExhibition, updateExhibition, deleteExhibition,
   getGalleries, createGallery, updateGallery, deleteGallery,
   getEvents, createEvent, updateEvent, deleteEvent,
+  getCafeItems, getGiftShopItems,
 } from "../services/api";
 
 import "../styles/AdminDashboard.css";
@@ -51,6 +52,8 @@ export default function AdminDashboard() {
   const [exhibitions, setExhibitions] = useState([]);
   const [galleries, setGalleries] = useState([]);
   const [events, setEvents] = useState([]);
+  const [stockAlerts, setStockAlerts] = useState([]);
+  const [showStockToast, setShowStockToast] = useState(false);
 
   // Artist states
   const [isArtistFormOpen, setIsArtistFormOpen] = useState(false);
@@ -123,7 +126,12 @@ export default function AdminDashboard() {
     loadExhibitions();
     loadGalleries();
     loadEvents();
+    loadStockAlerts();
   }, []);
+
+  useEffect(() => {
+    setShowStockToast(stockAlerts.length > 0);
+  }, [stockAlerts]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -162,6 +170,24 @@ export default function AdminDashboard() {
   const loadEvents = async () => {
     try { const data = await getEvents(); setEvents(data); setEventsError(""); }
     catch (err) { setEventsError("Failed to load events"); console.error(err); }
+  };
+  const loadStockAlerts = async () => {
+    try {
+      const [cafeItems, giftShopItems] = await Promise.all([getCafeItems(), getGiftShopItems()]);
+
+      const cafeAlerts = cafeItems
+        .filter((item) => Number(item.stock_quantity) <= 20)
+        .map((item) => ({ source: "Cafe", name: item.item_name, stock: Number(item.stock_quantity) }));
+
+      const giftShopAlerts = giftShopItems
+        .filter((item) => Number(item.stock_quantity) <= 20)
+        .map((item) => ({ source: "Gift Shop", name: item.item_name, stock: Number(item.stock_quantity) }));
+
+      const alerts = [...cafeAlerts, ...giftShopAlerts].sort((a, b) => a.stock - b.stock);
+      setStockAlerts(alerts);
+    } catch (err) {
+      console.error("Stock alert load error:", err);
+    }
   };
 
   const handleExhibitionArchive = async (id) => {
@@ -439,7 +465,26 @@ export default function AdminDashboard() {
   };
 
   return (
-    <div className="admin-dashboard">
+    <>
+      {showStockToast && stockAlerts.length > 0 && (
+        <div className="dashboard-stock-toast">
+          <div className="dashboard-stock-toast-content">
+            <div className="dashboard-stock-toast-title">
+              Inventory alerts
+            </div>
+            <div className="dashboard-stock-toast-list">
+              {stockAlerts.map((alert) => (
+                <div key={`${alert.source}-${alert.name}`} className="dashboard-stock-toast-item">
+                  <strong>{alert.name}</strong> in <strong>{alert.source}</strong> is at <strong>{alert.stock}</strong>.
+                </div>
+              ))}
+            </div>
+          </div>
+          <button type="button" onClick={() => setShowStockToast(false)}>Dismiss</button>
+        </div>
+      )}
+
+      <div className="admin-dashboard">
       <button
         className="mobile-menu-toggle"
         onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -797,6 +842,7 @@ export default function AdminDashboard() {
       {isExhibitionFormOpen && <ExhibitionForm onSubmit={handleSaveExhibition} initialData={editingExhibition} onCancel={() => setIsExhibitionFormOpen(false)} />}
       {isGalleryFormOpen && <GalleryForm onSubmit={handleSaveGallery} initialData={editingGallery} onCancel={() => setIsGalleryFormOpen(false)} />}
       {isEventFormOpen && <EventForm onSubmit={handleSaveEvent} initialData={editingEvent} onCancel={() => setIsEventFormOpen(false)} />}
-    </div>
+      </div>
+    </>
   );
 }
