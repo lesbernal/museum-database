@@ -63,6 +63,10 @@ export default function Navbar() {
       {/* Secondary Navbar - Categories */}
       <nav className="category-navbar">
         <div className="category-links">
+          <NavLink to="/visit" className={({ isActive }) =>
+            isActive ? "category-link active" : "category-link"}>
+            VISIT
+          </NavLink>
           <NavLink to="/artworks" className={({ isActive }) =>
             isActive ? "category-link active" : "category-link"}>
             ARTWORK

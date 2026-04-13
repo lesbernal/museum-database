@@ -97,7 +97,7 @@
 
 .category-links {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 0;
   margin: 0;
   padding: 0;
@@ -155,6 +155,12 @@
 }
 
 .category-link:nth-child(3):hover {
+  background: #c5a028;
+  color: #000000;
+  box-shadow: 0 -4px 15px rgba(197, 160, 40, 0.4);
+}
+
+.category-link:nth-child(4):hover {
   background: #c5a028;
   color: #000000;
   box-shadow: 0 -4px 15px rgba(197, 160, 40, 0.4);

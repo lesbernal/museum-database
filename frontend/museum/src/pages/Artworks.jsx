@@ -1,10 +1,10 @@
 // pages/Artworks.jsx
 import { useEffect, useState } from "react";
-import { getArtworks, getArtists } from "../services/api";
+import { getArtworks, getArtists, getBuildings, getGalleries, getExhibitions } from "../services/api";
 import "../styles/Artworks.css";
 
 // ── Artwork Detail Modal ─────────────────────────────────────
-function ArtworkModal({ artwork, artist, onClose }) {
+function ArtworkModal({ artwork, artist, building, gallery, onClose }) {
   const [closing, setClosing] = useState(false);
 
   const handleClose = () => {
@@ -12,16 +12,13 @@ function ArtworkModal({ artwork, artist, onClose }) {
     setTimeout(onClose, 200);
   };
 
-  const statusColors = {
-    "On Display": { bg: "#d1fae5", color: "#065f46" },
-    "In Storage": { bg: "#f3f4f6", color: "#374151" },
-    "On Loan": { bg: "#fef3c7", color: "#92400e" },
-    "Under Restoration": { bg: "#fee2e2", color: "#991b1b" },
-  };
-  const statusStyle = statusColors[artwork.current_display_status] || {};
+  // Simplified status: only "On Display" or "Not On Display"
+  const isOnDisplay = artwork.current_display_status === "On Display";
+  const displayStatus = isOnDisplay ? "On Display" : "Not On Display";
+  const statusColor = isOnDisplay ? { bg: "#d1fae5", color: "#065f46" } : { bg: "#f3f4f6", color: "#6b7280" };
 
   return (
-    <div className="artwork-modal-overlay">
+    <div className={`artwork-modal-overlay ${closing ? "closing" : ""}`}>
       <div className="artwork-modal" onClick={e => e.stopPropagation()}>
         <div className="artwork-modal-topbar">
           <button className="artwork-modal-close-btn" onClick={handleClose}>&times;</button>
@@ -45,13 +42,32 @@ function ArtworkModal({ artwork, artist, onClose }) {
           <div className="artwork-modal-info">
             <h2 className="artwork-modal-title">{artwork.title}</h2>
 
-            {artwork.current_display_status && (
-              <span
-                className="artwork-modal-status"
-                style={{ background: statusStyle.bg, color: statusStyle.color }}
-              >
-                {artwork.current_display_status}
-              </span>
+            {/* Simplified Status Badge */}
+            <span
+              className="artwork-modal-status"
+              style={{ background: statusColor.bg, color: statusColor.color }}
+            >
+              {displayStatus}
+            </span>
+
+            {/* Location Information - Fixed to display correctly */}
+            {(building || gallery) && (
+              <div className="artwork-modal-section">
+                <h3 className="artwork-modal-section-title">Location</h3>
+                <div className="artwork-modal-location">
+                  {building && building.building_name && (
+                    <p className="location-building">{building.building_name}</p>
+                  )}
+                  {gallery && gallery.gallery_name && (
+                    <p className="location-gallery">
+                      {gallery.gallery_name}
+                      {gallery.floor_number !== undefined && gallery.floor_number !== null && (
+                        <span className="location-floor"> · Floor {gallery.floor_number}</span>
+                      )}
+                    </p>
+                  )}
+                </div>
+              </div>
             )}
 
             {artist && (
@@ -67,7 +83,7 @@ function ArtworkModal({ artwork, artist, onClose }) {
                   </p>
                 )}
                 {artist.biography && (
-                  <p className="artwork-modal-bio">{artist.biography}</p>
+                  <p className="artwork-modal-bio-full">{artist.biography}</p>
                 )}
               </div>
             )}
@@ -106,6 +122,9 @@ function ArtworkModal({ artwork, artist, onClose }) {
 export default function Artworks() {
   const [artworks, setArtworks] = useState([]);
   const [artists, setArtists] = useState([]);
+  const [museumbuildings, setMuseumbuildings] = useState([]);
+  const [galleries, setGalleries] = useState([]);
+  const [exhibitions, setExhibitions] = useState([]);
   const [filteredArtworks, setFilteredArtworks] = useState([]);
   const [selectedArtists, setSelectedArtists] = useState([]);
   const [selectedMediums, setSelectedMediums] = useState([]);
@@ -121,19 +140,50 @@ export default function Artworks() {
 
   async function loadData() {
     try {
-      const [artworksData, artistsData] = await Promise.all([
+      const [artworksData, artistsData, buildingsData, galleriesData, exhibitionsData] = await Promise.all([
         getArtworks(),
         getArtists(),
+        getBuildings(),
+        getGalleries(),
+        getExhibitions(),
       ]);
       setArtworks(artworksData);
       setArtists(artistsData);
+      setMuseumbuildings(buildingsData);
+      setGalleries(galleriesData);
+      setExhibitions(exhibitionsData);
       setFilteredArtworks(artworksData);
+      
+      console.log("Buildings data:", buildingsData);
+      console.log("Galleries data:", galleriesData);
     } catch (err) {
-      console.error("Failed to load artworks:", err);
+      console.error("Failed to load data:", err);
     } finally {
       setLoading(false);
     }
   }
+
+  // Helper to get current location for an artwork
+  const getArtworkLocation = (artwork) => {
+    console.log("Getting location for artwork:", artwork);
+    
+    if (!artwork) return { building: null, gallery: null };
+    
+    // If artwork has a gallery_id directly
+    if (artwork.gallery_id) {
+      const gallery = galleries.find(g => g.gallery_id === artwork.gallery_id);
+      console.log("Found gallery:", gallery);
+      if (gallery) {
+        const building = museumbuildings.find(b => b.building_id === gallery.building_id);
+        console.log("Found building:", building);
+        return { building, gallery };
+      }
+    }
+    
+    // You can add exhibition-based location lookup here if needed
+    
+    return { building: null, gallery: null };
+  };
 
   const mediums = [...new Set(artworks.map(a => a.medium).filter(Boolean))];
 
@@ -198,47 +248,46 @@ export default function Artworks() {
 
   const getArtistObject = id => artists.find(a => a.artist_id === id) || null;
 
-  if (loading) return <div className="loading-spinner">Loading artworks...</div>;
+  if (loading) return <div className="artworks-loading">Loading artworks...</div>;
 
   return (
     <div className="artworks-page">
-      <div className="artworks-header">
-        <h1>Artwork Collection</h1>
-        <p>Explore our museum's collection of fine art from around the world</p>
+      {/* Hero Section */}
+      <div className="artworks-hero">
+        <p className="artworks-eyebrow">Museum of Fine Arts, Houston</p>
+        <h1 className="artworks-title">Artwork Collection</h1>
+        <p className="artworks-subtitle">
+          Explore our museum's collection of fine art from around the world
+        </p>
       </div>
 
       {/* Search */}
-      <div className="search-section">
-        <div className="search-container">
-          <div className="search-group">
-            <label>Search Artworks</label>
-            <input
-              type="text"
-              placeholder="Search by title or description..."
-              value={searchTerm}
-              onChange={e => setSearchTerm(e.target.value)}
-              className="search-input-large"
-            />
-          </div>
-        </div>
+      <div className="artworks-search">
+        <input
+          type="text"
+          placeholder="Search by title or description..."
+          value={searchTerm}
+          onChange={e => setSearchTerm(e.target.value)}
+          className="artworks-search-input"
+        />
       </div>
 
       {/* Filters */}
-      <div className="filters-section">
-        <div className="filters-container">
+      <div className="artworks-filters">
+        <div className="filters-row">
 
           {/* Artists dropdown */}
-          <div className="filter-group multi-select">
-            <label>Artists ({selectedArtists.length})</label>
-            <div className="dropdown">
-              <button className="dropdown-btn" onClick={() => setOpenDropdown(openDropdown === "artists" ? null : "artists")}>
-                {selectedArtists.length === 0 ? "All Artists" : `${selectedArtists.length} artist${selectedArtists.length !== 1 ? "s" : ""} selected`}
-                <span className="dropdown-arrow">▼</span>
+          <div className="filter-group">
+            <label>Artists</label>
+            <div className="filter-select-wrapper">
+              <button className="filter-select-btn" onClick={() => setOpenDropdown(openDropdown === "artists" ? null : "artists")}>
+                {selectedArtists.length === 0 ? "All Artists" : `${selectedArtists.length} selected`}
+                <span className="filter-arrow">▼</span>
               </button>
               {openDropdown === "artists" && (
-                <div className="dropdown-menu">
+                <div className="filter-dropdown">
                   {artists.map(artist => (
-                    <label key={artist.artist_id} className="dropdown-item">
+                    <label key={artist.artist_id} className="filter-option">
                       <input type="checkbox" checked={selectedArtists.includes(artist.artist_id)} onChange={() => toggleArtist(artist.artist_id)} />
                       <span>{artist.first_name} {artist.last_name}</span>
                     </label>
@@ -249,17 +298,17 @@ export default function Artworks() {
           </div>
 
           {/* Mediums dropdown */}
-          <div className="filter-group multi-select">
-            <label>Mediums ({selectedMediums.length})</label>
-            <div className="dropdown">
-              <button className="dropdown-btn" onClick={() => setOpenDropdown(openDropdown === "mediums" ? null : "mediums")}>
-                {selectedMediums.length === 0 ? "All Mediums" : `${selectedMediums.length} medium${selectedMediums.length !== 1 ? "s" : ""} selected`}
-                <span className="dropdown-arrow">▼</span>
+          <div className="filter-group">
+            <label>Mediums</label>
+            <div className="filter-select-wrapper">
+              <button className="filter-select-btn" onClick={() => setOpenDropdown(openDropdown === "mediums" ? null : "mediums")}>
+                {selectedMediums.length === 0 ? "All Mediums" : `${selectedMediums.length} selected`}
+                <span className="filter-arrow">▼</span>
               </button>
               {openDropdown === "mediums" && (
-                <div className="dropdown-menu">
+                <div className="filter-dropdown">
                   {mediums.map(medium => (
-                    <label key={medium} className="dropdown-item">
+                    <label key={medium} className="filter-option">
                       <input type="checkbox" checked={selectedMediums.includes(medium)} onChange={() => toggleMedium(medium)} />
                       <span>{medium}</span>
                     </label>
@@ -270,17 +319,17 @@ export default function Artworks() {
           </div>
 
           {/* Centuries dropdown */}
-          <div className="filter-group multi-select">
-            <label>Centuries ({selectedCenturies.length})</label>
-            <div className="dropdown">
-              <button className="dropdown-btn" onClick={() => setOpenDropdown(openDropdown === "centuries" ? null : "centuries")}>
-                {selectedCenturies.length === 0 ? "All Centuries" : `${selectedCenturies.length} centur${selectedCenturies.length !== 1 ? "ies" : "y"} selected`}
-                <span className="dropdown-arrow">▼</span>
+          <div className="filter-group">
+            <label>Centuries</label>
+            <div className="filter-select-wrapper">
+              <button className="filter-select-btn" onClick={() => setOpenDropdown(openDropdown === "centuries" ? null : "centuries")}>
+                {selectedCenturies.length === 0 ? "All Centuries" : `${selectedCenturies.length} selected`}
+                <span className="filter-arrow">▼</span>
               </button>
               {openDropdown === "centuries" && (
-                <div className="dropdown-menu">
+                <div className="filter-dropdown">
                   {centuries.map(century => (
-                    <label key={century} className="dropdown-item">
+                    <label key={century} className="filter-option">
                       <input type="checkbox" checked={selectedCenturies.includes(century)} onChange={() => toggleCentury(century)} />
                       <span>{century}th Century</span>
                     </label>
@@ -293,7 +342,7 @@ export default function Artworks() {
           {/* Sort */}
           <div className="filter-group">
             <label>Sort By</label>
-            <select value={sortBy} onChange={e => setSortBy(e.target.value)}>
+            <select value={sortBy} onChange={e => setSortBy(e.target.value)} className="filter-select">
               <option value="title">Title A-Z</option>
               <option value="title_desc">Title Z-A</option>
               <option value="year_asc">Year (Oldest First)</option>
@@ -302,14 +351,13 @@ export default function Artworks() {
             </select>
           </div>
 
-          <button className="btn-clear" onClick={clearAllFilters}>Clear All Filters</button>
+          <button className="filters-clear" onClick={clearAllFilters}>Clear All</button>
         </div>
       </div>
 
       {/* Active filter tags */}
       {(selectedArtists.length > 0 || selectedMediums.length > 0 || selectedCenturies.length > 0) && (
-        <div className="active-filters">
-          <span className="active-filters-label">Active filters:</span>
+        <div className="artworks-active-tags">
           {selectedArtists.map(id => (
             <span key={`artist-${id}`} className="filter-tag" onClick={() => toggleArtist(id)}>
               {getArtistName(id)} ✕
@@ -328,32 +376,31 @@ export default function Artworks() {
         </div>
       )}
 
-      <div className="results-count">
+      <div className="artworks-count">
         {filteredArtworks.length} artwork{filteredArtworks.length !== 1 ? "s" : ""} found
       </div>
 
       {/* Grid */}
       <div className="artworks-grid">
         {filteredArtworks.length === 0 ? (
-          <p className="no-results">No artworks found matching your criteria.</p>
+          <p className="artworks-empty">No artworks found matching your criteria.</p>
         ) : (
           filteredArtworks.map(artwork => (
             <div
               key={artwork.artwork_id}
               className="artwork-card"
               onClick={() => setSelectedArtwork(artwork)}
-              title="Click to view details"
             >
               <div className="artwork-image">
                 {artwork.image_url && !imageErrors[artwork.artwork_id] ? (
                   <img
                     src={artwork.image_url}
                     alt={artwork.title}
-                    className="artwork-image-real"
+                    className="artwork-image-img"
                     onError={() => handleImageError(artwork.artwork_id)}
                   />
                 ) : (
-                  <div className="artwork-placeholder"><span>🖼️</span></div>
+                  <div className="artwork-image-placeholder">🖼️</div>
                 )}
               </div>
               <div className="artwork-info">
@@ -361,13 +408,13 @@ export default function Artworks() {
                 <p className="artwork-artist">
                   {artwork.artist_name || `Artist #${artwork.artist_id}`}
                 </p>
-                <div className="artwork-details">
-                  {artwork.creation_year && <span className="detail-item">{artwork.creation_year}</span>}
-                  {artwork.medium && <span className="detail-item">{artwork.medium}</span>}
+                <div className="artwork-meta">
+                  {artwork.creation_year && <span>{artwork.creation_year}</span>}
+                  {artwork.medium && <span>{artwork.medium}</span>}
                 </div>
                 {artwork.description && (
                   <p className="artwork-description">
-                    {artwork.description.substring(0, 120)}...
+                    {artwork.description.substring(0, 100)}...
                   </p>
                 )}
               </div>
@@ -381,6 +428,8 @@ export default function Artworks() {
         <ArtworkModal
           artwork={selectedArtwork}
           artist={getArtistObject(selectedArtwork.artist_id)}
+          building={getArtworkLocation(selectedArtwork).building}
+          gallery={getArtworkLocation(selectedArtwork).gallery}
           onClose={() => setSelectedArtwork(null)}
         />
       )}
