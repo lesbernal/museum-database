@@ -135,45 +135,6 @@ export default function Visit() {
           </div>
         </div>
       </div>
-
-      {/* Section 4: Explore More */}
-      <div className="visit-section explore-section">
-        <div className="section-container">
-          <div className="explore-header">
-            <h2>Explore More</h2>
-            <p className="explore-subtitle">Enhance your museum experience</p>
-          </div>
-          
-          <div className="explore-grid">
-            <Link to="/events" className="explore-card">
-              <div className="explore-icon"></div>
-              <div className="explore-info">
-                <h3>Events</h3>
-                <p>Lectures, workshops, family programs, and special events</p>
-                <span className="explore-link">View Events →</span>
-              </div>
-            </Link>
-            
-            <Link to="/cafe" className="explore-card">
-              <div className="explore-icon"></div>
-              <div className="explore-info">
-                <h3>Café</h3>
-                <p>Enjoy coffee, pastries, and light meals in a beautiful setting</p>
-                <span className="explore-link">View Menu →</span>
-              </div>
-            </Link>
-            
-            <Link to="/gift-shop" className="explore-card">
-              <div className="explore-icon"></div>
-              <div className="explore-info">
-                <h3>Gift Shop</h3>
-                <p>Unique art-inspired gifts, books, jewelry, and museum merchandise</p>
-                <span className="explore-link">Shop Now →</span>
-              </div>
-            </Link>
-          </div>
-        </div>
-      </div>
     </div>
   );
 }
