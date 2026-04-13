@@ -44,6 +44,7 @@
 
 .visit-section:last-child {
   border-bottom: none;
+  margin-bottom: 0;
 }
 
 .section-container {
@@ -63,7 +64,7 @@
 }
 
 .visit-section h2 {
-  font-size: 1.6rem;
+  font-size: 1.5rem;
   font-weight: 400;
   letter-spacing: -0.02em;
   color: #111827;
@@ -79,22 +80,21 @@
 }
 
 /* ── Directions Section ── */
-.directions-info h3 {
-  font-size: 1.1rem;
-  font-weight: 500;
-  color: #111827;
-  margin: 1.5rem 0 0.5rem;
-}
-
-.directions-info h3:first-of-type {
-  margin-top: 0;
-}
-
 .directions-info p {
   color: #4b5563;
   line-height: 1.6;
   margin-bottom: 0.5rem;
   font-size: 0.95rem;
+}
+
+.directions-info p strong {
+  color: #111827;
+}
+
+.directions-divider {
+  height: 1px;
+  background: #e5e7eb;
+  margin: 1rem 0;
 }
 
 .section-image {
@@ -122,6 +122,10 @@
 }
 
 /* ── Ticket Section ── */
+.tickets-container {
+  align-items: stretch;
+}
+
 .ticket-prices {
   margin-bottom: 1.5rem;
   overflow-x: auto;
@@ -178,8 +182,7 @@
 }
 
 .ticket-action {
-  flex: 0.8;
-  min-width: 250px;
+  flex: 0 0 280px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -192,6 +195,7 @@
 }
 
 .purchase-btn {
+  width: 100%;
   padding: 0.875rem 2rem;
   background: #c5a028;
   color: #000000;
@@ -263,29 +267,31 @@
   background: #f9fafb;
   border: 1px solid #e5e7eb;
   border-radius: 4px;
+  text-align: center;
 }
 
 .holiday-info p {
-  margin: 0.5rem 0;
+  margin: 0;
   color: #6b7280;
   font-size: 0.85rem;
 }
 
-/* ── Extras Section ── */
-.extras-header {
+/* ── Explore More Section ── */
+.explore-header {
   text-align: center;
   margin-bottom: 2.5rem;
+  width: 100%;
 }
 
-.extras-header h2 {
-  font-size: 1.6rem;
+.explore-header h2 {
+  font-size: 1.5rem;
   font-weight: 400;
   letter-spacing: -0.02em;
   color: #111827;
   margin: 0 0 0.5rem;
 }
 
-.extras-subtitle {
+.explore-subtitle {
   font-size: 0.85rem;
   color: #9ca3af;
   text-transform: uppercase;
@@ -293,48 +299,52 @@
   margin: 0;
 }
 
-.extra-buttons-grid {
+.explore-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 2rem;
+  width: 100%;
 }
 
-.extra-card {
-  background: #ffffff;
-  padding: 2rem;
-  text-decoration: none;
+.explore-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   text-align: center;
+  background: #ffffff;
+  padding: 2rem 1.5rem;
+  text-decoration: none;
   transition: all 0.3s ease;
   border: 1px solid #e5e7eb;
   border-radius: 4px;
 }
 
-.extra-card:hover {
+.explore-card:hover {
   transform: translateY(-4px);
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
   border-color: #c5a028;
 }
 
-.extra-icon {
+.explore-icon {
   font-size: 2.5rem;
   margin-bottom: 1rem;
 }
 
-.extra-card h3 {
-  font-size: 1.2rem;
+.explore-info h3 {
+  font-size: 1.1rem;
   font-weight: 500;
   margin-bottom: 0.75rem;
   color: #111827;
 }
 
-.extra-card p {
+.explore-info p {
   color: #6b7280;
   font-size: 0.85rem;
   line-height: 1.5;
   margin-bottom: 1rem;
 }
 
-.extra-link {
+.explore-link {
   color: #c5a028;
   text-decoration: none;
   font-weight: 500;
@@ -346,11 +356,17 @@
   padding-bottom: 2px;
 }
 
-.extra-link:hover {
+.explore-link:hover {
   color: #d4af37;
 }
 
 /* ── Responsive ── */
+@media (max-width: 1024px) {
+  .ticket-action {
+    flex: 0 0 240px;
+  }
+}
+
 @media (max-width: 768px) {
   .visit-page {
     padding: 1rem 1rem 3rem;
@@ -370,7 +386,12 @@
     gap: 1.5rem;
   }
 
-  .extra-buttons-grid {
+  .ticket-action {
+    flex: auto;
+    width: 100%;
+  }
+
+  .explore-grid {
     grid-template-columns: 1fr;
     gap: 1rem;
   }
@@ -382,10 +403,6 @@
   .hour-card {
     flex-wrap: wrap;
     gap: 0.5rem;
-  }
-
-  .ticket-action {
-    flex: 1;
   }
 
   .map-placeholder {

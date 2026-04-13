@@ -41,20 +41,21 @@ export default function Visit() {
       <div className="visit-section directions-section">
         <div className="section-container">
           <div className="section-content">
-            <h2>Directory</h2>
+            <h2>Directions</h2>
             <p className="section-subtitle">The Sarofim Campus includes three main gallery buildings</p>
             
             <div className="directions-info">
-              <h3>Museum of Fine Arts, Houston</h3>
+              <p><strong>Museum of Fine Arts, Houston</strong></p>
               <p>1001 Bissonnet Street</p>
               <p>Houston, Texas 77005</p>
               
-              <h3></h3>
+              <div className="directions-divider"></div>
+              
               <p><strong>Parking:</strong> On-site parking garage available at $15 per vehicle. Free street parking available on surrounding streets.</p>
               
-              <h3>Public transportation</h3>
-              <p><strong>METRO Rail:</strong> Red Line to the Museum District Station</p>
-              <p><strong>METRO Bus:</strong> Routes 56, 60, 65, 68 serve the Museum District</p>
+              <p><strong>Public Transportation:</strong></p>
+              <p>METRO Rail: Red Line to the Museum District Station</p>
+              <p>METRO Bus: Routes 56, 60, 65, 68 serve the Museum District</p>
             </div>
           </div>
           
@@ -75,7 +76,7 @@ export default function Visit() {
 
       {/* Section 2: Ticket Information */}
       <div className="visit-section tickets-section">
-        <div className="section-container">
+        <div className="section-container tickets-container">
           <div className="section-content">
             <h2>Ticket Information</h2>
             <p className="section-subtitle">General admission tickets give you access to all galleries</p>
@@ -129,39 +130,46 @@ export default function Visit() {
             </div>
             
             <div className="holiday-info">
-              <p>The museum is closed on Thanksgiving, Christmas Eve, Christmas Day, and New Year's Day.</p>            </div>
+              <p>MFAH is closed on Thanksgiving, Christmas Eve, Christmas Day, and New Year's Day.</p>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Section 4: Extra Buttons - Events, Cafe, Gift Shop */}
-      <div className="visit-section extras-section">
+      {/* Section 4: Explore More */}
+      <div className="visit-section explore-section">
         <div className="section-container">
-          <div className="extras-header">
+          <div className="explore-header">
             <h2>Explore More</h2>
-            <p className="extras-subtitle">Enhance your museum experience</p>
+            <p className="explore-subtitle">Enhance your museum experience</p>
           </div>
           
-          <div className="extra-buttons-grid">
-            <Link to="/events" className="extra-card">
-              <div className="extra-icon">🎉</div>
-              <h3>Events</h3>
-              <p>Lectures, workshops, family programs, and special events</p>
-              <span className="extra-link">View Events →</span>
+          <div className="explore-grid">
+            <Link to="/events" className="explore-card">
+              <div className="explore-icon"></div>
+              <div className="explore-info">
+                <h3>Events</h3>
+                <p>Lectures, workshops, family programs, and special events</p>
+                <span className="explore-link">View Events →</span>
+              </div>
             </Link>
             
-            <Link to="/cafe" className="extra-card">
-              <div className="extra-icon">☕</div>
-              <h3>Café</h3>
-              <p>Enjoy coffee, pastries, and light meals in a beautiful setting</p>
-              <span className="extra-link">View Menu →</span>
+            <Link to="/cafe" className="explore-card">
+              <div className="explore-icon"></div>
+              <div className="explore-info">
+                <h3>Café</h3>
+                <p>Enjoy coffee, pastries, and light meals in a beautiful setting</p>
+                <span className="explore-link">View Menu →</span>
+              </div>
             </Link>
             
-            <Link to="/gift-shop" className="extra-card">
-              <div className="extra-icon">🛍️</div>
-              <h3>Gift Shop</h3>
-              <p>Unique art-inspired gifts, books, jewelry, and museum merchandise</p>
-              <span className="extra-link">Shop Now →</span>
+            <Link to="/gift-shop" className="explore-card">
+              <div className="explore-icon"></div>
+              <div className="explore-info">
+                <h3>Gift Shop</h3>
+                <p>Unique art-inspired gifts, books, jewelry, and museum merchandise</p>
+                <span className="explore-link">Shop Now →</span>
+              </div>
             </Link>
           </div>
         </div>
