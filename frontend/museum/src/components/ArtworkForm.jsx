@@ -367,6 +367,7 @@ export default function ArtworkForm({ onSubmit, initialData = null, onCancel, is
                     <option value="In Storage">In Storage</option>
                     <option value="On Loan">On Loan</option>
                     <option value="Under Restoration">Under Restoration</option>
+                    <option value="Deaccessioned">Deaccessioned</option>
                   </select>
                 </div>
               </div>

@@ -147,9 +147,9 @@ export default function Home() {
         <div className="links-grid">
           <Link to="/tickets" className="link-card">
             {/*<d<div className="link-icon">📍</div>*/}
-            <h3>Hours & Admission</h3>
-            <p>Plan your visit with hours, tickets, and directions</p>
-            <span className="extras-link">Book Now →</span>
+            <h3>Admission</h3>
+            <p>Purchase tickets to access all galleries and exhibtions</p>
+            <span className="extras-link">Buy Now →</span>
           </Link>
 
           <Link to="/membership" className="link-card">

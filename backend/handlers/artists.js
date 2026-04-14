@@ -75,15 +75,15 @@ module.exports = (req, res, parsedUrl) => {
   // ============================ ARTWORK ============================
   else if (urlParts[0] === "artwork") {
 
-    // GET all ACTIVE artworks
+    // GET all ACTIVE artworks (visible to public - exclude deaccessioned)
     if (req.method === "GET" && urlParts.length === 1) {
       const sql = `
         SELECT a.*,
-               ar.first_name, ar.last_name,
-               CONCAT(ar.first_name, ' ', ar.last_name) AS artist_name
+              ar.first_name, ar.last_name,
+              CONCAT(ar.first_name, ' ', ar.last_name) AS artist_name
         FROM artwork a
         LEFT JOIN artist ar ON a.artist_id = ar.artist_id
-        WHERE a.is_active = 1
+        WHERE a.is_active = 1 AND a.current_display_status != 'Deaccessioned'
         ORDER BY a.artwork_id
       `;
       db.query(sql, (err, results) => {
@@ -190,20 +190,35 @@ module.exports = (req, res, parsedUrl) => {
       });
     }
 
-    // PATCH /artwork/:id/reactivate — restore
+    // PATCH /artwork/:id/reactivate — restore from archive or deaccession
     else if (req.method === "PATCH" && urlParts.length === 3 && urlParts[2] === "reactivate") {
-      db.query("UPDATE artwork SET is_active = 1 WHERE artwork_id = ?", [urlParts[1]], err => {
-        if (err) return sendError(res, err);
-        sendJSON(res, { message: "Artwork restored" });
-      });
+      // If it was deaccessioned, reset to a sensible default status
+      db.query(
+        `UPDATE artwork SET 
+          is_active = 1, 
+          current_display_status = CASE 
+            WHEN current_display_status = 'Deaccessioned' THEN 'In Storage'
+            ELSE current_display_status 
+          END
+        WHERE artwork_id = ?`,
+        [urlParts[1]],
+        err => {
+          if (err) return sendError(res, err);
+          sendJSON(res, { message: "Artwork restored" });
+        }
+      );
     }
 
-    // Hard DELETE
-    else if (req.method === "DELETE" && urlParts.length === 2) {
-      db.query("DELETE FROM artwork WHERE artwork_id=?", [urlParts[1]], err => {
-        if (err) return sendError(res, err);
-        sendJSON(res, { message: "Artwork deleted" });
-      });
+    // PATCH /artwork/:id/deaccession - Mark as Deaccessioned
+    else if (req.method === "PATCH" && urlParts.length === 3 && urlParts[2] === "deaccession") {
+      db.query(
+        "UPDATE artwork SET current_display_status = 'Deaccessioned', is_active = 0 WHERE artwork_id = ?",
+        [urlParts[1]],
+        err => {
+          if (err) return sendError(res, err);
+          sendJSON(res, { message: "Artwork deaccessioned" });
+        }
+      );
     }
   }
 
