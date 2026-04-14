@@ -547,7 +547,7 @@ export default function ReportsPanel() {
     return (
       <div className="filters-section">
         <div className="filters-header">
-          <h4>🔍 Filters</h4>
+          <h4>Filters</h4>
           <button className="reset-btn" onClick={resetFilters}>Reset All Filters</button>
         </div>
         {activeReport === "revenue" && renderRevenueFilters()}
@@ -643,45 +643,45 @@ export default function ReportsPanel() {
     <div className="reports-panel">
       <div className="report-buttons">
         <button className={activeReport === "revenue" ? "active" : ""} onClick={() => setActiveReport("revenue")}>
-          💰 Revenue Report
+          Revenue Report
         </button>
         <button className={activeReport === "artCollection" ? "active" : ""} onClick={() => setActiveReport("artCollection")}>
-          🎨 Art Collection
+          Art Collection
         </button>
         <button className={activeReport === "visitorAnalytics" ? "active" : ""} onClick={() => setActiveReport("visitorAnalytics")}>
-          📊 Visitor Analytics
+          Visitor Analytics
         </button>
         <button className={activeReport === "giftShop" ? "active" : ""} onClick={() => setActiveReport("giftShop")}>
-          🛍️ Gift Shop
+          Gift Shop
         </button>
       </div>
 
       {renderFilters()}
 
       <div className="export-section">
-        <button className="export-btn csv" onClick={() => exportData("csv")}>📊 Export CSV</button>
-        <button className="export-btn json" onClick={() => exportData("json")}>📄 Export JSON</button>
-        <button className="export-btn print" onClick={() => exportData("print")}>🖨️ Print Report</button>
+        <button className="export-btn csv" onClick={() => exportData("csv")}>Export CSV</button>
+        <button className="export-btn json" onClick={() => exportData("json")}>Export JSON</button>
+        <button className="export-btn print" onClick={() => exportData("print")}>Print Report</button>
       </div>
 
       {renderSummary()}
 
       <div className="report-display" id="report-print-content">
         <h3>
-          {activeReport === "revenue" && "💰 Revenue Report"}
-          {activeReport === "artCollection" && "🎨 Art Collection Report"}
-          {activeReport === "visitorAnalytics" && "📊 Visitor Analytics Report"}
-          {activeReport === "giftShop" && "🛍️ Gift Shop Report"}
+          {activeReport === "revenue" && "Revenue Report"}
+          {activeReport === "artCollection" && "Art Collection Report"}
+          {activeReport === "visitorAnalytics" && "Visitor Analytics Report"}
+          {activeReport === "giftShop" && "Gift Shop Report"}
         </h3>
         {loading ? <div className="loading">Loading...</div> : renderTable()}
       </div>
 
       {/* Data Queries Section */}
       <div className="queries-section">
-        <h3>🔍 Data Queries</h3>
+        <h3>Data Queries</h3>
         <div className="queries-grid">
           <div className="query-card">
-            <h4>🎨 Find Artworks by Artist</h4>
+            <h4>Find Artworks by Artist</h4>
             <div className="query-input">
               <input type="text" placeholder="Enter artist name" id="artistName" />
               <button type="button" onClick={() => {
@@ -691,7 +691,7 @@ export default function ReportsPanel() {
             </div>
           </div>
           <div className="query-card">
-            <h4>📅 Find Artworks by Year Range</h4>
+            <h4>Find Artworks by Year Range</h4>
             <div className="query-input">
               <input type="number" placeholder="Start Year" id="startYear" />
               <span>to</span>
@@ -704,7 +704,7 @@ export default function ReportsPanel() {
             </div>
           </div>
           <div className="query-card">
-            <h4>🖌️ Find Artworks by Medium</h4>
+            <h4>Find Artworks by Medium</h4>
             <div className="query-input">
               <input type="text" placeholder="Enter medium" id="medium" />
               <button type="button" onClick={() => {
@@ -714,7 +714,7 @@ export default function ReportsPanel() {
             </div>
           </div>
           <div className="query-card">
-            <h4>💎 Top Valued Artworks</h4>
+            <h4>Top Valued Artworks</h4>
             <div className="query-input">
               <input type="number" placeholder="Number of results" id="topLimit" defaultValue="10" />
               <button type="button" onClick={() => {
