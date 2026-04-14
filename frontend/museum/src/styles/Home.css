@@ -45,6 +45,11 @@
   to   { opacity: 1; transform: translateY(0); }
 }
 
+@keyframes slideDown {
+  from { transform: translateY(-100%); opacity: 0; }
+  to   { transform: translateY(0); opacity: 1; }
+}
+
 .hero-title {
   font-size: 3.5rem;
   font-weight: 400;
@@ -487,23 +492,23 @@
   .hero-subtitle    { font-size: 1rem; }
   .hero-description { font-size: 0.875rem; }
 
-  .events-section   { padding: 3rem 1rem; }
+  .events-section     { padding: 3rem 1rem; }
   .carousel-container { padding: 0; }
-  .carousel-btn     { display: none; }
-  .carousel-track   { overflow-x: auto; scroll-snap-type: x mandatory; }
-  .event-card       { flex: 0 0 100%; scroll-snap-align: start; }
+  .carousel-btn       { display: none; }
+  .carousel-track     { overflow-x: auto; scroll-snap-type: x mandatory; }
+  .event-card         { flex: 0 0 100%; scroll-snap-align: start; }
 
   .links-grid,
   .extras-grid,
-  .footer-content   { grid-template-columns: 1fr; }
+  .footer-content     { grid-template-columns: 1fr; }
 
-  .extras-card      { padding: 1.75rem; }
-  .extras-icon      { font-size: 2.5rem; }
-  .extras-card h3   { font-size: 1.1rem; }
+  .extras-card        { padding: 1.75rem; }
+  .extras-icon        { font-size: 2.5rem; }
+  .extras-card h3     { font-size: 1.1rem; }
 
-  .footer-content   { text-align: center; }
-  .social-links     { justify-content: center; }
+  .footer-content     { text-align: center; }
+  .social-links       { justify-content: center; }
 
   .quick-links-section,
-  .extras-section   { background-attachment: scroll; }
+  .extras-section     { background-attachment: scroll; }
 }

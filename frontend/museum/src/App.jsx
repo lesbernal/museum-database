@@ -27,6 +27,7 @@ import VisitorDashboard  from "./pages/VisitorDashboard";
 import MemberDashboard   from "./pages/MemberDashboard";
 import EmployeeDashboard from "./pages/EmployeeDashboard";
 import MembershipPage from "./pages/MembershipPage";
+import CheckoutPage from "./pages/CheckoutPage";
 
 function App() {
   return (
@@ -43,6 +44,7 @@ function App() {
         <Route path="/donations" element={<DonationPage />} />
         <Route path="/events" element={<EventsPage />} />
         <Route path="/membership" element={<MembershipPage />} />
+        <Route path="/checkout" element={<CheckoutPage />} />
 
         {/* Admin Only Routes */}
         <Route
