@@ -1,4 +1,3 @@
-//adding comment to pull
 // src/pages/Events.jsx
 import { useEffect, useState } from "react";
 import "../styles/theme.css";
@@ -16,22 +15,16 @@ export default function Events() {
 
   const userId = localStorage.getItem("user_id");
 
-  // Check if logged-in user is a member
   useEffect(() => {
     if (!userId) return;
-    fetch(`http://localhost:5000/members/${userId}`, {
+    fetch(`${BASE_URL}/members/${userId}`, {
       headers: { "Authorization": `Bearer ${userId}` }
     })
       .then(res => {
-        console.log("Member check status:", res.status);
-        console.log("isMember set to:", res.ok);
         if (res.ok) setIsMember(true);
         else setIsMember(false);
       })
-      .catch((err) => {
-        console.error("Member check error:", err);
-        setIsMember(false);
-      });
+      .catch(() => setIsMember(false));
   }, [userId]);
 
   const loadEvents = () => {
@@ -51,8 +44,6 @@ export default function Events() {
   }, []);
 
   async function handleSignup(eventId, isMemberOnly) {
-    console.log("Attempting signup for event:", eventId, "quantity:", quantities[eventId] || 1, "userId:", userId);
-
     if (!userId) {
       setMessages(prev => ({ ...prev, [eventId]: { type: "error", text: "Please log in to sign up for events." } }));
       return;
@@ -68,9 +59,7 @@ export default function Events() {
     setMessages(prev => ({ ...prev, [eventId]: null }));
 
     try {
-      console.log("Sending PATCH to:", `http://localhost:5000/events/${eventId}`);
-
-      const res = await fetch(`http://localhost:5000/events/${eventId}`, {
+      const res = await fetch(`${BASE_URL}/events/${eventId}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -79,10 +68,7 @@ export default function Events() {
         body: JSON.stringify({ quantity })
       });
 
-      console.log("Response status:", res.status);
-
       const data = await res.json();
-      console.log("Response data:", data);
 
       if (!res.ok) {
         setMessages(prev => ({ ...prev, [eventId]: { type: "error", text: data.error || "Signup failed." } }));
@@ -91,7 +77,6 @@ export default function Events() {
         loadEvents();
       }
     } catch (err) {
-      console.error("Signup error:", err);
       setMessages(prev => ({ ...prev, [eventId]: { type: "error", text: "Something went wrong." } }));
     } finally {
       setSigningUp(null);
