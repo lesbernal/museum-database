@@ -1,13 +1,14 @@
 // components/ArtworkTable.jsx
 import "../styles/ArtworkTable.css";
 
-export default function ArtworkTable({ artworks, onEdit, onDelete, onArchive }) {
+export default function ArtworkTable({ artworks, onEdit, onDelete, onArchive, onDeaccession }) {
   const getStatusBadgeClass = (status) => {
     switch (status) {
       case "On Display":        return "badge-display";
       case "In Storage":        return "badge-storage";
       case "On Loan":           return "badge-loan";
       case "Under Restoration": return "badge-restoration";
+      case "Deaccessioned":     return "badge-deaccessioned";
       default: return "";
     }
   };
@@ -50,7 +51,7 @@ export default function ArtworkTable({ artworks, onEdit, onDelete, onArchive }) 
                 ) : (
                   <div className="thumbnail-placeholder">🖼️</div>
                 )}
-              </td>
+               </td>
               <td>{artwork.artwork_id}</td>
               <td className="title-cell">{artwork.title}</td>
               <td>{artwork.artist_name || `${artwork.first_name} ${artwork.last_name}`}</td>
@@ -62,9 +63,15 @@ export default function ArtworkTable({ artworks, onEdit, onDelete, onArchive }) 
                 </span>
               </td>
               <td className="actions">
-                <button className="edit-btn"    onClick={() => onEdit(artwork)}              title="Edit">Edit</button>
+                <button className="edit-btn" onClick={() => onEdit(artwork)} title="Edit">Edit</button>
                 <button className="archive-btn" onClick={() => onArchive(artwork.artwork_id)} title="Archive">Archive</button>
-                <button className="delete-btn"  onClick={() => onDelete(artwork.artwork_id)}  title="Permanently delete">Delete</button>
+                {/* Show Deaccession button only if not already deaccessioned */}
+                {artwork.current_display_status !== "Deaccessioned" && (
+                  <button className="deaccession-btn" onClick={() => onDeaccession(artwork.artwork_id)} title="Mark as Deaccessioned">
+                    Deaccession
+                  </button>
+                )}
+                {/* Remove the Delete button completely! */}
               </td>
             </tr>
           ))}

@@ -1,4 +1,6 @@
-/* Reset & Base */
+/* src/styles/Home.css */
+
+/* ── Base ── */
 .home-container {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   margin: 0;
@@ -8,11 +10,13 @@
   background: #faf9f8;
 }
 
-/* Hero Section */
+/* ── Hero ── */
 .hero-section {
   position: relative;
   min-height: 70vh;
-  background: linear-gradient(rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.3)), url('https://static.mfah.com/images/kinder-building-from-above.4932242836019972711.jpg?width=1680') no-repeat center center/cover;
+  background: linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.3)),
+    url('https://static.mfah.com/images/kinder-building-from-above.4932242836019972711.jpg?width=1680')
+    no-repeat center center / cover;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -22,11 +26,8 @@
 
 .hero-overlay {
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  inset: 0;
+  background: rgba(0,0,0,0.5);
   z-index: 1;
 }
 
@@ -36,27 +37,26 @@
   max-width: 800px;
   padding: 2rem;
   animation: fadeInUp 1s ease;
-  color: #ffffff;
+  color: #fff;
 }
 
 @keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(30px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(30px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideDown {
+  from { transform: translateY(-100%); opacity: 0; }
+  to   { transform: translateY(0); opacity: 1; }
 }
 
 .hero-title {
   font-size: 3.5rem;
-  margin-bottom: 1rem;
   font-weight: 400;
   letter-spacing: -0.02em;
   line-height: 1.2;
-  color: #ffffff;
+  margin-bottom: 1rem;
+  color: #fff;
 }
 
 .hero-subtitle {
@@ -66,25 +66,23 @@
   margin-top: 0.5rem;
   opacity: 0.9;
   letter-spacing: 0.05em;
-  color: #ffffff;
+  color: #fff;
 }
 
 .hero-description {
   font-size: 1.125rem;
-  margin-bottom: 0;
   opacity: 0.85;
   line-height: 1.6;
   font-weight: 300;
   max-width: 600px;
-  margin-left: auto;
-  margin-right: auto;
-  color: #ffffff;
+  margin: 0 auto;
+  color: #fff;
 }
 
-/* Events Section */
+/* ── Events Section ── */
 .events-section {
   padding: 5rem 2rem;
-  background: #ffffff;
+  background: #fff;
 }
 
 .section-header {
@@ -95,24 +93,24 @@
 .section-header h2 {
   font-size: 2rem;
   font-weight: 400;
-  color: #000000;
+  color: #000;
   margin-bottom: 0.5rem;
   letter-spacing: -0.01em;
 }
 
 .section-header p {
   font-size: 0.875rem;
-  color: #666666;
+  color: #666;
   letter-spacing: 0.03em;
   text-transform: uppercase;
 }
 
-/* Carousel */
+/* ── Carousel ── */
 .carousel-container {
   position: relative;
   max-width: 1400px;
   margin: 0 auto;
-  padding: 0 60px; /* Add padding for buttons */
+  padding: 0 60px;
 }
 
 .carousel-track {
@@ -124,42 +122,18 @@
 }
 
 .event-card {
-  flex: 0 0 calc(25% - 1.5rem); /* 4 cards per row on desktop */
+  flex: 0 0 calc(25% - 1.5rem);
   min-width: 0;
-  background: #ffffff;
+  background: #fff;
   border: 1px solid #e5e5e5;
-  border-radius: 0;
   overflow: hidden;
   transition: all 0.3s ease;
   cursor: pointer;
 }
 
-/* For different screen sizes */
-@media (min-width: 1200px) {
-  .event-card {
-    flex: 0 0 calc(25% - 1.5rem);
-  }
-}
-
-@media (min-width: 768px) and (max-width: 1199px) {
-  .event-card {
-    flex: 0 0 calc(33.333% - 1.33rem); /* 3 cards per row */
-  }
-}
-
-@media (max-width: 767px) {
-  .event-card {
-    flex: 0 0 calc(100% - 0rem); /* 1 card per row */
-  }
-  
-  .carousel-container {
-    padding: 0;
-  }
-}
-
 .event-card:hover {
   transform: translateY(-5px);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.08);
   border-color: #c5a028;
 }
 
@@ -182,9 +156,9 @@
 
 .event-card-content h3 {
   font-size: 1.125rem;
-  margin-bottom: 0.5rem;
-  color: #000000;
   font-weight: 500;
+  color: #000;
+  margin-bottom: 0.5rem;
 }
 
 .event-date {
@@ -197,43 +171,40 @@
 
 .event-location {
   font-size: 0.7rem;
-  color: #888888;
+  color: #888;
   margin-bottom: 0.75rem;
   text-transform: uppercase;
 }
 
 .event-description {
   font-size: 0.875rem;
-  color: #555555;
+  color: #555;
   line-height: 1.5;
   margin-bottom: 1rem;
 }
 
 .event-link {
-  color: #000000;
+  color: #000;
   text-decoration: none;
   font-weight: 500;
   font-size: 0.75rem;
-  transition: color 0.2s;
   letter-spacing: 0.05em;
   text-transform: uppercase;
   border-bottom: 1px solid #c5a028;
   padding-bottom: 2px;
+  transition: color 0.2s;
 }
 
-.event-link:hover {
-  color: #c5a028;
-}
+.event-link:hover { color: #c5a028; }
 
 .carousel-btn {
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  background: #ffffff;
+  background: #fff;
   border: 1px solid #e5e5e5;
   width: 44px;
   height: 44px;
-  border-radius: 0;
   cursor: pointer;
   font-size: 1.5rem;
   display: flex;
@@ -241,22 +212,12 @@
   justify-content: center;
   transition: all 0.3s ease;
   z-index: 10;
-  color: #000000;
+  color: #000;
 }
 
-.carousel-btn:hover {
-  background: #c5a028;
-  color: #ffffff;
-  border-color: #c5a028;
-}
-
-.carousel-btn.prev {
-  left: 0;
-}
-
-.carousel-btn.next {
-  right: 0;
-}
+.carousel-btn:hover { background: #c5a028; color: #fff; border-color: #c5a028; }
+.carousel-btn.prev  { left: 0; }
+.carousel-btn.next  { right: 0; }
 
 .carousel-dots {
   display: flex;
@@ -268,34 +229,28 @@
 .dot {
   width: 8px;
   height: 8px;
-  border-radius: 0;
-  background: #cccccc;
+  background: #ccc;
   border: none;
   cursor: pointer;
   transition: all 0.3s ease;
 }
 
-.dot.active {
-  background: #c5a028;
-  width: 24px;
-}
+.dot.active { background: #c5a028; width: 24px; }
+.dot:hover  { background: #c5a028; }
 
-.dot:hover {
-  background: #c5a028;
-}
-
-/* Quick Links Section - With Background Image */
+/* ── Quick Links Section ── */
 .quick-links-section {
   position: relative;
   padding: 5rem 2rem;
-  background: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url('https://365thingsinhouston.com/wp-content/uploads/2017/08/museum-of-fine-arts-houston-Beck-Interior-Gallery.jpeg') no-repeat center center/cover;
+  background: linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)),
+    url('https://365thingsinhouston.com/wp-content/uploads/2017/08/museum-of-fine-arts-houston-Beck-Interior-Gallery.jpeg')
+    no-repeat center center / cover;
   background-attachment: fixed;
-  border-top: none;
 }
 
 .quick-links-section .section-header h2,
 .quick-links-section .section-header p {
-  color: #ffffff;
+  color: #fff;
   position: relative;
   z-index: 2;
 }
@@ -311,13 +266,14 @@
 }
 
 .link-card {
-  background: rgba(255, 255, 255, 0.95);
+  position: relative;
+  overflow: hidden;
+  background: rgba(255,255,255,0.95);
   padding: 2.5rem;
-  border-radius: 0;
   text-decoration: none;
   text-align: center;
   transition: all 0.3s ease;
-  border: 1px solid rgba(229, 229, 229, 0.3);
+  border: 1px solid rgba(229,229,229,0.3);
   backdrop-filter: blur(5px);
   display: flex;
   flex-direction: column;
@@ -327,11 +283,25 @@
   gap: 12px;
 }
 
+.link-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent 0%, rgba(197,160,40,0.3) 50%, transparent 100%);
+  transition: left 0.5s ease;
+  z-index: 0;
+}
+
+.link-card:hover::before { left: 100%; }
+
 .link-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+  transform: translateY(-5px);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.2);
   border-color: #c5a028;
-  background: #ffffff;
+  background: #fff;
 }
 
 .link-icon {
@@ -341,31 +311,35 @@
 
 .link-card h3 {
   font-size: 1.25rem;
-  margin-bottom: 0.5rem;
-  color: #000000;
   font-weight: 500;
+  color: #000;
   letter-spacing: 0.05em;
   text-transform: uppercase;
+  position: relative;
+  z-index: 1;
+  margin-bottom: 0.75rem;
 }
 
 .link-card p {
-  color: #666666;
+  color: #666;
   font-size: 0.875rem;
   line-height: 1.5;
+  margin-bottom: 1rem;
+  position: relative;
+  z-index: 1;
 }
 
-/* New Cards Section - With Background Image */
+/* ── Extras Section ── */
 .extras-section {
   position: relative;
   padding: 5rem 2rem;
-  background: linear-gradient(rgba(0, 0, 0, 0.65), rgba(0, 0, 0, 0.65));
+  background: linear-gradient(rgba(0,0,0,0.65), rgba(0,0,0,0.65));
   background-attachment: fixed;
-  border-top: none;
 }
 
 .extras-section .section-header h2,
 .extras-section .section-header p {
-  color: #ffffff;
+  color: #fff;
   position: relative;
   z-index: 2;
 }
@@ -381,19 +355,17 @@
 }
 
 .extras-card {
-  background: rgba(255, 255, 255, 0.95);
+  position: relative;
+  overflow: hidden;
+  background: rgba(255,255,255,0.95);
   padding: 2.5rem;
-  border-radius: 0;
   text-decoration: none;
   text-align: center;
   transition: all 0.3s ease;
-  border: 1px solid rgba(229, 229, 229, 0.3);
-  position: relative;
-  overflow: hidden;
+  border: 1px solid rgba(229,229,229,0.3);
   backdrop-filter: blur(5px);
 }
 
-/* Washdown/cascade effect for extras cards */
 .extras-card::before {
   content: '';
   position: absolute;
@@ -401,23 +373,18 @@
   left: -100%;
   width: 100%;
   height: 100%;
-  background: linear-gradient(90deg, 
-    transparent 0%, 
-    rgba(197, 160, 40, 0.3) 50%, 
-    transparent 100%);
+  background: linear-gradient(90deg, transparent 0%, rgba(197,160,40,0.3) 50%, transparent 100%);
   transition: left 0.5s ease;
   z-index: 0;
 }
 
-.extras-card:hover::before {
-  left: 100%;
-}
+.extras-card:hover::before { left: 100%; }
 
 .extras-card:hover {
   transform: translateY(-5px);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.2);
   border-color: #c5a028;
-  background: #ffffff;
+  background: #fff;
 }
 
 .extras-icon {
@@ -429,17 +396,17 @@
 
 .extras-card h3 {
   font-size: 1.25rem;
-  margin-bottom: 0.75rem;
-  color: #000000;
   font-weight: 500;
+  color: #000;
   letter-spacing: 0.05em;
   text-transform: uppercase;
+  margin-bottom: 0.75rem;
   position: relative;
   z-index: 1;
 }
 
 .extras-card p {
-  color: #666666;
+  color: #666;
   font-size: 0.875rem;
   line-height: 1.5;
   margin-bottom: 1rem;
@@ -454,66 +421,43 @@
   font-weight: 500;
   letter-spacing: 0.05em;
   text-transform: uppercase;
-  position: relative;
-  z-index: 1;
-  display: inline-block;
   border-bottom: 1px solid #c5a028;
   padding-bottom: 2px;
+  display: inline-block;
+  position: relative;
+  z-index: 1;
 }
 
-.extras-link:hover {
-  color: #d4af37;
-}
+.extras-link:hover { color: #d4af37; }
 
-/* Responsive for Extras */
-@media (max-width: 768px) {
-  .extras-grid {
-    grid-template-columns: 1fr;
-    gap: 1.5rem;
-  }
-  
-  .extras-card {
-    padding: 1.75rem;
-  }
-  
-  .extras-icon {
-    font-size: 2.5rem;
-  }
-  
-  .extras-card h3 {
-    font-size: 1.1rem;
-  }
-}
-
-/* Footer */
+/* ── Footer ── */
 .home-footer {
-  background: #000000;
-  color: #888888;
+  background: #000;
+  color: #888;
   padding: 3rem 2rem 1rem;
 }
 
 .footer-content {
   max-width: 1200px;
-  margin: 0 auto;
+  margin: 0 auto 2rem;
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
   gap: 2rem;
-  margin-bottom: 2rem;
 }
 
 .footer-section h3,
 .footer-section h4 {
-  color: #ffffff;
-  margin-bottom: 1rem;
+  color: #fff;
   font-weight: 400;
-  letter-spacing: 0.03em;
   font-size: 0.875rem;
+  letter-spacing: 0.03em;
+  margin-bottom: 1rem;
 }
 
 .footer-section p {
-  margin: 0.5rem 0;
   font-size: 0.75rem;
-  color: #888888;
+  color: #888;
+  margin: 0.5rem 0;
 }
 
 .social-links {
@@ -522,70 +466,49 @@
 }
 
 .social-links a {
-  color: #888888;
+  color: #888;
   text-decoration: none;
   font-size: 1.25rem;
   transition: color 0.2s;
 }
 
-.social-links a:hover {
-  color: #c5a028;
-}
+.social-links a:hover { color: #c5a028; }
 
-/* Responsive */
-@media (max-width: 768px) {
-  .hero-title {
-    font-size: 2rem;
-  }
-  
-  .hero-subtitle {
-    font-size: 1rem;
-  }
-  
-  .hero-description {
-    font-size: 0.875rem;
-  }
-  
-  .events-section {
-    padding: 3rem 1rem;
-  }
-  
-  .carousel-btn {
-    display: none;
-  }
-  
-  .carousel-track {
-    overflow-x: auto;
-    scroll-snap-type: x mandatory;
-  }
-  
-  .event-card {
-    scroll-snap-align: start;
-  }
-  
-  .links-grid {
-    grid-template-columns: 1fr;
-  }
-  
-  .footer-content {
-    grid-template-columns: 1fr;
-    text-align: center;
-  }
-  
-  .social-links {
-    justify-content: center;
-  }
-  
-  .quick-links-section,
-  .extras-section {
-    background-attachment: scroll;
-  }
-}
-
-/* Loading State */
+/* ── Loading ── */
 .loading-spinner {
   text-align: center;
   padding: 3rem;
   font-size: 0.875rem;
-  color: #888888;
+  color: #888;
+}
+
+/* ── Responsive ── */
+@media (min-width: 768px) and (max-width: 1199px) {
+  .event-card { flex: 0 0 calc(33.333% - 1.33rem); }
+}
+
+@media (max-width: 767px) {
+  .hero-title       { font-size: 2rem; }
+  .hero-subtitle    { font-size: 1rem; }
+  .hero-description { font-size: 0.875rem; }
+
+  .events-section     { padding: 3rem 1rem; }
+  .carousel-container { padding: 0; }
+  .carousel-btn       { display: none; }
+  .carousel-track     { overflow-x: auto; scroll-snap-type: x mandatory; }
+  .event-card         { flex: 0 0 100%; scroll-snap-align: start; }
+
+  .links-grid,
+  .extras-grid,
+  .footer-content     { grid-template-columns: 1fr; }
+
+  .extras-card        { padding: 1.75rem; }
+  .extras-icon        { font-size: 2.5rem; }
+  .extras-card h3     { font-size: 1.1rem; }
+
+  .footer-content     { text-align: center; }
+  .social-links       { justify-content: center; }
+
+  .quick-links-section,
+  .extras-section     { background-attachment: scroll; }
 }

@@ -71,7 +71,11 @@ export default function ArtworkArchive({ apiBase, onRestored }) {
                   <td>{a.artist_name || "—"}</td>
                   <td>{a.creation_year || "—"}</td>
                   <td>{a.medium || "—"}</td>
-                  <td>{a.current_display_status || "—"}</td>
+                  <td>
+                    <span className={`status-badge ${a.current_display_status === 'Deaccessioned' ? 'badge-deaccessioned' : ''}`}>
+                      {a.current_display_status || "—"}
+                    </span>
+                  </td>
                   <td>
                     <button className="btn-restore" onClick={() => handleRestore(a.artwork_id)}>
                       ↩ Restore

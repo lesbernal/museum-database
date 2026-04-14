@@ -1,0 +1,224 @@
+.checkout-page {
+  min-height: 100vh;
+  background: var(--color-cream);
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  padding: 0;
+}
+
+.checkout-container {
+  display: grid;
+  grid-template-columns: 1fr 1.5fr;
+  width: 100%;
+  max-width: 100%;
+  background: var(--color-white);
+  border: none;
+  min-height: 100vh;
+}
+
+/* ── Left summary ── */
+.checkout-summary {
+  background: #000;                /* ← this was missing! */
+  color: var(--color-white);
+  padding: 4rem 3rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.checkout-eyebrow {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--color-gold);
+  margin: 0;
+}
+
+.checkout-summary-title {
+  font-size: 1.5rem;
+  font-weight: 300;
+  color: #fff;
+  margin: 0;
+  letter-spacing: -0.02em;
+}
+
+.summary-section {
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+  padding-bottom: 1rem;
+}
+
+.summary-label {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(255,255,255,0.5);
+  margin: 0 0 0.25rem;
+}
+
+.summary-value {
+  font-size: 0.95rem;
+  color: #fff;
+  margin: 0;
+}
+
+.summary-items {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+  padding-bottom: 1rem;
+}
+
+.summary-item {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.88rem;
+  color: rgba(255,255,255,0.85);
+}
+
+.summary-total {
+  display: flex;
+  justify-content: space-between;
+  font-size: 1rem;
+  font-weight: 500;
+  color: #fff;
+  padding-top: 0.5rem;
+}
+
+/* ── Right form ── */
+.checkout-form-section {
+  padding: 4rem 5rem;
+}
+
+.checkout-form-title {
+  font-size: 1.5rem;
+  font-weight: 300;
+  letter-spacing: -0.02em;
+  margin: 0 0 0.25rem;
+  color: var(--color-black);
+}
+
+.checkout-form-subtitle {
+  font-size: 0.78rem;
+  color: var(--color-gray-light);
+  margin: 0 0 2rem;
+}
+
+.checkout-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.checkout-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.checkout-field label {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-gray);
+  font-weight: 500;
+}
+
+.checkout-field input {
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--color-border);
+  font-size: 0.9rem;
+  background: var(--color-white);
+  color: var(--color-black);
+  border-radius: 0;
+  transition: border-color 0.2s;
+}
+
+.checkout-field input:focus {
+  outline: none;
+  border-color: var(--color-gold);
+}
+
+.checkout-field-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.checkout-error {
+  font-size: 0.75rem;
+  color: #dc2626;
+  margin: 0;
+}
+
+.checkout-submit-error {
+  padding: 0.75rem 1rem;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+  font-size: 0.85rem;
+}
+
+.checkout-submit-btn {
+  width: 100%;
+  padding: 1rem;
+  background: var(--color-gold);
+  color: var(--color-black);
+  font-size: 0.82rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-top: 0.5rem;
+}
+
+.checkout-submit-btn:hover {
+  background: var(--color-gold-light);
+  transform: translateY(-2px);
+}
+
+.checkout-submit-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.checkout-back-btn {
+  width: 100%;
+  padding: 0.75rem;
+  background: transparent;
+  color: var(--color-gray);
+  font-size: 0.82rem;
+  border: 1px solid var(--color-border);
+  cursor: pointer;
+  transition: all 0.2s;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.checkout-back-btn:hover {
+  border-color: var(--color-black);
+  color: var(--color-black);
+}
+
+@media (max-width: 700px) {
+  .checkout-container {
+    grid-template-columns: 1fr;
+    min-height: auto;
+  }
+
+  .checkout-form-section {
+    padding: 2rem;
+  }
+
+  .checkout-summary {
+    padding: 2rem;
+  }
+
+  .checkout-field-row {
+    grid-template-columns: 1fr;
+  }
+}

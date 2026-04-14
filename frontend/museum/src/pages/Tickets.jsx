@@ -1,14 +1,15 @@
 // src/pages/Tickets.jsx
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import "../styles/Tickets.css";
 
 const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 const TICKET_TYPES = [
-  { type: "Adult 19+",        label: "Adult",  desc: "Ages 19+",          basePrice: 20,  discountType: "None"    },
-  { type: "Senior 65+",       label: "Senior", desc: "Ages 65+",          basePrice: 15,  discountType: "None"    },
-  { type: "Youth 13-18",      label: "Youth",  desc: "Ages 13–18",        basePrice: 12,  discountType: "None"    },
-  { type: "Child 12 & Under", label: "Child",  desc: "Ages 12 & under",   basePrice: 0,   discountType: "None"    },
+  { type: "Adult 19+",        label: "Adult",  desc: "Ages 19+",        basePrice: 20 },
+  { type: "Senior 65+",       label: "Senior", desc: "Ages 65+",        basePrice: 15 },
+  { type: "Youth 13-18",      label: "Youth",  desc: "Ages 13–18",      basePrice: 12 },
+  { type: "Child 12 & Under", label: "Child",  desc: "Ages 12 & under", basePrice: 0  },
 ];
 
 function getDiscountedPrice(basePrice, discount) {
@@ -19,13 +20,15 @@ function getDiscountedPrice(basePrice, discount) {
 }
 
 export default function Tickets() {
+  const navigate = useNavigate();
+
   const [visitDate,     setVisitDate]     = useState("");
-  const [paymentMethod, setPaymentMethod] = useState("Credit Card");
   const [discount,      setDiscount]      = useState("None");
-  const [quantities,    setQuantities]    = useState({ "Adult 19+": 0, "Senior 65+": 0, "Youth 13-18": 0, "Child 12 & Under": 0 });
+  const [quantities,    setQuantities]    = useState({
+    "Adult 19+": 0, "Senior 65+": 0, "Youth 13-18": 0, "Child 12 & Under": 0
+  });
   const [isMember,      setIsMember]      = useState(false);
-  const [loading,       setLoading]       = useState(false);
-  const [feedback,      setFeedback]      = useState(null);
+  const [errorMsg,      setErrorMsg]      = useState("");
 
   const userId = localStorage.getItem("user_id");
   const today  = new Date().toISOString().split("T")[0];
@@ -46,70 +49,46 @@ export default function Tickets() {
     }));
   }
 
-  // Build summary lines
   const summaryLines = TICKET_TYPES.filter(t => quantities[t.type] > 0).map(t => ({
     label: `${quantities[t.type]}x ${t.label}`,
     price: getDiscountedPrice(t.basePrice, discount) * quantities[t.type],
   }));
 
-  const total = summaryLines.reduce((sum, l) => sum + l.price, 0);
+  const total        = summaryLines.reduce((sum, l) => sum + l.price, 0);
   const totalTickets = Object.values(quantities).reduce((a, b) => a + b, 0);
 
-  async function handleSubmit(e) {
+  function handleSubmit(e) {
     e.preventDefault();
-    setFeedback(null);
+    setErrorMsg("");
 
-    if (!userId)           return setFeedback({ type: "error", text: "Please log in first." });
-    if (!visitDate)        return setFeedback({ type: "error", text: "Select a visit date." });
-    if (visitDate < today) return setFeedback({ type: "error", text: "Visit date must be today or a future date." });
-    if (totalTickets === 0) return setFeedback({ type: "error", text: "Please select at least one ticket." });
-    if (discount === "Member" && !isMember) return setFeedback({ type: "error", text: "You must be a museum member to use the Member discount." });
+    if (!userId)            return setErrorMsg("Please log in first.");
+    if (!visitDate)         return setErrorMsg("Select a visit date.");
+    if (visitDate < today)  return setErrorMsg("Visit date must be today or a future date.");
+    if (totalTickets === 0) return setErrorMsg("Please select at least one ticket.");
+    if (discount === "Member" && !isMember)
+      return setErrorMsg("You must be a museum member to use the Member discount.");
 
-    setLoading(true);
+    // Build tickets array for checkout
+    const tickets = TICKET_TYPES
+      .filter(t => quantities[t.type] > 0)
+      .map(t => ({
+        type:       t.type,
+        label:      t.label,
+        quantity:   quantities[t.type],
+        basePrice:  t.basePrice,
+        finalPrice: getDiscountedPrice(t.basePrice, discount),
+      }));
 
-    try {
-      const purchaseDate = new Date().toISOString().split("T")[0];
-
-      // Submit one POST per ticket type that has quantity > 0
-      for (const t of TICKET_TYPES) {
-        const qty = quantities[t.type];
-        if (qty === 0) continue;
-
-        for (let i = 0; i < qty; i++) {
-          const res = await fetch(`${BASE_URL}/tickets`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "Authorization": `Bearer ${userId}`
-            },
-            body: JSON.stringify({
-              user_id:        userId,
-              purchase_date:  purchaseDate,
-              visit_date:     visitDate,
-              ticket_type:    t.type,
-              base_price:     t.basePrice,
-              discount_type:  discount,
-              final_price:    getDiscountedPrice(t.basePrice, discount),
-              payment_method: paymentMethod
-            })
-          });
-
-          if (!res.ok) {
-            const err = await res.json();
-            throw new Error(err.error || "Purchase failed");
-          }
-        }
+    navigate("/checkout", {
+      state: {
+        type:         "tickets",
+        tickets,
+        visitDate,
+        discount,
+        totalTickets,
+        total,
       }
-
-      setFeedback({ type: "success", text: `Successfully purchased ${totalTickets} ticket(s)!` });
-      setQuantities({ "Adult 19+": 0, "Senior 65+": 0, "Youth 13-18": 0, "Child 12 & Under": 0 });
-      setVisitDate("");
-      setDiscount("None");
-    } catch (err) {
-      setFeedback({ type: "error", text: err.message || "Purchase failed." });
-    } finally {
-      setLoading(false);
-    }
+    });
   }
 
   return (
@@ -134,15 +113,6 @@ export default function Tickets() {
               onChange={e => setVisitDate(e.target.value)}
               required
             />
-          </div>
-
-          <div className="tickets-field">
-            <label>Payment Method</label>
-            <select value={paymentMethod} onChange={e => setPaymentMethod(e.target.value)}>
-              <option>Credit Card</option>
-              <option>Debit Card</option>
-              <option>Cash</option>
-            </select>
           </div>
 
           <div className="tickets-field">
@@ -219,19 +189,19 @@ export default function Tickets() {
           )}
         </div>
 
-        {/* Feedback */}
-        {feedback && (
-          <div className={`tickets-feedback ${feedback.type}`}>
-            {feedback.text}
-          </div>
+        {/* Error */}
+        {errorMsg && (
+          <div className="tickets-feedback error">{errorMsg}</div>
         )}
 
         <button
           className="tickets-purchase-btn"
           type="submit"
-          disabled={loading || totalTickets === 0}
+          disabled={totalTickets === 0}
         >
-          {loading ? "Processing..." : `Purchase ${totalTickets > 0 ? `${totalTickets} Ticket${totalTickets !== 1 ? "s" : ""}` : "Tickets"} ${totalTickets > 0 ? `— $${total.toFixed(2)}` : ""}`}
+          {totalTickets > 0
+            ? `Proceed to Checkout — $${total.toFixed(2)}`
+            : "Select Tickets to Continue"}
         </button>
 
       </form>

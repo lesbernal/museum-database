@@ -34,10 +34,13 @@ module.exports = (req, res, parsedUrl) => {
   console.log("📡 Request method:", req.method);
   console.log("📡 URL parts:", urlParts);
 
-  if (!user || (!isPrivileged && !isSelfLookup && !isSelfUpdate)) {
-    console.log("❌ Access denied - user:", user, "isPrivileged:", isPrivileged);
-    res.writeHead(403, { "Content-Type": "application/json" });
-    return res.end(JSON.stringify({ error: "Forbidden: insufficient permissions" }));
+  // Allow public signup — POST /users requires no token
+  if(req.method === "POST" && urlParts.length === 1) {
+  // falls through to the POST handler below — no auth needed
+  } else if (!user || (!isPrivileged && !isSelfLookup && !isSelfUpdate)) {
+  console.log("❌ Access denied - user:", user, "isPrivileged:", isPrivileged);
+  res.writeHead(403, { "Content-Type": "application/json" });
+  return res.end(JSON.stringify({ error: "Forbidden: insufficient permissions" }));
   }
 
   // ============================ USERS ============================
