@@ -11,10 +11,23 @@ function verifyUser(req) {
 module.exports = (req, res, parsedUrl) => {
   const parts = parsedUrl.pathname.split("/").filter(Boolean);
   const eventId = parts[1];
+  const action  = parts[2];
 
-  // GET /events
+  // GET /events/archived
+  if (req.method === "GET" && eventId === "archived") {
+    return db.query("SELECT * FROM event WHERE is_active = 0", (err, results) => {
+      if (err) {
+        res.writeHead(500, { "Content-Type": "application/json" });
+        return res.end(JSON.stringify({ error: err.sqlMessage }));
+      }
+      res.writeHead(200, { "Content-Type": "application/json" });
+      return res.end(JSON.stringify(results));
+    });
+  }
+
+  // GET /events — only active
   if (req.method === "GET") {
-    return db.query("SELECT * FROM event", (err, results) => {
+    return db.query("SELECT * FROM event WHERE is_active = 1", (err, results) => {
       if (err) {
         res.writeHead(500, { "Content-Type": "application/json" });
         return res.end(JSON.stringify({ error: err.sqlMessage }));
@@ -57,7 +70,7 @@ module.exports = (req, res, parsedUrl) => {
   }
 
   // PUT /events/:id — edit event
-  else if (req.method === "PUT" && eventId) {
+  else if (req.method === "PUT" && eventId && !action) {
     let body = "";
     req.on("data", chunk => { body += chunk.toString(); });
     req.on("end", () => {
@@ -89,6 +102,30 @@ module.exports = (req, res, parsedUrl) => {
     });
   }
 
+  // PATCH /events/:id/deactivate — archive
+  else if (req.method === "PATCH" && eventId && action === "deactivate") {
+    db.query("UPDATE event SET is_active = 0 WHERE event_id = ?", [eventId], (err) => {
+      if (err) {
+        res.writeHead(500, { "Content-Type": "application/json" });
+        return res.end(JSON.stringify({ error: err.sqlMessage }));
+      }
+      res.writeHead(200, { "Content-Type": "application/json" });
+      return res.end(JSON.stringify({ message: "Event archived" }));
+    });
+  }
+
+  // PATCH /events/:id/reactivate — restore
+  else if (req.method === "PATCH" && eventId && action === "reactivate") {
+    db.query("UPDATE event SET is_active = 1 WHERE event_id = ?", [eventId], (err) => {
+      if (err) {
+        res.writeHead(500, { "Content-Type": "application/json" });
+        return res.end(JSON.stringify({ error: err.sqlMessage }));
+      }
+      res.writeHead(200, { "Content-Type": "application/json" });
+      return res.end(JSON.stringify({ message: "Event restored" }));
+    });
+  }
+
   // PATCH /events/:id — signup with quantity
   else if (req.method === "PATCH" && eventId) {
     const userId = verifyUser(req);
@@ -110,7 +147,7 @@ module.exports = (req, res, parsedUrl) => {
 
       const quantity = parseInt(data.quantity) || 1;
 
-      db.query("SELECT capacity, total_attendees FROM event WHERE event_id = ?", [eventId], (err, results) => {
+      db.query("SELECT capacity, total_attendees FROM event WHERE event_id = ? AND is_active = 1", [eventId], (err, results) => {
         if (err) {
           res.writeHead(500, { "Content-Type": "application/json" });
           return res.end(JSON.stringify({ error: err.sqlMessage }));
@@ -149,19 +186,18 @@ module.exports = (req, res, parsedUrl) => {
     });
   }
 
-  // DELETE /events/:id
+  // DELETE /events/:id — soft delete
   else if (req.method === "DELETE" && eventId) {
-    db.query("DELETE FROM event WHERE event_id = ?", [eventId], (err) => {
+    db.query("UPDATE event SET is_active = 0 WHERE event_id = ?", [eventId], (err) => {
       if (err) {
         res.writeHead(400, { "Content-Type": "application/json" });
         return res.end(JSON.stringify({ error: err.sqlMessage }));
       }
       res.writeHead(200, { "Content-Type": "application/json" });
-      return res.end(JSON.stringify({ message: "Event deleted" }));
+      return res.end(JSON.stringify({ message: "Event archived" }));
     });
   }
 
-  // Method not allowed
   else {
     res.writeHead(405, { "Content-Type": "application/json" });
     return res.end(JSON.stringify({ error: "Method not allowed" }));

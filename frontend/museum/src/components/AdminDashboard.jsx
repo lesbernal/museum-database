@@ -14,13 +14,13 @@ import GalleryTable from "./GalleryTable";
 import GalleryArchive from "./GalleryArchive";
 import EventForm from "./EventForm";
 import EventTable from "./EventTable";
+import EventArchive from "./EventArchive";
 import CafeAdminPanel from "./CafeAdminPanel";
 import GiftShopAdminPanel from "./GiftShopAdminPanel";
 import UserManagement from "./UserManagement";
 import ReportsPanel from "./ReportsPanel";
 import DepartmentManagement from "./DepartmentManagement";
 import ExhibitionArchive from "./ExhibitionArchive";
-
 
 import {
   getArtists, createArtist, updateArtist, deleteArtist,
@@ -29,18 +29,21 @@ import {
   getExhibitions, createExhibition, updateExhibition, deleteExhibition,
   getGalleries, createGallery, updateGallery, deleteGallery,
   getEvents, createEvent, updateEvent, deleteEvent,
+  getCafeItems, getGiftShopItems,
 } from "../services/api";
 
 import "../styles/AdminDashboard.css";
 import "../styles/UserManagement.css";
 
-const API_BASE = "http://localhost:5001";
+const API_BASE = "http://localhost:5000";
 
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState("artists");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showExhibitionArchive, setShowExhibitionArchive] = useState(false);
   const [showGalleryArchive, setShowGalleryArchive] = useState(false);
+  const [showArtworkArchive, setShowArtworkArchive] = useState(false);
+  const [showEventArchive, setShowEventArchive] = useState(false); // ← new
 
   // Data
   const [artists, setArtists] = useState([]);
@@ -49,6 +52,8 @@ export default function AdminDashboard() {
   const [exhibitions, setExhibitions] = useState([]);
   const [galleries, setGalleries] = useState([]);
   const [events, setEvents] = useState([]);
+  const [stockAlerts, setStockAlerts] = useState([]);
+  const [showStockToast, setShowStockToast] = useState(false);
 
   // Artist states
   const [isArtistFormOpen, setIsArtistFormOpen] = useState(false);
@@ -57,7 +62,6 @@ export default function AdminDashboard() {
   // Artwork states
   const [isArtworkFormOpen, setIsArtworkFormOpen] = useState(false);
   const [editingArtwork, setEditingArtwork] = useState(null);
-  const [showArtworkArchive, setShowArtworkArchive] = useState(false);
   const [artworkArtistFilter, setArtworkArtistFilter] = useState("All");
   const [artworkMediumFilter, setArtworkMediumFilter] = useState("All");
   const [artworkStatusFilter, setArtworkStatusFilter] = useState("All");
@@ -122,7 +126,12 @@ export default function AdminDashboard() {
     loadExhibitions();
     loadGalleries();
     loadEvents();
+    loadStockAlerts();
   }, []);
+
+  useEffect(() => {
+    setShowStockToast(stockAlerts.length > 0);
+  }, [stockAlerts]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -162,6 +171,24 @@ export default function AdminDashboard() {
     try { const data = await getEvents(); setEvents(data); setEventsError(""); }
     catch (err) { setEventsError("Failed to load events"); console.error(err); }
   };
+  const loadStockAlerts = async () => {
+    try {
+      const [cafeItems, giftShopItems] = await Promise.all([getCafeItems(), getGiftShopItems()]);
+
+      const cafeAlerts = cafeItems
+        .filter((item) => Number(item.stock_quantity) <= 20)
+        .map((item) => ({ source: "Cafe", name: item.item_name, stock: Number(item.stock_quantity) }));
+
+      const giftShopAlerts = giftShopItems
+        .filter((item) => Number(item.stock_quantity) <= 20)
+        .map((item) => ({ source: "Gift Shop", name: item.item_name, stock: Number(item.stock_quantity) }));
+
+      const alerts = [...cafeAlerts, ...giftShopAlerts].sort((a, b) => a.stock - b.stock);
+      setStockAlerts(alerts);
+    } catch (err) {
+      console.error("Stock alert load error:", err);
+    }
+  };
 
   const handleExhibitionArchive = async (id) => {
     if (!window.confirm("Archive this exhibition? It can be restored later.")) return;
@@ -185,6 +212,14 @@ export default function AdminDashboard() {
       await fetch(`${API_BASE}/artwork/${id}/deactivate`, { method: "PATCH" });
       await loadArtworks();
     } catch (err) { alert("Failed to archive artwork"); }
+  };
+
+  const handleEventArchive = async (id) => {
+    if (!window.confirm("Archive this event? It can be restored later.")) return;
+    try {
+      await fetch(`${API_BASE}/events/${id}/deactivate`, { method: "PATCH" });
+      await loadEvents();
+    } catch (err) { alert("Failed to archive event"); }
   };
 
   // Artist handlers
@@ -220,6 +255,27 @@ export default function AdminDashboard() {
       catch (err) { console.error(err); alert("Failed to delete artwork"); }
     }
   };
+  const handleDeaccessionArtwork = async (id) => {
+    if (window.confirm(
+      "⚠️ DEACCESSION CONFIRMATION\n\n" +
+      "This artwork will be marked as Deaccessioned and removed from public view.\n" +
+      "This action can be reversed by restoring the artwork.\n\n" +
+      "Continue?"
+    )) {
+      try {
+        const res = await fetch(`${import.meta.env.VITE_API_URL}/artwork/${id}/deaccession`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+        });
+        if (!res.ok) throw new Error("Failed to deaccession artwork");
+        await loadArtworks(); // Refresh the list
+        alert("Artwork has been deaccessioned.");
+      } catch (err) {
+        console.error("Error deaccessioning artwork:", err);
+        alert("Failed to deaccession artwork");
+      }
+    }
+  };
 
   // Provenance handlers
   const handleAddProvenance = () => { setEditingProvenance(null); setIsProvenanceFormOpen(true); };
@@ -246,7 +302,7 @@ export default function AdminDashboard() {
       if (editingExhibition) await updateExhibition(editingExhibition.exhibition_id, exhibitionData);
       else await createExhibition(exhibitionData);
       await loadExhibitions(); setIsExhibitionFormOpen(false);
-    } catch (err) { console.error(err); alert("Failed to save exhibition"); }
+    } catch (err) { alert("Failed to save exhibition"); }
   };
   const handleDeleteExhibition = async (id) => {
     if (window.confirm("Permanently delete this exhibition? This cannot be undone.")) {
@@ -283,9 +339,9 @@ export default function AdminDashboard() {
     } catch (err) { console.error(err); alert("Failed to save event"); }
   };
   const handleDeleteEvent = async (id) => {
-    if (window.confirm("Delete this event?")) {
+    if (window.confirm("Archive this event? It can be restored later.")) {
       try { await deleteEvent(id); await loadEvents(); }
-      catch (err) { console.error(err); alert("Failed to delete event"); }
+      catch (err) { console.error(err); alert("Failed to archive event"); }
     }
   };
 
@@ -316,16 +372,17 @@ export default function AdminDashboard() {
     setSearchTerm("");
     setIsMobileMenuOpen(false);
     if (tabId !== "exhibitions") setShowExhibitionArchive(false);
-    if (tabId !== "galleries") setShowGalleryArchive(false);
-    if (tabId !== "artwork") setShowArtworkArchive(false);
+    if (tabId !== "galleries")   setShowGalleryArchive(false);
+    if (tabId !== "artwork")     setShowArtworkArchive(false);
+    if (tabId !== "events")      setShowEventArchive(false); // ← new
   };
 
-  // ── Filtered data ────────────────────────────────────────────────────────
-
+  // Filtered data
   const filteredArtists = artists.filter((a) =>
     `${a.first_name} ${a.last_name}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
     a.nationality?.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
   const artworkArtists = [...new Set(artworks.map(a => a.artist_name).filter(Boolean))].sort();
   const artworkMediums = [...new Set(artworks.map(a => a.medium).filter(Boolean))].sort();
 
@@ -347,6 +404,7 @@ export default function AdminDashboard() {
         default: return 0;
       }
     });
+
   const filteredProvenance = provenance.filter((r) =>
     r.owner_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     r.acquisition_method?.toLowerCase().includes(searchTerm.toLowerCase())
@@ -428,7 +486,26 @@ export default function AdminDashboard() {
   };
 
   return (
-    <div className="admin-dashboard">
+    <>
+      {showStockToast && stockAlerts.length > 0 && (
+        <div className="dashboard-stock-toast">
+          <div className="dashboard-stock-toast-content">
+            <div className="dashboard-stock-toast-title">
+              Inventory alerts
+            </div>
+            <div className="dashboard-stock-toast-list">
+              {stockAlerts.map((alert) => (
+                <div key={`${alert.source}-${alert.name}`} className="dashboard-stock-toast-item">
+                  <strong>{alert.name}</strong> in <strong>{alert.source}</strong> is at <strong>{alert.stock}</strong>.
+                </div>
+              ))}
+            </div>
+          </div>
+          <button type="button" onClick={() => setShowStockToast(false)}>Dismiss</button>
+        </div>
+      )}
+
+      <div className="admin-dashboard">
       <button
         className="mobile-menu-toggle"
         onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -484,7 +561,7 @@ export default function AdminDashboard() {
           )}
         </header>
 
-        {/* ── Exhibitions: filter bar + archived toggle ── */}
+        {/* Exhibitions filter bar */}
         {activeTab === "exhibitions" && (
           <>
             <div className="exhibition-filters-bar">
@@ -530,9 +607,7 @@ export default function AdminDashboard() {
                   setExhibitionStatusFilter("All");
                   setExhibitionGalleryFilter("All");
                   setExhibitionSort("title");
-                }}>
-                  Clear Filters
-                </button>
+                }}>Clear Filters</button>
               )}
             </div>
             <div className="exhibitions-admin-toolbar">
@@ -540,13 +615,13 @@ export default function AdminDashboard() {
                 {filteredExhibitions.length} exhibition{filteredExhibitions.length !== 1 ? "s" : ""}
               </p>
               <button className="btn-view-archived" onClick={() => setShowExhibitionArchive((v) => !v)}>
-                 {showExhibitionArchive ? "Hide Archived" : "View Archived Exhibitions"}
+                {showExhibitionArchive ? "Hide Archived" : "View Archived Exhibitions"}
               </button>
             </div>
           </>
         )}
 
-        {/* ── Galleries: filter bar + archived toggle ── */}
+        {/* Galleries filter bar */}
         {activeTab === "galleries" && (
           <>
             <div className="exhibition-filters-bar">
@@ -594,9 +669,7 @@ export default function AdminDashboard() {
                   setGalleryClimateFilter("All");
                   setGalleryFloorFilter("All");
                   setGallerySort("name");
-                }}>
-                  Clear Filters
-                </button>
+                }}>Clear Filters</button>
               )}
             </div>
             <div className="exhibitions-admin-toolbar">
@@ -610,7 +683,7 @@ export default function AdminDashboard() {
           </>
         )}
 
-        {/* ── Artists: filter bar + archived toggle ── */}
+        {/* Artwork filter bar */}
         {activeTab === "artwork" && (
           <>
             <div className="exhibition-filters-bar">
@@ -665,6 +738,18 @@ export default function AdminDashboard() {
           </>
         )}
 
+        {/* Events toolbar */}
+        {activeTab === "events" && (
+          <div className="exhibitions-admin-toolbar">
+            <p className="ex-results-count">
+              {filteredEvents.length} event{filteredEvents.length !== 1 ? "s" : ""}
+            </p>
+            <button className="btn-view-archived" onClick={() => setShowEventArchive(v => !v)}>
+              {showEventArchive ? "Hide Archived" : "View Archived Events"}
+            </button>
+          </div>
+        )}
+
         {!usesCustomManager && activeTab !== "reports" && (
           <div className="search-bar">
             <input
@@ -685,6 +770,23 @@ export default function AdminDashboard() {
           )}
 
           {/* Artwork */}
+          {activeTab === "artwork" && (
+            <>
+              {showArtworkArchive && (
+                <ArtworkArchive apiBase={API_BASE} onRestored={() => loadArtworks()} />
+              )}
+              {artworksError
+                ? <div className="error-message">{artworksError}</div>
+                : <ArtworkTable
+                    artworks={filteredArtworks}
+                    onEdit={handleEditArtwork}
+                    onDelete={handleDeleteArtwork}
+                    onArchive={handleArtworkArchive}
+                    onDeaccession={handleDeaccessionArtwork}
+                  />
+              }
+            </>
+          )}
 
           {/* Provenance */}
           {activeTab === "provenance" && (
@@ -702,11 +804,11 @@ export default function AdminDashboard() {
               {exhibitionsError
                 ? <div className="error-message">{exhibitionsError}</div>
                 : <ExhibitionTable
-                  exhibitions={filteredExhibitions}
-                  onEdit={handleEditExhibition}
-                  onDelete={handleDeleteExhibition}
-                  onArchive={handleExhibitionArchive}
-                />
+                    exhibitions={filteredExhibitions}
+                    onEdit={handleEditExhibition}
+                    onDelete={handleDeleteExhibition}
+                    onArchive={handleExhibitionArchive}
+                  />
               }
             </>
           )}
@@ -720,38 +822,31 @@ export default function AdminDashboard() {
               {galleriesError
                 ? <div className="error-message">{galleriesError}</div>
                 : <GalleryTable
-                  galleries={filteredGalleries}
-                  onEdit={handleEditGallery}
-                  onDelete={handleDeleteGallery}
-                  onArchive={handleGalleryArchive}
-                />
-              }
-            </>
-          )}
-
-          {/* Artworks*/}
-          {activeTab === "artwork" && (
-            <>
-              {showArtworkArchive && (
-                <ArtworkArchive apiBase={API_BASE} onRestored={() => loadArtworks()} />
-              )}
-              {artworksError
-                ? <div className="error-message">{artworksError}</div>
-                : <ArtworkTable
-                  artworks={filteredArtworks}
-                  onEdit={handleEditArtwork}
-                  onDelete={handleDeleteArtwork}
-                  onArchive={handleArtworkArchive}
-                />
+                    galleries={filteredGalleries}
+                    onEdit={handleEditGallery}
+                    onDelete={handleDeleteGallery}
+                    onArchive={handleGalleryArchive}
+                  />
               }
             </>
           )}
 
           {/* Events */}
           {activeTab === "events" && (
-            eventsError
-              ? <div className="error-message">{eventsError}</div>
-              : <EventTable events={filteredEvents} onEdit={handleEditEvent} onDelete={handleDeleteEvent} />
+            <>
+              {showEventArchive && (
+                <EventArchive apiBase={API_BASE} onRestored={() => loadEvents()} />
+              )}
+              {eventsError
+                ? <div className="error-message">{eventsError}</div>
+                : <EventTable
+                    events={filteredEvents}
+                    onEdit={handleEditEvent}
+                    onDelete={handleDeleteEvent}
+                    onArchive={handleEventArchive}
+                  />
+              }
+            </>
           )}
 
           {activeTab === "cafe" && <CafeAdminPanel />}
@@ -769,6 +864,7 @@ export default function AdminDashboard() {
       {isExhibitionFormOpen && <ExhibitionForm onSubmit={handleSaveExhibition} initialData={editingExhibition} onCancel={() => setIsExhibitionFormOpen(false)} />}
       {isGalleryFormOpen && <GalleryForm onSubmit={handleSaveGallery} initialData={editingGallery} onCancel={() => setIsGalleryFormOpen(false)} />}
       {isEventFormOpen && <EventForm onSubmit={handleSaveEvent} initialData={editingEvent} onCancel={() => setIsEventFormOpen(false)} />}
-    </div>
+      </div>
+    </>
   );
 }

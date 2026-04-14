@@ -5,6 +5,69 @@
   background: var(--color-cream);
 }
 
+.dashboard-stock-toast {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 9999;
+  padding: 0.875rem 2rem;
+  background: rgba(255, 244, 229, 0.96);
+  backdrop-filter: blur(4px);
+  border-bottom: 1px solid rgba(215, 139, 47, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  animation: slideDown 0.3s ease;
+  color: #7c2d12;
+}
+
+.dashboard-stock-toast-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  max-width: 900px;
+}
+
+.dashboard-stock-toast-title {
+  color: #7c2d12;
+  font-size: 0.92rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.dashboard-stock-toast-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.dashboard-stock-toast-item {
+  color: #7c2d12;
+  font-size: 0.88rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+
+.dashboard-stock-toast strong,
+.dashboard-stock-toast span {
+  color: #7c2d12;
+  font-size: 0.88rem;
+  font-weight: 500;
+  letter-spacing: 0.03em;
+}
+
+.dashboard-stock-toast button {
+  border: 1px solid rgba(215, 139, 47, 0.5);
+  background: #fff;
+  color: #7c2d12;
+  padding: 0.4rem 0.75rem;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
 .admin-sidebar {
   width: 280px;
   background: var(--color-white);

@@ -1,8 +1,8 @@
-// components/ArtworkArchive.jsx
+// components/EventArchive.jsx
 import { useEffect, useState } from "react";
 import "../styles/ExhibitionArchive.css";
 
-export default function ArtworkArchive({ apiBase, onRestored }) {
+export default function EventArchive({ apiBase, onRestored }) {
   const [archived, setArchived] = useState([]);
   const [loading,  setLoading]  = useState(true);
   const [error,    setError]    = useState("");
@@ -11,8 +11,8 @@ export default function ArtworkArchive({ apiBase, onRestored }) {
     setLoading(true);
     setError("");
     try {
-      const res = await fetch(`${apiBase}/artwork/archived`);
-      if (!res.ok) throw new Error("Failed to fetch archived artworks");
+      const res = await fetch(`${apiBase}/events/archived`);
+      if (!res.ok) throw new Error("Failed to fetch archived events");
       setArchived(await res.json());
     } catch (err) {
       setError(err.message);
@@ -24,21 +24,28 @@ export default function ArtworkArchive({ apiBase, onRestored }) {
   useEffect(() => { load(); }, []);
 
   const handleRestore = async (id) => {
-    if (!window.confirm("Restore this artwork? It will become visible again.")) return;
+    if (!window.confirm("Restore this event? It will become visible again.")) return;
     try {
-      const res = await fetch(`${apiBase}/artwork/${id}/reactivate`, { method: "PATCH" });
+      const res = await fetch(`${apiBase}/events/${id}/reactivate`, { method: "PATCH" });
       if (!res.ok) throw new Error("Failed to restore");
-      setArchived(prev => prev.filter(a => a.artwork_id !== id));
+      setArchived(prev => prev.filter(e => e.event_id !== id));
       onRestored();
     } catch (err) {
-      alert("Failed to restore artwork: " + err.message);
+      alert("Failed to restore event: " + err.message);
     }
+  };
+
+  const formatDate = (dateStr) => {
+    if (!dateStr) return "—";
+    return new Date(dateStr.toString().slice(0, 10)).toLocaleDateString("en-US", {
+      year: "numeric", month: "short", day: "numeric"
+    });
   };
 
   return (
     <div className="archived-exhibitions-panel">
       <div className="archived-panel-header">
-        <h3 className="archived-panel-title">Archived Artworks</h3>
+        <h3 className="archived-panel-title">Archived Events</h3>
         <span className="archived-panel-count">{archived.length} archived</span>
       </div>
 
@@ -46,7 +53,7 @@ export default function ArtworkArchive({ apiBase, onRestored }) {
       {error   && <p className="archived-state-msg archived-error">{error}</p>}
 
       {!loading && !error && archived.length === 0 && (
-        <p className="archived-state-msg">No archived artworks.</p>
+        <p className="archived-state-msg">No archived events.</p>
       )}
 
       {!loading && !error && archived.length > 0 && (
@@ -55,29 +62,25 @@ export default function ArtworkArchive({ apiBase, onRestored }) {
             <thead>
               <tr>
                 <th>ID</th>
-                <th>Title</th>
-                <th>Artist</th>
-                <th>Year</th>
-                <th>Medium</th>
-                <th>Status</th>
+                <th>Event Name</th>
+                <th>Date</th>
+                <th>Capacity</th>
+                <th>Attendees</th>
+                <th>Members Only</th>
                 <th>Restore</th>
               </tr>
             </thead>
             <tbody>
-              {archived.map((a) => (
-                <tr key={a.artwork_id}>
-                  <td>{a.artwork_id}</td>
-                  <td className="archived-title">{a.title}</td>
-                  <td>{a.artist_name || "—"}</td>
-                  <td>{a.creation_year || "—"}</td>
-                  <td>{a.medium || "—"}</td>
+              {archived.map((e) => (
+                <tr key={e.event_id}>
+                  <td>{e.event_id}</td>
+                  <td className="archived-title">{e.event_name}</td>
+                  <td>{formatDate(e.event_date)}</td>
+                  <td>{e.capacity}</td>
+                  <td>{e.total_attendees}</td>
+                  <td>{e.member_only ? "Yes" : "No"}</td>
                   <td>
-                    <span className={`status-badge ${a.current_display_status === 'Deaccessioned' ? 'badge-deaccessioned' : ''}`}>
-                      {a.current_display_status || "—"}
-                    </span>
-                  </td>
-                  <td>
-                    <button className="btn-restore" onClick={() => handleRestore(a.artwork_id)}>
+                    <button className="btn-restore" onClick={() => handleRestore(e.event_id)}>
                       ↩ Restore
                     </button>
                   </td>

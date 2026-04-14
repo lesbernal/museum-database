@@ -76,6 +76,14 @@ export async function updateArtwork(id, artwork) {
 export async function deleteArtwork(id) {
   return request(`/artwork/${id}`, { method: "DELETE" }, "Failed to delete artwork");
 }
+export async function deaccessionArtwork(id) {
+  const res = await fetch(`${BASE_URL}/artwork/${id}/deaccession`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+  });
+  if (!res.ok) throw new Error("Failed to deaccession artwork");
+  return res.json();
+}
 
 // ── PROVENANCE ────────────────────────────────────────────────────────────────
 export async function getProvenance() {
@@ -322,6 +330,11 @@ export async function deleteEmployee(id) {
   return authRequest(`/employees/${id}`, { method: "DELETE" }, "Failed to delete employee");
 }
 
+// ── EMPLOYEE SELF-SERVICE ─────────────────────────────────────────────────────
+export async function getMyEmployeeRecord() {
+  const user_id = localStorage.getItem("user_id");
+  return authRequest(`/employees/${user_id}`, {}, "Failed to fetch employee record");
+}
 // ── VISITORS (auth-protected) ─────────────────────────────────────────────────
 export async function getVisitors() {
   return authRequest("/visitors", {}, "Failed to fetch visitors");

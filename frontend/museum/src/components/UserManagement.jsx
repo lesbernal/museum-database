@@ -39,6 +39,7 @@ const FIELDS = {
     { key: "salary",          label: "Salary",          required: true, type: "number" },
     { key: "employment_type", label: "Employment Type", type: "select",
       options: ["Full-Time", "Part-Time", "Contract", "Intern"] },
+    { key: "is_manager",      label: "Manager",         type: "checkbox" },
   ],
   visitors: [
     { key: "user_id",         label: "User ID",         required: true, editDisabled: true },
@@ -56,7 +57,7 @@ const FIELDS = {
 
 const TABLE_COLS = {
   users:     ["user_id", "first_name", "last_name", "email", "role", "city"],
-  employees: ["user_id", "first_name", "last_name", "job_title", "department_id", "employment_type", "salary"],
+  employees: ["user_id", "first_name", "last_name", "job_title", "department_id", "employment_type", "is_manager"],
   visitors:  ["user_id", "first_name", "last_name", "email", "last_visit_date", "total_visits"],
   members:   ["user_id", "first_name", "last_name", "email", "membership_level", "join_date", "expiration_date"],
 };
@@ -68,10 +69,8 @@ const API = {
   members:   { get: getMembers,   create: createMember,   update: updateMember,   del: deleteMember },
 };
 
-// Date fields that need ISO trimming to YYYY-MM-DD
 const DATE_FIELDS = ["date_of_birth", "hire_date", "last_visit_date", "join_date", "expiration_date"];
 
-// Trim all date fields in a record to YYYY-MM-DD
 function trimDates(record) {
   const trimmed = { ...record };
   DATE_FIELDS.forEach(f => {
@@ -112,7 +111,6 @@ const UserManagement = forwardRef(function UserManagement({ searchTerm = "", onS
 
   useEffect(() => { load(); }, [load]);
 
-  // Fire pending pre-fill after sub-tab switches
   useEffect(() => {
     if (pendingForm.current) {
       const pending = pendingForm.current;
@@ -138,13 +136,7 @@ const UserManagement = forwardRef(function UserManagement({ searchTerm = "", onS
     )
   );
 
-  // ── FIX: trim ISO dates when opening edit modal ──
-  const openEdit = (r) => {
-    setForm(trimDates(r));
-    setSelected(r);
-    setModal("edit");
-  };
-
+  const openEdit   = (r) => { setForm(trimDates(r)); setSelected(r); setModal("edit"); };
   const closeModal = () => { setModal(null); setSelected(null); setForm({}); };
 
   const handleSubTabChange = (id) => {
@@ -160,7 +152,6 @@ const UserManagement = forwardRef(function UserManagement({ searchTerm = "", onS
         const result = await API[subTab].create(form);
         notify("Record created");
 
-        // ── After creating a user, offer to add role-specific details ──
         if (subTab === "users" && ["employee", "visitor", "member"].includes(form.role)) {
           const createdId = result.user_id || form.user_id;
 
@@ -205,7 +196,6 @@ const UserManagement = forwardRef(function UserManagement({ searchTerm = "", onS
           }
         }
 
-        // ── After creating a visitor, offer to add member details ──
         if (subTab === "visitors") {
           const createdId = result.user_id || form.user_id;
           const confirmMember = window.confirm(
@@ -222,7 +212,6 @@ const UserManagement = forwardRef(function UserManagement({ searchTerm = "", onS
         }
 
       } else {
-        // ── FIX: trim ISO dates before sending to backend on update ──
         await API[subTab].update(selected.user_id, trimDates(form));
         notify("Record updated");
       }
@@ -252,6 +241,8 @@ const UserManagement = forwardRef(function UserManagement({ searchTerm = "", onS
   const renderCell = (r, col) => {
     if (col === "salary" && r[col])
       return `$${Number(r[col]).toLocaleString()}`;
+    if (col === "is_manager")
+      return r[col] ? <span className="um-badge um-badge-employee">Manager</span> : "—";
     if (col === "role")
       return <span className={`um-badge um-badge-${r[col]}`}>{r[col]}</span>;
     if (col === "membership_level")
@@ -298,8 +289,8 @@ const UserManagement = forwardRef(function UserManagement({ searchTerm = "", onS
                   {tableCols.map(c => <td key={c}>{renderCell(r, c)}</td>)}
                   <td>
                     <div className="um-actions">
-                      <button className="um-edit-btn" onClick={() => openEdit(r)} title="Edit">Edit</button>
-                      <button className="um-delete-btn" onClick={() => confirmDelete(r)} title="Delete">Delete</button>
+                      <button className="um-edit-btn" onClick={() => openEdit(r)} title="Edit">✏️</button>
+                      <button className="um-delete-btn" onClick={() => confirmDelete(r)} title="Delete">🗑️</button>
                     </div>
                   </td>
                 </tr>
@@ -314,7 +305,7 @@ const UserManagement = forwardRef(function UserManagement({ searchTerm = "", onS
         <div className="um-overlay" onClick={closeModal}>
           <div className="um-modal" onClick={e => e.stopPropagation()}>
             <div className="um-modal-header">
-              <h3>{modal === "add" ? `Add ${subTab.slice(0,-1)}` : `Edit ${subTab.slice(0,-1)}`}</h3>
+              <h3>{modal === "add" ? `Add ${subTab.slice(0, -1)}` : `Edit ${subTab.slice(0, -1)}`}</h3>
               <button className="um-modal-close" onClick={closeModal}>×</button>
             </div>
             <div className="um-modal-body">
@@ -322,24 +313,40 @@ const UserManagement = forwardRef(function UserManagement({ searchTerm = "", onS
                 {fields
                   .filter(f => !(f.addOnly && modal === "edit"))
                   .map(f => (
-                  <div className={`um-form-group${f.full ? " full" : ""}`} key={f.key}>
-                    <label>{f.label}{f.required ? " *" : ""}</label>
-                    {f.type === "select" ? (
-                      <select value={form[f.key] || ""}
-                        onChange={e => setForm(p => ({ ...p, [f.key]: e.target.value }))}>
-                        <option value="">— Select —</option>
-                        {f.options.map(o => <option key={o} value={o}>{o}</option>)}
-                      </select>
-                    ) : (
-                      <input
-                        type={f.type || "text"}
-                        value={form[f.key] || ""}
-                        disabled={f.editDisabled && modal === "edit"}
-                        onChange={e => setForm(p => ({ ...p, [f.key]: e.target.value }))}
-                      />
-                    )}
-                  </div>
-                ))}
+                    <div className={`um-form-group${f.full ? " full" : ""}`} key={f.key}>
+                      <label>{f.label}{f.required ? " *" : ""}</label>
+
+                      {f.type === "select" ? (
+                        <select value={form[f.key] || ""}
+                          onChange={e => setForm(p => ({ ...p, [f.key]: e.target.value }))}>
+                          <option value="">— Select —</option>
+                          {f.options.map(o => <option key={o} value={o}>{o}</option>)}
+                        </select>
+
+                      ) : f.type === "checkbox" ? (
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, paddingTop: 6 }}>
+                          <input
+                            type="checkbox"
+                            id={`cb-${f.key}`}
+                            checked={!!form[f.key]}
+                            onChange={e => setForm(p => ({ ...p, [f.key]: e.target.checked ? 1 : 0 }))}
+                            style={{ width: 16, height: 16, cursor: "pointer" }}
+                          />
+                          <label htmlFor={`cb-${f.key}`} style={{ fontSize: "0.875rem", color: "#374151", cursor: "pointer", marginBottom: 0 }}>
+                            Grant manager permissions
+                          </label>
+                        </div>
+
+                      ) : (
+                        <input
+                          type={f.type || "text"}
+                          value={form[f.key] || ""}
+                          disabled={f.editDisabled && modal === "edit"}
+                          onChange={e => setForm(p => ({ ...p, [f.key]: e.target.value }))}
+                        />
+                      )}
+                    </div>
+                  ))}
               </div>
             </div>
             <div className="um-modal-footer">

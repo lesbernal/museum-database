@@ -1,0 +1,46 @@
+/* src/styles/FormUtils.css
+   Styles for PasswordInput, PhoneInput, StateSelect, ZipInput            */
+
+/* ── Password wrapper ── */
+.fu-password-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.fu-password-wrap input {
+  width: 100%;
+  padding-right: 42px !important; /* make room for eye button */
+}
+
+.fu-eye-btn {
+  position: absolute;
+  right: 10px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #9ca3af;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s;
+  line-height: 1;
+}
+
+.fu-eye-btn:hover { color: #374151; }
+
+/* ── Field wrapper (for inline error messages) ── */
+.fu-field-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+}
+
+.fu-field-error {
+  font-size: 11px;
+  color: #dc2626;
+  letter-spacing: 0.02em;
+}
