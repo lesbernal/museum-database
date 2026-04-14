@@ -147,3 +147,23 @@
   font-size: 1.5rem;
   color: var(--color-gray-light);
 }
+
+.badge-deaccessioned {
+  background: #4a4a4a;
+  color: #ffffff;
+}
+
+.deaccession-btn {
+  background: #4a4a4a;
+  color: white;
+  border: none;
+  padding: 0.375rem 0.75rem;
+  border-radius: 0;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.deaccession-btn:hover {
+  background: #6b6b6b;
+  transform: scale(1.05);
+}

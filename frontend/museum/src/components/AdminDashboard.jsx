@@ -255,6 +255,27 @@ export default function AdminDashboard() {
       catch (err) { console.error(err); alert("Failed to delete artwork"); }
     }
   };
+  const handleDeaccessionArtwork = async (id) => {
+    if (window.confirm(
+      "⚠️ DEACCESSION CONFIRMATION\n\n" +
+      "This artwork will be marked as Deaccessioned and removed from public view.\n" +
+      "This action can be reversed by restoring the artwork.\n\n" +
+      "Continue?"
+    )) {
+      try {
+        const res = await fetch(`${import.meta.env.VITE_API_URL}/artwork/${id}/deaccession`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+        });
+        if (!res.ok) throw new Error("Failed to deaccession artwork");
+        await loadArtworks(); // Refresh the list
+        alert("Artwork has been deaccessioned.");
+      } catch (err) {
+        console.error("Error deaccessioning artwork:", err);
+        alert("Failed to deaccession artwork");
+      }
+    }
+  };
 
   // Provenance handlers
   const handleAddProvenance = () => { setEditingProvenance(null); setIsProvenanceFormOpen(true); };
@@ -761,6 +782,7 @@ export default function AdminDashboard() {
                     onEdit={handleEditArtwork}
                     onDelete={handleDeleteArtwork}
                     onArchive={handleArtworkArchive}
+                    onDeaccession={handleDeaccessionArtwork}
                   />
               }
             </>
