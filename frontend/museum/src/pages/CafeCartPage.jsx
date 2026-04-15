@@ -49,7 +49,14 @@ export default function CafeCartPage() {
       return;
     }
 
-    navigate("/cafe/checkout");
+    navigate("/checkout", {
+      state: {
+        type: "cafe",
+        items: cart,
+        total,
+        pickupEstimate,
+      },
+    });
   }
 
   return (
