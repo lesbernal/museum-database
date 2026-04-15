@@ -23,7 +23,7 @@ const ProvenanceFormModal = ({ isOpen, editingProvenance, formData, artworks, er
     <div className="modal-overlay" onClick={onCancel}>
       <div className="modal-content provenance-modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h2>{editingProvenance ? "✏️ Edit Provenance" : "➕ Add Provenance Record"}</h2>
+          <h2>{editingProvenance ? "Edit Provenance" : "Add Provenance Record"}</h2>
           <button className="close-btn" onClick={onCancel}>&times;</button>
         </div>
 
