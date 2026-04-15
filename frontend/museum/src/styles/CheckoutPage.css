@@ -140,6 +140,14 @@
   border-color: var(--color-gold);
 }
 
+.checkout-field input[readonly] {
+  background: #f6f1e6;
+  color: var(--color-black);
+  opacity: 1;
+  -webkit-text-fill-color: var(--color-black);
+  cursor: default;
+}
+
 .checkout-field-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
