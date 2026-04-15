@@ -277,7 +277,7 @@ export default function ArtworkManager({
         creation_year: editingArtwork.creation_year || "",
         medium: editingArtwork.medium || "",
         dimensions: editingArtwork.dimensions || "",
-        acquisition_date: editingArtwork.acquisition_date ? new Date(editingArtwork.acquisition_date).toISOString().split('T')[0] : "",
+        acquisition_date: editingArtwork.acquisition_date ? formatToCST(editingArtwork.acquisition_date) : "",
         insurance_value: editingArtwork.insurance_value || "",
         current_display_status: editingArtwork.current_display_status || "On Display",
         image_url: editingArtwork.image_url || "",
