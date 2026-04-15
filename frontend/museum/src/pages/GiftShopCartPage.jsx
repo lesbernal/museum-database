@@ -40,7 +40,13 @@ export default function GiftShopCartPage() {
       return;
     }
 
-    navigate("/gift-shop/checkout");
+    navigate("/checkout", {
+      state: {
+        type: "giftshop",
+        items: cart,
+        total,
+      },
+    });
   }
 
   return (
