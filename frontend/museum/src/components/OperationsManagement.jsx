@@ -283,7 +283,7 @@ export default function OperationsManagement({ title, description, resources }) 
                     {activeResource.columns.map((column) => (
                       <td key={column.key} title={record[column.key] ?? ""}>
                         {formatValue(record[column.key], column)}
-                      </table>
+                      </td>
                     ))}
                     <td className="actions">
                       <button
