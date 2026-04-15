@@ -4,23 +4,20 @@ import ArtistForm from "./ArtistForm";
 import ArtistTable from "./ArtistTable";
 import ArtworkForm from "./ArtworkForm";
 import ArtworkTable from "./ArtworkTable";
-import ArtworkArchive from "./ArtworkArchive";
+import Archive from "./Archive"; // Unified archive component
 import ProvenanceForm from "./ProvenanceForm";
 import ProvenanceTable from "./ProvenanceTable";
 import ExhibitionForm from "./ExhibitionForm";
 import ExhibitionTable from "./ExhibitionTable";
 import GalleryForm from "./GalleryForm";
 import GalleryTable from "./GalleryTable";
-import GalleryArchive from "./GalleryArchive";
 import EventForm from "./EventForm";
 import EventTable from "./EventTable";
-import EventArchive from "./EventArchive";
 import CafeAdminPanel from "./CafeAdminPanel";
 import GiftShopAdminPanel from "./GiftShopAdminPanel";
 import UserManagement from "./UserManagement";
 import ReportsPanel from "./ReportsPanel";
 import DepartmentManagement from "./DepartmentManagement";
-import ExhibitionArchive from "./ExhibitionArchive";
 
 import {
   getArtists, createArtist, updateArtist, deleteArtist,
@@ -43,7 +40,7 @@ export default function AdminDashboard() {
   const [showExhibitionArchive, setShowExhibitionArchive] = useState(false);
   const [showGalleryArchive, setShowGalleryArchive] = useState(false);
   const [showArtworkArchive, setShowArtworkArchive] = useState(false);
-  const [showEventArchive, setShowEventArchive] = useState(false); // ← new
+  const [showEventArchive, setShowEventArchive] = useState(false);
 
   // Data
   const [artists, setArtists] = useState([]);
@@ -268,7 +265,7 @@ export default function AdminDashboard() {
           headers: { "Content-Type": "application/json" },
         });
         if (!res.ok) throw new Error("Failed to deaccession artwork");
-        await loadArtworks(); // Refresh the list
+        await loadArtworks();
         alert("Artwork has been deaccessioned.");
       } catch (err) {
         console.error("Error deaccessioning artwork:", err);
@@ -374,7 +371,7 @@ export default function AdminDashboard() {
     if (tabId !== "exhibitions") setShowExhibitionArchive(false);
     if (tabId !== "galleries")   setShowGalleryArchive(false);
     if (tabId !== "artwork")     setShowArtworkArchive(false);
-    if (tabId !== "events")      setShowEventArchive(false); // ← new
+    if (tabId !== "events")      setShowEventArchive(false);
   };
 
   // Filtered data
@@ -773,7 +770,7 @@ export default function AdminDashboard() {
           {activeTab === "artwork" && (
             <>
               {showArtworkArchive && (
-                <ArtworkArchive apiBase={API_BASE} onRestored={() => loadArtworks()} />
+                <Archive type="artwork" onRestored={() => loadArtworks()} />
               )}
               {artworksError
                 ? <div className="error-message">{artworksError}</div>
@@ -799,7 +796,7 @@ export default function AdminDashboard() {
           {activeTab === "exhibitions" && (
             <>
               {showExhibitionArchive && (
-                <ExhibitionArchive apiBase={API_BASE} onRestored={() => loadExhibitions()} />
+                <Archive type="exhibitions" onRestored={() => loadExhibitions()} />
               )}
               {exhibitionsError
                 ? <div className="error-message">{exhibitionsError}</div>
@@ -817,7 +814,7 @@ export default function AdminDashboard() {
           {activeTab === "galleries" && (
             <>
               {showGalleryArchive && (
-                <GalleryArchive apiBase={API_BASE} onRestored={() => loadGalleries()} />
+                <Archive type="galleries" onRestored={() => loadGalleries()} />
               )}
               {galleriesError
                 ? <div className="error-message">{galleriesError}</div>
@@ -835,7 +832,7 @@ export default function AdminDashboard() {
           {activeTab === "events" && (
             <>
               {showEventArchive && (
-                <EventArchive apiBase={API_BASE} onRestored={() => loadEvents()} />
+                <Archive type="events" onRestored={() => loadEvents()} />
               )}
               {eventsError
                 ? <div className="error-message">{eventsError}</div>
