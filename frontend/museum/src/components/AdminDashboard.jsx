@@ -1,10 +1,9 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import ArtistForm from "./ArtistForm";
-import ArtistTable from "./ArtistTable";
+import ArtistManager from "./ArtistManager";
 import ArtworkForm from "./ArtworkForm";
 import ArtworkTable from "./ArtworkTable";
-import Archive from "./Archive"; // Unified archive component
+import Archive from "./Archive"; 
 import ProvenanceForm from "./ProvenanceForm";
 import ProvenanceTable from "./ProvenanceTable";
 import ExhibitionForm from "./ExhibitionForm";
@@ -51,10 +50,6 @@ export default function AdminDashboard() {
   const [events, setEvents] = useState([]);
   const [stockAlerts, setStockAlerts] = useState([]);
   const [showStockToast, setShowStockToast] = useState(false);
-
-  // Artist states
-  const [isArtistFormOpen, setIsArtistFormOpen] = useState(false);
-  const [editingArtist, setEditingArtist] = useState(null);
 
   // Artwork states
   const [isArtworkFormOpen, setIsArtworkFormOpen] = useState(false);
@@ -220,19 +215,20 @@ export default function AdminDashboard() {
   };
 
   // Artist handlers
-  const handleAddArtist = () => { setEditingArtist(null); setIsArtistFormOpen(true); };
-  const handleEditArtist = (artist) => { setEditingArtist(artist); setIsArtistFormOpen(true); };
-  const handleSaveArtist = async (artistData) => {
-    try {
-      if (editingArtist) await updateArtist(editingArtist.artist_id, artistData);
-      else await createArtist(artistData);
-      await loadArtists(); setIsArtistFormOpen(false);
-    } catch (err) { console.error(err); alert("Failed to save artist"); }
+  const handleAddArtist = async (artistData) => {
+    await createArtist(artistData);
+    await loadArtists();
   };
-  const handleDeleteArtist = async (artistId) => {
-    if (window.confirm("Delete this artist? This will also delete their artworks and provenance records.")) {
-      try { await deleteArtist(artistId); await loadArtists(); }
-      catch (err) { console.error(err); alert("Failed to delete artist"); }
+
+  const handleUpdateArtist = async (id, artistData) => {
+    await updateArtist(id, artistData);
+    await loadArtists();
+  };
+
+  const handleDeleteArtist = async (id) => {
+    if (window.confirm("Delete this artist?")) {
+      await deleteArtist(id);
+      await loadArtists();
     }
   };
 
@@ -374,12 +370,7 @@ export default function AdminDashboard() {
     if (tabId !== "events")      setShowEventArchive(false);
   };
 
-  // Filtered data
-  const filteredArtists = artists.filter((a) =>
-    `${a.first_name} ${a.last_name}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    a.nationality?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
+  
   const artworkArtists = [...new Set(artworks.map(a => a.artist_name).filter(Boolean))].sort();
   const artworkMediums = [...new Set(artworks.map(a => a.medium).filter(Boolean))].sort();
 
@@ -551,7 +542,7 @@ export default function AdminDashboard() {
               {activeTab === "departments" && " - Manage museum departments and budgets"}
             </p>
           </div>
-          {!usesCustomManager && activeTab !== "reports" && (
+          {!usesCustomManager && activeTab !== "reports" && activeTab !== "artists" && (
             <button className="add-btn" onClick={handleAdd}>
               + Add New {getAddLabel()}
             </button>
@@ -747,7 +738,7 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {!usesCustomManager && activeTab !== "reports" && (
+        {!usesCustomManager && activeTab !== "reports" && activeTab !== "artists" && (
           <div className="search-bar">
             <input
               type="text"
@@ -761,9 +752,14 @@ export default function AdminDashboard() {
         <div className="content-area">
           {/* Artists */}
           {activeTab === "artists" && (
-            artistsError
-              ? <div className="error-message">{artistsError}</div>
-              : <ArtistTable artists={filteredArtists} onEdit={handleEditArtist} onDelete={handleDeleteArtist} />
+            <ArtistManager
+              artists={artists}
+              onAdd={handleAddArtist}
+              onUpdate={handleUpdateArtist}
+              onDelete={handleDeleteArtist}
+              loading={loading}
+              error={artistsError}
+            />
           )}
 
           {/* Artwork */}
@@ -855,7 +851,6 @@ export default function AdminDashboard() {
       </main>
 
       {/* Modals */}
-      {isArtistFormOpen && <ArtistForm onSubmit={handleSaveArtist} initialData={editingArtist} onCancel={() => setIsArtistFormOpen(false)} />}
       {isArtworkFormOpen && <ArtworkForm onSubmit={handleSaveArtwork} initialData={editingArtwork} onCancel={() => setIsArtworkFormOpen(false)} />}
       {isProvenanceFormOpen && <ProvenanceForm onSubmit={handleSaveProvenance} initialData={editingProvenance} onCancel={() => setIsProvenanceFormOpen(false)} />}
       {isExhibitionFormOpen && <ExhibitionForm onSubmit={handleSaveExhibition} initialData={editingExhibition} onCancel={() => setIsExhibitionFormOpen(false)} />}
