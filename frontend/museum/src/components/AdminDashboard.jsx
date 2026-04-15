@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import ArtistManager from "./ArtistManager";
 import ArtworkManager from "./ArtworkManager";
-import Archive from "./Archive"; 
+import Archive from "./Archive";
 import ProvenanceManager from "./ProvenanceManager";
 import ExhibitionManager from "./ExhibitionManager";
 import GalleryManager from "./GalleryManager";
@@ -57,6 +57,7 @@ export default function AdminDashboard() {
   const [exhibitionStatusFilter, setExhibitionStatusFilter] = useState("All");
   const [exhibitionGalleryFilter, setExhibitionGalleryFilter] = useState("All");
   const [exhibitionSort, setExhibitionSort] = useState("title");
+  const [endedExhibitions, setEndedExhibitions] = useState([]);
 
   // Gallery states
   const [galleryBuildingFilter, setGalleryBuildingFilter] = useState("All");
@@ -133,8 +134,15 @@ export default function AdminDashboard() {
     catch (err) { setProvenanceError("Failed to load provenance"); console.error(err); }
   };
   const loadExhibitions = async () => {
-    try { const data = await getExhibitions(); setExhibitions(data); setExhibitionsError(""); }
-    catch (err) { setExhibitionsError("Failed to load exhibitions"); console.error(err); }
+    try {
+      const data = await getExhibitions();
+      setExhibitions(data);
+      setExhibitionsError("");
+
+      const now = new Date();
+      const ended = data.filter(e => e.is_active && new Date(e.end_date) < now);
+      setEndedExhibitions(ended);
+    } catch (err) { setExhibitionsError("Failed to load exhibitions"); console.error(err); }
   };
   const loadGalleries = async () => {
     try { const data = await getGalleries(); setGalleries(data); setGalleriesError(""); }
@@ -328,9 +336,9 @@ export default function AdminDashboard() {
     setSearchTerm("");
     setIsMobileMenuOpen(false);
     if (tabId !== "exhibitions") setShowExhibitionArchive(false);
-    if (tabId !== "galleries")   setShowGalleryArchive(false);
-    if (tabId !== "artwork")     setShowArtworkArchive(false);
-    if (tabId !== "events")      setShowEventArchive(false);
+    if (tabId !== "galleries") setShowGalleryArchive(false);
+    if (tabId !== "artwork") setShowArtworkArchive(false);
+    if (tabId !== "events") setShowEventArchive(false);
   };
 
   const artworkArtists = [...new Set(artworks.map(a => a.artist_name).filter(Boolean))].sort();
@@ -438,6 +446,22 @@ export default function AdminDashboard() {
             </div>
           </div>
           <button type="button" onClick={() => setShowStockToast(false)}>Dismiss</button>
+        </div>
+      )}
+
+      {endedExhibitions.length > 0 && (
+        <div className="dashboard-stock-toast">
+          <div className="dashboard-stock-toast-content">
+            <div className="dashboard-stock-toast-title">Exhibitions have ended</div>
+            <div className="dashboard-stock-toast-list">
+              {endedExhibitions.map(e => (
+                <div key={e.exhibition_id} className="dashboard-stock-toast-item">
+                  <strong>{e.exhibition_name}</strong> ended on <strong>{new Date(e.end_date).toLocaleDateString()}</strong> — consider archiving it.
+                </div>
+              ))}
+            </div>
+          </div>
+          <button onClick={() => setEndedExhibitions([])}>Dismiss</button>
         </div>
       )}
 

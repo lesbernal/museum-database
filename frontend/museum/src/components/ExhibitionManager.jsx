@@ -17,10 +17,10 @@ const SuccessToast = ({ show, editingExhibition, onClose }) => {
 };
 
 // Form Modal Component
-const ExhibitionFormModal = ({ 
-  isOpen, editingExhibition, formData, exhibitionArtworks, galleries, artworks, 
-  errors, isSubmitting, selectedArtworkIds, onSubmit, onCancel, 
-  onChange, onAddArtworkRow, onRemoveArtworkRow, onArtworkRowChange 
+const ExhibitionFormModal = ({
+  isOpen, editingExhibition, formData, exhibitionArtworks, galleries, artworks,
+  errors, isSubmitting, selectedArtworkIds, onSubmit, onCancel,
+  onChange, onAddArtworkRow, onRemoveArtworkRow, onArtworkRowChange
 }) => {
   if (!isOpen) return null;
 
@@ -28,7 +28,7 @@ const ExhibitionFormModal = ({
     <div className="modal-overlay" onClick={onCancel}>
       <div className="modal-content exhibition-modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h2>{editingExhibition ? "✏️ Edit Exhibition" : "➕ Add New Exhibition"}</h2>
+          <h2>{editingExhibition ? " Edit Exhibition" : "➕ Add New Exhibition"}</h2>
           <button className="close-btn" onClick={onCancel}>&times;</button>
         </div>
 
@@ -206,7 +206,7 @@ const ExhibitionFormModal = ({
   );
 };
 
-export default function ExhibitionManager({ 
+export default function ExhibitionManager({
   exhibitions: externalExhibitions,
   onAdd,
   onUpdate,
@@ -355,12 +355,20 @@ export default function ExhibitionManager({
       i === idx ? { ...row, [field]: value } : row
     );
     setExhibitionArtworks(updated);
-    if (errors.artworks?.[idx]?.[field]) {
+
+    // Check for duplicate artwork selection
+    if (field === "artwork_id" && value) {
+      const isDuplicate = exhibitionArtworks.some(
+        (row, i) => i !== idx && String(row.artwork_id) === String(value)
+      );
       const updatedErrors = {
         ...errors,
         artworks: {
           ...errors.artworks,
-          [idx]: { ...errors.artworks[idx], [field]: null },
+          [idx]: {
+            ...errors.artworks?.[idx],
+            artwork_id: isDuplicate ? "Artwork is already in this exhibition" : null,
+          },
         },
       };
       setErrors(updatedErrors);
@@ -410,8 +418,15 @@ export default function ExhibitionManager({
     setIsFormOpen(true);
   };
 
-  const handleEditClick = (exhibition) => {
-    setEditingExhibition(exhibition);
+  const handleEditClick = async (exhibition) => {
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/exhibitionartwork/${exhibition.exhibition_id}`);
+      const artworks = await res.json();
+      setEditingExhibition({ ...exhibition, artworks });
+    } catch (err) {
+      console.error("Failed to load exhibition artworks:", err);
+      setEditingExhibition(exhibition);
+    }
     setIsFormOpen(true);
   };
 
