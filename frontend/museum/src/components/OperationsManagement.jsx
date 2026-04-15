@@ -1,13 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
 import "../styles/OperationsManagement.css";
+import { formatDateTimeToCST } from "../utils/dateUtils";
 
 function formatValue(value, field) {
   if (value === null || value === undefined || value === "") {
     return "—";
   }
 
+  // Handle datetime fields - convert UTC to CST
   if (field?.type === "datetime") {
-    return String(value).replace("T", " ").slice(0, 19);
+    return formatDateTimeToCST(value);
   }
 
   const formatted = String(value);
@@ -22,11 +24,16 @@ function formatValue(value, field) {
 function buildInitialForm(fields, record = null) {
   return fields.reduce((acc, field) => {
     if (record && record[field.name] !== undefined && record[field.name] !== null) {
-      acc[field.name] = field.type === "date"
-        ? String(record[field.name]).slice(0, 10)
-        : field.type === "datetime"
-          ? String(record[field.name]).replace("T", " ").slice(0, 19)
-          : String(record[field.name]);
+      let value = record[field.name];
+      if (field.type === "date") {
+        value = String(value).slice(0, 10);
+      } else if (field.type === "datetime") {
+        // Keep the raw value for the form input (will be converted on display only)
+        value = String(value).replace("T", " ").slice(0, 19);
+      } else {
+        value = String(value);
+      }
+      acc[field.name] = value;
     } else {
       acc[field.name] = field.defaultValue ?? "";
     }
@@ -93,7 +100,7 @@ function RecordFormModal({ resource, record, onClose, onSubmit }) {
                     </select>
                   ) : (
                     <input
-                      type={field.type === "datetime" ? "text" : field.type || "text"}
+                      type={field.type === "datetime" ? "datetime-local" : (field.type || "text")}
                       name={field.name}
                       value={form[field.name]}
                       onChange={(e) => setForm({ ...form, [field.name]: e.target.value })}

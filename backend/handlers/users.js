@@ -111,7 +111,7 @@ module.exports = (req, res, parsedUrl) => {
         const sql = `
           UPDATE user SET
           first_name=?, last_name=?, email=?, phone_number=?,
-          street_address=?, city=?, state=?, zip_code=?, date_of_birth=?,
+          street_address=?, city=?, state=?, zip_code=?,
           role=?
           WHERE user_id=?
         `;
@@ -124,7 +124,6 @@ module.exports = (req, res, parsedUrl) => {
           data.city           || "",
           data.state          || "",
           data.zip_code       || "",
-          data.date_of_birth  || null,
           data.role           || "visitor",
           urlParts[1]
         ], err => {

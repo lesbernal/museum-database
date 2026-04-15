@@ -3,14 +3,10 @@ import { useNavigate, Link } from "react-router-dom";
 import ArtistManager from "./ArtistManager";
 import ArtworkManager from "./ArtworkManager";
 import Archive from "./Archive"; 
-import ProvenanceForm from "./ProvenanceForm";
-import ProvenanceTable from "./ProvenanceTable";
-import ExhibitionForm from "./ExhibitionForm";
-import ExhibitionTable from "./ExhibitionTable";
-import GalleryForm from "./GalleryForm";
-import GalleryTable from "./GalleryTable";
-import EventForm from "./EventForm";
-import EventTable from "./EventTable";
+import ProvenanceManager from "./ProvenanceManager";
+import ExhibitionManager from "./ExhibitionManager";
+import GalleryManager from "./GalleryManager";
+import EventManager from "./EventManager";
 import CafeAdminPanel from "./CafeAdminPanel";
 import GiftShopAdminPanel from "./GiftShopAdminPanel";
 import UserManagement from "./UserManagement";
@@ -56,29 +52,17 @@ export default function AdminDashboard() {
   const [artworkStatusFilter, setArtworkStatusFilter] = useState("All");
   const [artworkSort, setArtworkSort] = useState("title");
 
-  // Provenance states
-  const [isProvenanceFormOpen, setIsProvenanceFormOpen] = useState(false);
-  const [editingProvenance, setEditingProvenance] = useState(null);
-
   // Exhibition states
-  const [isExhibitionFormOpen, setIsExhibitionFormOpen] = useState(false);
-  const [editingExhibition, setEditingExhibition] = useState(null);
   const [exhibitionTypeFilter, setExhibitionTypeFilter] = useState("All");
   const [exhibitionStatusFilter, setExhibitionStatusFilter] = useState("All");
   const [exhibitionGalleryFilter, setExhibitionGalleryFilter] = useState("All");
   const [exhibitionSort, setExhibitionSort] = useState("title");
 
   // Gallery states
-  const [isGalleryFormOpen, setIsGalleryFormOpen] = useState(false);
-  const [editingGallery, setEditingGallery] = useState(null);
   const [galleryBuildingFilter, setGalleryBuildingFilter] = useState("All");
   const [galleryClimateFilter, setGalleryClimateFilter] = useState("All");
   const [galleryFloorFilter, setGalleryFloorFilter] = useState("All");
   const [gallerySort, setGallerySort] = useState("name");
-
-  // Event states
-  const [isEventFormOpen, setIsEventFormOpen] = useState(false);
-  const [editingEvent, setEditingEvent] = useState(null);
 
   // UI states
   const [searchTerm, setSearchTerm] = useState("");
@@ -268,82 +252,66 @@ export default function AdminDashboard() {
   };
 
   // Provenance handlers
-  const handleAddProvenance = () => { setEditingProvenance(null); setIsProvenanceFormOpen(true); };
-  const handleEditProvenance = (record) => { setEditingProvenance(record); setIsProvenanceFormOpen(true); };
-  const handleSaveProvenance = async (recordData) => {
-    try {
-      if (editingProvenance) await updateProvenance(editingProvenance.provenance_id, recordData);
-      else await createProvenance(recordData);
-      await loadProvenance(); setIsProvenanceFormOpen(false);
-    } catch (err) { console.error(err); alert("Failed to save provenance record"); }
+  const handleAddProvenance = async (provenanceData) => {
+    await createProvenance(provenanceData);
+    await loadProvenance();
+  };
+  const handleUpdateProvenance = async (id, provenanceData) => {
+    await updateProvenance(id, provenanceData);
+    await loadProvenance();
   };
   const handleDeleteProvenance = async (id) => {
     if (window.confirm("Delete this provenance record?")) {
-      try { await deleteProvenance(id); await loadProvenance(); }
-      catch (err) { console.error(err); alert("Failed to delete provenance record"); }
+      await deleteProvenance(id);
+      await loadProvenance();
     }
   };
 
   // Exhibition handlers
-  const handleAddExhibition = () => { setEditingExhibition(null); setIsExhibitionFormOpen(true); };
-  const handleEditExhibition = (exhibition) => { setEditingExhibition(exhibition); setIsExhibitionFormOpen(true); };
-  const handleSaveExhibition = async (exhibitionData) => {
-    try {
-      if (editingExhibition) await updateExhibition(editingExhibition.exhibition_id, exhibitionData);
-      else await createExhibition(exhibitionData);
-      await loadExhibitions(); setIsExhibitionFormOpen(false);
-    } catch (err) { alert("Failed to save exhibition"); }
+  const handleAddExhibition = async (exhibitionData) => {
+    await createExhibition(exhibitionData);
+    await loadExhibitions();
+  };
+  const handleUpdateExhibition = async (id, exhibitionData) => {
+    await updateExhibition(id, exhibitionData);
+    await loadExhibitions();
   };
   const handleDeleteExhibition = async (id) => {
     if (window.confirm("Permanently delete this exhibition? This cannot be undone.")) {
-      try { await deleteExhibition(id); await loadExhibitions(); }
-      catch (err) { console.error(err); alert("Failed to delete exhibition"); }
+      await deleteExhibition(id);
+      await loadExhibitions();
     }
   };
 
   // Gallery handlers
-  const handleAddGallery = () => { setEditingGallery(null); setIsGalleryFormOpen(true); };
-  const handleEditGallery = (gallery) => { setEditingGallery(gallery); setIsGalleryFormOpen(true); };
-  const handleSaveGallery = async (galleryData) => {
-    try {
-      if (editingGallery) await updateGallery(editingGallery.gallery_id, galleryData);
-      else await createGallery(galleryData);
-      await loadGalleries(); setIsGalleryFormOpen(false);
-    } catch (err) { console.error(err); alert("Failed to save gallery"); }
+  const handleAddGallery = async (galleryData) => {
+    await createGallery(galleryData);
+    await loadGalleries();
+  };
+  const handleUpdateGallery = async (id, galleryData) => {
+    await updateGallery(id, galleryData);
+    await loadGalleries();
   };
   const handleDeleteGallery = async (id) => {
     if (window.confirm("Delete this gallery? This will also delete its exhibitions and events.")) {
-      try { await deleteGallery(id); await loadGalleries(); }
-      catch (err) { console.error(err); alert("Failed to delete gallery"); }
+      await deleteGallery(id);
+      await loadGalleries();
     }
   };
 
   // Event handlers
-  const handleAddEvent = () => { setEditingEvent(null); setIsEventFormOpen(true); };
-  const handleEditEvent = (event) => { setEditingEvent(event); setIsEventFormOpen(true); };
-  const handleSaveEvent = async (eventData) => {
-    try {
-      if (editingEvent) await updateEvent(editingEvent.event_id, eventData);
-      else await createEvent(eventData);
-      await loadEvents(); setIsEventFormOpen(false);
-    } catch (err) { console.error(err); alert("Failed to save event"); }
+  const handleAddEvent = async (eventData) => {
+    await createEvent(eventData);
+    await loadEvents();
+  };
+  const handleUpdateEvent = async (id, eventData) => {
+    await updateEvent(id, eventData);
+    await loadEvents();
   };
   const handleDeleteEvent = async (id) => {
-    if (window.confirm("Archive this event? It can be restored later.")) {
-      try { await deleteEvent(id); await loadEvents(); }
-      catch (err) { console.error(err); alert("Failed to archive event"); }
-    }
-  };
-
-  const handleAdd = () => {
-    switch (activeTab) {
-      case "provenance": return handleAddProvenance();
-      case "exhibitions": return handleAddExhibition();
-      case "galleries": return handleAddGallery();
-      case "events": return handleAddEvent();
-      case "users": return userMgmtRef.current?.openAdd();
-      case "departments": return deptMgmtRef.current?.openAdd();
-      default: return;
+    if (window.confirm("Delete this event?")) {
+      await deleteEvent(id);
+      await loadEvents();
     }
   };
 
@@ -365,7 +333,6 @@ export default function AdminDashboard() {
     if (tabId !== "events")      setShowEventArchive(false);
   };
 
-  
   const artworkArtists = [...new Set(artworks.map(a => a.artist_name).filter(Boolean))].sort();
   const artworkMediums = [...new Set(artworks.map(a => a.medium).filter(Boolean))].sort();
 
@@ -454,20 +421,6 @@ export default function AdminDashboard() {
 
   const usesCustomManager = activeTab === "cafe" || activeTab === "giftshop";
 
-  const getAddLabel = () => {
-    switch (activeTab) {
-      case "artists": return "Artist";
-      case "artwork": return "Artwork";
-      case "provenance": return "Provenance Record";
-      case "exhibitions": return "Exhibition";
-      case "galleries": return "Gallery";
-      case "events": return "Event";
-      case "users": return userMgmtSubTab.slice(0, -1);
-      case "departments": return "Department";
-      default: return "";
-    }
-  };
-
   return (
     <>
       {showStockToast && stockAlerts.length > 0 && (
@@ -489,367 +442,350 @@ export default function AdminDashboard() {
       )}
 
       <div className="admin-dashboard">
-      <button
-        className="mobile-menu-toggle"
-        onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-        aria-label="Toggle menu"
-      >
-        ☰
-      </button>
+        <button
+          className="mobile-menu-toggle"
+          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          aria-label="Toggle menu"
+        >
+          ☰
+        </button>
 
-      <aside className={`admin-sidebar ${isMobileMenuOpen ? "open" : ""}`}>
-        <div className="sidebar-header">
-          <h2>MFAH Admin</h2>
-          <Link to="/" className="back-to-site" onClick={() => setIsMobileMenuOpen(false)}>
-            Back to Home
-          </Link>
-        </div>
-        <nav className="sidebar-nav">
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              className={`nav-item ${activeTab === tab.id ? "active" : ""}`}
-              onClick={() => handleTabClick(tab.id)}
-            >
-              <span className="nav-name">{tab.name}</span>
-            </button>
-          ))}
-        </nav>
-        <div className="sidebar-footer">
-          <button className="logout-btn" onClick={handleLogout}>Logout</button>
-        </div>
-      </aside>
-
-      <main className="admin-main">
-        <header className="admin-header">
-          <div>
-            <h1>{tabs.find((t) => t.id === activeTab)?.name}</h1>
-            <p className="admin-subtitle">
-              Manage {activeTab} in the museum database
-              {activeTab === "artists" && " - Add, edit, or remove artists"}
-              {activeTab === "artwork" && " - Add, edit, or remove artworks and link them to artists"}
-              {activeTab === "provenance" && " - Track ownership history of artworks"}
-              {activeTab === "exhibitions" && " - Manage exhibitions and their associated artworks"}
-              {activeTab === "galleries" && " - Manage gallery spaces and their climate settings"}
-              {activeTab === "events" && " - Add, edit, or remove museum events"}
-              {activeTab === "cafe" && " - Manage cafe items, transactions, and line items"}
-              {activeTab === "giftshop" && " - Manage gift shop items, transactions, and line items"}
-              {activeTab === "departments" && " - Manage museum departments and budgets"}
-            </p>
+        <aside className={`admin-sidebar ${isMobileMenuOpen ? "open" : ""}`}>
+          <div className="sidebar-header">
+            <h2>MFAH Admin</h2>
+            <Link to="/" className="back-to-site" onClick={() => setIsMobileMenuOpen(false)}>
+              Back to Home
+            </Link>
           </div>
-          {!usesCustomManager && activeTab !== "reports" && activeTab !== "artists" && activeTab !== "artwork" && (
-            <button className="add-btn" onClick={handleAdd}>
-              + Add New {getAddLabel()}
-            </button>
-          )}
-        </header>
+          <nav className="sidebar-nav">
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                className={`nav-item ${activeTab === tab.id ? "active" : ""}`}
+                onClick={() => handleTabClick(tab.id)}
+              >
+                <span className="nav-name">{tab.name}</span>
+              </button>
+            ))}
+          </nav>
+          <div className="sidebar-footer">
+            <button className="logout-btn" onClick={handleLogout}>Logout</button>
+          </div>
+        </aside>
 
-        {/* Exhibitions filter bar */}
-        {activeTab === "exhibitions" && (
-          <>
-            <div className="exhibition-filters-bar">
-              <div className="ex-filter-group">
-                <label>Type</label>
-                <select value={exhibitionTypeFilter} onChange={(e) => setExhibitionTypeFilter(e.target.value)}>
-                  <option value="All">All Types</option>
-                  <option value="Permanent">Permanent</option>
-                  <option value="Temporary">Temporary</option>
-                  <option value="Traveling">Traveling</option>
-                </select>
-              </div>
-              <div className="ex-filter-group">
-                <label>Status</label>
-                <select value={exhibitionStatusFilter} onChange={(e) => setExhibitionStatusFilter(e.target.value)}>
-                  <option value="All">All Statuses</option>
-                  <option value="Active">Active</option>
-                  <option value="Upcoming">Upcoming</option>
-                  <option value="Ended">Ended</option>
-                </select>
-              </div>
-              <div className="ex-filter-group">
-                <label>Gallery</label>
-                <select value={exhibitionGalleryFilter} onChange={(e) => setExhibitionGalleryFilter(e.target.value)}>
-                  <option value="All">All Galleries</option>
-                  {exhibitionGalleries.map((g) => (
-                    <option key={g} value={g}>{g}</option>
-                  ))}
-                </select>
-              </div>
-              <div className="ex-filter-group">
-                <label>Sort By</label>
-                <select value={exhibitionSort} onChange={(e) => setExhibitionSort(e.target.value)}>
-                  <option value="title">Title A–Z</option>
-                  <option value="title_desc">Title Z–A</option>
-                  <option value="date_asc">Start Date (Oldest)</option>
-                  <option value="date_desc">Start Date (Newest)</option>
-                </select>
-              </div>
-              {(exhibitionTypeFilter !== "All" || exhibitionStatusFilter !== "All" || exhibitionGalleryFilter !== "All" || exhibitionSort !== "title") && (
-                <button className="ex-filter-clear" onClick={() => {
-                  setExhibitionTypeFilter("All");
-                  setExhibitionStatusFilter("All");
-                  setExhibitionGalleryFilter("All");
-                  setExhibitionSort("title");
-                }}>Clear Filters</button>
-              )}
-            </div>
-            <div className="exhibitions-admin-toolbar">
-              <p className="ex-results-count">
-                {filteredExhibitions.length} exhibition{filteredExhibitions.length !== 1 ? "s" : ""}
+        <main className="admin-main">
+          <header className="admin-header">
+            <div>
+              <h1>{tabs.find((t) => t.id === activeTab)?.name}</h1>
+              <p className="admin-subtitle">
+                Manage {activeTab} in the museum database
+                {activeTab === "artists" && " - Add, edit, or remove artists"}
+                {activeTab === "artwork" && " - Add, edit, or remove artworks and link them to artists"}
+                {activeTab === "provenance" && " - Track ownership history of artworks"}
+                {activeTab === "exhibitions" && " - Manage exhibitions and their associated artworks"}
+                {activeTab === "galleries" && " - Manage gallery spaces and their climate settings"}
+                {activeTab === "events" && " - Add, edit, or remove museum events"}
+                {activeTab === "cafe" && " - Manage cafe items, transactions, and line items"}
+                {activeTab === "giftshop" && " - Manage gift shop items, transactions, and line items"}
+                {activeTab === "departments" && " - Manage museum departments and budgets"}
               </p>
-              <button className="btn-view-archived" onClick={() => setShowExhibitionArchive((v) => !v)}>
-                {showExhibitionArchive ? "Hide Archived" : "View Archived Exhibitions"}
-              </button>
             </div>
-          </>
-        )}
+          </header>
 
-        {/* Galleries filter bar */}
-        {activeTab === "galleries" && (
-          <>
-            <div className="exhibition-filters-bar">
-              <div className="ex-filter-group">
-                <label>Building</label>
-                <select value={galleryBuildingFilter} onChange={(e) => setGalleryBuildingFilter(e.target.value)}>
-                  <option value="All">All Buildings</option>
-                  {galleryBuildings.map((b) => (
-                    <option key={b} value={b}>{b}</option>
-                  ))}
-                </select>
-              </div>
-              <div className="ex-filter-group">
-                <label>Floor</label>
-                <select value={galleryFloorFilter} onChange={(e) => setGalleryFloorFilter(e.target.value)}>
-                  <option value="All">All Floors</option>
-                  {galleryFloors.map((f) => (
-                    <option key={f} value={String(f)}>
-                      {f === 0 ? "Ground" : f < 0 ? `Basement ${Math.abs(f)}` : `Floor ${f}`}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="ex-filter-group">
-                <label>Climate Controlled</label>
-                <select value={galleryClimateFilter} onChange={(e) => setGalleryClimateFilter(e.target.value)}>
-                  <option value="All">All</option>
-                  <option value="Yes">Yes</option>
-                  <option value="No">No</option>
-                </select>
-              </div>
-              <div className="ex-filter-group">
-                <label>Sort By</label>
-                <select value={gallerySort} onChange={(e) => setGallerySort(e.target.value)}>
-                  <option value="name">Name A–Z</option>
-                  <option value="name_desc">Name Z–A</option>
-                  <option value="floor_asc">Floor (Low–High)</option>
-                  <option value="floor_desc">Floor (High–Low)</option>
-                  <option value="sqft_desc">Largest First</option>
-                </select>
-              </div>
-              {(galleryBuildingFilter !== "All" || galleryClimateFilter !== "All" || galleryFloorFilter !== "All" || gallerySort !== "name") && (
-                <button className="ex-filter-clear" onClick={() => {
-                  setGalleryBuildingFilter("All");
-                  setGalleryClimateFilter("All");
-                  setGalleryFloorFilter("All");
-                  setGallerySort("name");
-                }}>Clear Filters</button>
-              )}
-            </div>
-            <div className="exhibitions-admin-toolbar">
-              <p className="ex-results-count">
-                {filteredGalleries.length} galler{filteredGalleries.length !== 1 ? "ies" : "y"}
-              </p>
-              <button className="btn-view-archived" onClick={() => setShowGalleryArchive((v) => !v)}>
-                {showGalleryArchive ? "Hide Archived" : "View Archived Galleries"}
-              </button>
-            </div>
-          </>
-        )}
-
-        {/* Artwork filter bar */}
-        {activeTab === "artwork" && (
-          <>
-            <div className="exhibition-filters-bar">
-              <div className="ex-filter-group">
-                <label>Artist</label>
-                <select value={artworkArtistFilter} onChange={(e) => setArtworkArtistFilter(e.target.value)}>
-                  <option value="All">All Artists</option>
-                  {artworkArtists.map(a => <option key={a} value={a}>{a}</option>)}
-                </select>
-              </div>
-              <div className="ex-filter-group">
-                <label>Medium</label>
-                <select value={artworkMediumFilter} onChange={(e) => setArtworkMediumFilter(e.target.value)}>
-                  <option value="All">All Mediums</option>
-                  {artworkMediums.map(m => <option key={m} value={m}>{m}</option>)}
-                </select>
-              </div>
-              <div className="ex-filter-group">
-                <label>Status</label>
-                <select value={artworkStatusFilter} onChange={(e) => setArtworkStatusFilter(e.target.value)}>
-                  <option value="All">All Statuses</option>
-                  <option value="On Display">On Display</option>
-                  <option value="In Storage">In Storage</option>
-                  <option value="On Loan">On Loan</option>
-                  <option value="Under Restoration">Under Restoration</option>
-                </select>
-              </div>
-              <div className="ex-filter-group">
-                <label>Sort By</label>
-                <select value={artworkSort} onChange={(e) => setArtworkSort(e.target.value)}>
-                  <option value="title">Title A–Z</option>
-                  <option value="title_desc">Title Z–A</option>
-                  <option value="year_asc">Year (Oldest)</option>
-                  <option value="year_desc">Year (Newest)</option>
-                </select>
-              </div>
-              {(artworkArtistFilter !== "All" || artworkMediumFilter !== "All" || artworkStatusFilter !== "All" || artworkSort !== "title") && (
-                <button className="ex-filter-clear" onClick={() => {
-                  setArtworkArtistFilter("All");
-                  setArtworkMediumFilter("All");
-                  setArtworkStatusFilter("All");
-                  setArtworkSort("title");
-                }}>Clear Filters</button>
-              )}
-            </div>
-            <div className="exhibitions-admin-toolbar">
-              <p className="ex-results-count">{filteredArtworks.length} artwork{filteredArtworks.length !== 1 ? "s" : ""}</p>
-              <button className="btn-view-archived" onClick={() => setShowArtworkArchive(v => !v)}>
-                {showArtworkArchive ? "Hide Archived" : "View Archived Artworks"}
-              </button>
-            </div>
-          </>
-        )}
-
-        {/* Events toolbar */}
-        {activeTab === "events" && (
-          <div className="exhibitions-admin-toolbar">
-            <p className="ex-results-count">
-              {filteredEvents.length} event{filteredEvents.length !== 1 ? "s" : ""}
-            </p>
-            <button className="btn-view-archived" onClick={() => setShowEventArchive(v => !v)}>
-              {showEventArchive ? "Hide Archived" : "View Archived Events"}
-            </button>
-          </div>
-        )}
-
-        {!usesCustomManager && activeTab !== "reports" && activeTab !== "artists" && activeTab !== "artwork" && (
-          <div className="search-bar">
-            <input
-              type="text"
-              placeholder={`Search ${activeTab}...`}
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-        )}
-
-        <div className="content-area">
-          {/* Artists */}
-          {activeTab === "artists" && (
-            <ArtistManager
-              artists={artists}
-              onAdd={handleAddArtist}
-              onUpdate={handleUpdateArtist}
-              onDelete={handleDeleteArtist}
-              loading={loading}
-              error={artistsError}
-            />
-          )}
-
-          {/* Artwork */}
-          {activeTab === "artwork" && (
-            <>
-              {showArtworkArchive && (
-                <Archive type="artwork" onRestored={() => loadArtworks()} />
-              )}
-              <ArtworkManager
-                artworks={filteredArtworks}
-                onAdd={handleAddArtwork}
-                onUpdate={handleUpdateArtwork}
-                onDelete={handleDeleteArtwork}
-                onArchive={handleArtworkArchive}
-                onDeaccession={handleDeaccessionArtwork}
-                loading={false}
-                error={artworksError}
-              />
-            </>
-          )}
-
-          {/* Provenance */}
-          {activeTab === "provenance" && (
-            provenanceError
-              ? <div className="error-message">{provenanceError}</div>
-              : <ProvenanceTable provenance={filteredProvenance} onEdit={handleEditProvenance} onDelete={handleDeleteProvenance} />
-          )}
-
-          {/* Exhibitions */}
+          {/* Exhibitions filter bar */}
           {activeTab === "exhibitions" && (
             <>
-              {showExhibitionArchive && (
-                <Archive type="exhibitions" onRestored={() => loadExhibitions()} reloadTrigger={exhibitions.length}/>
-              )}
-              {exhibitionsError
-                ? <div className="error-message">{exhibitionsError}</div>
-                : <ExhibitionTable
-                    exhibitions={filteredExhibitions}
-                    onEdit={handleEditExhibition}
-                    onDelete={handleDeleteExhibition}
-                    onArchive={handleExhibitionArchive}
-                  />
-              }
+              <div className="exhibition-filters-bar">
+                <div className="ex-filter-group">
+                  <label>Type</label>
+                  <select value={exhibitionTypeFilter} onChange={(e) => setExhibitionTypeFilter(e.target.value)}>
+                    <option value="All">All Types</option>
+                    <option value="Permanent">Permanent</option>
+                    <option value="Temporary">Temporary</option>
+                    <option value="Traveling">Traveling</option>
+                  </select>
+                </div>
+                <div className="ex-filter-group">
+                  <label>Status</label>
+                  <select value={exhibitionStatusFilter} onChange={(e) => setExhibitionStatusFilter(e.target.value)}>
+                    <option value="All">All Statuses</option>
+                    <option value="Active">Active</option>
+                    <option value="Upcoming">Upcoming</option>
+                    <option value="Ended">Ended</option>
+                  </select>
+                </div>
+                <div className="ex-filter-group">
+                  <label>Gallery</label>
+                  <select value={exhibitionGalleryFilter} onChange={(e) => setExhibitionGalleryFilter(e.target.value)}>
+                    <option value="All">All Galleries</option>
+                    {exhibitionGalleries.map((g) => (
+                      <option key={g} value={g}>{g}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="ex-filter-group">
+                  <label>Sort By</label>
+                  <select value={exhibitionSort} onChange={(e) => setExhibitionSort(e.target.value)}>
+                    <option value="title">Title A–Z</option>
+                    <option value="title_desc">Title Z–A</option>
+                    <option value="date_asc">Start Date (Oldest)</option>
+                    <option value="date_desc">Start Date (Newest)</option>
+                  </select>
+                </div>
+                {(exhibitionTypeFilter !== "All" || exhibitionStatusFilter !== "All" || exhibitionGalleryFilter !== "All" || exhibitionSort !== "title") && (
+                  <button className="ex-filter-clear" onClick={() => {
+                    setExhibitionTypeFilter("All");
+                    setExhibitionStatusFilter("All");
+                    setExhibitionGalleryFilter("All");
+                    setExhibitionSort("title");
+                  }}>Clear Filters</button>
+                )}
+              </div>
+              <div className="exhibitions-admin-toolbar">
+                <p className="ex-results-count">
+                  {filteredExhibitions.length} exhibition{filteredExhibitions.length !== 1 ? "s" : ""}
+                </p>
+                <button className="btn-view-archived" onClick={() => setShowExhibitionArchive((v) => !v)}>
+                  {showExhibitionArchive ? "Hide Archived" : "View Archived Exhibitions"}
+                </button>
+              </div>
             </>
           )}
 
-          {/* Galleries */}
+          {/* Galleries filter bar */}
           {activeTab === "galleries" && (
             <>
-              {showGalleryArchive && (
-                <Archive type="galleries" onRestored={() => loadGalleries()} reloadTrigger={galleries.length}/>
-              )}
-              {galleriesError
-                ? <div className="error-message">{galleriesError}</div>
-                : <GalleryTable
-                    galleries={filteredGalleries}
-                    onEdit={handleEditGallery}
-                    onDelete={handleDeleteGallery}
-                    onArchive={handleGalleryArchive}
-                  />
-              }
+              <div className="exhibition-filters-bar">
+                <div className="ex-filter-group">
+                  <label>Building</label>
+                  <select value={galleryBuildingFilter} onChange={(e) => setGalleryBuildingFilter(e.target.value)}>
+                    <option value="All">All Buildings</option>
+                    {galleryBuildings.map((b) => (
+                      <option key={b} value={b}>{b}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="ex-filter-group">
+                  <label>Floor</label>
+                  <select value={galleryFloorFilter} onChange={(e) => setGalleryFloorFilter(e.target.value)}>
+                    <option value="All">All Floors</option>
+                    {galleryFloors.map((f) => (
+                      <option key={f} value={String(f)}>
+                        {f === 0 ? "Ground" : f < 0 ? `Basement ${Math.abs(f)}` : `Floor ${f}`}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="ex-filter-group">
+                  <label>Climate Controlled</label>
+                  <select value={galleryClimateFilter} onChange={(e) => setGalleryClimateFilter(e.target.value)}>
+                    <option value="All">All</option>
+                    <option value="Yes">Yes</option>
+                    <option value="No">No</option>
+                  </select>
+                </div>
+                <div className="ex-filter-group">
+                  <label>Sort By</label>
+                  <select value={gallerySort} onChange={(e) => setGallerySort(e.target.value)}>
+                    <option value="name">Name A–Z</option>
+                    <option value="name_desc">Name Z–A</option>
+                    <option value="floor_asc">Floor (Low–High)</option>
+                    <option value="floor_desc">Floor (High–Low)</option>
+                    <option value="sqft_desc">Largest First</option>
+                  </select>
+                </div>
+                {(galleryBuildingFilter !== "All" || galleryClimateFilter !== "All" || galleryFloorFilter !== "All" || gallerySort !== "name") && (
+                  <button className="ex-filter-clear" onClick={() => {
+                    setGalleryBuildingFilter("All");
+                    setGalleryClimateFilter("All");
+                    setGalleryFloorFilter("All");
+                    setGallerySort("name");
+                  }}>Clear Filters</button>
+                )}
+              </div>
+              <div className="exhibitions-admin-toolbar">
+                <p className="ex-results-count">
+                  {filteredGalleries.length} galler{filteredGalleries.length !== 1 ? "ies" : "y"}
+                </p>
+                <button className="btn-view-archived" onClick={() => setShowGalleryArchive((v) => !v)}>
+                  {showGalleryArchive ? "Hide Archived" : "View Archived Galleries"}
+                </button>
+              </div>
             </>
           )}
 
-          {/* Events */}
-          {activeTab === "events" && (
+          {/* Artwork filter bar */}
+          {activeTab === "artwork" && (
             <>
-              {showEventArchive && (
-                <Archive type="events" onRestored={() => loadEvents()} reloadTrigger={events.length}/>
-              )}
-              {eventsError
-                ? <div className="error-message">{eventsError}</div>
-                : <EventTable
-                    events={filteredEvents}
-                    onEdit={handleEditEvent}
-                    onDelete={handleDeleteEvent}
-                    onArchive={handleEventArchive}
-                  />
-              }
+              <div className="exhibition-filters-bar">
+                <div className="ex-filter-group">
+                  <label>Artist</label>
+                  <select value={artworkArtistFilter} onChange={(e) => setArtworkArtistFilter(e.target.value)}>
+                    <option value="All">All Artists</option>
+                    {artworkArtists.map(a => <option key={a} value={a}>{a}</option>)}
+                  </select>
+                </div>
+                <div className="ex-filter-group">
+                  <label>Medium</label>
+                  <select value={artworkMediumFilter} onChange={(e) => setArtworkMediumFilter(e.target.value)}>
+                    <option value="All">All Mediums</option>
+                    {artworkMediums.map(m => <option key={m} value={m}>{m}</option>)}
+                  </select>
+                </div>
+                <div className="ex-filter-group">
+                  <label>Status</label>
+                  <select value={artworkStatusFilter} onChange={(e) => setArtworkStatusFilter(e.target.value)}>
+                    <option value="All">All Statuses</option>
+                    <option value="On Display">On Display</option>
+                    <option value="In Storage">In Storage</option>
+                    <option value="On Loan">On Loan</option>
+                    <option value="Under Restoration">Under Restoration</option>
+                  </select>
+                </div>
+                <div className="ex-filter-group">
+                  <label>Sort By</label>
+                  <select value={artworkSort} onChange={(e) => setArtworkSort(e.target.value)}>
+                    <option value="title">Title A–Z</option>
+                    <option value="title_desc">Title Z–A</option>
+                    <option value="year_asc">Year (Oldest)</option>
+                    <option value="year_desc">Year (Newest)</option>
+                  </select>
+                </div>
+                {(artworkArtistFilter !== "All" || artworkMediumFilter !== "All" || artworkStatusFilter !== "All" || artworkSort !== "title") && (
+                  <button className="ex-filter-clear" onClick={() => {
+                    setArtworkArtistFilter("All");
+                    setArtworkMediumFilter("All");
+                    setArtworkStatusFilter("All");
+                    setArtworkSort("title");
+                  }}>Clear Filters</button>
+                )}
+              </div>
+              <div className="exhibitions-admin-toolbar">
+                <p className="ex-results-count">{filteredArtworks.length} artwork{filteredArtworks.length !== 1 ? "s" : ""}</p>
+                <button className="btn-view-archived" onClick={() => setShowArtworkArchive(v => !v)}>
+                  {showArtworkArchive ? "Hide Archived" : "View Archived Artworks"}
+                </button>
+              </div>
             </>
           )}
 
-          {activeTab === "cafe" && <CafeAdminPanel />}
-          {activeTab === "giftshop" && <GiftShopAdminPanel />}
-          {activeTab === "reports" && <ReportsPanel />}
-          {activeTab === "users" && <UserManagement ref={userMgmtRef} searchTerm={searchTerm} onSubTabChange={setUserMgmtSubTab} />}
-          {activeTab === "departments" && <DepartmentManagement ref={deptMgmtRef} searchTerm={searchTerm} />}
-        </div>
-      </main>
+          {/* Events toolbar */}
+          {activeTab === "events" && (
+            <div className="exhibitions-admin-toolbar">
+              <p className="ex-results-count">
+                {filteredEvents.length} event{filteredEvents.length !== 1 ? "s" : ""}
+              </p>
+              <button className="btn-view-archived" onClick={() => setShowEventArchive(v => !v)}>
+                {showEventArchive ? "Hide Archived" : "View Archived Events"}
+              </button>
+            </div>
+          )}
 
-      {/* Modals */}
-      {isProvenanceFormOpen && <ProvenanceForm onSubmit={handleSaveProvenance} initialData={editingProvenance} onCancel={() => setIsProvenanceFormOpen(false)} />}
-      {isExhibitionFormOpen && <ExhibitionForm onSubmit={handleSaveExhibition} initialData={editingExhibition} onCancel={() => setIsExhibitionFormOpen(false)} />}
-      {isGalleryFormOpen && <GalleryForm onSubmit={handleSaveGallery} initialData={editingGallery} onCancel={() => setIsGalleryFormOpen(false)} />}
-      {isEventFormOpen && <EventForm onSubmit={handleSaveEvent} initialData={editingEvent} onCancel={() => setIsEventFormOpen(false)} />}
+          <div className="content-area">
+            {/* Artists */}
+            {activeTab === "artists" && (
+              <ArtistManager
+                artists={artists}
+                onAdd={handleAddArtist}
+                onUpdate={handleUpdateArtist}
+                onDelete={handleDeleteArtist}
+                loading={loading}
+                error={artistsError}
+              />
+            )}
+
+            {/* Artwork */}
+            {activeTab === "artwork" && (
+              <>
+                {showArtworkArchive && (
+                  <Archive type="artwork" onRestored={() => loadArtworks()} />
+                )}
+                <ArtworkManager
+                  artworks={filteredArtworks}
+                  onAdd={handleAddArtwork}
+                  onUpdate={handleUpdateArtwork}
+                  onDelete={handleDeleteArtwork}
+                  onArchive={handleArtworkArchive}
+                  onDeaccession={handleDeaccessionArtwork}
+                  loading={false}
+                  error={artworksError}
+                />
+              </>
+            )}
+
+            {/* Provenance */}
+            {activeTab === "provenance" && (
+              <ProvenanceManager
+                provenance={filteredProvenance}
+                onAdd={handleAddProvenance}
+                onUpdate={handleUpdateProvenance}
+                onDelete={handleDeleteProvenance}
+                loading={false}
+                error={provenanceError}
+              />
+            )}
+
+            {/* Exhibitions */}
+            {activeTab === "exhibitions" && (
+              <>
+                {showExhibitionArchive && (
+                  <Archive type="exhibitions" onRestored={() => loadExhibitions()} />
+                )}
+                <ExhibitionManager
+                  exhibitions={filteredExhibitions}
+                  onAdd={handleAddExhibition}
+                  onUpdate={handleUpdateExhibition}
+                  onDelete={handleDeleteExhibition}
+                  onArchive={handleExhibitionArchive}
+                  loading={false}
+                  error={exhibitionsError}
+                />
+              </>
+            )}
+
+            {/* Galleries */}
+            {activeTab === "galleries" && (
+              <>
+                {showGalleryArchive && (
+                  <Archive type="galleries" onRestored={() => loadGalleries()} />
+                )}
+                <GalleryManager
+                  galleries={filteredGalleries}
+                  onAdd={handleAddGallery}
+                  onUpdate={handleUpdateGallery}
+                  onDelete={handleDeleteGallery}
+                  onArchive={handleGalleryArchive}
+                  loading={false}
+                  error={galleriesError}
+                />
+              </>
+            )}
+
+            {/* Events */}
+            {activeTab === "events" && (
+              <>
+                {showEventArchive && (
+                  <Archive type="events" onRestored={() => loadEvents()} />
+                )}
+                <EventManager
+                  events={filteredEvents}
+                  onAdd={handleAddEvent}
+                  onUpdate={handleUpdateEvent}
+                  onDelete={handleDeleteEvent}
+                  onArchive={handleEventArchive}
+                  loading={false}
+                  error={eventsError}
+                />
+              </>
+            )}
+
+            {activeTab === "cafe" && <CafeAdminPanel />}
+            {activeTab === "giftshop" && <GiftShopAdminPanel />}
+            {activeTab === "reports" && <ReportsPanel />}
+            {activeTab === "users" && <UserManagement ref={userMgmtRef} searchTerm={searchTerm} onSubTabChange={setUserMgmtSubTab} />}
+            {activeTab === "departments" && <DepartmentManagement ref={deptMgmtRef} searchTerm={searchTerm} />}
+          </div>
+        </main>
       </div>
     </>
   );
