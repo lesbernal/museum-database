@@ -242,21 +242,6 @@ export default function RevenueReport() {
               {paymentMethodsList.map(method => <option key={method} value={method}>{method}</option>)}
             </select>
           </div>
-        </div>
-        
-        <div className="filter-row">
-          <div className="filter-group">
-            <label>Min Amount ($)</label>
-            <input type="number" placeholder="0" value={minAmount} onChange={(e) => setMinAmount(e.target.value)} />
-          </div>
-          <div className="filter-group">
-            <label>Max Amount ($)</label>
-            <input type="number" placeholder="Any" value={maxAmount} onChange={(e) => setMaxAmount(e.target.value)} />
-          </div>
-          <div className="filter-group">
-            <label>Customer Name</label>
-            <input type="text" placeholder="Search by name" value={customerName} onChange={(e) => setCustomerName(e.target.value)} />
-          </div>
           <div className="filter-group">
             <button className="generate-btn" onClick={handleGenerate} disabled={loading}>
               {loading ? "Loading..." : "Generate Report"}
