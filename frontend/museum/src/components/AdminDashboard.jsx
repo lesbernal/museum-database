@@ -9,8 +9,7 @@ import ExhibitionForm from "./ExhibitionForm";
 import ExhibitionTable from "./ExhibitionTable";
 import GalleryForm from "./GalleryForm";
 import GalleryTable from "./GalleryTable";
-import EventForm from "./EventForm";
-import EventTable from "./EventTable";
+import EventManager from "./EventManager";
 import CafeAdminPanel from "./CafeAdminPanel";
 import GiftShopAdminPanel from "./GiftShopAdminPanel";
 import UserManagement from "./UserManagement";
@@ -201,6 +200,16 @@ export default function AdminDashboard() {
       await fetch(`${API_BASE}/artwork/${id}/deactivate`, { method: "PATCH" });
       await loadArtworks();
     } catch (err) { alert("Failed to archive artwork"); }
+  };
+
+  const handleUpdateEvent = async (id, eventData) => {
+    try {
+      await updateEvent(id, eventData);
+      await loadEvents();
+    } catch (err) {
+      console.error("Failed to update event:", err);
+      alert("Failed to update event");
+    }
   };
 
   const handleEventArchive = async (id) => {
@@ -537,8 +546,7 @@ export default function AdminDashboard() {
               {activeTab === "departments" && " - Manage museum departments and budgets"}
             </p>
           </div>
-          {!usesCustomManager && activeTab !== "reports" && activeTab !== "artists" && activeTab !== "artwork" && (
-            <button className="add-btn" onClick={handleAdd}>
+          {!usesCustomManager && activeTab !== "reports" && activeTab !== "artists" && activeTab !== "artwork" && activeTab !== "events" && (            <button className="add-btn" onClick={handleAdd}>
               + Add New {getAddLabel()}
             </button>
           )}
@@ -733,8 +741,7 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {!usesCustomManager && activeTab !== "reports" && activeTab !== "artists" && activeTab !== "artwork" && (
-          <div className="search-bar">
+        {!usesCustomManager && activeTab !== "reports" && activeTab !== "artists" && activeTab !== "artwork" && activeTab !== "events" && (          <div className="search-bar">
             <input
               type="text"
               placeholder={`Search ${activeTab}...`}
@@ -823,17 +830,18 @@ export default function AdminDashboard() {
           {activeTab === "events" && (
             <>
               {showEventArchive && (
-                <Archive type="events" onRestored={() => loadEvents()} reloadTrigger={events.length}/>
+                <Archive type="events" onRestored={() => loadEvents()} />
               )}
-              {eventsError
-                ? <div className="error-message">{eventsError}</div>
-                : <EventTable
-                    events={filteredEvents}
-                    onEdit={handleEditEvent}
-                    onDelete={handleDeleteEvent}
-                    onArchive={handleEventArchive}
-                  />
-              }
+              <EventManager
+                events={filteredEvents}
+                onAdd={handleAddEvent}
+                onUpdate={handleUpdateEvent}      
+                onDelete={handleDeleteEvent}      
+                onArchive={handleEventArchive}    
+                loading={false}
+                error={eventsError}
+              />
+
             </>
           )}
 
@@ -849,7 +857,6 @@ export default function AdminDashboard() {
       {isProvenanceFormOpen && <ProvenanceForm onSubmit={handleSaveProvenance} initialData={editingProvenance} onCancel={() => setIsProvenanceFormOpen(false)} />}
       {isExhibitionFormOpen && <ExhibitionForm onSubmit={handleSaveExhibition} initialData={editingExhibition} onCancel={() => setIsExhibitionFormOpen(false)} />}
       {isGalleryFormOpen && <GalleryForm onSubmit={handleSaveGallery} initialData={editingGallery} onCancel={() => setIsGalleryFormOpen(false)} />}
-      {isEventFormOpen && <EventForm onSubmit={handleSaveEvent} initialData={editingEvent} onCancel={() => setIsEventFormOpen(false)} />}
       </div>
     </>
   );
