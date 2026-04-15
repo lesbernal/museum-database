@@ -88,10 +88,10 @@ module.exports = (req, res, parsedUrl) => {
   else if (req.method === "POST" && urlParts.length === 1) {
     parseBody(req, (data) => {
       const sql = `
-        INSERT INTO exhibition
-        (gallery_id, exhibition_name, start_date, end_date, exhibition_type, is_active)
-        VALUES (?, ?, ?, ?, ?, 1)
-      `;
+      INSERT INTO exhibition
+      (gallery_id, exhibition_name, start_date, end_date, exhibition_type, is_active)
+      VALUES (?, ?, ?, ?, ?, 1)
+    `;
       db.query(sql, [
         data.gallery_id || null,
         data.exhibition_name || "",
@@ -100,7 +100,31 @@ module.exports = (req, res, parsedUrl) => {
         data.exhibition_type || "Temporary",
       ], (err, result) => {
         if (err) return sendError(res, err);
-        sendJSON(res, { message: "Exhibition added", exhibition_id: result.insertId }, 201);
+
+        const exhibitionId = result.insertId;
+        const artworks = data.artworks || [];
+
+        // If no artworks, return early
+        if (artworks.length === 0) {
+          return sendJSON(res, { message: "Exhibition added", exhibition_id: exhibitionId }, 201);
+        }
+
+        // Insert all artwork rows
+        const values = artworks.map(a => [
+          exhibitionId,
+          a.artwork_id,
+          a.display_start_date || null,
+          a.display_end_date || null,
+        ]);
+
+        db.query(
+          "INSERT INTO exhibitionartwork (exhibition_id, artwork_id, display_start_date, display_end_date) VALUES ?",
+          [values],
+          (err) => {
+            if (err) return sendError(res, err);
+            sendJSON(res, { message: "Exhibition added", exhibition_id: exhibitionId }, 201);
+          }
+        );
       });
     });
   }
@@ -110,11 +134,11 @@ module.exports = (req, res, parsedUrl) => {
   else if (req.method === "PUT" && urlParts.length === 2) {
     parseBody(req, (data) => {
       const sql = `
-        UPDATE exhibition SET
-        gallery_id=?, exhibition_name=?, start_date=?,
-        end_date=?, exhibition_type=?
-        WHERE exhibition_id=?
-      `;
+      UPDATE exhibition SET
+      gallery_id=?, exhibition_name=?, start_date=?,
+      end_date=?, exhibition_type=?
+      WHERE exhibition_id=?
+    `;
       db.query(sql, [
         data.gallery_id || null,
         data.exhibition_name || "",
@@ -124,11 +148,36 @@ module.exports = (req, res, parsedUrl) => {
         urlParts[1],
       ], (err) => {
         if (err) return sendError(res, err);
-        sendJSON(res, { message: "Exhibition updated" });
+
+        const artworks = data.artworks || [];
+
+        // Delete existing artwork links then re-insert
+        db.query("DELETE FROM exhibitionartwork WHERE exhibition_id=?", [urlParts[1]], (err) => {
+          if (err) return sendError(res, err);
+
+          if (artworks.length === 0) {
+            return sendJSON(res, { message: "Exhibition updated" });
+          }
+
+          const values = artworks.map(a => [
+            urlParts[1],
+            a.artwork_id,
+            a.display_start_date || null,
+            a.display_end_date || null,
+          ]);
+
+          db.query(
+            "INSERT INTO exhibitionartwork (exhibition_id, artwork_id, display_start_date, display_end_date) VALUES ?",
+            [values],
+            (err) => {
+              if (err) return sendError(res, err);
+              sendJSON(res, { message: "Exhibition updated" });
+            }
+          );
+        });
       });
     });
   }
-
   // PATCH /exhibitions/5/deactivate  → soft delete (is_active = 0)
   else if (req.method === "PATCH" && urlParts.length === 3 && urlParts[2] === "deactivate") {
     db.query(
@@ -168,11 +217,11 @@ module.exports = (req, res, parsedUrl) => {
   // PATCH /exhibitions/5/archive  → alias for deactivate
   else if (req.method === "PATCH" && urlParts.length === 3 && urlParts[2] === "unarchive") {
     db.query(
-      "UPDATE exhibition SET is_active = 0 WHERE exhibition_id = ?",
+      "UPDATE exhibition SET is_active = 1 WHERE exhibition_id = ?", // change 0 to 1
       [urlParts[1]],
       (err) => {
         if (err) return sendError(res, err);
-        sendJSON(res, { message: "Exhibition archived" });
+        sendJSON(res, { message: "Exhibition unarchived" });
       }
     );
   }

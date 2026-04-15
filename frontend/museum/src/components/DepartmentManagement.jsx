@@ -12,20 +12,20 @@ import "../styles/UserManagement.css";
 const TABLE_COLS = ["department_id", "department_name", "budget", "phone_extension"];
 
 const FIELDS = [
-  { key: "department_id",   label: "Department ID",   required: true, editDisabled: true },
+  { key: "department_id", label: "Department ID", required: true, editDisabled: true },
   { key: "department_name", label: "Department Name", required: true, full: true },
-  { key: "budget",          label: "Budget ($)",      required: true, type: "number" },
-  { key: "phone_extension", label: "Phone Extension", required: true },
+  { key: "budget", label: "Budget ($)", required: true, type: "number" },
+  { key: "phone_extension", label: "Phone Extension", required: true, type: "text", maxLength: 3 },
 ];
 
 const DepartmentManagement = forwardRef(function DepartmentManagement({ searchTerm = "" }, ref) {
-  const [records,      setRecords]      = useState([]);
-  const [loading,      setLoading]      = useState(true);
-  const [modal,        setModal]        = useState(null);
-  const [selected,     setSelected]     = useState(null);
-  const [form,         setForm]         = useState({});
-  const [saving,       setSaving]       = useState(false);
-  const [feedback,     setFeedback]     = useState(null);
+  const [records, setRecords] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [modal, setModal] = useState(null);
+  const [selected, setSelected] = useState(null);
+  const [form, setForm] = useState({});
+  const [saving, setSaving] = useState(false);
+  const [feedback, setFeedback] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
 
   const notify = (msg, type = "success") => {
@@ -58,7 +58,7 @@ const DepartmentManagement = forwardRef(function DepartmentManagement({ searchTe
     )
   );
 
-  const openEdit   = (r) => { setForm({ ...r }); setSelected(r); setModal("edit"); };
+  const openEdit = (r) => { setForm({ ...r }); setSelected(r); setModal("edit"); };
   const closeModal = () => { setModal(null); setSelected(null); setForm({}); };
 
   const handleSave = async () => {
@@ -81,7 +81,7 @@ const DepartmentManagement = forwardRef(function DepartmentManagement({ searchTe
   };
 
   const confirmDelete = (r) => { setDeleteTarget(r); setModal("confirm"); };
-  const handleDelete  = async () => {
+  const handleDelete = async () => {
     try {
       await deleteDepartment(deleteTarget.department_id);
       notify("Department deleted");
@@ -150,7 +150,14 @@ const DepartmentManagement = forwardRef(function DepartmentManagement({ searchTe
                       type={f.type || "text"}
                       value={form[f.key] || ""}
                       disabled={f.editDisabled && modal === "edit"}
-                      onChange={e => setForm(p => ({ ...p, [f.key]: e.target.value }))}
+                      maxLength={f.maxLength || undefined}
+                      onChange={e => {
+                        let val = e.target.value;
+                        if (f.key === "phone_extension") {
+                          val = val.replace(/\D/g, "").slice(0, 3);
+                        }
+                        setForm(p => ({ ...p, [f.key]: val }));
+                      }}
                     />
                   </div>
                 ))}
