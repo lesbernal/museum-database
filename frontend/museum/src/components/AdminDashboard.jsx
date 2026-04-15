@@ -94,6 +94,10 @@ export default function AdminDashboard() {
   ];
 
   useEffect(() => {
+    const savedTab = localStorage.getItem("adminActiveTab");
+    if (savedTab && tabs.some(tab => tab.id === savedTab)) {
+      setActiveTab(savedTab);
+    }
     loadArtists();
     loadArtworks();
     loadProvenance();
@@ -333,6 +337,7 @@ export default function AdminDashboard() {
 
   const handleTabClick = (tabId) => {
     setActiveTab(tabId);
+    localStorage.setItem("adminActiveTab", tabId);
     setSearchTerm("");
     setIsMobileMenuOpen(false);
     if (tabId !== "exhibitions") setShowExhibitionArchive(false);
