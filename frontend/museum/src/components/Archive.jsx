@@ -1,6 +1,6 @@
 import { formatToCST } from "../utils/dateUtils";
 // components/Archive.jsx
-import { useEffect, useState, reloadTrigger} from "react";
+import { useEffect, useState } from "react";
 import "../styles/ExhibitionArchive.css";
 
 // Configuration for each archive type
@@ -32,9 +32,7 @@ const ARCHIVE_CONFIGS = {
     getId: (item) => item.event_id,
     formatData: (item) => ({
       ...item,
-      formatted_date: item.event_date ? new Date(item.event_date).toLocaleDateString("en-US", {
-        year: "numeric", month: "short", day: "numeric"
-      }) : "—"
+      formatted_date: item.event_date ? formatToCST(item.event_date) : "—"
     }),
     getRowData: (item) => ({
       id: item.event_id,
@@ -54,12 +52,8 @@ const ARCHIVE_CONFIGS = {
     getId: (item) => item.exhibition_id,
     formatData: (item) => ({
       ...item,
-      formatted_start: item.start_date ? new Date(item.start_date).toLocaleDateString("en-US", {
-        year: "numeric", month: "short", day: "numeric"
-      }) : "—",
-      formatted_end: item.end_date && new Date(item.end_date).getFullYear() < 2099 
-        ? new Date(item.end_date).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })
-        : "Ongoing"
+      formatted_start: item.start_date ? formatToCST(item.start_date) : "—",
+      formatted_end: item.end_date ? formatToCST(item.end_date) : "—"
     }),
     getRowData: (item) => ({
       id: item.exhibition_id,
