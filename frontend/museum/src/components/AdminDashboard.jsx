@@ -344,6 +344,12 @@ export default function AdminDashboard() {
     if (tabId !== "galleries") setShowGalleryArchive(false);
     if (tabId !== "artwork") setShowArtworkArchive(false);
     if (tabId !== "events") setShowEventArchive(false);
+
+    setTimeout(() => {
+      const mainContent = document.querySelector('.admin-main');
+      if (mainContent) mainContent.scrollTop = 0;
+      window.scrollTo(0, 0);
+    }, 0);
   };
 
   const artworkArtists = [...new Set(artworks.map(a => a.artist_name).filter(Boolean))].sort();
