@@ -664,6 +664,7 @@ export default function AdminDashboard() {
                     <option value="In Storage">In Storage</option>
                     <option value="On Loan">On Loan</option>
                     <option value="Under Restoration">Under Restoration</option>
+                    <option value="Deaccessioned">Deaccessioned</option> 
                   </select>
                 </div>
                 <div className="ex-filter-group">
@@ -730,7 +731,6 @@ export default function AdminDashboard() {
                   onUpdate={handleUpdateArtwork}
                   onDelete={handleDeleteArtwork}
                   onArchive={handleArtworkArchive}
-                  onDeaccession={handleDeaccessionArtwork}
                   loading={false}
                   error={artworksError}
                 />

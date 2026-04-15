@@ -1,4 +1,3 @@
-import { formatToCST } from "../utils/dateUtils";
 // components/ArtworkManager.jsx
 import { useState, useEffect, useRef } from "react";
 import { getArtists } from "../services/api";
@@ -224,7 +223,6 @@ export default function ArtworkManager({
   onUpdate,
   onDelete,
   onArchive,
-  onDeaccession,
   loading: externalLoading,
   error: externalError
 }) {
@@ -270,6 +268,17 @@ export default function ArtworkManager({
   // Prefill form for edit
   useEffect(() => {
     if (editingArtwork) {
+      // Simple date formatter - handles any format
+      let formattedDate = "";
+      if (editingArtwork.acquisition_date) {
+        // If it's a full ISO string like "2026-04-15T00:00:00.000Z", take just the date part
+        if (editingArtwork.acquisition_date.includes('T')) {
+          formattedDate = editingArtwork.acquisition_date.split('T')[0];
+        } else {
+          formattedDate = editingArtwork.acquisition_date;
+        }
+      }
+      
       setForm({
         artist_id: editingArtwork.artist_id || "",
         title: editingArtwork.title || "",
@@ -277,7 +286,7 @@ export default function ArtworkManager({
         creation_year: editingArtwork.creation_year || "",
         medium: editingArtwork.medium || "",
         dimensions: editingArtwork.dimensions || "",
-        acquisition_date: editingArtwork.acquisition_date ? formatToCST(editingArtwork.acquisition_date) : "",
+        acquisition_date: formattedDate,
         insurance_value: editingArtwork.insurance_value || "",
         current_display_status: editingArtwork.current_display_status || "On Display",
         image_url: editingArtwork.image_url || "",
@@ -464,7 +473,7 @@ export default function ArtworkManager({
                         e.target.onerror = null;
                         e.target.src = "";
                         e.target.style.display = "none";
-                        e.target.parentElement.innerHTML = '<div class="thumbnail-placeholder">🖼️</div>';
+                        e.target.parentElement.innerHTML = '<div className="thumbnail-placeholder">🖼️</div>';
                       }}
                     />
                   ) : (
@@ -484,11 +493,6 @@ export default function ArtworkManager({
                 <td className="actions">
                   <button className="edit-btn" onClick={() => handleEditClick(artwork)} title="Edit">Edit</button>
                   <button className="archive-btn" onClick={() => onArchive(artwork.artwork_id)} title="Archive">Archive</button>
-                  {artwork.current_display_status !== "Deaccessioned" && (
-                    <button className="deaccession-btn" onClick={() => onDeaccession(artwork.artwork_id)} title="Mark as Deaccessioned">
-                      Deaccession
-                    </button>
-                  )}
                 </td>
               </tr>
             ))}
@@ -500,8 +504,6 @@ export default function ArtworkManager({
 
   return (
     <div className="artwork-manager">
-      <SuccessToast show={showSuccessToast} editingArtwork={editingArtwork} onClose={handleToastClose} />
-
       <div className="artwork-manager-header">
         <div className="search-bar">
           <input
