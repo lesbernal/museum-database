@@ -1,8 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import ArtistManager from "./ArtistManager";
-import ArtworkForm from "./ArtworkForm";
-import ArtworkTable from "./ArtworkTable";
+import ArtworkManager from "./ArtworkManager";
 import Archive from "./Archive"; 
 import ProvenanceForm from "./ProvenanceForm";
 import ProvenanceTable from "./ProvenanceTable";
@@ -52,8 +51,6 @@ export default function AdminDashboard() {
   const [showStockToast, setShowStockToast] = useState(false);
 
   // Artwork states
-  const [isArtworkFormOpen, setIsArtworkFormOpen] = useState(false);
-  const [editingArtwork, setEditingArtwork] = useState(null);
   const [artworkArtistFilter, setArtworkArtistFilter] = useState("All");
   const [artworkMediumFilter, setArtworkMediumFilter] = useState("All");
   const [artworkStatusFilter, setArtworkStatusFilter] = useState("All");
@@ -233,14 +230,14 @@ export default function AdminDashboard() {
   };
 
   // Artwork handlers
-  const handleAddArtwork = () => { setEditingArtwork(null); setIsArtworkFormOpen(true); };
-  const handleEditArtwork = (artwork) => { setEditingArtwork(artwork); setIsArtworkFormOpen(true); };
-  const handleSaveArtwork = async (artworkData) => {
-    try {
-      if (editingArtwork) await updateArtwork(editingArtwork.artwork_id, artworkData);
-      else await createArtwork(artworkData);
-      await loadArtworks(); setIsArtworkFormOpen(false);
-    } catch (err) { console.error(err); alert("Failed to save artwork"); }
+  const handleAddArtwork = async (artworkData) => {
+    await createArtwork(artworkData);
+    await loadArtworks();
+  };
+
+  const handleUpdateArtwork = async (id, artworkData) => {
+    await updateArtwork(id, artworkData);
+    await loadArtworks();
   };
   const handleDeleteArtwork = async (id) => {
     if (window.confirm("Delete this artwork? This will also delete its provenance records.")) {
@@ -340,8 +337,6 @@ export default function AdminDashboard() {
 
   const handleAdd = () => {
     switch (activeTab) {
-      case "artists": return handleAddArtist();
-      case "artwork": return handleAddArtwork();
       case "provenance": return handleAddProvenance();
       case "exhibitions": return handleAddExhibition();
       case "galleries": return handleAddGallery();
@@ -542,7 +537,7 @@ export default function AdminDashboard() {
               {activeTab === "departments" && " - Manage museum departments and budgets"}
             </p>
           </div>
-          {!usesCustomManager && activeTab !== "reports" && activeTab !== "artists" && (
+          {!usesCustomManager && activeTab !== "reports" && activeTab !== "artists" && activeTab !== "artwork" && (
             <button className="add-btn" onClick={handleAdd}>
               + Add New {getAddLabel()}
             </button>
@@ -738,7 +733,7 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {!usesCustomManager && activeTab !== "reports" && activeTab !== "artists" && (
+        {!usesCustomManager && activeTab !== "reports" && activeTab !== "artists" && activeTab !== "artwork" && (
           <div className="search-bar">
             <input
               type="text"
@@ -768,16 +763,16 @@ export default function AdminDashboard() {
               {showArtworkArchive && (
                 <Archive type="artwork" onRestored={() => loadArtworks()} />
               )}
-              {artworksError
-                ? <div className="error-message">{artworksError}</div>
-                : <ArtworkTable
-                    artworks={filteredArtworks}
-                    onEdit={handleEditArtwork}
-                    onDelete={handleDeleteArtwork}
-                    onArchive={handleArtworkArchive}
-                    onDeaccession={handleDeaccessionArtwork}
-                  />
-              }
+              <ArtworkManager
+                artworks={filteredArtworks}
+                onAdd={handleAddArtwork}
+                onUpdate={handleUpdateArtwork}
+                onDelete={handleDeleteArtwork}
+                onArchive={handleArtworkArchive}
+                onDeaccession={handleDeaccessionArtwork}
+                loading={false}
+                error={artworksError}
+              />
             </>
           )}
 
@@ -851,7 +846,6 @@ export default function AdminDashboard() {
       </main>
 
       {/* Modals */}
-      {isArtworkFormOpen && <ArtworkForm onSubmit={handleSaveArtwork} initialData={editingArtwork} onCancel={() => setIsArtworkFormOpen(false)} />}
       {isProvenanceFormOpen && <ProvenanceForm onSubmit={handleSaveProvenance} initialData={editingProvenance} onCancel={() => setIsProvenanceFormOpen(false)} />}
       {isExhibitionFormOpen && <ExhibitionForm onSubmit={handleSaveExhibition} initialData={editingExhibition} onCancel={() => setIsExhibitionFormOpen(false)} />}
       {isGalleryFormOpen && <GalleryForm onSubmit={handleSaveGallery} initialData={editingGallery} onCancel={() => setIsGalleryFormOpen(false)} />}
