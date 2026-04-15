@@ -11,7 +11,7 @@ const ArtistFormModal = ({ isOpen, editingArtist, form, errors, isSubmitting, on
       <div className="modal-overlay" onClick={onCancel}>
         <div className="modal-content" onClick={(e) => e.stopPropagation()}>
           <div className="modal-header">
-            <h2>{editingArtist ? "✏️ Edit Artist" : "➕ Add New Artist"}</h2>
+            <h2>{editingArtist ? "Edit Artist" : "Add New Artist"}</h2>
             <button className="close-btn" onClick={onCancel}>&times;</button>
           </div>
           

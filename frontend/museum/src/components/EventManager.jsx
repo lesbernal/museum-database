@@ -35,7 +35,7 @@ const EventFormModal = ({ isOpen, editingEvent, formData, galleries, onSubmit, o
     <div className="modal-overlay" onClick={onCancel}>
       <div className="modal-content" onClick={e => e.stopPropagation()}>
         <div className="modal-header">
-          <h2>{editingEvent ? "✏️ Edit Event" : "➕ Add New Event"}</h2>
+          <h2>{editingEvent ? "Edit Event" : "Add New Event"}</h2>
           <button className="close-btn" onClick={onCancel}>&times;</button>
         </div>
 
@@ -72,6 +72,7 @@ const EventFormModal = ({ isOpen, editingEvent, formData, galleries, onSubmit, o
                   type="date"
                   name="event_date"
                   value={formData.event_date}
+                  min={new Date().toISOString().split("T")[0]}
                   onChange={onChange}
                   required
                 />
@@ -82,6 +83,7 @@ const EventFormModal = ({ isOpen, editingEvent, formData, galleries, onSubmit, o
                   type="number"
                   name="capacity"
                   min="1"
+                  max="500"
                   value={formData.capacity}
                   onChange={onChange}
                   placeholder="e.g., 50"

@@ -28,7 +28,7 @@ const GalleryFormModal = ({ isOpen, editingGallery, formData, buildings, exhibit
     <div className="modal-overlay" onClick={onCancel}>
       <div className="modal-content gallery-modal" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h2>{editingGallery ? "✏️ Edit Gallery" : "➕ Add New Gallery"}</h2>
+          <h2>{editingGallery ? "Edit Gallery" : "Add New Gallery"}</h2>
           <button className="close-btn" onClick={onCancel}>&times;</button>
         </div>
 
@@ -58,6 +58,8 @@ const GalleryFormModal = ({ isOpen, editingGallery, formData, buildings, exhibit
                   value={formData.floor_number}
                   onChange={onChange}
                   placeholder="e.g., 2"
+                  min="1"
+                  max="10"
                   className={errors.floor_number ? "error" : ""}
                 />
                 {errors.floor_number && <span className="error-message">{errors.floor_number}</span>}
@@ -72,6 +74,8 @@ const GalleryFormModal = ({ isOpen, editingGallery, formData, buildings, exhibit
                   value={formData.square_footage}
                   onChange={onChange}
                   placeholder="e.g., 3500"
+                  min="1"
+                  max="10000"
                   className={errors.square_footage ? "error" : ""}
                 />
                 {errors.square_footage && <span className="error-message">{errors.square_footage}</span>}
@@ -165,7 +169,7 @@ const GalleryFormModal = ({ isOpen, editingGallery, formData, buildings, exhibit
   );
 };
 
-export default function GalleryManager({ 
+export default function GalleryManager({
   galleries: externalGalleries,
   onAdd,
   onUpdate,
