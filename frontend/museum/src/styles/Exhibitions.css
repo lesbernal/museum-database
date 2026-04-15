@@ -592,3 +592,185 @@
 .cal-painting-title  { font-size: 0.82rem; font-weight: 600; color: #ddd; margin: 0 0 2px; }
 .cal-painting-artist { font-size: 0.75rem; color: #888; margin: 0 0 4px; }
 .cal-painting-desc   { font-size: 0.73rem; color: #7e7e7e; line-height: 1.4; margin: 0; }
+
+/* ── Add these to the bottom of Exhibitions.css ── */
+
+/* Search */
+.exhibitions-search {
+  margin-bottom: 1rem;
+}
+
+.exhibitions-search-input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1px solid #e5e7eb;
+  font-size: 0.9rem;
+  font-family: inherit;
+  color: #111827;
+  background: #fff;
+  transition: border-color 0.15s;
+  outline: none;
+}
+
+.exhibitions-search-input:focus {
+  border-color: #c5a028;
+}
+
+/* Filter bar */
+.exhibitions-filters-bar {
+  margin-bottom: 1rem;
+  padding: 1.25rem;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+}
+
+.filters-row {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  align-items: flex-end;
+}
+
+.filter-group {
+  flex: 1;
+  min-width: 140px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.filter-group label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #9ca3af;
+}
+
+/* Dropdown button */
+.filter-select-wrapper {
+  position: relative;
+}
+
+.filter-select-btn {
+  width: 100%;
+  padding: 0.55rem 0.875rem;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  font-size: 0.85rem;
+  font-family: inherit;
+  color: #374151;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: border-color 0.15s;
+}
+
+.filter-select-btn:hover { border-color: #c5a028; }
+
+.filter-arrow {
+  font-size: 0.6rem;
+  color: #9ca3af;
+  margin-left: 0.5rem;
+}
+
+/* Dropdown menu */
+.filter-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  max-height: 220px;
+  overflow-y: auto;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-top: none;
+  z-index: 100;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+.filter-option {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.5rem 0.875rem;
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: #374151;
+  transition: background 0.1s;
+}
+
+.filter-option:hover { background: #faf9f8; }
+
+.filter-option input[type="checkbox"] {
+  width: 15px;
+  height: 15px;
+  accent-color: #c5a028;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+/* Sort select */
+.filter-select {
+  width: 100%;
+  padding: 0.55rem 0.875rem;
+  border: 1px solid #e5e7eb;
+  font-size: 0.85rem;
+  font-family: inherit;
+  color: #374151;
+  background: #fff;
+  cursor: pointer;
+  transition: border-color 0.15s;
+  outline: none;
+}
+
+.filter-select:hover,
+.filter-select:focus { border-color: #c5a028; }
+
+/* Clear button */
+.filters-clear {
+  padding: 0.55rem 1.25rem;
+  background: transparent;
+  border: 1px solid #e5e7eb;
+  font-size: 0.78rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+  align-self: flex-end;
+}
+
+.filters-clear:hover {
+  border-color: #c5a028;
+  color: #c5a028;
+}
+
+/* Active filter tags */
+.exhibitions-active-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.filter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.75rem;
+  background: #faf9f8;
+  border: 1px solid #e5e7eb;
+  font-size: 0.75rem;
+  color: #374151;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.filter-tag:hover {
+  border-color: #c5a028;
+  color: #c5a028;
+}

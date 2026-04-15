@@ -21,7 +21,7 @@ async function fetchExhibitionPaintings(exhibitionId) {
   }
 }
 
-// ─── ExhibitionCalendar modal ────────────────────────────────────────────────
+// ─── ExhibitionCalendar modal ─────────────────────────────────────────────────
 
 function ExhibitionCalendar({ exhibition, onClose }) {
   const start = new Date(exhibition.start_date);
@@ -153,7 +153,7 @@ function ExhibitionCalendar({ exhibition, onClose }) {
   );
 }
 
-// ─── PaintingBanner ──────────────────────────────────────────────────────────
+// ─── PaintingBanner ───────────────────────────────────────────────────────────
 
 function PaintingBanner({ exhibitionId, accentColor }) {
   const [images, setImages] = useState([]);
@@ -185,13 +185,20 @@ function PaintingBanner({ exhibitionId, accentColor }) {
   );
 }
 
-// ─── Main Exhibitions page ───────────────────────────────────────────────────
+// ─── Main Exhibitions page ────────────────────────────────────────────────────
 
 export default function Exhibitions() {
   const [exhibitions,        setExhibitions] = useState([]);
   const [loading,            setLoading]     = useState(true);
-  const [filter,             setFilter]      = useState("All");
   const [selectedExhibition, setSelected]    = useState(null);
+  const [openDropdown,       setOpenDropdown] = useState(null);
+  const [searchTerm,         setSearchTerm]  = useState("");
+  const [sortBy,             setSortBy]      = useState("name");
+
+  // Multi-select filter state
+  const [selectedTypes,      setSelectedTypes]    = useState([]);
+  const [selectedGalleries,  setSelectedGalleries] = useState([]);
+  const [selectedStatuses,   setSelectedStatuses]  = useState([]);
 
   useEffect(() => {
     setLoading(true);
@@ -215,10 +222,6 @@ export default function Exhibitions() {
     return d.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
   };
 
-  const filtered = filter === "All"
-    ? exhibitions
-    : exhibitions.filter(e => e.exhibition_type === filter);
-
   const typeBadgeClass = (type) => {
     switch (type) {
       case "Permanent": return "badge-permanent";
@@ -234,6 +237,53 @@ export default function Exhibitions() {
     if (s === "Upcoming") return "status-upcoming";
     return "status-ended";
   };
+
+  // Unique filter options derived from data
+  const galleryOptions = [...new Set(exhibitions.map(e => e.gallery_name).filter(Boolean))].sort();
+  const typeOptions    = ["Permanent", "Temporary", "Traveling"];
+  const statusOptions  = ["Now On", "Upcoming", "Ended"];
+
+  const toggleType    = t => setSelectedTypes(p    => p.includes(t) ? p.filter(x => x !== t) : [...p, t]);
+  const toggleGallery = g => setSelectedGalleries(p => p.includes(g) ? p.filter(x => x !== g) : [...p, g]);
+  const toggleStatus  = s => setSelectedStatuses(p  => p.includes(s) ? p.filter(x => x !== s) : [...p, s]);
+
+  const clearAllFilters = () => {
+    setSelectedTypes([]);
+    setSelectedGalleries([]);
+    setSelectedStatuses([]);
+    setSearchTerm("");
+    setSortBy("name");
+  };
+
+  // Apply all filters + search + sort
+  let filtered = [...exhibitions];
+
+  if (searchTerm)
+    filtered = filtered.filter(e =>
+      e.exhibition_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      e.gallery_name?.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+  if (selectedTypes.length > 0)
+    filtered = filtered.filter(e => selectedTypes.includes(e.exhibition_type));
+
+  if (selectedGalleries.length > 0)
+    filtered = filtered.filter(e => selectedGalleries.includes(e.gallery_name));
+
+  if (selectedStatuses.length > 0)
+    filtered = filtered.filter(e => selectedStatuses.includes(getDateStatus(e.start_date, e.end_date)));
+
+  filtered.sort((a, b) => {
+    switch (sortBy) {
+      case "name":       return (a.exhibition_name || "").localeCompare(b.exhibition_name || "");
+      case "name_desc":  return (b.exhibition_name || "").localeCompare(a.exhibition_name || "");
+      case "date_asc":   return new Date(a.start_date) - new Date(b.start_date);
+      case "date_desc":  return new Date(b.start_date) - new Date(a.start_date);
+      default: return 0;
+    }
+  });
+
+  const hasActiveFilters = selectedTypes.length > 0 || selectedGalleries.length > 0 || selectedStatuses.length > 0;
 
   const cardAccents = [
     "#1a1a2e", "#2d4a3e", "#4a1942", "#1e3a5f",
@@ -255,20 +305,122 @@ export default function Exhibitions() {
         </p>
       </div>
 
+      {/* Search */}
+      <div className="exhibitions-search">
+        <input
+          type="text"
+          placeholder="Search by title or gallery..."
+          value={searchTerm}
+          onChange={e => setSearchTerm(e.target.value)}
+          className="exhibitions-search-input"
+        />
+      </div>
+
       {/* Filters */}
-      <div className="exhibitions-toolbar">
-        <div className="exhibitions-filters">
-          {["All", "Permanent", "Temporary", "Traveling"].map(type => (
-            <button
-              key={type}
-              className={`filter-btn ${filter === type ? "filter-active" : ""}`}
-              onClick={() => setFilter(type)}
-            >
-              {type}
-            </button>
-          ))}
+      <div className="exhibitions-filters-bar">
+        <div className="filters-row">
+
+          {/* Type dropdown */}
+          <div className="filter-group">
+            <label>Type</label>
+            <div className="filter-select-wrapper">
+              <button
+                className="filter-select-btn"
+                onClick={() => setOpenDropdown(openDropdown === "types" ? null : "types")}
+              >
+                {selectedTypes.length === 0 ? "All Types" : `${selectedTypes.length} selected`}
+                <span className="filter-arrow">▼</span>
+              </button>
+              {openDropdown === "types" && (
+                <div className="filter-dropdown">
+                  {typeOptions.map(t => (
+                    <label key={t} className="filter-option">
+                      <input type="checkbox" checked={selectedTypes.includes(t)} onChange={() => toggleType(t)} />
+                      <span>{t}</span>
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Gallery dropdown */}
+          <div className="filter-group">
+            <label>Gallery</label>
+            <div className="filter-select-wrapper">
+              <button
+                className="filter-select-btn"
+                onClick={() => setOpenDropdown(openDropdown === "galleries" ? null : "galleries")}
+              >
+                {selectedGalleries.length === 0 ? "All Galleries" : `${selectedGalleries.length} selected`}
+                <span className="filter-arrow">▼</span>
+              </button>
+              {openDropdown === "galleries" && (
+                <div className="filter-dropdown">
+                  {galleryOptions.map(g => (
+                    <label key={g} className="filter-option">
+                      <input type="checkbox" checked={selectedGalleries.includes(g)} onChange={() => toggleGallery(g)} />
+                      <span>{g}</span>
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Status dropdown */}
+          <div className="filter-group">
+            <label>Status</label>
+            <div className="filter-select-wrapper">
+              <button
+                className="filter-select-btn"
+                onClick={() => setOpenDropdown(openDropdown === "statuses" ? null : "statuses")}
+              >
+                {selectedStatuses.length === 0 ? "All Statuses" : `${selectedStatuses.length} selected`}
+                <span className="filter-arrow">▼</span>
+              </button>
+              {openDropdown === "statuses" && (
+                <div className="filter-dropdown">
+                  {statusOptions.map(s => (
+                    <label key={s} className="filter-option">
+                      <input type="checkbox" checked={selectedStatuses.includes(s)} onChange={() => toggleStatus(s)} />
+                      <span>{s}</span>
+                    </label>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Sort */}
+          <div className="filter-group">
+            <label>Sort By</label>
+            <select value={sortBy} onChange={e => setSortBy(e.target.value)} className="filter-select">
+              <option value="name">Name A-Z</option>
+              <option value="name_desc">Name Z-A</option>
+              <option value="date_asc">Start Date (Oldest)</option>
+              <option value="date_desc">Start Date (Newest)</option>
+            </select>
+          </div>
+
+          <button className="filters-clear" onClick={clearAllFilters}>Clear All</button>
         </div>
       </div>
+
+      {/* Active filter tags */}
+      {hasActiveFilters && (
+        <div className="exhibitions-active-tags">
+          {selectedTypes.map(t => (
+            <span key={t} className="filter-tag" onClick={() => toggleType(t)}>{t} ✕</span>
+          ))}
+          {selectedGalleries.map(g => (
+            <span key={g} className="filter-tag" onClick={() => toggleGallery(g)}>{g} ✕</span>
+          ))}
+          {selectedStatuses.map(s => (
+            <span key={s} className="filter-tag" onClick={() => toggleStatus(s)}>{s} ✕</span>
+          ))}
+        </div>
+      )}
 
       <p className="exhibitions-count">
         {filtered.length} exhibition{filtered.length !== 1 ? "s" : ""}
@@ -289,10 +441,7 @@ export default function Exhibitions() {
                 onClick={() => setSelected(e)}
                 title="Click to view calendar"
               >
-                <PaintingBanner
-                  exhibitionId={e.exhibition_id}
-                  accentColor={accentColor}
-                />
+                <PaintingBanner exhibitionId={e.exhibition_id} accentColor={accentColor} />
 
                 <div className="card-badges">
                   <span className={`card-type-badge ${typeBadgeClass(e.exhibition_type)}`}>
