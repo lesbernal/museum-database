@@ -22,16 +22,18 @@ function getDiscountedPrice(basePrice, discount) {
 export default function Tickets() {
   const navigate = useNavigate();
 
-  const [visitDate,     setVisitDate]     = useState("");
-  const [discount,      setDiscount]      = useState("None");
-  const [quantities,    setQuantities]    = useState({
+  const [visitDate,  setVisitDate]  = useState("");
+  const [quantities, setQuantities] = useState({
     "Adult 19+": 0, "Senior 65+": 0, "Youth 13-18": 0, "Child 12 & Under": 0
   });
-  const [isMember,      setIsMember]      = useState(false);
-  const [errorMsg,      setErrorMsg]      = useState("");
+  const [isMember,   setIsMember]   = useState(false);
+  const [errorMsg,   setErrorMsg]   = useState("");
 
-  const userId = localStorage.getItem("user_id");
-  const today  = new Date().toISOString().split("T")[0];
+  const userId  = localStorage.getItem("user_id");
+  const today   = new Date().toISOString().split("T")[0];
+
+  // Auto-apply member discount
+  const discount = isMember ? "Member" : "None";
 
   useEffect(() => {
     if (!userId) return;
@@ -43,15 +45,19 @@ export default function Tickets() {
   }, [userId]);
 
   function adjust(type, delta) {
-    setQuantities(prev => ({
-      ...prev,
-      [type]: Math.max(0, (prev[type] || 0) + delta)
-    }));
+    setQuantities(prev => {
+      const newVal   = Math.max(0, (prev[type] || 0) + delta);
+      const newTotal = Object.entries(prev).reduce((sum, [k, v]) =>
+        sum + (k === type ? newVal : v), 0
+      );
+      if (newTotal > 9) return prev;
+      return { ...prev, [type]: newVal };
+    });
   }
 
   const summaryLines = TICKET_TYPES.filter(t => quantities[t.type] > 0).map(t => ({
-    label: `${quantities[t.type]}x ${t.label}`,
-    price: getDiscountedPrice(t.basePrice, discount) * quantities[t.type],
+    label:      `${quantities[t.type]}x ${t.label}`,
+    price:      getDiscountedPrice(t.basePrice, discount) * quantities[t.type],
   }));
 
   const total        = summaryLines.reduce((sum, l) => sum + l.price, 0);
@@ -61,14 +67,11 @@ export default function Tickets() {
     e.preventDefault();
     setErrorMsg("");
 
-    if (!userId)            return setErrorMsg("Please log in first.");
-    if (!visitDate)         return setErrorMsg("Select a visit date.");
-    if (visitDate < today)  return setErrorMsg("Visit date must be today or a future date.");
+    if (!userId)           return setErrorMsg("Please log in first.");
+    if (!visitDate)        return setErrorMsg("Select a visit date.");
+    if (visitDate < today) return setErrorMsg("Visit date must be today or a future date.");
     if (totalTickets === 0) return setErrorMsg("Please select at least one ticket.");
-    if (discount === "Member" && !isMember)
-      return setErrorMsg("You must be a museum member to use the Member discount.");
 
-    // Build tickets array for checkout
     const tickets = TICKET_TYPES
       .filter(t => quantities[t.type] > 0)
       .map(t => ({
@@ -79,14 +82,17 @@ export default function Tickets() {
         finalPrice: getDiscountedPrice(t.basePrice, discount),
       }));
 
+    const orderTotal = tickets.reduce((sum, t) => sum + t.finalPrice * t.quantity, 0);
+    const orderCount = tickets.reduce((sum, t) => sum + t.quantity, 0);
+
     navigate("/checkout", {
       state: {
         type:         "tickets",
         tickets,
         visitDate,
         discount,
-        totalTickets,
-        total,
+        totalTickets: orderCount,
+        total:        orderTotal,
       }
     });
   }
@@ -99,9 +105,22 @@ export default function Tickets() {
         <p className="tickets-subtitle">Purchase admission tickets for your visit</p>
       </div>
 
+      {/* Member discount banner */}
+      {isMember && (
+        <div style={{
+          padding: "0.75rem 1rem",
+          background: "#fefce8",
+          border: "1px solid var(--color-gold)",
+          color: "var(--color-gold)",
+          fontSize: "0.85rem",
+          marginBottom: "1.5rem",
+        }}>
+          ✅ Member discount (25% off) automatically applied to all tickets
+        </div>
+      )}
+
       <form onSubmit={handleSubmit}>
 
-        {/* Visit Details */}
         <p className="tickets-section-label">Visit Details</p>
         <div className="tickets-details-row">
           <div className="tickets-field">
@@ -114,26 +133,14 @@ export default function Tickets() {
               required
             />
           </div>
-
-          <div className="tickets-field">
-            <label>Discount</label>
-            <select value={discount} onChange={e => setDiscount(e.target.value)}>
-              <option>None</option>
-              <option>Student</option>
-              <option>Military</option>
-              <option>Member</option>
-            </select>
-            {discount === "Member" && !isMember && (
-              <p className="member-warning">Not a member — blocked at checkout</p>
-            )}
-            {discount === "Member" && isMember && (
-              <p className="member-success">Member discount applied (25% off)</p>
-            )}
-          </div>
         </div>
 
-        {/* Ticket Types */}
-        <p className="tickets-section-label">Select Tickets</p>
+        <p className="tickets-section-label">
+          Select Tickets
+          <span style={{ fontSize: "0.72rem", color: "var(--color-gray-light)", marginLeft: "0.5rem", textTransform: "none", letterSpacing: 0 }}>
+            (max 9 per order)
+          </span>
+        </p>
         <div className="ticket-rows">
           {TICKET_TYPES.map(t => {
             const finalPrice = getDiscountedPrice(t.basePrice, discount);
@@ -144,6 +151,11 @@ export default function Tickets() {
                   <div className="ticket-row-desc">{t.desc}</div>
                 </div>
                 <div className="ticket-row-price">
+                  {isMember && t.basePrice > 0 && (
+                    <span style={{ textDecoration: "line-through", color: "var(--color-gray-light)", fontSize: "0.8rem", marginRight: "0.4rem" }}>
+                      ${t.basePrice.toFixed(2)}
+                    </span>
+                  )}
                   ${finalPrice.toFixed(2)}
                 </div>
                 <div className="ticket-counter">
@@ -152,24 +164,20 @@ export default function Tickets() {
                     className="counter-btn"
                     onClick={() => adjust(t.type, -1)}
                     disabled={quantities[t.type] === 0}
-                  >
-                    −
-                  </button>
+                  >−</button>
                   <span className="counter-val">{quantities[t.type]}</span>
                   <button
                     type="button"
                     className="counter-btn"
                     onClick={() => adjust(t.type, 1)}
-                  >
-                    +
-                  </button>
+                    disabled={totalTickets >= 9}
+                  >+</button>
                 </div>
               </div>
             );
           })}
         </div>
 
-        {/* Summary */}
         <div className="tickets-summary">
           {summaryLines.length === 0 ? (
             <p className="tickets-empty-summary">No tickets selected</p>
@@ -189,7 +197,6 @@ export default function Tickets() {
           )}
         </div>
 
-        {/* Error */}
         {errorMsg && (
           <div className="tickets-feedback error">{errorMsg}</div>
         )}

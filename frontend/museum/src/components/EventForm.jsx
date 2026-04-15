@@ -3,15 +3,18 @@ import { useState, useEffect } from "react";
 import { getGalleries } from "../services/api";
 import "../styles/EventForm.css";
 
+const EVENT_TYPES = ["General", "Lecture", "Tour", "Activity", "Workshop", "Exhibition", "Member Only"];
+
 export default function EventForm({ onSubmit, initialData, onCancel }) {
   const [formData, setFormData] = useState({
-    gallery_id: "",
-    event_name: "",
-    description: "",
-    event_date: "",
-    capacity: "",
-    member_only: 0,
+    gallery_id:      "",
+    event_name:      "",
+    description:     "",
+    event_date:      "",
+    capacity:        "",
+    member_only:     0,
     total_attendees: 0,
+    event_type:      "General",
   });
 
   const [galleries, setGalleries] = useState([]);
@@ -25,13 +28,14 @@ export default function EventForm({ onSubmit, initialData, onCancel }) {
   useEffect(() => {
     if (initialData) {
       setFormData({
-        gallery_id: initialData.gallery_id || "",
-        event_name: initialData.event_name || "",
-        description: initialData.description || "",
-        event_date: initialData.event_date?.split("T")[0] ?? initialData.event_date ?? "",
-        capacity: initialData.capacity || "",
-        member_only: initialData.member_only || 0,
+        gallery_id:      initialData.gallery_id || "",
+        event_name:      initialData.event_name || "",
+        description:     initialData.description || "",
+        event_date:      initialData.event_date?.split("T")[0] ?? initialData.event_date ?? "",
+        capacity:        initialData.capacity || "",
+        member_only:     initialData.member_only || 0,
         total_attendees: initialData.total_attendees || 0,
+        event_type:      initialData.event_type || "General",
       });
     }
   }, [initialData]);
@@ -60,7 +64,6 @@ export default function EventForm({ onSubmit, initialData, onCancel }) {
         <form onSubmit={handleSubmit} className="event-form">
           <div className="form-grid">
 
-            {/* Event Name */}
             <div className="form-group full-width">
               <label>Event Name</label>
               <input
@@ -73,7 +76,6 @@ export default function EventForm({ onSubmit, initialData, onCancel }) {
               />
             </div>
 
-            {/* Description */}
             <div className="form-group full-width">
               <label>Description</label>
               <textarea
@@ -87,7 +89,6 @@ export default function EventForm({ onSubmit, initialData, onCancel }) {
             </div>
 
             <div className="form-row">
-              {/* Event Date */}
               <div className="form-group">
                 <label>Event Date</label>
                 <input
@@ -98,8 +99,6 @@ export default function EventForm({ onSubmit, initialData, onCancel }) {
                   required
                 />
               </div>
-
-              {/* Capacity */}
               <div className="form-group">
                 <label>Capacity</label>
                 <input
@@ -114,25 +113,38 @@ export default function EventForm({ onSubmit, initialData, onCancel }) {
               </div>
             </div>
 
-            {/* Gallery */}
-            <div className="form-group full-width">
-              <label>Gallery</label>
-              <select
-                name="gallery_id"
-                value={formData.gallery_id}
-                onChange={handleChange}
-                required
-              >
-                <option value="">Select Gallery</option>
-                {galleries.map(g => (
-                  <option key={g.gallery_id} value={g.gallery_id}>
-                    {g.gallery_name}
-                  </option>
-                ))}
-              </select>
+            <div className="form-row">
+              <div className="form-group">
+                <label>Gallery</label>
+                <select
+                  name="gallery_id"
+                  value={formData.gallery_id}
+                  onChange={handleChange}
+                  required
+                >
+                  <option value="">Select Gallery</option>
+                  {galleries.map(g => (
+                    <option key={g.gallery_id} value={g.gallery_id}>
+                      {g.gallery_name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label>Event Type</label>
+                <select
+                  name="event_type"
+                  value={formData.event_type}
+                  onChange={handleChange}
+                >
+                  {EVENT_TYPES.map(t => (
+                    <option key={t} value={t}>{t}</option>
+                  ))}
+                </select>
+              </div>
             </div>
 
-            {/* Members Only */}
             <div className="form-group full-width" style={{ flexDirection: "row", alignItems: "center", gap: "0.75rem" }}>
               <input
                 type="checkbox"
@@ -150,9 +162,7 @@ export default function EventForm({ onSubmit, initialData, onCancel }) {
           </div>
 
           <div className="form-actions">
-            <button type="button" className="cancel-btn" onClick={onCancel}>
-              Cancel
-            </button>
+            <button type="button" className="cancel-btn" onClick={onCancel}>Cancel</button>
             <button type="submit" className="submit-btn">
               {initialData ? "Save Changes" : "Add Event"}
             </button>
