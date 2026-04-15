@@ -14,169 +14,178 @@ module.exports = (req, res, parsedUrl) => {
     return;
   }
 
-  // ==================== REPORT 1: REVENUE REPORT ====================
-  // Tables: ticket, donation, cafetransaction, giftshoptransaction
-  // Filter: startDate, endDate, type (ticket/donation/cafe/gift)
-  
+// ==================== REPORT 1: REVENUE REPORT ====================
+// Tables: ticket, donation, cafetransaction, giftshoptransaction
+// Filter: startDate, endDate, type (ticket/donation/cafe/gift)
   if (parsedUrl.pathname === "/reports/revenue-data") {
-    const startDate = query.startDate || "1900-01-01";
-    const endDate = query.endDate || new Date().toISOString().split('T')[0];
+    let startDate = query.startDate;
+    let endDate = query.endDate;
     const type = query.type || "all";
     
-    let sql = "";
+    // If no dates provided, use a wide range (earliest possible to latest possible)
+    if (!startDate || startDate === "") {
+      startDate = "1900-01-01";
+    }
+    if (!endDate || endDate === "") {
+      endDate = "2099-12-31";
+    }
     
+    console.log("Revenue query - startDate:", startDate, "endDate:", endDate, "type:", type);
+    
+    let sqlParts = [];
+    let params = [];
+    
+    // TICKETS
     if (type === "ticket" || type === "all") {
-      sql += `
-        SELECT 'Ticket' as source, ticket_id as id, purchase_date as date, 
-               ticket_type, final_price as amount, payment_method, 
-               CONCAT(first_name, ' ', last_name) as customer_name
+      sqlParts.push(`
+        SELECT 
+          'Ticket' as source,
+          t.ticket_id as id,
+          t.purchase_date as date,
+          t.ticket_type as type,
+          t.final_price as amount,
+          t.payment_method,
+          CONCAT(u.first_name, ' ', u.last_name) as customer_name
         FROM ticket t
-        JOIN user u ON t.user_id = u.user_id
-        WHERE purchase_date BETWEEN ? AND ?
-      `;
-      if (type === "ticket") {
-        db.query(sql + " ORDER BY purchase_date DESC", [startDate, endDate], (err, results) => {
-          if (err) return sendError(res, err);
-          sendJSON(res, results);
-        });
-        return;
-      }
-      sql += " UNION ALL ";
+        LEFT JOIN user u ON t.user_id = u.user_id
+        WHERE t.purchase_date >= ? AND t.purchase_date <= ?
+      `);
+      params.push(startDate, endDate);
     }
     
+    // DONATIONS
     if (type === "donation" || type === "all") {
-      sql += `
-        SELECT 'Donation' as source, donation_id as id, donation_date as date,
-               donation_type, amount, NULL as payment_method,
-               CONCAT(first_name, ' ', last_name) as customer_name
+      if (sqlParts.length > 0) sqlParts.push("UNION ALL");
+      sqlParts.push(`
+        SELECT 
+          'Donation' as source,
+          d.donation_id as id,
+          d.donation_date as date,
+          d.donation_type as type,
+          d.amount as amount,
+          NULL as payment_method,
+          CONCAT(u.first_name, ' ', u.last_name) as customer_name
         FROM donation d
-        JOIN user u ON d.user_id = u.user_id
-        WHERE donation_date BETWEEN ? AND ?
-      `;
-      if (type === "donation") {
-        db.query(sql + " ORDER BY date DESC", [startDate, endDate], (err, results) => {
-          if (err) return sendError(res, err);
-          sendJSON(res, results);
-        });
-        return;
-      }
-      sql += " UNION ALL ";
+        LEFT JOIN user u ON d.user_id = u.user_id
+        WHERE d.donation_date >= ? AND d.donation_date <= ?
+      `);
+      params.push(startDate, endDate);
     }
     
+    // CAFE
     if (type === "cafe" || type === "all") {
-      sql += `
-        SELECT 'Cafe' as source, cafe_transaction_id as id, transaction_datetime as date,
-               payment_method, total_amount as amount, NULL as donation_type,
-               CONCAT(first_name, ' ', last_name) as customer_name
+      if (sqlParts.length > 0) sqlParts.push("UNION ALL");
+      sqlParts.push(`
+        SELECT 
+          'Cafe' as source,
+          ct.cafe_transaction_id as id,
+          DATE(ct.transaction_datetime) as date,
+          NULL as type,
+          ct.total_amount as amount,
+          ct.payment_method,
+          CONCAT(u.first_name, ' ', u.last_name) as customer_name
         FROM cafetransaction ct
-        JOIN user u ON ct.user_id = u.user_id
-        WHERE transaction_datetime BETWEEN ? AND ?
-      `;
-      if (type === "cafe") {
-        db.query(sql + " ORDER BY date DESC", [startDate, endDate], (err, results) => {
-          if (err) return sendError(res, err);
-          sendJSON(res, results);
-        });
-        return;
-      }
-      sql += " UNION ALL ";
+        LEFT JOIN user u ON ct.user_id = u.user_id
+        WHERE DATE(ct.transaction_datetime) >= ? AND DATE(ct.transaction_datetime) <= ?
+      `);
+      params.push(startDate, endDate);
     }
     
+    // GIFT SHOP
     if (type === "gift" || type === "all") {
-      sql += `
-        SELECT 'Gift Shop' as source, transaction_id as id, transaction_datetime as date,
-               payment_method, total_amount as amount, NULL as donation_type,
-               CONCAT(first_name, ' ', last_name) as customer_name
+      if (sqlParts.length > 0) sqlParts.push("UNION ALL");
+      sqlParts.push(`
+        SELECT 
+          'Gift Shop' as source,
+          gt.transaction_id as id,
+          DATE(gt.transaction_datetime) as date,
+          NULL as type,
+          gt.total_amount as amount,
+          gt.payment_method,
+          CONCAT(u.first_name, ' ', u.last_name) as customer_name
         FROM giftshoptransaction gt
-        JOIN user u ON gt.user_id = u.user_id
-        WHERE transaction_datetime BETWEEN ? AND ?
-      `;
+        LEFT JOIN user u ON gt.user_id = u.user_id
+        WHERE DATE(gt.transaction_datetime) >= ? AND DATE(gt.transaction_datetime) <= ?
+      `);
+      params.push(startDate, endDate);
     }
     
-    db.query(sql + " ORDER BY date DESC", [startDate, endDate, startDate, endDate, startDate, endDate, startDate, endDate], (err, results) => {
-      if (err) return sendError(res, err);
+    const finalSql = sqlParts.join(" ") + " ORDER BY date DESC";
+    
+    console.log("Revenue query params:", params);
+    
+    db.query(finalSql, params, (err, results) => {
+      if (err) {
+        console.error("Revenue query error:", err);
+        return sendError(res, err);
+      }
+      console.log("Revenue query returned:", results.length, "records");
       sendJSON(res, results);
     });
     return;
   }
 
-  // ==================== REPORT 2: ART COLLECTION REPORT ====================
-  // Tables: artwork, artist, exhibition, provenance
-  // Filter: artistId, startYear, endYear, status, medium
-  
-  if (parsedUrl.pathname === "/reports/art-collection-data") {
-    const artistId = query.artistId || "";
-    const startYear = query.startYear || "";
-    const endYear = query.endYear || "";
-    const status = query.status || "";
-    const medium = query.medium || "";
+  // ==================== REVENUE SUMMARY ====================
+  if (parsedUrl.pathname === "/reports/revenue-summary") {
+    let startDate = query.startDate;
+    let endDate = query.endDate;
     
-    let sql = `
+    if (!startDate || startDate === "") {
+      startDate = "1900-01-01";
+    }
+    if (!endDate || endDate === "") {
+      endDate = "2099-12-31";
+    }
+    
+    console.log("Summary query - startDate:", startDate, "endDate:", endDate);
+    
+    const sql = `
       SELECT 
-        a.artwork_id,
-        a.title,
-        a.creation_year,
-        a.medium,
-        a.dimensions,
-        a.current_display_status,
-        a.insurance_value,
-        CONCAT(ar.first_name, ' ', ar.last_name) as artist_name,
-        ar.nationality as artist_nationality,
-        (SELECT owner_name FROM provenance 
-         WHERE artwork_id = a.artwork_id 
-         ORDER BY transfer_date DESC LIMIT 1) as current_owner,
-        (SELECT exhibition_name FROM exhibition e
-         JOIN exhibitionartwork ea ON e.exhibition_id = ea.exhibition_id
-         WHERE ea.artwork_id = a.artwork_id
-         AND e.start_date <= CURDATE() AND e.end_date >= CURDATE()
-         LIMIT 1) as current_exhibition
-      FROM artwork a
-      JOIN artist ar ON a.artist_id = ar.artist_id
-      WHERE 1=1
+        COALESCE((SELECT SUM(final_price) FROM ticket WHERE purchase_date >= ? AND purchase_date <= ?), 0) as ticket_revenue,
+        COALESCE((SELECT COUNT(*) FROM ticket WHERE purchase_date >= ? AND purchase_date <= ?), 0) as ticket_count,
+        COALESCE((SELECT SUM(amount) FROM donation WHERE donation_date >= ? AND donation_date <= ?), 0) as donation_revenue,
+        COALESCE((SELECT COUNT(*) FROM donation WHERE donation_date >= ? AND donation_date <= ?), 0) as donation_count,
+        COALESCE((SELECT SUM(total_amount) FROM cafetransaction WHERE DATE(transaction_datetime) >= ? AND DATE(transaction_datetime) <= ?), 0) as cafe_revenue,
+        COALESCE((SELECT COUNT(*) FROM cafetransaction WHERE DATE(transaction_datetime) >= ? AND DATE(transaction_datetime) <= ?), 0) as cafe_count,
+        COALESCE((SELECT SUM(total_amount) FROM giftshoptransaction WHERE DATE(transaction_datetime) >= ? AND DATE(transaction_datetime) <= ?), 0) as gift_revenue,
+        COALESCE((SELECT COUNT(*) FROM giftshoptransaction WHERE DATE(transaction_datetime) >= ? AND DATE(transaction_datetime) <= ?), 0) as gift_count
     `;
     
-    const params = [];
-    
-    if (artistId) {
-      sql += ` AND a.artist_id = ?`;
-      params.push(artistId);
-    }
-    if (startYear) {
-      sql += ` AND a.creation_year >= ?`;
-      params.push(startYear);
-    }
-    if (endYear) {
-      sql += ` AND a.creation_year <= ?`;
-      params.push(endYear);
-    }
-    if (status) {
-      sql += ` AND a.current_display_status = ?`;
-      params.push(status);
-    }
-    if (medium) {
-      sql += ` AND a.medium = ?`;
-      params.push(medium);
-    }
-    
-    sql += ` ORDER BY a.creation_year DESC`;
+    const params = [
+      startDate, endDate,
+      startDate, endDate,
+      startDate, endDate,
+      startDate, endDate,
+      startDate, endDate,
+      startDate, endDate,
+      startDate, endDate,
+      startDate, endDate
+    ];
     
     db.query(sql, params, (err, results) => {
       if (err) return sendError(res, err);
+      const summary = results[0];
       
-      // Also get summary statistics
-      const statsSql = `
-        SELECT 
-          COUNT(*) as total_artworks,
-          ROUND(SUM(insurance_value), 2) as total_value,
-          ROUND(AVG(insurance_value), 2) as avg_value,
-          COUNT(DISTINCT a.artist_id) as total_artists,
-          COUNT(DISTINCT a.medium) as total_mediums
-        FROM artwork a
-        WHERE 1=1
-      `;
-      db.query(statsSql, (err, stats) => {
-        if (err) return sendError(res, err);
-        sendJSON(res, { data: results, summary: stats[0] });
+      const ticketRevenue = Number(summary.ticket_revenue) || 0;
+      const donationRevenue = Number(summary.donation_revenue) || 0;
+      const cafeRevenue = Number(summary.cafe_revenue) || 0;
+      const giftRevenue = Number(summary.gift_revenue) || 0;
+      const ticketCount = Number(summary.ticket_count) || 0;
+      const donationCount = Number(summary.donation_count) || 0;
+      const cafeCount = Number(summary.cafe_count) || 0;
+      const giftCount = Number(summary.gift_count) || 0;
+      
+      const totalRevenue = ticketRevenue + donationRevenue + cafeRevenue + giftRevenue;
+      const totalTransactions = ticketCount + donationCount + cafeCount + giftCount;
+      
+      sendJSON(res, {
+        totalRevenue: totalRevenue,
+        totalTransactions: totalTransactions,
+        avgTransaction: totalTransactions > 0 ? totalRevenue / totalTransactions : 0,
+        ticketRevenue: ticketRevenue,
+        donationRevenue: donationRevenue,
+        cafeRevenue: cafeRevenue,
+        giftShopRevenue: giftRevenue
       });
     });
     return;
