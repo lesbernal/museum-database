@@ -74,6 +74,22 @@ export default function GalleryForm({ onSubmit, initialData = null, onCancel, is
         if (form.climate_controlled === "") newErrors.climate_controlled = "Climate control is required";
         if (!form.building_id) newErrors.building_id = "Building is required";
 
+        if (form.floor_number === "" || form.floor_number === null) {
+            newErrors.floor_number = "Floor number is required";
+        } else if (isNaN(parseInt(form.floor_number))) {
+            newErrors.floor_number = "Floor number must be a number";
+        } else if (parseInt(form.floor_number) < 1 || parseInt(form.floor_number) > 100) {
+            newErrors.floor_number = "Floor number must be between 1 and 100";
+        }
+
+        if (!form.square_footage) {
+            newErrors.square_footage = "Square footage is required";
+        } else if (isNaN(parseFloat(form.square_footage)) || parseFloat(form.square_footage) <= 0) {
+            newErrors.square_footage = "Please enter a valid square footage";
+        } else if (parseFloat(form.square_footage) > 10000) {
+            newErrors.square_footage = "Square footage seems too large";
+        }
+
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     };
@@ -167,8 +183,6 @@ export default function GalleryForm({ onSubmit, initialData = null, onCancel, is
                                         value={form.floor_number}
                                         onChange={handleChange}
                                         placeholder="e.g., 2"
-                                        min="-5"
-                                        max="100"
                                         className={errors.floor_number ? "error" : ""}
                                     />
                                     {errors.floor_number && (
@@ -185,8 +199,6 @@ export default function GalleryForm({ onSubmit, initialData = null, onCancel, is
                                         value={form.square_footage}
                                         onChange={handleChange}
                                         placeholder="e.g., 3500"
-                                        min="1"
-                                        step="0.01"
                                         className={errors.square_footage ? "error" : ""}
                                     />
                                     {errors.square_footage && (
