@@ -11,10 +11,10 @@ import "../styles/Dashboard.css";
 import "../styles/SelfService.css";
 
 const TABS = [
-  { id: "profile",   label: "My Profile",      icon: "👤" },
-  { id: "visits",    label: "Visit History",    icon: "🏛️" },
-  { id: "purchases", label: "Purchase History", icon: "🛍️" },
-  { id: "password",  label: "Change Password",  icon: "🔒" },
+  { id: "profile",   label: "My Profile",       },
+  { id: "visits",    label: "Visit History",    },
+  { id: "purchases", label: "Purchase History", },
+  { id: "password",  label: "Change Password",  },
 ];
 
 const fmt = dateStr => {
@@ -225,7 +225,7 @@ export default function VisitorDashboard() {
                 <h2 className="ss-section-title">Purchase History</h2>
 
                 <h3 style={{ fontSize: 13, fontWeight: 600, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 12 }}>
-                  🎟️ Tickets
+                  Tickets
                 </h3>
                 {tickets.length === 0 ? (
                   <div className="ss-empty" style={{ marginBottom: 24 }}>
@@ -272,7 +272,7 @@ export default function VisitorDashboard() {
                 )}
 
                 <h3 style={{ fontSize: 13, fontWeight: 600, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 12 }}>
-                  💝 Donations
+                  Donations
                 </h3>
                 {donations.length === 0 ? (
                   <div className="ss-empty">

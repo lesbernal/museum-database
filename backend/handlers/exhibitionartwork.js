@@ -3,11 +3,10 @@ const db = require("../db");
 
 module.exports = (req, res, parsedUrl) => {
   const urlParts = parsedUrl.pathname.split("/").filter(Boolean);
-  // urlParts[0] = "exhibitionartwork", urlParts[1] = exhibition_id
 
   // GET /exhibitionartwork/:exhibition_id
   // Returns all artworks for a given exhibition with artwork + artist details
-  if (req.method === "GET" && urlParts.length >= 2 && urlParts[1]) {
+  if(req.method === "GET" && urlParts.length >= 2 && urlParts[1]) {
     const sql = `
       SELECT
         ea.exhibition_id,
@@ -33,9 +32,9 @@ module.exports = (req, res, parsedUrl) => {
   }
 
   else {
-    res.writeHead(404, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ message: "Route not found" }));
-  }
+      res.writeHead(404, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ message: "Route not found" }));
+    }
 };
 
 function sendJSON(res, data, status = 200) {
