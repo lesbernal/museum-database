@@ -1,7 +1,7 @@
 // src/components/EventForm.jsx
 import { useState, useEffect } from "react";
 import { getGalleries } from "../services/api";
-import "../styles/ArtworkForm.css";
+import "../styles/EventForm.css";
 
 export default function EventForm({ onSubmit, initialData, onCancel }) {
   const [formData, setFormData] = useState({
@@ -57,7 +57,7 @@ export default function EventForm({ onSubmit, initialData, onCancel }) {
           <button className="close-btn" onClick={onCancel}>&times;</button>
         </div>
 
-        <form onSubmit={handleSubmit} className="artwork-form">
+        <form onSubmit={handleSubmit} className="event-form">
           <div className="form-grid">
 
             {/* Event Name */}
