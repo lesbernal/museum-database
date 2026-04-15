@@ -7,8 +7,7 @@ import ProvenanceForm from "./ProvenanceForm";
 import ProvenanceTable from "./ProvenanceTable";
 import ExhibitionForm from "./ExhibitionForm";
 import ExhibitionTable from "./ExhibitionTable";
-import GalleryForm from "./GalleryForm";
-import GalleryTable from "./GalleryTable";
+import GalleryManager from "./GalleryManager";
 import EventManager from "./EventManager";
 import CafeAdminPanel from "./CafeAdminPanel";
 import GiftShopAdminPanel from "./GiftShopAdminPanel";
@@ -812,17 +811,17 @@ export default function AdminDashboard() {
           {activeTab === "galleries" && (
             <>
               {showGalleryArchive && (
-                <Archive type="galleries" onRestored={() => loadGalleries()} reloadTrigger={galleries.length}/>
+                <Archive type="galleries" onRestored={() => loadGalleries()} />
               )}
-              {galleriesError
-                ? <div className="error-message">{galleriesError}</div>
-                : <GalleryTable
-                    galleries={filteredGalleries}
-                    onEdit={handleEditGallery}
-                    onDelete={handleDeleteGallery}
-                    onArchive={handleGalleryArchive}
-                  />
-              }
+              <GalleryManager
+                galleries={filteredGalleries}
+                onAdd={handleAddGallery}
+                onUpdate={handleUpdateGallery}
+                onDelete={handleDeleteGallery}
+                onArchive={handleGalleryArchive}
+                loading={false}
+                error={galleriesError}
+              />
             </>
           )}
 
@@ -856,7 +855,6 @@ export default function AdminDashboard() {
       {/* Modals */}
       {isProvenanceFormOpen && <ProvenanceForm onSubmit={handleSaveProvenance} initialData={editingProvenance} onCancel={() => setIsProvenanceFormOpen(false)} />}
       {isExhibitionFormOpen && <ExhibitionForm onSubmit={handleSaveExhibition} initialData={editingExhibition} onCancel={() => setIsExhibitionFormOpen(false)} />}
-      {isGalleryFormOpen && <GalleryForm onSubmit={handleSaveGallery} initialData={editingGallery} onCancel={() => setIsGalleryFormOpen(false)} />}
       </div>
     </>
   );
