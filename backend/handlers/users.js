@@ -7,12 +7,12 @@ module.exports = (req, res, parsedUrl) => {
   const urlParts = parsedUrl.pathname.split("/").filter(Boolean);
 
   // DEBUG
-  console.log("📡 Users handler called");
-  console.log("📡 Authorization header:", req.headers.authorization);
+  console.log("Users handler called");
+  console.log("Authorization header:", req.headers.authorization);
 
   const user = verifyToken(req);
-  console.log("📡 Verified user:", user);
-  console.log("📡 User role:", user?.role);
+  console.log("Verified user:", user);
+  console.log("User role:", user?.role);
 
   const isSelfLookup =
     req.method === "GET" &&
@@ -28,17 +28,17 @@ module.exports = (req, res, parsedUrl) => {
 
   const isPrivileged = user && ["admin", "employee"].includes(user.role);
 
-  console.log("📡 isSelfLookup:", isSelfLookup);
-  console.log("📡 isSelfUpdate:", isSelfUpdate);
-  console.log("📡 isPrivileged:", isPrivileged);
-  console.log("📡 Request method:", req.method);
-  console.log("📡 URL parts:", urlParts);
+  console.log("isSelfLookup:", isSelfLookup);
+  console.log("isSelfUpdate:", isSelfUpdate);
+  console.log("isPrivileged:", isPrivileged);
+  console.log("Request method:", req.method);
+  console.log("URL parts:", urlParts);
 
   // Allow public signup — POST /users requires no token
   if(req.method === "POST" && urlParts.length === 1) {
   // falls through to the POST handler below — no auth needed
   } else if (!user || (!isPrivileged && !isSelfLookup && !isSelfUpdate)) {
-  console.log("❌ Access denied - user:", user, "isPrivileged:", isPrivileged);
+  console.log("Access denied - user:", user, "isPrivileged:", isPrivileged);
   res.writeHead(403, { "Content-Type": "application/json" });
   return res.end(JSON.stringify({ error: "Forbidden: insufficient permissions" }));
   }

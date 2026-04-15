@@ -534,7 +534,7 @@ export default function ReportsPanel() {
         <select value={giftPaymentMethod} onChange={(e) => setGiftPaymentMethod(e.target.value)}>
           <option value="">All</option>
           {Array.isArray(paymentMethodsList) && paymentMethodsList.map(method => <option key={method} value={method}>{method}</option>)}
-        </select>
+        </select> 
       </div>
       <div className="filter-group">
         <label>Customer Name</label>
@@ -588,7 +588,7 @@ export default function ReportsPanel() {
                     } else if (col === "date" || col === "transaction_datetime" || col === "last_visit_date" || col === "expiration_date") {
                       value = formatDate(value);
                     } else if (col === "is_member") {
-                      value = value === "Yes" ? "✅ Yes" : "❌ No";
+                      value = value === "Yes" ? "Yes" : "No";
                     }
                     return <td key={col}>{value || "—"}</td>;
                   })}
@@ -610,29 +610,29 @@ export default function ReportsPanel() {
     if (activeReport === "visitorAnalytics") {
       return (
         <div className="summary-stats">
-          <div className="stat-badge">👥 Total Visitors: {formatNumber(summary.total_visitors)}</div>
-          <div className="stat-badge">⭐ Members: {formatNumber(summary.total_members)}</div>
-          <div className="stat-badge">📊 Total Visits: {formatNumber(summary.total_visits)}</div>
-          <div className="stat-badge">📈 Avg Visits: {summary.avg_visits_per_visitor}</div>
-          <div className="stat-badge">🎟️ Tickets Sold: {formatNumber(summary.total_tickets_sold)}</div>
-          <div className="stat-badge">💰 Revenue: {formatCurrency(summary.total_ticket_revenue)}</div>
+          <div className="stat-badge">Total Visitors: {formatNumber(summary.total_visitors)}</div>
+          <div className="stat-badge">Members: {formatNumber(summary.total_members)}</div>
+          <div className="stat-badge">Total Visits: {formatNumber(summary.total_visits)}</div>
+          <div className="stat-badge">Avg Visits: {summary.avg_visits_per_visitor}</div>
+          <div className="stat-badge">Tickets Sold: {formatNumber(summary.total_tickets_sold)}</div>
+          <div className="stat-badge">Revenue: {formatCurrency(summary.total_ticket_revenue)}</div>
         </div>
       );
     } else if (activeReport === "artCollection") {
       return (
         <div className="summary-stats">
-          <div className="stat-badge">🎨 Total Artworks: {formatNumber(summary.total_artworks)}</div>
-          <div className="stat-badge">💰 Total Value: {formatCurrency(summary.total_value)}</div>
-          <div className="stat-badge">📊 Avg Value: {formatCurrency(summary.avg_value)}</div>
-          <div className="stat-badge">👨‍🎨 Artists: {formatNumber(summary.total_artists)}</div>
+          <div className="stat-badge">Total Artworks: {formatNumber(summary.total_artworks)}</div>
+          <div className="stat-badge">Total Value: {formatCurrency(summary.total_value)}</div>
+          <div className="stat-badge">Avg Value: {formatCurrency(summary.avg_value)}</div>
+          <div className="stat-badge">Artists: {formatNumber(summary.total_artists)}</div>
         </div>
       );
     } else if (activeReport === "giftShop") {
       return (
         <div className="summary-stats">
-          <div className="stat-badge">🛍️ Transactions: {formatNumber(summary.total_transactions)}</div>
-          <div className="stat-badge">💰 Revenue: {formatCurrency(summary.total_revenue)}</div>
-          <div className="stat-badge">📊 Avg Transaction: {formatCurrency(summary.avg_transaction)}</div>
+          <div className="stat-badge">Transactions: {formatNumber(summary.total_transactions)}</div>
+          <div className="stat-badge">Revenue: {formatCurrency(summary.total_revenue)}</div>
+          <div className="stat-badge">Avg Transaction: {formatCurrency(summary.avg_transaction)}</div>
         </div>
       );
     }

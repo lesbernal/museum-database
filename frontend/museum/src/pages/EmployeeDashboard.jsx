@@ -32,28 +32,28 @@ function getDeptGroup(department_id) {
 
 function getTabsForGroup(group, isManager) {
   const base = [
-    { id: "profile", label: "My Profile", icon: "👤" },
-    { id: "jobinfo", label: "Job Info",   icon: "💼" },
+    { id: "profile", label: "My Profile"},
+    { id: "jobinfo", label: "Job Info"},
   ];
   const groupTabs = {
     operations:    [],
     collections:   [
-      { id: "artworks",    label: "Artworks",    icon: "🖼️" },
-      { id: "exhibitions", label: "Exhibitions", icon: "🏛️" },
+      { id: "artworks",    label: "Artworks"},
+      { id: "exhibitions", label: "Exhibitions"},
     ],
-    guestServices: [{ id: "visitors",     label: "Visitor Stats",  icon: "👥" }],
-    revenue:       [{ id: "transactions", label: "Transactions",   icon: "💰" }],
+    guestServices: [{ id: "visitors",     label: "Visitor Stats"}],
+    revenue:       [{ id: "transactions", label: "Transactions"}],
     development:   [
-      { id: "members",   label: "Members",   icon: "⭐" },
-      { id: "donations", label: "Donations", icon: "💝" },
+      { id: "members",   label: "Members"},
+      { id: "donations", label: "Donations"},
     ],
   };
-  const managerTabs = isManager ? [{ id: "staff", label: "My Team", icon: "👔" }] : [];
+  const managerTabs = isManager ? [{ id: "staff", label: "My Team"}] : [];
   return [
     ...base,
     ...(groupTabs[group] || []),
     ...managerTabs,
-    { id: "password", label: "Change Password", icon: "🔒" },
+    { id: "password", label: "Change Password"},
   ];
 }
 
