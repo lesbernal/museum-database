@@ -75,29 +75,32 @@ module.exports = (req, res, parsedUrl) => {
   // ============================ ARTWORK ============================
   else if (urlParts[0] === "artwork") {
 
-    // GET all ACTIVE artworks (visible to public - exclude deaccessioned)
+    // GET all artworks for ADMIN (show everything, including deaccessioned)
     if (req.method === "GET" && urlParts.length === 1) {
       const sql = `
         SELECT a.*,
               ar.first_name, ar.last_name,
-              CONCAT(ar.first_name, ' ', ar.last_name) AS artist_name
+              CONCAT(ar.first_name, ' ', ar.last_name) AS artist_name,
+              DATE(a.acquisition_date) as acquisition_date
         FROM artwork a
         LEFT JOIN artist ar ON a.artist_id = ar.artist_id
-        WHERE a.is_active = 1 AND a.current_display_status != 'Deaccessioned'
+        WHERE a.is_active = 1
         ORDER BY a.artwork_id
       `;
       db.query(sql, (err, results) => {
         if (err) return sendError(res, err);
         sendJSON(res, results);
       });
+      return;
     }
 
     // GET all ARCHIVED artworks
     else if (req.method === "GET" && urlParts.length === 2 && urlParts[1] === "archived") {
       const sql = `
         SELECT a.*,
-               ar.first_name, ar.last_name,
-               CONCAT(ar.first_name, ' ', ar.last_name) AS artist_name
+              ar.first_name, ar.last_name,
+              CONCAT(ar.first_name, ' ', ar.last_name) AS artist_name,
+              DATE(a.acquisition_date) as acquisition_date
         FROM artwork a
         LEFT JOIN artist ar ON a.artist_id = ar.artist_id
         WHERE a.is_active = 0
@@ -107,14 +110,16 @@ module.exports = (req, res, parsedUrl) => {
         if (err) return sendError(res, err);
         sendJSON(res, results);
       });
+      return;
     }
 
     // GET artwork by id
     else if (req.method === "GET" && urlParts.length === 2) {
       const sql = `
         SELECT a.*,
-               ar.first_name, ar.last_name,
-               CONCAT(ar.first_name, ' ', ar.last_name) AS artist_name
+              ar.first_name, ar.last_name,
+              CONCAT(ar.first_name, ' ', ar.last_name) AS artist_name,
+              DATE(a.acquisition_date) as acquisition_date
         FROM artwork a
         LEFT JOIN artist ar ON a.artist_id = ar.artist_id
         WHERE a.artwork_id = ?
@@ -123,6 +128,7 @@ module.exports = (req, res, parsedUrl) => {
         if (err) return sendError(res, err);
         sendJSON(res, results[0] || {});
       });
+      return;
     }
 
     // POST artwork
@@ -131,8 +137,8 @@ module.exports = (req, res, parsedUrl) => {
         const sql = `
           INSERT INTO artwork
           (artist_id, title, description, creation_year,
-           medium, dimensions, acquisition_date,
-           insurance_value, current_display_status, image_url, is_active)
+          medium, dimensions, acquisition_date,
+          insurance_value, current_display_status, image_url, is_active)
           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
         `;
         db.query(sql, [
@@ -151,6 +157,7 @@ module.exports = (req, res, parsedUrl) => {
           sendJSON(res, { message: "Artwork added", artwork_id: result.insertId }, 201);
         });
       });
+      return;
     }
 
     // PUT artwork
@@ -180,6 +187,7 @@ module.exports = (req, res, parsedUrl) => {
           sendJSON(res, { message: "Artwork updated" });
         });
       });
+      return;
     }
 
     // PATCH /artwork/:id/deactivate — soft delete
@@ -188,37 +196,33 @@ module.exports = (req, res, parsedUrl) => {
         if (err) return sendError(res, err);
         sendJSON(res, { message: "Artwork archived" });
       });
+      return;
     }
 
-    // PATCH /artwork/:id/reactivate — restore from archive or deaccession
+    // PATCH /artwork/:id/reactivate — restore from archive
     else if (req.method === "PATCH" && urlParts.length === 3 && urlParts[2] === "reactivate") {
-      // If it was deaccessioned, reset to a sensible default status
       db.query(
-        `UPDATE artwork SET 
-          is_active = 1, 
-          current_display_status = CASE 
-            WHEN current_display_status = 'Deaccessioned' THEN 'In Storage'
-            ELSE current_display_status 
-          END
-        WHERE artwork_id = ?`,
+        "UPDATE artwork SET is_active = 1 WHERE artwork_id = ?",
         [urlParts[1]],
         err => {
           if (err) return sendError(res, err);
           sendJSON(res, { message: "Artwork restored" });
         }
       );
+      return;
     }
 
     // PATCH /artwork/:id/deaccession - Mark as Deaccessioned
     else if (req.method === "PATCH" && urlParts.length === 3 && urlParts[2] === "deaccession") {
       db.query(
-        "UPDATE artwork SET current_display_status = 'Deaccessioned', is_active = 0 WHERE artwork_id = ?",
+        "UPDATE artwork SET current_display_status = 'Deaccessioned' WHERE artwork_id = ?",
         [urlParts[1]],
         err => {
           if (err) return sendError(res, err);
-          sendJSON(res, { message: "Artwork deaccessioned" });
+          sendJSON(res, { message: "Artwork marked as deaccessioned" });
         }
       );
+      return;
     }
   }
 
