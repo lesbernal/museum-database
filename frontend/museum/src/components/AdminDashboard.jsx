@@ -770,7 +770,7 @@ export default function AdminDashboard() {
           {activeTab === "artwork" && (
             <>
               {showArtworkArchive && (
-                <Archive type="artwork" onRestored={() => loadArtworks()} />
+                <Archive type="artwork" onRestored={() => loadArtworks()} reloadTrigger={artworks.length} />
               )}
               {artworksError
                 ? <div className="error-message">{artworksError}</div>
@@ -796,7 +796,7 @@ export default function AdminDashboard() {
           {activeTab === "exhibitions" && (
             <>
               {showExhibitionArchive && (
-                <Archive type="exhibitions" onRestored={() => loadExhibitions()} />
+                <Archive type="exhibitions" onRestored={() => loadExhibitions()} reloadTrigger={exhibitions.length}/>
               )}
               {exhibitionsError
                 ? <div className="error-message">{exhibitionsError}</div>
@@ -814,7 +814,7 @@ export default function AdminDashboard() {
           {activeTab === "galleries" && (
             <>
               {showGalleryArchive && (
-                <Archive type="galleries" onRestored={() => loadGalleries()} />
+                <Archive type="galleries" onRestored={() => loadGalleries()} reloadTrigger={galleries.length}/>
               )}
               {galleriesError
                 ? <div className="error-message">{galleriesError}</div>
@@ -832,7 +832,7 @@ export default function AdminDashboard() {
           {activeTab === "events" && (
             <>
               {showEventArchive && (
-                <Archive type="events" onRestored={() => loadEvents()} />
+                <Archive type="events" onRestored={() => loadEvents()} reloadTrigger={events.length}/>
               )}
               {eventsError
                 ? <div className="error-message">{eventsError}</div>
