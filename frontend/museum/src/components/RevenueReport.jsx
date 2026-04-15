@@ -190,9 +190,14 @@ export default function RevenueReport() {
     if (!dateString) return "N/A";
     const date = new Date(dateString);
     if (isNaN(date.getTime())) return dateString;
-    // Convert to local timezone (CST)
-    return date.toLocaleDateString('en-US', { timeZone: 'America/Chicago' });
-  };
+    // Convert UTC to CST (America/Chicago)
+    return date.toLocaleDateString('en-US', { 
+        timeZone: 'America/Chicago',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+    });
+    };
   
   return (
     <div className="revenue-report">

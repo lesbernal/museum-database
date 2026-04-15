@@ -1,3 +1,4 @@
+import { formatToCST } from "../utils/dateUtils";
 // components/EventManager.jsx
 import { useState, useEffect } from "react";
 import { getGalleries } from "../services/api";
