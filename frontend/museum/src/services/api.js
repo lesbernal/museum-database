@@ -131,12 +131,12 @@ export async function deleteEvent(id) {
 
 // ── TICKETS ───────────────────────────────────────────────────────────────────
 export async function postTicket(ticket) {
-  const token = localStorage.getItem("token");
+  const userId = localStorage.getItem("user_id"); // ← change token to user_id
   const res = await fetch(`${BASE_URL}/tickets`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "Authorization": `Bearer ${token}`
+      "Authorization": `Bearer ${userId}` // ← use userId
     },
     body: JSON.stringify(ticket),
   });
@@ -151,12 +151,12 @@ export async function getMyTickets() {
 
 // ── DONATIONS ─────────────────────────────────────────────────────────────────
 export async function postDonation(donation) {
-  const token = localStorage.getItem("token");
+  const userId = localStorage.getItem("user_id"); // ← change token to user_id
   const res = await fetch(`${BASE_URL}/donations`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "Authorization": `Bearer ${token}`
+      "Authorization": `Bearer ${userId}` // ← use userId
     },
     body: JSON.stringify(donation),
   });
