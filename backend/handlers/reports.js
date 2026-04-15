@@ -197,7 +197,7 @@ module.exports = (req, res, parsedUrl) => {
   
   if (parsedUrl.pathname === "/reports/giftshop-data") {
     const startDate = query.startDate || "1900-01-01";
-    const endDate = query.endDate || new Date().toISOString().split('T')[0];
+    const endDate = query.endDate || "2099-12-31";
     const category = query.category || "";
     
     let sql = `

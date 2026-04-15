@@ -186,18 +186,18 @@ export default function RevenueReport() {
     return new Intl.NumberFormat('en-US').format(numValue);
   };
   
+  // Fixed: Simple date formatting without timezone conversion
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
+    // Handle YYYY-MM-DD format from database
+    if (typeof dateString === 'string' && dateString.match(/^\d{4}-\d{2}-\d{2}/)) {
+      const [year, month, day] = dateString.split('T')[0].split('-');
+      return `${month}/${day}/${year}`;
+    }
     const date = new Date(dateString);
     if (isNaN(date.getTime())) return dateString;
-    // Convert UTC to CST (America/Chicago)
-    return date.toLocaleDateString('en-US', { 
-        timeZone: 'America/Chicago',
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit'
-    });
-    };
+    return `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()}`;
+  };
   
   return (
     <div className="revenue-report">
