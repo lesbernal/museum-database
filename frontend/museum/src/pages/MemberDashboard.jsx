@@ -11,19 +11,19 @@ import "../styles/Dashboard.css";
 import "../styles/SelfService.css";
 
 const TABS = [
-  { id: "profile",    label: "My Profile",      icon: "👤" },
-  { id: "membership", label: "Membership",       icon: "⭐" },
-  { id: "visits",     label: "Visit History",    icon: "🏛️" },
-  { id: "purchases",  label: "Purchase History", icon: "🛍️" },
-  { id: "password",   label: "Change Password",  icon: "🔒" },
+  { id: "profile", label: "My Profile", icon: "👤" },
+  { id: "membership", label: "Membership", icon: "⭐" },
+  { id: "visits", label: "Visit History", icon: "🏛️" },
+  { id: "purchases", label: "Purchase History", icon: "🛍️" },
+  { id: "password", label: "Change Password", icon: "🔒" },
 ];
 
 const LEVEL_COLORS = {
-  Bronze:              { bg: "#fdf2e9", color: "#a04000", border: "#f0a070" },
-  Silver:              { bg: "#f2f3f4", color: "#566573", border: "#aab7b8" },
-  Gold:                { bg: "#fef9e7", color: "#9a7d0a", border: "#f4d03f" },
-  Platinum:            { bg: "#eaf4fb", color: "#1a5276", border: "#7fb3d3" },
-  Benefactor:          { bg: "#f3e8ff", color: "#6b21a8", border: "#c084fc" },
+  Bronze: { bg: "#fdf2e9", color: "#a04000", border: "#f0a070" },
+  Silver: { bg: "#f2f3f4", color: "#566573", border: "#aab7b8" },
+  Gold: { bg: "#fef9e7", color: "#9a7d0a", border: "#f4d03f" },
+  Platinum: { bg: "#eaf4fb", color: "#1a5276", border: "#7fb3d3" },
+  Benefactor: { bg: "#f3e8ff", color: "#6b21a8", border: "#c084fc" },
   "Leadership Circle": { bg: "#fff1f2", color: "#9f1239", border: "#fb7185" },
 };
 const DEFAULT_STYLE = { bg: "#f3f4f6", color: "#374151", border: "#d1d5db" };
@@ -36,21 +36,21 @@ const fmt = dateStr => {
 };
 
 export default function MemberDashboard() {
-  const navigate    = useNavigate();
-  const userEmail   = localStorage.getItem("user_email") || "";
+  const navigate = useNavigate();
+  const userEmail = localStorage.getItem("user_email") || "";
   const displayName = userEmail.split("@")[0];
 
-  const [activeTab,  setActiveTab]  = useState("profile");
-  const [profile,    setProfile]    = useState(null);
+  const [activeTab, setActiveTab] = useState("profile");
+  const [profile, setProfile] = useState(null);
   const [visitorRec, setVisitorRec] = useState(null);
-  const [memberRec,  setMemberRec]  = useState(null);
+  const [memberRec, setMemberRec] = useState(null);
   const [memberTxns, setMemberTxns] = useState([]);
-  const [loading,    setLoading]    = useState(true);
-  const [saving,     setSaving]     = useState(false);
-  const [feedback,   setFeedback]   = useState(null);
-  const [form,       setForm]       = useState({});
-  const [pwForm,     setPwForm]     = useState({ new_password: "", confirm_password: "" });
-  const [pwErrors,   setPwErrors]   = useState({});
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [feedback, setFeedback] = useState(null);
+  const [form, setForm] = useState({});
+  const [pwForm, setPwForm] = useState({ new_password: "", confirm_password: "" });
+  const [pwErrors, setPwErrors] = useState({});
 
   const notify = (msg, type = "success") => {
     setFeedback({ msg, type });
@@ -65,10 +65,10 @@ export default function MemberDashboard() {
           getMyProfile(), getMyVisitorRecord(),
           getMyMemberRecord(), getMyMembershipTransactions(),
         ]);
-        if (prof.status  === "fulfilled") { setProfile(prof.value); setForm(prof.value); }
-        if (vis.status   === "fulfilled") setVisitorRec(vis.value);
-        if (mem.status   === "fulfilled") setMemberRec(mem.value?.user_id ? mem.value : null);
-        if (txns.status  === "fulfilled") setMemberTxns(Array.isArray(txns.value) ? txns.value : []);
+        if (prof.status === "fulfilled") { setProfile(prof.value); setForm(prof.value); }
+        if (vis.status === "fulfilled") setVisitorRec(vis.value);
+        if (mem.status === "fulfilled") setMemberRec(mem.value?.user_id ? mem.value : null);
+        if (txns.status === "fulfilled") setMemberTxns(Array.isArray(txns.value) ? txns.value : []);
       } catch (e) { notify(e.message, "error"); }
       finally { setLoading(false); }
     }
@@ -76,7 +76,7 @@ export default function MemberDashboard() {
   }, []);
 
   function handleLogout() {
-    ["token","role","user_id","user_email"].forEach(k => localStorage.removeItem(k));
+    ["token", "role", "user_id", "user_email"].forEach(k => localStorage.removeItem(k));
     navigate("/login");
   }
 
@@ -90,15 +90,15 @@ export default function MemberDashboard() {
     setSaving(true);
     try {
       await updateMyProfile({
-        first_name:     form.first_name,
-        last_name:      form.last_name,
-        email:          form.email,
-        phone_number:   form.phone_number,
+        first_name: form.first_name,
+        last_name: form.last_name,
+        email: form.email,
+        phone_number: form.phone_number,
         street_address: form.street_address,
-        city:           form.city,
-        state:          form.state,
-        zip_code:       form.zip_code,
-        date_of_birth:  form.date_of_birth ? form.date_of_birth.slice(0, 10) : null,
+        city: form.city,
+        state: form.state,
+        zip_code: form.zip_code,
+        date_of_birth: form.date_of_birth ? form.date_of_birth.slice(0, 10) : null,
       });
       setProfile({ ...profile, ...form });
       notify("Profile updated successfully");
@@ -125,7 +125,7 @@ export default function MemberDashboard() {
   const daysUntilExpiry = memberRec?.expiration_date
     ? Math.ceil((new Date(memberRec.expiration_date) - new Date()) / (1000 * 60 * 60 * 24))
     : null;
-  const levelStyle     = LEVEL_COLORS[memberRec?.membership_level] || DEFAULT_STYLE;
+  const levelStyle = LEVEL_COLORS[memberRec?.membership_level] || DEFAULT_STYLE;
   const isDonationTier = DONATION_TIERS.includes(memberRec?.membership_level);
 
   return (
@@ -183,7 +183,7 @@ export default function MemberDashboard() {
                       <label>Date of Birth</label>
                       <input name="date_of_birth" type="date"
                         value={form.date_of_birth?.slice(0, 10) || ""}
-                        onChange={handleFormChange} />
+                        readOnly />
                     </div>
                     <div className="ss-form-group full">
                       <label>Street Address</label>
@@ -271,7 +271,7 @@ export default function MemberDashboard() {
                           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
                             <thead>
                               <tr style={{ background: "#f9fafb", borderBottom: "1px solid #e5e7eb" }}>
-                                {["Date","Level","Type","Amount"].map(h => (
+                                {["Date", "Level", "Type", "Amount"].map(h => (
                                   <th key={h} style={{ padding: "0.625rem 1rem", textAlign: h === "Amount" ? "right" : "left", color: "#6b7280", fontWeight: 600, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.07em" }}>{h}</th>
                                 ))}
                               </tr>

@@ -4,7 +4,7 @@ import ArtistForm from "./ArtistForm";
 import ArtistTable from "./ArtistTable";
 import ArtworkForm from "./ArtworkForm";
 import ArtworkTable from "./ArtworkTable";
-import Archive from "./Archive"; // Unified archive component
+import Archive from "./Archive"; 
 import ProvenanceForm from "./ProvenanceForm";
 import ProvenanceTable from "./ProvenanceTable";
 import ExhibitionForm from "./ExhibitionForm";
