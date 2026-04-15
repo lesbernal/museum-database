@@ -1,0 +1,405 @@
+/* components/ArtistManager.css */
+
+.artist-manager {
+  width: 100%;
+}
+
+.artist-manager-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.artist-manager-header .add-btn {
+  padding: 0.625rem 1.25rem;
+  background: #c5a028;
+  color: #000000;
+  border: none;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.artist-manager-header .add-btn:hover {
+  background: #d4af37;
+  transform: translateY(-2px);
+}
+
+.artist-manager-header .search-bar {
+  flex: 1;
+  max-width: 400px;
+}
+
+.artist-manager-header .search-bar input {
+  width: 100%;
+  padding: 0.625rem 1rem;
+  border: 1px solid #e5e5e5;
+  font-size: 0.875rem;
+  background: #ffffff;
+}
+
+
+.artist-manager-header .search-bar input:focus {
+  outline: none;
+  border-color: #c5a028;
+}
+
+.content-area {
+  background: #ffffff;
+  border: 1px solid #e5e5e5;
+  min-height: 400px;
+}
+
+.loading-spinner {
+  text-align: center;
+  padding: 3rem;
+  color: #888888;
+  font-size: 0.875rem;
+}
+
+.error-message {
+  text-align: center;
+  padding: 2rem;
+  color: #dc2626;
+  background: #fef2f2;
+}
+
+
+/* Artist Table Styles */
+
+.artist-table-container {
+  overflow-x: auto;
+}
+
+.artist-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.artist-table thead {
+  background: #f9fafb;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.artist-table th {
+  text-align: left;
+  padding: 1rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.artist-table td {
+  padding: 0.875rem 1rem;
+  border-bottom: 1px solid #f3f4f6;
+  color: #1f2937;
+}
+
+.artist-table tbody tr:hover {
+  background: #f9fafb;
+}
+
+.artist-name {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.artist-avatar {
+  font-size: 1.5rem;
+}
+
+.actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.edit-btn,
+.delete-btn {
+  padding: 0.375rem 0.75rem;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+}
+
+.edit-btn {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.edit-btn:hover {
+  background: #e5e7eb;
+  transform: scale(1.05);
+}
+
+.delete-btn {
+  background: #fee2e2;
+  color: #ef4444;
+}
+
+.delete-btn:hover {
+  background: #fecaca;
+  transform: scale(1.05);
+}
+
+.empty-state {
+  text-align: center;
+  padding: 3rem;
+  color: #6b7280;
+  font-size: 0.875rem;
+}
+
+/* Modal Styles */
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: #ffffff;
+  border: 1px solid #e5e5e5;
+  width: 90%;
+  max-width: 800px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem;
+  border-bottom: 1px solid #e5e5e5;
+}
+
+.modal-header h2 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 400;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #888888;
+  transition: color 0.2s ease;
+}
+
+.close-btn:hover {
+  color: #c5a028;
+}
+
+.artist-form {
+  padding: 1.5rem;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.form-group label {
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #555555;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  padding: 0.75rem;
+  border: 1px solid #e5e5e5;
+  font-size: 0.875rem;
+  width: 100%;
+  font-family: inherit;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: #c5a028;
+}
+
+.form-group input.error,
+.form-group select.error,
+.form-group textarea.error {
+  border-color: #dc2626;
+}
+
+.error-message {
+  font-size: 0.75rem;
+  color: #dc2626;
+  margin-top: 0.25rem;
+}
+
+.char-counter {
+  font-size: 0.7rem;
+  color: #888888;
+  text-align: right;
+  margin-top: 0.25rem;
+}
+
+.submit-error {
+  margin-top: 1rem;
+  text-align: center;
+  padding: 0.75rem;
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid #e5e5e5;
+}
+
+.cancel-btn {
+  padding: 0.75rem 1.5rem;
+  background: transparent;
+  border: 1px solid #e5e5e5;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.875rem;
+}
+
+.cancel-btn:hover {
+  border-color: #c5a028;
+  color: #c5a028;
+}
+
+.submit-btn {
+  padding: 0.75rem 1.5rem;
+  background: #c5a028;
+  color: #000000;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.submit-btn:hover:not(:disabled) {
+  background: #d4af37;
+  transform: translateY(-2px);
+}
+
+.submit-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Toast Notification */
+.toast {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  padding: 1rem 1.5rem;
+  border-radius: 0;
+  color: #000000;
+  z-index: 1100;
+  animation: slideIn 0.3s ease;
+}
+
+.toast.success {
+  background: #c5a028;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* Responsive Styles */
+@media (max-width: 768px) {
+  .artist-manager-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .artist-manager-header .search-bar {
+    max-width: 100%;
+  }
+  
+  .artist-manager-header .add-btn {
+    width: 100%;
+    text-align: center;
+  }
+  
+  .form-row {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+  
+  .artist-form {
+    padding: 1rem;
+  }
+  
+  .modal-header {
+    padding: 1rem;
+  }
+  
+  .form-actions {
+    flex-direction: column-reverse;
+  }
+  
+  .cancel-btn,
+  .submit-btn {
+    width: 100%;
+  }
+  
+  .artist-table th,
+  .artist-table td {
+    padding: 0.75rem;
+  }
+  
+  .actions {
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+  
+  .edit-btn,
+  .delete-btn {
+    padding: 0.25rem 0.5rem;
+  }
+}

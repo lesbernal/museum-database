@@ -51,12 +51,14 @@ module.exports = (req, res, parsedUrl) => {
 
       const sql = `
         INSERT INTO event
-        (gallery_id, event_name, description, event_date, capacity, member_only, total_attendees)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
+        (gallery_id, event_name, description, event_date, capacity, member_only, total_attendees, event_type)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
       `;
 
       return db.query(sql,
-        [data.gallery_id, data.event_name, data.description, data.event_date, data.capacity, data.member_only, data.total_attendees || 0],
+        [data.gallery_id, data.event_name, data.description, data.event_date,
+         data.capacity, data.member_only, data.total_attendees || 0,
+         data.event_type || "General"],
         (err) => {
           if (err) {
             res.writeHead(400, { "Content-Type": "application/json" });
@@ -84,12 +86,13 @@ module.exports = (req, res, parsedUrl) => {
       const sql = `
         UPDATE event
         SET gallery_id = ?, event_name = ?, description = ?, event_date = ?,
-            capacity = ?, member_only = ?
+            capacity = ?, member_only = ?, event_type = ?
         WHERE event_id = ?
       `;
 
       db.query(sql,
-        [data.gallery_id, data.event_name, data.description, data.event_date, data.capacity, data.member_only, eventId],
+        [data.gallery_id, data.event_name, data.description, data.event_date,
+         data.capacity, data.member_only, data.event_type || "General", eventId],
         (err) => {
           if (err) {
             res.writeHead(400, { "Content-Type": "application/json" });
