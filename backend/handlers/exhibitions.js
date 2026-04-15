@@ -141,6 +141,18 @@ module.exports = (req, res, parsedUrl) => {
     );
   }
 
+  // PATCH /exhibitions/5/archive  → alias for deactivate
+  else if (req.method === "PATCH" && urlParts.length === 3 && urlParts[2] === "archive") {
+    db.query(
+      "UPDATE exhibition SET is_active = 0 WHERE exhibition_id = ?",
+      [urlParts[1]],
+      (err) => {
+        if (err) return sendError(res, err);
+        sendJSON(res, { message: "Exhibition archived" });
+      }
+    );
+  }
+
   // PATCH /exhibitions/5/reactivate  → restore (is_active = 1)
   else if (req.method === "PATCH" && urlParts.length === 3 && urlParts[2] === "reactivate") {
     db.query(
@@ -149,6 +161,18 @@ module.exports = (req, res, parsedUrl) => {
       (err) => {
         if (err) return sendError(res, err);
         sendJSON(res, { message: "Exhibition reactivated" });
+      }
+    );
+  }
+
+  // PATCH /exhibitions/5/archive  → alias for deactivate
+  else if (req.method === "PATCH" && urlParts.length === 3 && urlParts[2] === "unarchive") {
+    db.query(
+      "UPDATE exhibition SET is_active = 0 WHERE exhibition_id = ?",
+      [urlParts[1]],
+      (err) => {
+        if (err) return sendError(res, err);
+        sendJSON(res, { message: "Exhibition archived" });
       }
     );
   }

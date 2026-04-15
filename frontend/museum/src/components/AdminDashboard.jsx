@@ -31,7 +31,7 @@ import {
 import "../styles/AdminDashboard.css";
 import "../styles/UserManagement.css";
 
-const API_BASE = "http://localhost:5000";
+const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState("artists");
@@ -792,7 +792,7 @@ export default function AdminDashboard() {
           {activeTab === "exhibitions" && (
             <>
               {showExhibitionArchive && (
-                <Archive type="exhibitions" onRestored={() => loadExhibitions()} />
+                <Archive type="exhibitions" onRestored={() => loadExhibitions()} reloadTrigger={exhibitions.length}/>
               )}
               {exhibitionsError
                 ? <div className="error-message">{exhibitionsError}</div>
@@ -810,7 +810,7 @@ export default function AdminDashboard() {
           {activeTab === "galleries" && (
             <>
               {showGalleryArchive && (
-                <Archive type="galleries" onRestored={() => loadGalleries()} />
+                <Archive type="galleries" onRestored={() => loadGalleries()} reloadTrigger={galleries.length}/>
               )}
               {galleriesError
                 ? <div className="error-message">{galleriesError}</div>
@@ -828,7 +828,7 @@ export default function AdminDashboard() {
           {activeTab === "events" && (
             <>
               {showEventArchive && (
-                <Archive type="events" onRestored={() => loadEvents()} />
+                <Archive type="events" onRestored={() => loadEvents()} reloadTrigger={events.length}/>
               )}
               {eventsError
                 ? <div className="error-message">{eventsError}</div>

@@ -103,7 +103,7 @@ const DONATION_TIERS = [
   },
 ];
 
-const PAYMENT_METHODS = ["Credit Card", "Debit Card", "Check", "Cash"];
+const PAYMENT_METHODS = ["Credit Card", "Debit Card"];
 
 // ── Checkout modal ────────────────────────────────────────────────────────────
 function CheckoutModal({ tier, profile, onClose, onSuccess }) {

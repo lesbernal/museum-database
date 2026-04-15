@@ -10,10 +10,10 @@ import {
 import "../styles/UserManagement.css";
 
 const SUB_TABS = [
-  { id: "users",     label: "Users",     icon: "👤" },
-  { id: "employees", label: "Employees", icon: "🏢" },
-  { id: "visitors",  label: "Visitors",  icon: "🏛️" },
-  { id: "members",   label: "Members",   icon: "⭐" },
+  { id: "users",     label: "Users",     },
+  { id: "employees", label: "Employees", },
+  { id: "visitors",  label: "Visitors",  },
+  { id: "members",   label: "Members",   },
 ];
 
 const FIELDS = {
