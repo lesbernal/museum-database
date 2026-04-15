@@ -1,14 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, Link } from "react-router-dom";
-<<<<<<< HEAD
-import ArtistForm from "./ArtistForm";
-import ArtistTable from "./ArtistTable";
-import ArtworkForm from "./ArtworkForm";
-import ArtworkTable from "./ArtworkTable";
-=======
 import ArtistManager from "./ArtistManager";
 import ArtworkManager from "./ArtworkManager";
->>>>>>> 14e32693adaac74ba888e433d9dfd192a9bf1584
 import Archive from "./Archive"; 
 import ProvenanceForm from "./ProvenanceForm";
 import ProvenanceTable from "./ProvenanceTable";

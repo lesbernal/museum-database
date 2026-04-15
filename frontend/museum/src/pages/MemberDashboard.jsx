@@ -11,11 +11,11 @@ import "../styles/Dashboard.css";
 import "../styles/SelfService.css";
 
 const TABS = [
-  { id: "profile", label: "My Profile", icon: "👤" },
-  { id: "membership", label: "Membership", icon: "⭐" },
-  { id: "visits", label: "Visit History", icon: "🏛️" },
-  { id: "purchases", label: "Purchase History", icon: "🛍️" },
-  { id: "password", label: "Change Password", icon: "🔒" },
+  { id: "profile", label: "My Profile"         },
+  { id: "membership", label: "Membership"      },
+  { id: "visits", label: "Visit History"       },
+  { id: "purchases", label: "Purchase History" },
+  { id: "password", label: "Change Password"   },
 ];
 
 const LEVEL_COLORS = {
@@ -98,7 +98,6 @@ export default function MemberDashboard() {
         city: form.city,
         state: form.state,
         zip_code: form.zip_code,
-        date_of_birth: form.date_of_birth ? form.date_of_birth.slice(0, 10) : null,
       });
       setProfile({ ...profile, ...form });
       notify("Profile updated successfully");

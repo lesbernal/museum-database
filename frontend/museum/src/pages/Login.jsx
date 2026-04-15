@@ -257,6 +257,7 @@ export default function Login() {
                     <label>Date of Birth</label>
                     <input name="date_of_birth" type="date"
                       value={signupData.date_of_birth}
+                      max={new Date().toISOString().split("T")[0]}
                       onChange={handleSignupChange} />
                   </div>
 
