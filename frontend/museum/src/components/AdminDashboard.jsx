@@ -770,7 +770,7 @@ export default function AdminDashboard() {
           {activeTab === "artwork" && (
             <>
               {showArtworkArchive && (
-                <Archive type="artwork" onRestored={() => loadArtworks()} reloadTrigger={artworks.length}/>
+                <Archive type="artwork" onRestored={() => loadArtworks()} />
               )}
               {artworksError
                 ? <div className="error-message">{artworksError}</div>

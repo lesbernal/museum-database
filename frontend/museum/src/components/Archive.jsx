@@ -1,5 +1,5 @@
 // components/Archive.jsx
-import { useEffect, useState } from "react";
+import { useEffect, useState, reloadTrigger} from "react";
 import "../styles/ExhibitionArchive.css";
 
 // Configuration for each archive type
