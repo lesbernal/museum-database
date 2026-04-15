@@ -15,10 +15,8 @@ import Events from "./pages/Events";
 import Buildings from "./pages/Buildings";
 import CafePage from "./pages/CafePage";
 import CafeCartPage from "./pages/CafeCartPage";
-import CafeCheckoutPage from "./pages/CafeCheckoutPage";
 import GiftShopPage from "./pages/GiftShopPage";
 import GiftShopCartPage from "./pages/GiftShopCartPage";
-import GiftShopCheckoutPage from "./pages/GiftShopCheckoutPage";
 import AdminDashboard from "./components/AdminDashboard";
 import TicketPage from "./pages/Tickets";
 import DonationPage from "./pages/Donations";
@@ -61,10 +59,10 @@ function App() {
         <Route path="/buildings" element={<Buildings />} />
         <Route path="/cafe" element={<CafePage />} />
         <Route path="/cafe/cart" element={<CafeCartPage />} />
-        <Route path="/cafe/checkout" element={<CafeCheckoutPage />} />
+        <Route path="/cafe/checkout" element={<Navigate to="/cafe/cart" replace />} />
         <Route path="/gift-shop" element={<GiftShopPage />} />
         <Route path="/gift-shop/cart" element={<GiftShopCartPage />} />
-        <Route path="/gift-shop/checkout" element={<GiftShopCheckoutPage />} />
+        <Route path="/gift-shop/checkout" element={<Navigate to="/gift-shop/cart" replace />} />
         {/* ── Visitor — logged in, role "visitor" ── */}
         <Route path="/visitor-dashboard"
           element={<ProtectedRoute requiredRole="visitor"><VisitorDashboard /></ProtectedRoute>} />
