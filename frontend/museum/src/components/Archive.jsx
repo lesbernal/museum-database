@@ -100,7 +100,7 @@ const ARCHIVE_CONFIGS = {
   }
 };
 
-export default function Archive({ type, onRestored }) {
+export default function Archive({ type, onRestored, reloadTrigger }) {
   const [archived, setArchived] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -136,7 +136,7 @@ export default function Archive({ type, onRestored }) {
 
   useEffect(() => {
     load();
-  }, [type]);
+  }, [type, reloadTrigger]);
 
   const handleRestore = async (id) => {
     const itemName = type.slice(0, -1);
