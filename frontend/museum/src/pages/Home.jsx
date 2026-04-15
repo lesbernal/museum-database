@@ -1,16 +1,29 @@
 // src/pages/Home.jsx
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import "../styles/Home.css";
 
-export default function Home() {
-  const [events, setEvents] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [currentSlide, setCurrentSlide] = useState(0);
+const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
-  // Fetch real events from the database
+export default function Home() {
+  const [events,       setEvents]       = useState([]);
+  const [loading,      setLoading]      = useState(true);
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const [toast,        setToast]        = useState(null);
+
+  const location = useLocation();
+
+  // Show success toast from checkout
   useEffect(() => {
-    fetch("http://localhost:5000/events")
+    if (location.state?.successToast) {
+      setToast(location.state.successToast);
+      setTimeout(() => setToast(null), 5000);
+      window.history.replaceState({}, "");
+    }
+  }, [location.state]);
+
+  useEffect(() => {
+    fetch(`${BASE_URL}/events`)
       .then(res => res.json())
       .then(data => {
         setEvents(data);
@@ -35,7 +48,6 @@ export default function Home() {
     setCurrentSlide((prev) => (prev + 1) % Math.ceil(events.length / 4));
   };
 
-  // Pick an emoji based on event name keywords
   function getEventIcon(name = "") {
     const lower = name.toLowerCase();
     if (lower.includes("photo")) return "📷";
@@ -52,174 +64,195 @@ export default function Home() {
   }
 
   return (
-    <div className="home-container">
-      {/* Hero Banner */}
-      <section className="hero-section">
-        <div className="hero-overlay"></div>
-        <div className="hero-content">
-          <h1 className="hero-title">
-            Museum of Fine Arts,
-            <span className="hero-subtitle">Houston</span>
-          </h1>
-          <p className="hero-description">
-            Discover masterpieces from around the world, immerse yourself in art history,
-            and experience the vibrant cultural heart of Houston.
-          </p>
+    <>
+      {/* Success toast */}
+      {toast && (
+        <div style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          right: 0,
+          zIndex: 9999,
+          padding: "0.875rem 2rem",
+          background: "rgba(197, 160, 40, 0.95)",
+          backdropFilter: "blur(4px)",
+          borderBottom: "1px solid rgba(184, 134, 11, 0.6)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          animation: "slideDown 0.3s ease",
+        }}>
+          <span style={{ fontSize: "0.88rem", fontWeight: 500, color: "#000", letterSpacing: "0.03em" }}>
+            ✓ {toast}
+          </span>
         </div>
-      </section>
+      )}
 
-      {/* Events Carousel */}
-      {!loading && events.length > 0 && (
-        <section className="events-section">
-          <div className="section-header">
-            <h2>Current & Upcoming Events</h2>
-            <p>Explore exhibitions, lectures, and special programs</p>
+      <div className="home-container">
+
+        {/* Hero Banner */}
+        <section className="hero-section">
+          <div className="hero-overlay"></div>
+          <div className="hero-content">
+            <h1 className="hero-title">
+              Museum of Fine Arts,
+              <span className="hero-subtitle">Houston</span>
+            </h1>
+            <p className="hero-description">
+              Discover masterpieces from around the world, immerse yourself in art history,
+              and experience the vibrant cultural heart of Houston.
+            </p>
           </div>
+        </section>
 
-          <div className="carousel-container">
-            <button className="carousel-btn prev" onClick={handlePrevSlide} aria-label="Previous">
-              ‹
-            </button>
-
-            <div className="carousel-track">
-              {events.slice(currentSlide * 4, (currentSlide + 1) * 4).map((event) => (
-                <div className="event-card" key={event.event_id}>
-                  <div className="event-card-image">
-                    <div className="event-icon">{getEventIcon(event.event_name)}</div>
-                  </div>
-                  <div className="event-card-content">
-                    <h3>{event.event_name}</h3>
-                    <p className="event-date">{event.event_date?.split("T")[0] ?? event.event_date}</p>
-                    <p className="event-description">{event.description}</p>
-                    <p className="event-location">
-                      Capacity: {event.capacity}
-                      {event.member_only ? " · Members Only ⭐" : ""}
-                    </p>
-                  </div>
-                </div>
-              ))}
+        {/* Events Carousel */}
+        {!loading && events.length > 0 && (
+          <section className="events-section">
+            <div className="section-header">
+              <h2>Current & Upcoming Events</h2>
+              <p>Explore exhibitions, lectures, and special programs</p>
             </div>
 
-            <button className="carousel-btn next" onClick={handleNextSlide} aria-label="Next">
-              ›
-            </button>
-          </div>
+            <div className="carousel-container">
+              <button className="carousel-btn prev" onClick={handlePrevSlide} aria-label="Previous">
+                ‹
+              </button>
 
-          <div className="carousel-dots">
-            {[...Array(Math.ceil(events.length / 4))].map((_, idx) => (
-              <button
-                key={idx}
-                className={`dot ${currentSlide === idx ? "active" : ""}`}
-                onClick={() => setCurrentSlide(idx)}
-              />
-            ))}
-          </div>
-        </section>
-      )}
+              <div className="carousel-track">
+                {events.slice(currentSlide * 4, (currentSlide + 1) * 4).map((event) => (
+                  <div className="event-card" key={event.event_id}>
+                    <div className="event-card-image">
+                      <div className="event-icon">{getEventIcon(event.event_name)}</div>
+                    </div>
+                    <div className="event-card-content">
+                      <h3>{event.event_name}</h3>
+                      <p className="event-date">{event.event_date?.split("T")[0] ?? event.event_date}</p>
+                      <p className="event-description">{event.description}</p>
+                      <p className="event-location">
+                        Capacity: {event.capacity}
+                        {event.member_only ? " · Members Only ⭐" : ""}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
 
-      {/* Loading state */}
-      {loading && (
-        <section className="events-section">
+              <button className="carousel-btn next" onClick={handleNextSlide} aria-label="Next">
+                ›
+              </button>
+            </div>
+
+            <div className="carousel-dots">
+              {[...Array(Math.ceil(events.length / 4))].map((_, idx) => (
+                <button
+                  key={idx}
+                  className={`dot ${currentSlide === idx ? "active" : ""}`}
+                  onClick={() => setCurrentSlide(idx)}
+                />
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* Loading state */}
+        {loading && (
+          <section className="events-section">
+            <div className="section-header">
+              <h2>Current & Upcoming Events</h2>
+              <p>Loading events...</p>
+            </div>
+          </section>
+        )}
+
+        {/* No events fallback */}
+        {!loading && events.length === 0 && (
+          <section className="events-section">
+            <div className="section-header">
+              <h2>Current & Upcoming Events</h2>
+              <p>No upcoming events at this time. Check back soon!</p>
+            </div>
+          </section>
+        )}
+
+        {/* Plan Your Visit Section */}
+        <section className="quick-links-section">
           <div className="section-header">
-            <h2>Current & Upcoming Events</h2>
-            <p>Loading events...</p>
+            <h2>Plan Your Visit</h2>
+            <p>Everything you need to know about your museum experience</p>
+          </div>
+
+          <div className="links-grid">
+            <Link to="/tickets" className="link-card">
+              <h3>Admission</h3>
+              <p>Purchase tickets to access all galleries and exhibitions</p>
+              <span className="extras-link">Buy Now →</span>
+            </Link>
+
+            <Link to="/membership" className="link-card">
+              <h3>Memberships</h3>
+              <p>Become a member for exclusive benefits and support the arts</p>
+              <span className="extras-link">View Memberships →</span>
+            </Link>
+
+            <Link to="/events" className="link-card">
+              <h3>Events</h3>
+              <p>Special exhibitions, lectures, workshops, and family programs</p>
+              <span className="extras-link">View Itinerary →</span>
+            </Link>
           </div>
         </section>
-      )}
 
-      {/* No events fallback */}
-      {!loading && events.length === 0 && (
-        <section className="events-section">
+        {/* More to Explore Section */}
+        <section className="extras-section">
           <div className="section-header">
-            <h2>Current & Upcoming Events</h2>
-            <p>No upcoming events at this time. Check back soon!</p>
+            <h2>More to Explore</h2>
+            <p>Enhance your museum experience</p>
+          </div>
+
+          <div className="extras-grid">
+            <Link to="/gift-shop" className="extras-card">
+              <h3>MFAH Gift Shop</h3>
+              <p>Unique art-inspired gifts, books, jewelry, and museum merchandise</p>
+              <span className="extras-link">Shop Now →</span>
+            </Link>
+
+            <Link to="/cafe" className="extras-card">
+              <h3>Café Leonelli</h3>
+              <p>Place an order in advance and avoid the line at our cafe</p>
+              <span className="extras-link">View Menu →</span>
+            </Link>
+
+            <Link to="/donations" className="extras-card">
+              <h3>Make a Donation</h3>
+              <p>Support exhibitions, education programs, and art conservation efforts</p>
+              <span className="extras-link">Donate Now →</span>
+            </Link>
           </div>
         </section>
-      )}
 
-      {/* Plan Your Visit Section */}
-      <section className="quick-links-section">
-        <div className="section-header">
-          <h2>Plan Your Visit</h2>
-          <p>Everything you need to know about your museum experience</p>
-        </div>
-
-        <div className="links-grid">
-          <Link to="/tickets" className="link-card">
-            {/*<d<div className="link-icon">📍</div>*/}
-            <h3>Admission</h3>
-            <p>Purchase tickets to access all galleries and exhibtions</p>
-            <span className="extras-link">Buy Now →</span>
-          </Link>
-
-          <Link to="/membership" className="link-card">
-            {/*<d<div className="link-icon">⭐</div>*/}
-            <h3>Memberships</h3>
-            <p>Become a member for exclusive benefits and support the arts</p>
-            <span className="extras-link">View Memberships →</span>
-          </Link>
-
-          <Link to="/events" className="link-card">
-            {/*<d<div className="link-icon">🎉</div>*/}
-            <h3>Events</h3>
-            <p>Special exhibitions, lectures, workshops, and family programs</p>
-            <span className="extras-link">View Itenerary →</span>
-          </Link>
-        </div>
-      </section>
-
-      {/* More to Explore Section */}
-      <section className="extras-section">
-        <div className="section-header">
-          <h2>More to Explore</h2>
-          <p>Enhance your museum experience</p>
-        </div>
-
-        <div className="extras-grid">
-          <Link to="/gift-shop" className="extras-card">
-            {/*<div className="extras-icon">🛍️</div>*/}
-            <h3>MFAH Gift Shop</h3>
-            <p>Unique art-inspired gifts, books, jewelry, and museum merchandise</p>
-            <span className="extras-link">Shop Now →</span>
-          </Link>
-
-          <Link to="/cafe" className="extras-card">
-            {/*<d<div className="extras-icon">☕</div>*/}
-            <h3>Café Leonelli</h3>
-            <p>Place an order in advance and avoid the line at our cafe </p>
-            <span className="extras-link">View Menu →</span>
-          </Link>
-
-          <Link to="/donations" className="extras-card">
-            {/*<div className="extras-icon">💝</div>*/}
-            <h3>Make a Donation</h3>
-            <p>Support exhibitions, education programs, and art conservation efforts</p>
-            <span className="extras-link">Donate Now →</span>
-          </Link>
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer className="home-footer">
-        <div className="footer-content">
-          <div className="footer-section">
-            <h3>Museum of Fine Arts</h3>
-            <p>Houston, Texas</p>
-            <p>© 2026 Museum of Fine Arts, Houston</p>
+        {/* Footer */}
+        <footer className="home-footer">
+          <div className="footer-content">
+            <div className="footer-section">
+              <h3>Museum of Fine Arts</h3>
+              <p>Houston, Texas</p>
+              <p>© 2026 Museum of Fine Arts, Houston</p>
+            </div>
+            <div className="footer-section">
+              <h4>Hours</h4>
+              <p>Tuesday - Sunday: 10am - 6pm</p>
+              <p>Thursday: 10am - 9pm</p>
+              <p>Closed Mondays</p>
+            </div>
+            <div className="footer-section">
+              <h4>Contact</h4>
+              <p>📞 (713) 639-7300</p>
+              <p>📧 info@mfah.org</p>
+            </div>
           </div>
-          <div className="footer-section">
-            <h4>Hours</h4>
-            <p>Tuesday - Sunday: 10am - 6pm</p>
-            <p>Thursday: 10am - 9pm</p>
-            <p>Closed Mondays</p>
-          </div>
-          <div className="footer-section">
-            <h4>Contact</h4>
-            <p>📞 (713) 639-7300</p>
-            <p>📧 info@mfah.org</p>
-          </div>
-        </div>
-      </footer>
-    </div>
+        </footer>
+
+      </div>
+    </>
   );
 }

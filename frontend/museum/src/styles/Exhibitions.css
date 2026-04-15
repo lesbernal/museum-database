@@ -1,5 +1,6 @@
 /* styles/Exhibitions.css */
 
+/* ── Page ── */
 .exhibitions-page {
   max-width: 1200px;
   margin: 0 auto;
@@ -35,6 +36,17 @@
   margin: 0;
 }
 
+/* ── Toolbar ── */
+.exhibitions-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 0 24px;
+  margin-bottom: 8px;
+}
+
 /* ── Filters ── */
 .exhibitions-filters {
   display: flex;
@@ -46,7 +58,7 @@
 .filter-btn {
   padding: 0.4rem 1.1rem;
   border: 1.5px solid #e5e7eb;
-  border-radius: 999px;
+  /*border-radius: 999px;*/
   background: transparent;
   font-size: 0.82rem;
   font-weight: 500;
@@ -67,7 +79,27 @@
   color: #fff;
 }
 
-/* ── Count ── */
+/* ── Archive toggle ── */
+.btn-archived-toggle {
+  background: transparent;
+  border: 1.5px solid #888;
+  color: #888;
+  padding: 7px 16px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.btn-archived-toggle:hover,
+.archived-toggle-active {
+  background: #333;
+  border-color: #ccc;
+  color: #fff;
+}
+
+/* ── Count / empty / loading ── */
 .exhibitions-count {
   font-size: 0.82rem;
   color: #9ca3af;
@@ -90,7 +122,8 @@
 
 /* ── Card ── */
 .exhibition-card {
-  border-radius: 12px;
+  position: relative;
+  /*border-radius: 12px;*/
   overflow: hidden;
   border: 1px solid #e5e7eb;
   background: #fff;
@@ -100,9 +133,10 @@
 
 .exhibition-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 12px 32px rgba(0,0,0,0.1);
 }
 
+/* ── Card visual block ── */
 .card-visual {
   background: var(--card-accent, #1a1a2e);
   height: 120px;
@@ -110,6 +144,53 @@
   align-items: flex-start;
   justify-content: space-between;
   padding: 1rem;
+}
+
+/* ── Painting banner ── */
+.card-paintings-banner {
+  position: relative;
+  display: flex;
+  overflow: hidden;
+  height: 160px;
+  background: var(--card-accent);
+}
+
+.banner-img-wrap {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.banner-img-wrap:nth-child(1) { clip-path: inset(0 66% 0 0); }
+.banner-img-wrap:nth-child(2) { clip-path: inset(0 33% 0 33%); }
+.banner-img-wrap:nth-child(3) { clip-path: inset(0 0 0 66%); }
+
+.card-paintings-banner:has(.banner-img-wrap:only-child) .banner-img-wrap {
+  clip-path: none;
+}
+.card-paintings-banner:has(.banner-img-wrap:nth-child(2)):not(:has(.banner-img-wrap:nth-child(3))) .banner-img-wrap:nth-child(1) {
+  clip-path: inset(0 50% 0 0);
+}
+.card-paintings-banner:has(.banner-img-wrap:nth-child(2)):not(:has(.banner-img-wrap:nth-child(3))) .banner-img-wrap:nth-child(2) {
+  clip-path: inset(0 0 0 50%);
+}
+
+.banner-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* ── Card badges ── */
+.card-badges {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  display: flex;
+  gap: 6px;
+  z-index: 10;
 }
 
 .card-type-badge {
@@ -123,7 +204,7 @@
 }
 
 .badge-temporary { background: #fef3c7; color: #92400e; }
-.badge-permanent { background: #111827; color: #ffffff; border: 1px solid rgba(255,255,255,0.2); }
+.badge-permanent { background: #111827; color: #fff; border: 1px solid rgba(255,255,255,0.2); }
 .badge-traveling { background: #fee2e2; color: #991b1b; }
 
 .card-status {
@@ -139,6 +220,7 @@
 .status-upcoming { background: #fef3c7; color: #92400e; }
 .status-ended    { background: rgba(255,255,255,0.15); color: rgba(255,255,255,0.7); }
 
+/* ── Card body ── */
 .card-body { padding: 1.25rem; }
 
 .card-title {
@@ -174,6 +256,92 @@
   font-style: italic;
 }
 
+.card-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 8px;
+}
+
+.btn-archive {
+  background: transparent;
+  border: 1px solid #c0392b55;
+  color: #c0392b;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-archive:hover {
+  background: #c0392b;
+  color: #fff;
+}
+
+/* ── Archived panel ── */
+.archived-panel {
+  background: #111;
+  border: 1px solid #333;
+  border-radius: 12px;
+  margin: 0 24px 24px;
+  padding: 20px 24px;
+}
+
+.archived-heading {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #ccc;
+  margin-bottom: 16px;
+}
+
+.archived-loading,
+.archived-empty { color: #666; font-size: 0.9rem; }
+
+.archived-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.archived-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  background: #1a1a1a;
+  border-radius: 8px;
+  border: 1px solid #2a2a2a;
+}
+
+.archived-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.archived-name    { font-size: 0.95rem; font-weight: 600; color: #ddd; }
+.archived-gallery { font-size: 0.8rem;  color: #888; }
+.archived-dates   { font-size: 0.78rem; color: #666; }
+
+.btn-restore {
+  background: #1a3a1a;
+  border: 1px solid #2a6a2a;
+  color: #6fcf6f;
+  padding: 6px 14px;
+  border-radius: 16px;
+  font-size: 0.82rem;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s;
+}
+
+.btn-restore:hover {
+  background: #2a6a2a;
+  color: #fff;
+}
+
 /* ══════════════════════════════════════════
    CALENDAR MODAL
 ══════════════════════════════════════════ */
@@ -181,7 +349,7 @@
 .cal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.55);
+  background: rgba(0,0,0,0.55);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -194,9 +362,10 @@
   border-radius: 16px;
   width: 100%;
   max-width: 800px;
-  overflow: hidden;
+  max-height: 90vh;
+  overflow-y: auto;
   position: relative;
-  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 24px 60px rgba(0,0,0,0.2);
 }
 
 .cal-close {
@@ -214,7 +383,6 @@
 
 .cal-close:hover { color: #111827; }
 
-/* ── Modal header ── */
 .cal-header {
   padding: 1.5rem 1.5rem 1rem;
   border-bottom: 1px solid #f3f4f6;
@@ -255,7 +423,6 @@
 .cal-date-val { color: #111827; font-weight: 500; }
 .cal-arrow    { color: #d1d5db; }
 
-/* ── Calendar body ── */
 .cal-body { padding: 1.25rem 1.5rem 1.5rem; }
 
 .cal-nav {
@@ -288,7 +455,6 @@
 
 .cal-nav-btn:hover { background: #f3f4f6; }
 
-/* ── Grid ── */
 .cal-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
@@ -317,14 +483,12 @@
 }
 
 .cal-empty { background: transparent; }
-
-.cal-day { cursor: default; }
+.cal-day   { cursor: default; }
 
 .cal-day:not(.start-day):not(.end-day):not(.in-range):not(.today):hover {
   background: #f9fafb;
 }
 
-/* Date state colors */
 .start-day {
   background: #c5a028 !important;
   color: #fff !important;
@@ -351,7 +515,6 @@
   color: #c5a028;
 }
 
-/* ── Legend ── */
 .cal-legend {
   display: flex;
   align-items: center;
@@ -371,261 +534,243 @@
   vertical-align: middle;
 }
 
-/* ─────────────────────────────────────────────────────────────────────────────
-   APPEND these styles to your existing Exhibitions.css
-   ───────────────────────────────────────────────────────────────────────────── */
+.start-dot  { background: #c5a028; }
+.end-dot    { background: #111827; }
+.range-dot  { background: #f3f0e6; border: 1px solid #d1d5db; }
+.today-dot  { background: transparent; border: 2px solid #c5a028; }
 
-/* ── Toolbar (filters + archive toggle) ─────────────────────────────────── */
-.exhibitions-toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 12px;
-  padding: 0 24px;
-  margin-bottom: 8px;
-}
-
-/* ── Archive toggle button ───────────────────────────────────────────────── */
-.btn-archived-toggle {
-  background: transparent;
-  border: 1.5px solid #888;
-  color: #888;
-  padding: 7px 16px;
-  border-radius: 20px;
-  font-size: 0.85rem;
-  cursor: pointer;
-  transition: all 0.2s;
-  white-space: nowrap;
-}
-.btn-archived-toggle:hover,
-.archived-toggle-active {
-  background: #333;
-  border-color: #ccc;
-  color: #fff;
-}
-
-/* ── Archive button on each card ─────────────────────────────────────────── */
-.card-actions {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-top: 8px;
-}
-
-.btn-archive {
-  background: transparent;
-  border: 1px solid #c0392b55;
-  color: #c0392b;
-  padding: 4px 10px;
-  border-radius: 12px;
-  font-size: 0.75rem;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-.btn-archive:hover {
-  background: #c0392b;
-  color: #fff;
-}
-
-/* ── Archived panel ──────────────────────────────────────────────────────── */
-.archived-panel {
-  background: #111;
-  border: 1px solid #333;
-  border-radius: 12px;
-  margin: 0 24px 24px;
-  padding: 20px 24px;
-}
-.archived-heading {
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: #ccc;
-  margin-bottom: 16px;
-}
-.archived-loading,
-.archived-empty {
-  color: #666;
-  font-size: 0.9rem;
-}
-.archived-list {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-.archived-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 12px 16px;
-  background: #1a1a1a;
-  border-radius: 8px;
-  border: 1px solid #2a2a2a;
-}
-.archived-info {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-.archived-name {
-  font-size: 0.95rem;
-  font-weight: 600;
-  color: #ddd;
-}
-.archived-gallery {
-  font-size: 0.8rem;
-  color: #888;
-}
-.archived-dates {
-  font-size: 0.78rem;
-  color: #666;
-}
-.btn-restore {
-  background: #1a3a1a;
-  border: 1px solid #2a6a2a;
-  color: #6fcf6f;
-  padding: 6px 14px;
-  border-radius: 16px;
-  font-size: 0.82rem;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: all 0.2s;
-}
-.btn-restore:hover {
-  background: #2a6a2a;
-  color: #fff;
-}
-
-/* ── Painting banner on cards ────────────────────────────────────────────── */
-.card-paintings-banner {
-  position: relative;
-  display: flex;
-  overflow: hidden;
-  height: 160px;
-  background: var(--card-accent);
-}
-.banner-img-wrap {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-}
-/* Stagger each image to create a peek effect */
-.banner-img-wrap:nth-child(1) { clip-path: inset(0 66% 0 0); }
-.banner-img-wrap:nth-child(2) { clip-path: inset(0 33% 0 33%); }
-.banner-img-wrap:nth-child(3) { clip-path: inset(0 0 0 66%); }
-
-/* If only 1 or 2 images, show full width */
-.card-paintings-banner:has(.banner-img-wrap:only-child) .banner-img-wrap {
-  clip-path: none;
-}
-.card-paintings-banner:has(.banner-img-wrap:nth-child(2)):not(:has(.banner-img-wrap:nth-child(3))) .banner-img-wrap:nth-child(1) {
-  clip-path: inset(0 50% 0 0);
-}
-.card-paintings-banner:has(.banner-img-wrap:nth-child(2)):not(:has(.banner-img-wrap:nth-child(3))) .banner-img-wrap:nth-child(2) {
-  clip-path: inset(0 0 0 50%);
-}
-
-.banner-img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-
-/* Badges sit on top of the banner */
-.card-badges {
-  position: absolute;
-  top: 10px;
-  left: 10px;
-  display: flex;
-  gap: 6px;
-  z-index: 10;
-}
-
-/* Keep the card position relative so badges overlay correctly */
-.exhibition-card {
-  position: relative;
-}
-
-/* ── Calendar paintings section ──────────────────────────────────────────── */
+/* ── Calendar paintings section ── */
 .cal-paintings-section {
-  border-top: 1px solid #1a1a1a;
-  margin-top: 20px;
-  text-align: center;
   background: #1a1a1a;
   padding: 24px;
   margin: 0 -24px -24px;
   border-top: 1px solid #222;
+  text-align: center;
 }
+
 .cal-paintings-heading {
   font-size: 1rem;
   font-weight: 600;
   color: #ccc;
   margin-bottom: 16px;
 }
+
 .cal-paintings-loading,
 .cal-paintings-empty {
   color: #666;
   font-size: 0.88rem;
+  text-align: center;
 }
+
 .cal-paintings-grid {
+  display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 16px;
   padding: 0 16px 16px;
+  justify-items: center;
 }
+
 .cal-painting-card {
   background: #1a1a1a;
   border-radius: 8px;
   overflow: hidden;
-  /*border: 1px solid #2a2a2a;*/
 }
+
 .cal-painting-img {
   height: 160px;
   object-fit: contain;
   background: #f5f5f5;
 }
+
 .cal-painting-placeholder {
   height: 160px;
   background: #f5f5f5;
 }
-.cal-painting-info {
-  padding: 8px 10px 10px;
+
+.cal-painting-info { padding: 8px 10px 10px; }
+
+.cal-painting-title  { font-size: 0.82rem; font-weight: 600; color: #ddd; margin: 0 0 2px; }
+.cal-painting-artist { font-size: 0.75rem; color: #888; margin: 0 0 4px; }
+.cal-painting-desc   { font-size: 0.73rem; color: #7e7e7e; line-height: 1.4; margin: 0; }
+
+/* ── Add these to the bottom of Exhibitions.css ── */
+
+/* Search */
+.exhibitions-search {
+  margin-bottom: 1rem;
 }
-.cal-painting-title {
-  font-size: 0.82rem;
+
+.exhibitions-search-input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1px solid #e5e7eb;
+  font-size: 0.9rem;
+  font-family: inherit;
+  color: #111827;
+  background: #fff;
+  transition: border-color 0.15s;
+  outline: none;
+}
+
+.exhibitions-search-input:focus {
+  border-color: #c5a028;
+}
+
+/* Filter bar */
+.exhibitions-filters-bar {
+  margin-bottom: 1rem;
+  padding: 1.25rem;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+}
+
+.filters-row {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  align-items: flex-end;
+}
+
+.filter-group {
+  flex: 1;
+  min-width: 140px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.filter-group label {
+  font-size: 0.72rem;
   font-weight: 600;
-  color: #ddd;
-  margin: 0 0 2px;
-}
-.cal-painting-artist {
-  font-size: 0.75rem;
-  color: #888;
-  margin: 0 0 4px;
-}
-.cal-painting-desc {
-  font-size: 0.73rem;
-  color: #7e7e7e;
-  line-height: 1.4;
-  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #9ca3af;
 }
 
-/* Make the modal scrollable */
-.cal-modal {
+/* Dropdown button */
+.filter-select-wrapper {
+  position: relative;
+}
+
+.filter-select-btn {
+  width: 100%;
+  padding: 0.55rem 0.875rem;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  font-size: 0.85rem;
+  font-family: inherit;
+  color: #374151;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: border-color 0.15s;
+}
+
+.filter-select-btn:hover { border-color: #c5a028; }
+
+.filter-arrow {
+  font-size: 0.6rem;
+  color: #9ca3af;
+  margin-left: 0.5rem;
+}
+
+/* Dropdown menu */
+.filter-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  max-height: 220px;
   overflow-y: auto;
-  max-height: 90vh;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-top: none;
+  z-index: 100;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
 }
 
-.cal-paintings-grid {
-  justify-items: center;
+.filter-option {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.5rem 0.875rem;
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: #374151;
+  transition: background 0.1s;
 }
 
-.cal-paintings-empty,
-.cal-paintings-loading {
-  text-align: center;
+.filter-option:hover { background: #faf9f8; }
+
+.filter-option input[type="checkbox"] {
+  width: 15px;
+  height: 15px;
+  accent-color: #c5a028;
+  flex-shrink: 0;
+  cursor: pointer;
 }
 
-.start-dot  { background: #c5a028; }
-.end-dot    { background: #111827; }
-.range-dot  { background: #f3f0e6; border: 1px solid #d1d5db; }
-.today-dot  { background: transparent; border: 2px solid #c5a028; }
+/* Sort select */
+.filter-select {
+  width: 100%;
+  padding: 0.55rem 0.875rem;
+  border: 1px solid #e5e7eb;
+  font-size: 0.85rem;
+  font-family: inherit;
+  color: #374151;
+  background: #fff;
+  cursor: pointer;
+  transition: border-color 0.15s;
+  outline: none;
+}
+
+.filter-select:hover,
+.filter-select:focus { border-color: #c5a028; }
+
+/* Clear button */
+.filters-clear {
+  padding: 0.55rem 1.25rem;
+  background: transparent;
+  border: 1px solid #e5e7eb;
+  font-size: 0.78rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+  align-self: flex-end;
+}
+
+.filters-clear:hover {
+  border-color: #c5a028;
+  color: #c5a028;
+}
+
+/* Active filter tags */
+.exhibitions-active-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.filter-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.75rem;
+  background: #faf9f8;
+  border: 1px solid #e5e7eb;
+  font-size: 0.75rem;
+  color: #374151;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.filter-tag:hover {
+  border-color: #c5a028;
+  color: #c5a028;
+}
