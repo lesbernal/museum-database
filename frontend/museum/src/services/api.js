@@ -1,4 +1,4 @@
-const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5001";
+const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 // test
 
 // ── Shared request helper ──────────────────────────────────────────────────────
@@ -400,9 +400,16 @@ export async function updateMyProfile(data) {
   const user_id = localStorage.getItem("user_id");
   return authRequest(`/users/${user_id}`, { method: "PUT", body: JSON.stringify(data) }, "Failed to update profile");
 }
-export async function changeMyPassword(newPassword) {
+export async function changeMyPassword(newPassword, currentProfile = {}) {
   const user_id = localStorage.getItem("user_id");
-  return authRequest(`/users/${user_id}`, { method: "PUT", body: JSON.stringify({ password: newPassword }) }, "Failed to change password");
+  return authRequest(`/users/${user_id}`, {
+    method: "PUT",
+    body: JSON.stringify({
+      ...currentProfile,
+      date_of_birth: currentProfile.date_of_birth?.slice(0, 10) || null,
+      password: newPassword
+    })
+  }, "Failed to change password");
 }
 export async function getMyVisitorRecord() {
   const user_id = localStorage.getItem("user_id");
