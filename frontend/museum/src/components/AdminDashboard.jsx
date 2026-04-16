@@ -20,7 +20,7 @@ import {
   getExhibitions, createExhibition, updateExhibition, deleteExhibition,
   getGalleries, createGallery, updateGallery, deleteGallery,
   getEvents, createEvent, updateEvent, deleteEvent,
-  getCafeItems, getGiftShopItems,
+  getCafeItems, getGiftShopItems, getMyProfile, updateMyProfile, changeMyPassword,
 } from "../services/api";
 
 import "../styles/AdminDashboard.css";
@@ -35,6 +35,16 @@ export default function AdminDashboard() {
   const [showGalleryArchive, setShowGalleryArchive] = useState(false);
   const [showArtworkArchive, setShowArtworkArchive] = useState(false);
   const [showEventArchive, setShowEventArchive] = useState(false);
+
+  // Admin profile states
+  const [adminProfile, setAdminProfile] = useState(null);
+  const [adminForm, setAdminForm] = useState({});
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [passwordForm, setPasswordForm] = useState({ new_password: "", confirm_password: "" });
+  const [passwordErrors, setPasswordErrors] = useState({});
+  const [changingPassword, setChangingPassword] = useState(false);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
 
   // Data
   const [artists, setArtists] = useState([]);
@@ -105,6 +115,7 @@ export default function AdminDashboard() {
     loadGalleries();
     loadEvents();
     loadStockAlerts();
+    loadAdminProfile();
   }, []);
 
   useEffect(() => {
@@ -122,6 +133,16 @@ export default function AdminDashboard() {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isMobileMenuOpen]);
+
+  const loadAdminProfile = async () => {
+    try {
+      const profile = await getMyProfile();
+      setAdminProfile(profile);
+      setAdminForm(profile);
+    } catch (err) {
+      console.error("Failed to load admin profile:", err);
+    }
+  };
 
   const loadArtists = async () => {
     setLoading(true);
@@ -327,6 +348,56 @@ export default function AdminDashboard() {
     }
   };
 
+  // Admin profile handlers
+  const handleAdminProfileUpdate = async (e) => {
+    e.preventDefault();
+    setSavingProfile(true);
+    try {
+      await updateMyProfile({
+        first_name: adminForm.first_name?.trim(),
+        last_name: adminForm.last_name?.trim(),
+        email: adminForm.email?.trim(),
+        phone_number: adminForm.phone_number,
+        street_address: adminForm.street_address?.trim(),
+        city: adminForm.city?.trim(),
+        state: adminForm.state,
+        zip_code: adminForm.zip_code?.trim(),
+        date_of_birth: adminForm.date_of_birth?.slice(0, 10),
+      });
+      setAdminProfile({ ...adminProfile, ...adminForm });
+      alert("Profile updated successfully");
+      setShowProfileModal(false);
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setSavingProfile(false);
+    }
+  };
+
+  const handleAdminPasswordChange = async (e) => {
+    e.preventDefault();
+    if (passwordForm.new_password.length < 6) {
+      setPasswordErrors({ new_password: "Min. 6 characters" });
+      return;
+    }
+    if (passwordForm.new_password !== passwordForm.confirm_password) {
+      setPasswordErrors({ confirm_password: "Passwords do not match" });
+      return;
+    }
+    setPasswordErrors({});
+    setChangingPassword(true);
+    try {
+      await changeMyPassword(passwordForm.new_password);
+      alert("Password changed successfully");
+      setShowPasswordModal(false);
+      setPasswordForm({ new_password: "", confirm_password: "" });
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setChangingPassword(false);
+    }
+  };
+
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("role");
@@ -492,6 +563,35 @@ export default function AdminDashboard() {
               Back to Home
             </Link>
           </div>
+
+          {adminProfile && (
+          <div className="admin-profile-mini">
+            <div className="admin-avatar">
+              {adminProfile.first_name?.charAt(0)}{adminProfile.last_name?.charAt(0)}
+            </div>
+            <div className="admin-info">
+              <div className="admin-name">{adminProfile.first_name} {adminProfile.last_name}</div>
+              <div className="admin-role">System Administrator</div>
+            </div>
+            <div className="admin-actions">
+              <button 
+                className="admin-profile-btn"
+                onClick={() => setShowProfileModal(true)}
+                title="Edit Profile"
+              >
+                ⚙️
+              </button>
+              <button 
+                className="admin-password-btn"
+                onClick={() => setShowPasswordModal(true)}
+                title="Change Password"
+              >
+                🔑
+              </button>
+            </div>
+          </div>
+        )}
+
           <nav className="sidebar-nav">
             {tabs.map((tab) => (
               <button
@@ -821,6 +921,79 @@ export default function AdminDashboard() {
             {activeTab === "departments" && <DepartmentManagement ref={deptMgmtRef} searchTerm={searchTerm} />}
           </div>
         </main>
+        {/* Admin Profile Edit Modal */}
+        {showProfileModal && (
+          <div className="um-overlay" onClick={() => setShowProfileModal(false)}>
+            <div className="um-modal" style={{ maxWidth: 500 }} onClick={e => e.stopPropagation()}>
+              <div className="um-modal-header">
+                <h3>Edit Admin Profile</h3>
+                <button className="um-modal-close" onClick={() => setShowProfileModal(false)}>×</button>
+              </div>
+              <form onSubmit={handleAdminProfileUpdate}>
+                <div className="um-modal-body">
+                  <div className="um-form-grid">
+                    <div className="um-form-group"><label>First Name *</label>
+                      <input name="first_name" value={adminForm.first_name || ""} onChange={e => setAdminForm(p => ({ ...p, first_name: e.target.value }))} /></div>
+                    <div className="um-form-group"><label>Last Name *</label>
+                      <input name="last_name" value={adminForm.last_name || ""} onChange={e => setAdminForm(p => ({ ...p, last_name: e.target.value }))} /></div>
+                    <div className="um-form-group full"><label>Email *</label>
+                      <input name="email" type="email" value={adminForm.email || ""} onChange={e => setAdminForm(p => ({ ...p, email: e.target.value }))} /></div>
+                    <div className="um-form-group"><label>Phone *</label>
+                      <input name="phone_number" value={adminForm.phone_number || ""} onChange={e => setAdminForm(p => ({ ...p, phone_number: e.target.value }))} /></div>
+                    <div className="um-form-group full"><label>Street Address</label>
+                      <input name="street_address" value={adminForm.street_address || ""} onChange={e => setAdminForm(p => ({ ...p, street_address: e.target.value }))} /></div>
+                    <div className="um-form-group"><label>City</label>
+                      <input name="city" value={adminForm.city || ""} onChange={e => setAdminForm(p => ({ ...p, city: e.target.value }))} /></div>
+                    <div className="um-form-group"><label>State</label>
+                      <input name="state" value={adminForm.state || ""} onChange={e => setAdminForm(p => ({ ...p, state: e.target.value }))} /></div>
+                    <div className="um-form-group"><label>Zip</label>
+                      <input name="zip_code" value={adminForm.zip_code || ""} onChange={e => setAdminForm(p => ({ ...p, zip_code: e.target.value }))} /></div>
+                    <div className="um-form-group"><label>Date of Birth</label>
+                      <input name="date_of_birth" type="date" value={adminForm.date_of_birth?.slice(0, 10) || ""} onChange={e => setAdminForm(p => ({ ...p, date_of_birth: e.target.value }))} /></div>
+                  </div>
+                </div>
+                <div className="um-modal-footer">
+                  <button type="button" className="um-cancel-btn" onClick={() => setShowProfileModal(false)}>Cancel</button>
+                  <button type="submit" className="um-save-btn" disabled={savingProfile}>
+                    {savingProfile ? "Saving..." : "Save Changes"}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* Change Password Modal */}
+        {showPasswordModal && (
+          <div className="um-overlay" onClick={() => setShowPasswordModal(false)}>
+            <div className="um-modal" style={{ maxWidth: 400 }} onClick={e => e.stopPropagation()}>
+              <div className="um-modal-header">
+                <h3>Change Password</h3>
+                <button className="um-modal-close" onClick={() => setShowPasswordModal(false)}>×</button>
+              </div>
+              <form onSubmit={handleAdminPasswordChange}>
+                <div className="um-modal-body">
+                  <div className="um-form-group full">
+                    <label>New Password (min. 6 characters)</label>
+                    <input type="password" value={passwordForm.new_password} onChange={e => setPasswordForm(p => ({ ...p, new_password: e.target.value }))} />
+                    {passwordErrors.new_password && <span style={{ color: "#dc2626", fontSize: 11 }}>{passwordErrors.new_password}</span>}
+                  </div>
+                  <div className="um-form-group full">
+                    <label>Confirm New Password</label>
+                    <input type="password" value={passwordForm.confirm_password} onChange={e => setPasswordForm(p => ({ ...p, confirm_password: e.target.value }))} />
+                    {passwordErrors.confirm_password && <span style={{ color: "#dc2626", fontSize: 11 }}>{passwordErrors.confirm_password}</span>}
+                  </div>
+                </div>
+                <div className="um-modal-footer">
+                  <button type="button" className="um-cancel-btn" onClick={() => setShowPasswordModal(false)}>Cancel</button>
+                  <button type="submit" className="um-save-btn" disabled={changingPassword}>
+                    {changingPassword ? "Updating..." : "Update Password"}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
       </div>
     </>
   );

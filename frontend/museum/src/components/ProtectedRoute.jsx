@@ -16,7 +16,23 @@ export default function ProtectedRoute({ children, requiredRole }) {
 
   // Check if user has required role
   if (requiredRole && role !== requiredRole) {
-    console.log(`Role mismatch. Required: ${requiredRole}, Got: ${role}, redirecting to home`);
+    console.log(`Role mismatch. Required: ${requiredRole}, Got: ${role}`);
+    
+    // Redirect to appropriate dashboard based on actual role
+    if (role === 'admin') {
+      return <Navigate to="/admin" replace />;
+    }
+    if (role === 'employee') {
+      return <Navigate to="/employee-dashboard" replace />;
+    }
+    if (role === 'member') {
+      return <Navigate to="/member-dashboard" replace />;
+    }
+    if (role === 'visitor') {
+      return <Navigate to="/visitor-dashboard" replace />;
+    }
+    
+    // Fallback to home
     return <Navigate to="/" replace />;
   }
 
