@@ -45,14 +45,10 @@ export default function Tickets() {
   }, [userId]);
 
   function adjust(type, delta) {
-    setQuantities(prev => {
-      const newVal   = Math.max(0, (prev[type] || 0) + delta);
-      const newTotal = Object.entries(prev).reduce((sum, [k, v]) =>
-        sum + (k === type ? newVal : v), 0
-      );
-      if (newTotal > 9) return prev;
-      return { ...prev, [type]: newVal };
-    });
+    setQuantities(prev => ({
+      ...prev,
+      [type]: Math.max(0, (prev[type] || 0) + delta)
+    }));
   }
 
   const summaryLines = TICKET_TYPES.filter(t => quantities[t.type] > 0).map(t => ({
@@ -138,7 +134,6 @@ export default function Tickets() {
         <p className="tickets-section-label">
           Select Tickets
           <span style={{ fontSize: "0.72rem", color: "var(--color-gray-light)", marginLeft: "0.5rem", textTransform: "none", letterSpacing: 0 }}>
-            (max 9 per order)
           </span>
         </p>
         <div className="ticket-rows">
@@ -170,7 +165,6 @@ export default function Tickets() {
                     type="button"
                     className="counter-btn"
                     onClick={() => adjust(t.type, 1)}
-                    disabled={totalTickets >= 9}
                   >+</button>
                 </div>
               </div>

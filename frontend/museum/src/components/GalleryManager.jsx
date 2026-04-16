@@ -1,7 +1,7 @@
 import { formatToCST } from "../utils/dateUtils";
 // components/GalleryManager.jsx
 import { useState, useEffect } from "react";
-import { getBuildings, getExhibitions } from "../services/api";
+import { getBuildings } from "../services/api";
 import "../styles/GalleryManager.css";
 
 // Toast Component
@@ -16,13 +16,8 @@ const SuccessToast = ({ show, editingGallery, onClose }) => {
 };
 
 // Form Modal Component
-const GalleryFormModal = ({ isOpen, editingGallery, formData, buildings, exhibitions, errors, isSubmitting, onSubmit, onCancel, onChange, onExhibitionToggle }) => {
+const GalleryFormModal = ({ isOpen, editingGallery, formData, buildings, errors, isSubmitting, onSubmit, onCancel, onChange }) => {
   if (!isOpen) return null;
-
-  const formatSquareFootage = (sqft) => {
-    if (!sqft) return "—";
-    return Number(sqft).toLocaleString() + " sq ft";
-  };
 
   return (
     <div className="modal-overlay" onClick={onCancel}>
@@ -118,41 +113,6 @@ const GalleryFormModal = ({ isOpen, editingGallery, formData, buildings, exhibit
                 {errors.building_id && <span className="error-message">{errors.building_id}</span>}
               </div>
             </div>
-
-            {/* Exhibitions Multi-Select */}
-            <div className="form-group full-width">
-              <label>Exhibitions in this Gallery</label>
-              <p className="field-hint">Select all exhibitions currently displayed in this gallery.</p>
-              {exhibitions.length === 0 ? (
-                <p className="empty-hint">No exhibitions found in the database.</p>
-              ) : (
-                <div className="checkbox-list">
-                  {exhibitions.map((exhibition) => {
-                    const checked = formData.exhibition_ids
-                      .map(String)
-                      .includes(String(exhibition.exhibition_id));
-                    return (
-                      <label key={exhibition.exhibition_id} className="checkbox-item">
-                        <input
-                          type="checkbox"
-                          checked={checked}
-                          onChange={() => onExhibitionToggle(exhibition.exhibition_id)}
-                        />
-                        <span className="checkbox-label">
-                          <span className="exhibition-name">{exhibition.exhibition_name}</span>
-                          {exhibition.start_date && exhibition.end_date && (
-                            <span className="exhibition-dates">
-                              {new Date(exhibition.start_date).toLocaleDateString()} –{" "}
-                              {new Date(exhibition.end_date).toLocaleDateString()}
-                            </span>
-                          )}
-                        </span>
-                      </label>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
           </div>
 
           {errors.submit && <div className="error-message submit-error">{errors.submit}</div>}
@@ -181,7 +141,6 @@ export default function GalleryManager({
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingGallery, setEditingGallery] = useState(null);
   const [buildings, setBuildings] = useState([]);
-  const [exhibitions, setExhibitions] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [showSuccessToast, setShowSuccessToast] = useState(false);
   const [formData, setFormData] = useState({
@@ -190,15 +149,12 @@ export default function GalleryManager({
     square_footage: "",
     climate_controlled: "",
     building_id: "",
-    exhibition_ids: [],
   });
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Load dropdowns
   useEffect(() => {
     loadBuildings();
-    loadExhibitions();
   }, []);
 
   // Prefill form for edit
@@ -210,7 +166,6 @@ export default function GalleryManager({
         square_footage: editingGallery.square_footage || "",
         climate_controlled: editingGallery.climate_controlled ?? "",
         building_id: editingGallery.building_id || "",
-        exhibition_ids: editingGallery.exhibition_ids || [],
       });
     } else {
       setFormData({
@@ -219,7 +174,6 @@ export default function GalleryManager({
         square_footage: "",
         climate_controlled: "",
         building_id: "",
-        exhibition_ids: [],
       });
     }
   }, [editingGallery]);
@@ -233,16 +187,6 @@ export default function GalleryManager({
     }
   };
 
-  const loadExhibitions = async () => {
-    try {
-      const data = await getExhibitions();
-      setExhibitions(data);
-    } catch (err) {
-      console.error("Failed to load exhibitions:", err);
-    }
-  };
-
-  // Filter galleries based on search term
   const filteredGalleries = externalGalleries.filter(gallery =>
     gallery.gallery_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     gallery.building_name?.toLowerCase().includes(searchTerm.toLowerCase())
@@ -279,15 +223,6 @@ export default function GalleryManager({
     if (errors[name]) setErrors(prev => ({ ...prev, [name]: null }));
   };
 
-  const handleExhibitionToggle = (exhibitionId) => {
-    const id = String(exhibitionId);
-    const current = formData.exhibition_ids.map(String);
-    const updated = current.includes(id)
-      ? current.filter((eid) => eid !== id)
-      : [...current, id];
-    setFormData(prev => ({ ...prev, exhibition_ids: updated }));
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
@@ -308,7 +243,6 @@ export default function GalleryManager({
         square_footage: "",
         climate_controlled: "",
         building_id: "",
-        exhibition_ids: [],
       });
     } catch (err) {
       console.error("Error saving gallery:", err);
@@ -320,14 +254,7 @@ export default function GalleryManager({
 
   const handleAddClick = () => {
     setEditingGallery(null);
-    setFormData({
-      gallery_name: "",
-      floor_number: "",
-      square_footage: "",
-      climate_controlled: "",
-      building_id: "",
-      exhibition_ids: [],
-    });
+    setFormData({ gallery_name: "", floor_number: "", square_footage: "", climate_controlled: "", building_id: "" });
     setErrors({});
     setIsFormOpen(true);
   };
@@ -362,7 +289,6 @@ export default function GalleryManager({
     return n + (suffix[(v - 20) % 10] || suffix[v] || suffix[0]);
   };
 
-  // Gallery Table Component
   const GalleryTable = () => {
     if (filteredGalleries.length === 0) {
       return <div className="empty-state">No galleries found</div>;
@@ -441,13 +367,11 @@ export default function GalleryManager({
         editingGallery={editingGallery}
         formData={formData}
         buildings={buildings}
-        exhibitions={exhibitions}
         errors={errors}
         isSubmitting={isSubmitting}
         onSubmit={handleSubmit}
         onCancel={handleCancel}
         onChange={handleChange}
-        onExhibitionToggle={handleExhibitionToggle}
       />
     </div>
   );

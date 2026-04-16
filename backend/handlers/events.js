@@ -9,9 +9,47 @@ function verifyUser(req) {
 }
 
 module.exports = (req, res, parsedUrl) => {
-  const parts = parsedUrl.pathname.split("/").filter(Boolean);
-  const eventId = parts[1];
-  const action  = parts[2];
+  const parts    = parsedUrl.pathname.split("/").filter(Boolean);
+  const eventId  = parts[1];
+  const action   = parts[2];
+
+  // GET /event-signups?user_id=
+  if (req.method === "GET" && parsedUrl.pathname === "/event-signups") {
+    const userId = parsedUrl.query.user_id;
+    if (!userId) {
+      res.writeHead(400, { "Content-Type": "application/json" });
+      return res.end(JSON.stringify({ error: "user_id is required" }));
+    }
+
+    const sql = `
+      SELECT 
+        es.signup_id,
+        es.quantity,
+        es.signup_date,
+        e.event_id,
+        e.event_name,
+        e.event_type,
+        e.event_date,
+        e.description,
+        e.member_only,
+        g.gallery_name
+      FROM event_signup es
+      JOIN event e ON es.event_id = e.event_id
+      LEFT JOIN gallery g ON e.gallery_id = g.gallery_id
+      WHERE es.user_id = ?
+      ORDER BY e.event_date DESC
+    `;
+
+    db.query(sql, [userId], (err, results) => {
+      if (err) {
+        res.writeHead(500, { "Content-Type": "application/json" });
+        return res.end(JSON.stringify({ error: err.sqlMessage }));
+      }
+      res.writeHead(200, { "Content-Type": "application/json" });
+      return res.end(JSON.stringify(results));
+    });
+    return;
+  }
 
   // GET /events/archived
   if (req.method === "GET" && eventId === "archived") {
@@ -173,18 +211,44 @@ module.exports = (req, res, parsedUrl) => {
           }));
         }
 
-        db.query(
-          "UPDATE event SET total_attendees = total_attendees + ? WHERE event_id = ?",
-          [quantity, eventId],
-          (err) => {
-            if (err) {
-              res.writeHead(500, { "Content-Type": "application/json" });
-              return res.end(JSON.stringify({ error: err.sqlMessage }));
-            }
-            res.writeHead(200, { "Content-Type": "application/json" });
-            return res.end(JSON.stringify({ message: `Successfully signed up ${quantity} attendee${quantity !== 1 ? "s" : ""}!` }));
+        // Check if user already signed up
+        db.query("SELECT signup_id FROM event_signup WHERE user_id = ? AND event_id = ?", [userId, eventId], (err, existing) => {
+          if (err) {
+            res.writeHead(500, { "Content-Type": "application/json" });
+            return res.end(JSON.stringify({ error: err.sqlMessage }));
           }
-        );
+
+          if (existing.length > 0) {
+            res.writeHead(400, { "Content-Type": "application/json" });
+            return res.end(JSON.stringify({ error: "You have already signed up for this event." }));
+          }
+
+          // Update total_attendees
+          db.query(
+            "UPDATE event SET total_attendees = total_attendees + ? WHERE event_id = ?",
+            [quantity, eventId],
+            (err) => {
+              if (err) {
+                res.writeHead(500, { "Content-Type": "application/json" });
+                return res.end(JSON.stringify({ error: err.sqlMessage }));
+              }
+
+              // Insert into event_signup
+              db.query(
+                "INSERT INTO event_signup (user_id, event_id, quantity, signup_date) VALUES (?, ?, ?, CURDATE())",
+                [userId, eventId, quantity],
+                (err) => {
+                  if (err) {
+                    res.writeHead(500, { "Content-Type": "application/json" });
+                    return res.end(JSON.stringify({ error: err.sqlMessage }));
+                  }
+                  res.writeHead(200, { "Content-Type": "application/json" });
+                  return res.end(JSON.stringify({ message: `Successfully signed up ${quantity} attendee${quantity !== 1 ? "s" : ""}!` }));
+                }
+              );
+            }
+          );
+        });
       });
     });
   }
