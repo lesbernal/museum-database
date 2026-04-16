@@ -28,6 +28,8 @@ const DepartmentManagement = forwardRef(function DepartmentManagement({ searchTe
   const [feedback, setFeedback] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [localSearch, setLocalSearch] = useState("");
+  const [errors, setErrors] = useState({});
+
 
   const notify = (msg, type = "success") => {
     setFeedback({ msg, type });
@@ -55,7 +57,7 @@ const DepartmentManagement = forwardRef(function DepartmentManagement({ searchTe
 
   // Use localSearch for filtering, fallback to prop if needed
   const searchValue = localSearch || searchTerm;
-  
+
   const filtered = records.filter(r =>
     TABLE_COLS.some(col =>
       String(r[col] ?? "").toLowerCase().includes(searchValue.toLowerCase())
@@ -63,9 +65,26 @@ const DepartmentManagement = forwardRef(function DepartmentManagement({ searchTe
   );
 
   const openEdit = (r) => { setForm({ ...r }); setSelected(r); setModal("edit"); };
-  const closeModal = () => { setModal(null); setSelected(null); setForm({}); };
+  const closeModal = () => { setModal(null); setSelected(null); setForm({}); setErrors({});; };
 
   const handleSave = async () => {
+    const newErrors = {};
+    const budget = Number(form.budget);
+
+    if (!form.budget && form.budget !== 0) {
+      newErrors.budget = "Budget is required";
+    } else if (isNaN(budget) || budget < 0) {
+      newErrors.budget = "Budget must be a positive number";
+    } else if (budget > 100000000) {
+      newErrors.budget = "Budget cannot exceed $100,000,000";
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+
+    setErrors({});
     setSaving(true);
     try {
       if (modal === "add") {
@@ -83,7 +102,7 @@ const DepartmentManagement = forwardRef(function DepartmentManagement({ searchTe
       setSaving(false);
     }
   };
-
+  
   const confirmDelete = (r) => { setDeleteTarget(r); setModal("confirm"); };
   const handleDelete = async () => {
     try {
@@ -177,14 +196,21 @@ const DepartmentManagement = forwardRef(function DepartmentManagement({ searchTe
                       value={form[f.key] || ""}
                       disabled={f.editDisabled && modal === "edit"}
                       maxLength={f.maxLength || undefined}
+                      style={errors[f.key] ? { borderColor: "#ef4444" } : {}}
                       onChange={e => {
                         let val = e.target.value;
                         if (f.key === "phone_extension") {
                           val = val.replace(/\D/g, "").slice(0, 3);
                         }
                         setForm(p => ({ ...p, [f.key]: val }));
+                        if (errors[f.key]) setErrors(p => ({ ...p, [f.key]: null }));
                       }}
                     />
+                    {errors[f.key] && (
+                      <span style={{ fontSize: "0.75rem", color: "#ef4444", marginTop: "0.25rem", display: "block" }}>
+                        {errors[f.key]}
+                      </span>
+                    )}
                   </div>
                 ))}
               </div>

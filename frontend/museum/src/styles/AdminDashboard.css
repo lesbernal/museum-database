@@ -6,7 +6,6 @@
 }
 
 .dashboard-stock-toast {
-  position: fixed;
   top: 0;
   left: 0;
   right: 0;
@@ -369,6 +368,19 @@
   cursor: pointer;
   align-self: flex-end;
 }
+
+.dashboard-toasts-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 1100;
+  max-width: 420px;
+  width: 100%;
+}
+
 .ex-filter-clear:hover { border-color: #999; color: #333; }
 .ex-results-count { font-size: 0.85rem; color: #888; margin: 0; }
 
