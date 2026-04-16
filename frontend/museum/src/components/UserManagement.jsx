@@ -11,10 +11,10 @@ import {
 import "../styles/UserManagement.css";
 
 const SUB_TABS = [
-  { id: "users",     label: "Users",     },
-  { id: "employees", label: "Employees", },
-  { id: "visitors",  label: "Visitors",  },
-  { id: "members",   label: "Members",   },
+  { id: "users",     label: "Users",     icon: "👥" },
+  { id: "employees", label: "Employees", icon: "👔" },
+  { id: "visitors",  label: "Visitors",  icon: "🚶" },
+  { id: "members",   label: "Members",   icon: "⭐" },
 ];
 
 const FIELDS = {
@@ -90,6 +90,7 @@ const UserManagement = forwardRef(function UserManagement({ searchTerm = "", onS
   const [saving,       setSaving]       = useState(false);
   const [feedback,     setFeedback]     = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [localSearchTerm, setLocalSearchTerm] = useState("");
 
   const pendingForm = useRef(null);
 
@@ -131,9 +132,12 @@ const UserManagement = forwardRef(function UserManagement({ searchTerm = "", onS
   const fields    = FIELDS[subTab];
   const tableCols = TABLE_COLS[subTab];
 
+  // Use localSearchTerm for filtering, fallback to prop if needed
+  const searchValue = localSearchTerm || searchTerm;
+  
   const filtered = records.filter(r =>
     tableCols.some(col =>
-      String(r[col] ?? "").toLowerCase().includes(searchTerm.toLowerCase())
+      String(r[col] ?? "").toLowerCase().includes(searchValue.toLowerCase())
     )
   );
 
@@ -142,6 +146,7 @@ const UserManagement = forwardRef(function UserManagement({ searchTerm = "", onS
 
   const handleSubTabChange = (id) => {
     setSubTab(id);
+    setLocalSearchTerm(""); // Reset search when changing tabs
     closeModal();
     if (onSubTabChange) onSubTabChange(id);
   };
@@ -266,6 +271,22 @@ const UserManagement = forwardRef(function UserManagement({ searchTerm = "", onS
             <span>{t.icon}</span> {t.label}
           </button>
         ))}
+      </div>
+
+      {/* Header with search and add button (matching ArtworkManager pattern) */}
+      <div className="um-manager-header">
+        <div className="um-search-bar">
+          <input
+            type="text"
+            placeholder={`Search ${subTab} by name, email, or ID...`}
+            value={localSearchTerm}
+            onChange={(e) => setLocalSearchTerm(e.target.value)}
+            className="um-search-input"
+          />
+        </div>
+        <button className="um-add-btn" onClick={() => { setForm({}); setModal("add"); }}>
+          + Add New {subTab.slice(0, -1)}
+        </button>
       </div>
 
       {feedback && <div className={`um-feedback ${feedback.type}`}>{feedback.msg}</div>}
