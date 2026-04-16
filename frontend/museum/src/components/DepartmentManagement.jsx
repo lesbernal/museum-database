@@ -27,6 +27,7 @@ const DepartmentManagement = forwardRef(function DepartmentManagement({ searchTe
   const [saving, setSaving] = useState(false);
   const [feedback, setFeedback] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [localSearchTerm, setLocalSearchTerm] = useState("");
 
   const notify = (msg, type = "success") => {
     setFeedback({ msg, type });
@@ -52,9 +53,12 @@ const DepartmentManagement = forwardRef(function DepartmentManagement({ searchTe
     openAdd: () => { setForm({}); setModal("add"); }
   }));
 
+  // Use localSearchTerm for filtering, fallback to prop if needed
+  const searchValue = localSearchTerm || searchTerm;
+  
   const filtered = records.filter(r =>
     TABLE_COLS.some(col =>
-      String(r[col] ?? "").toLowerCase().includes(searchTerm.toLowerCase())
+      String(r[col] ?? "").toLowerCase().includes(searchValue.toLowerCase())
     )
   );
 
@@ -101,6 +105,22 @@ const DepartmentManagement = forwardRef(function DepartmentManagement({ searchTe
 
   return (
     <div className="um-wrap">
+      {/* Header with search and add button */}
+      <div className="um-manager-header">
+        <div className="um-search-bar">
+          <input
+            type="text"
+            placeholder="Search departments by name or ID..."
+            value={localSearchTerm}
+            onChange={(e) => setLocalSearchTerm(e.target.value)}
+            className="um-search-input"
+          />
+        </div>
+        <button className="um-add-btn" onClick={() => { setForm({}); setModal("add"); }}>
+          + Add Department
+        </button>
+      </div>
+
       {feedback && <div className={`um-feedback ${feedback.type}`}>{feedback.msg}</div>}
 
       <div className="um-table-container">
