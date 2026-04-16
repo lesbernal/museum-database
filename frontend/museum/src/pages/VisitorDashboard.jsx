@@ -321,69 +321,6 @@ export default function VisitorDashboard() {
                     <Link to="/tickets" style={{ color: "#c9a84c" }}>Buy tickets</Link>
                   </div>
                 ) : (
-<<<<<<< HEAD
-                  <>
-                    <p style={{ fontSize: 12, color: "#9ca3af", marginBottom: 8 }}>Click a row to see individual tickets.</p>
-                    <div style={{ border: "1px solid #e5e7eb", overflowX: "auto", marginBottom: 32 }}>
-                      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
-                        <thead>
-                          <tr style={{ background: "#f9fafb", borderBottom: "1px solid #e5e7eb" }}>
-                            {["","Visit Date","Tickets","Types","Total","Payment"].map(h => (
-                              <th key={h} style={{ padding: "0.625rem 1rem", textAlign: h === "Total" ? "right" : "left", color: "#6b7280", fontWeight: 600, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.07em", width: h === "" ? 32 : "auto" }}>{h}</th>
-                            ))}
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {sortedVisitDates.map((date, i) => {
-                            const group    = groupedTickets[date];
-                            const total    = group.reduce((s, t) => s + parseFloat(t.final_price || 0), 0);
-                            const types    = [...new Set(group.map(t => t.ticket_type))].join(", ");
-                            const expanded = !!expandedDates[date];
-                            return (
-                              <>
-                                <tr key={date}
-                                  style={{ borderBottom: expanded ? "none" : i < sortedVisitDates.length - 1 ? "1px solid #f3f4f6" : "none", background: expanded ? "#fafaf9" : "transparent", cursor: "pointer" }}
-                                  onClick={() => toggleDate(date)}>
-                                  <td style={{ padding: "0.625rem 0.5rem 0.625rem 1rem", color: "#9ca3af", fontSize: 11 }}>
-                                    {expanded ? "▾" : "▸"}
-                                  </td>
-                                  <td style={{ padding: "0.625rem 1rem", color: "#374151", fontWeight: 500 }}>{fmt(date)}</td>
-                                  <td style={{ padding: "0.625rem 1rem", color: "#374151" }}>{group.length}</td>
-                                  <td style={{ padding: "0.625rem 1rem", color: "#374151" }}>{types}</td>
-                                  <td style={{ padding: "0.625rem 1rem", color: "#374151", textAlign: "right" }}>${total.toFixed(2)}</td>
-                                  <td style={{ padding: "0.625rem 1rem", color: "#374151" }}>{group[0]?.payment_method || "—"}</td>
-                                </tr>
-                                {expanded && group.map((t, j) => (
-                                  <tr key={t.ticket_id} style={{
-                                    background: "#f9fafb",
-                                    borderBottom: j < group.length - 1 ? "1px solid #f0f0ee" : i < sortedVisitDates.length - 1 ? "1px solid #e5e7eb" : "none",
-                                  }}>
-                                    <td />
-                                    <td style={{ padding: "0.5rem 1rem 0.5rem 2rem", color: "#6b7280", fontSize: 12 }}>Ticket #{t.ticket_id}</td>
-                                    <td style={{ padding: "0.5rem 1rem", color: "#6b7280", fontSize: 12 }}>{t.ticket_type}</td>
-                                    <td style={{ padding: "0.5rem 1rem", color: "#6b7280", fontSize: 12 }}>{t.discount_type || "None"}</td>
-                                    <td style={{ padding: "0.5rem 1rem", color: "#6b7280", fontSize: 12, textAlign: "right" }}>${parseFloat(t.final_price || 0).toFixed(2)}</td>
-                                    <td />
-                                  </tr>
-                                ))}
-                              </>
-                            );
-                          })}
-                        </tbody>
-                        <tfoot>
-                          <tr style={{ background: "#f9fafb", borderTop: "1px solid #e5e7eb" }}>
-                            <td />
-                            <td colSpan={3} style={{ padding: "0.625rem 1rem", fontWeight: 600, fontSize: 12, color: "#374151" }}>
-                              {tickets.length} ticket{tickets.length !== 1 ? "s" : ""} across {sortedVisitDates.length} visit{sortedVisitDates.length !== 1 ? "s" : ""}
-                            </td>
-                            <td style={{ padding: "0.625rem 1rem", fontWeight: 600, fontSize: 12, color: "#374151", textAlign: "right" }}>${ticketTotal.toFixed(2)}</td>
-                            <td />
-                          </tr>
-                        </tfoot>
-                      </table>
-                    </div>
-                  </>
-=======
                   <div style={{ border: "1px solid #e5e7eb", overflowX: "auto", marginBottom: 32 }}>
                     <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
                       <thead>
@@ -421,7 +358,6 @@ export default function VisitorDashboard() {
                       </tfoot>
                     </table>
                   </div>
->>>>>>> 3cd5b70dd75852c998b07c5381fb5b312e2ae450
                 )}
 
                 <h3 style={{ fontSize: 13, fontWeight: 600, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 12 }}>
