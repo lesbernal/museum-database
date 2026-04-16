@@ -1,6 +1,5 @@
 /* styles/Dashboard.css
-   Shared styles for VisitorDashboard, MemberDashboard, EmployeeDashboard.
-   Save as src/styles/Dashboard.css                                         */
+   Shared styles for VisitorDashboard, MemberDashboard, EmployeeDashboard. */
 
 @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;600&family=DM+Sans:wght@300;400;500&display=swap');
 
@@ -36,6 +35,26 @@
   color: #fff;
 }
 
+/* ── FIX: force white on hero headings — prevents black text on dark background ── */
+.dashboard-hero-content h1 {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: clamp(32px, 5vw, 52px);
+  font-weight: 300;
+  letter-spacing: 0.02em;
+  margin-bottom: 10px;
+  line-height: 1.1;
+  color: #fff;
+}
+
+.dashboard-hero-content p {
+  font-size: 15px;
+  opacity: 0.8;
+  margin-bottom: 28px;
+  max-width: 480px;
+  line-height: 1.6;
+  color: #fff;
+}
+
 .dashboard-role-badge {
   display: inline-block;
   padding: 4px 12px;
@@ -47,27 +66,11 @@
   margin-bottom: 16px;
   background: rgba(255,255,255,0.1);
   backdrop-filter: blur(4px);
+  color: #fff;
 }
 
 .member-badge   { border-color: #c9a84c; color: #c9a84c; background: rgba(201,168,76,0.12); }
 .employee-badge { border-color: #4a7fa5; color: #a8d4f0; background: rgba(74,127,165,0.12); }
-
-.dashboard-hero-content h1 {
-  font-family: 'Cormorant Garamond', Georgia, serif;
-  font-size: clamp(32px, 5vw, 52px);
-  font-weight: 300;
-  letter-spacing: 0.02em;
-  margin-bottom: 10px;
-  line-height: 1.1;
-}
-
-.dashboard-hero-content p {
-  font-size: 15px;
-  opacity: 0.8;
-  margin-bottom: 28px;
-  max-width: 480px;
-  line-height: 1.6;
-}
 
 .dashboard-hero-actions {
   display: flex;
