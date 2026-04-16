@@ -272,20 +272,24 @@ const UserManagement = forwardRef(function UserManagement({ searchTerm = "", onS
           </button>
         ))}
       </div>
-
+      
       {/* Header with search and add button (matching ArtworkManager pattern) */}
-      <div className="um-manager-header">
-        <div className="um-search-bar">
-          <input
-            type="text"
-            placeholder={`Search ${subTab} by name, email, or ID...`}
-            value={localSearchTerm}
-            onChange={(e) => setLocalSearchTerm(e.target.value)}
-            className="um-search-input"
-          />
-        </div>
-        <button className="um-add-btn" onClick={() => { setForm({}); setModal("add"); }}>
-          + Add New {subTab.slice(0, -1)}
+      <div style={{ display: "flex", gap: "0.75rem", alignItems: "center", marginBottom: "1.5rem", flexWrap: "wrap" }}>
+        <input
+          type="text"
+          placeholder={`Search ${subTab} by name, email, or ID...`}
+          value={localSearchTerm}
+          onChange={e => setLocalSearchTerm(e.target.value)}
+          style={{
+            flex: 1, minWidth: 200,
+            padding: "0.625rem 0.75rem",
+            border: "1px solid #e5e7eb",
+            fontSize: "0.875rem",
+            outline: "none",
+          }}
+        />
+        <button className="add-btn" onClick={() => { setForm({}); setModal("add"); }}>
+          + ADD NEW {subTab.slice(0, -1).toUpperCase()}
         </button>
       </div>
 

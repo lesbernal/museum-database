@@ -106,32 +106,28 @@ const DepartmentManagement = forwardRef(function DepartmentManagement({ searchTe
   return (
     <div className="um-wrap">
       {/* Header with search and add button */}
-      <div className="um-manager-header">
-        <div className="um-search-bar">
-          <input
-            type="text"
-            placeholder="Search departments by name or ID..."
-            value={localSearchTerm}
-            onChange={(e) => setLocalSearchTerm(e.target.value)}
-            className="um-search-input"
-          />
-        </div>
-        <button className="um-add-btn" onClick={() => { setForm({}); setModal("add"); }}>
-          + Add Department
+      {/* ── Single header row: search + ONE gold add button ── */}
+      <div style={{ display: "flex", gap: "0.75rem", alignItems: "center", marginBottom: "1.5rem", flexWrap: "wrap" }}>
+        <input
+          type="text"
+          placeholder="Search departments..."
+          value={localSearch}
+          onChange={e => setLocalSearch(e.target.value)}
+          style={{
+            flex: 1, minWidth: 200,
+            padding: "0.625rem 0.75rem",
+            border: "1px solid #e5e7eb",
+            fontSize: "0.875rem",
+            outline: "none",
+          }}
+        />
+        {/* Uses .add-btn from AdminDashboard.css — gold color, matches other admin buttons */}
+        <button className="add-btn" onClick={() => { setForm({}); setModal("add"); }}>
+          + ADD NEW DEPARTMENT
         </button>
       </div>
 
       {feedback && <div className={`um-feedback ${feedback.type}`}>{feedback.msg}</div>}
-
-      {/* Add this header */}
-      <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "1rem" }}>
-        <button
-          className="um-add-btn"
-          onClick={() => { setForm({}); setModal("add"); }}
-        >
-          + Add Department
-        </button>
-      </div>
 
       <div className="um-table-container">
         {loading ? (
