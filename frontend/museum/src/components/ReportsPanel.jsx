@@ -1,6 +1,7 @@
 // components/ReportsPanel.jsx
 import { useState } from "react";
 import RevenueReport from "./RevenueReport";
+import ArtCollectionReport from "./ArtCollectionReport";
 import VisitorAnalyticsReport from "./VisitorAnalyticsReport";
 import "../styles/ReportsPanel.css";
 
@@ -37,7 +38,7 @@ export default function ReportsPanel() {
       </div>
 
       {activeReport === "revenue"          && <RevenueReport />}
-      {activeReport === "artCollection"    && <div className="coming-soon">Art Collection Report Coming Soon</div>}
+      {activeReport === "artCollection"    && <ArtCollectionReport />}
       {activeReport === "visitorAnalytics" && <VisitorAnalyticsReport />}
       {activeReport === "giftShop"         && <div className="coming-soon">Gift Shop Report Coming Soon</div>}
     </div>

@@ -94,6 +94,10 @@ export default function AdminDashboard() {
   ];
 
   useEffect(() => {
+    const savedTab = localStorage.getItem("adminActiveTab");
+    if (savedTab && tabs.some(tab => tab.id === savedTab)) {
+      setActiveTab(savedTab);
+    }
     loadArtists();
     loadArtworks();
     loadProvenance();
@@ -333,12 +337,19 @@ export default function AdminDashboard() {
 
   const handleTabClick = (tabId) => {
     setActiveTab(tabId);
+    localStorage.setItem("adminActiveTab", tabId);
     setSearchTerm("");
     setIsMobileMenuOpen(false);
     if (tabId !== "exhibitions") setShowExhibitionArchive(false);
     if (tabId !== "galleries") setShowGalleryArchive(false);
     if (tabId !== "artwork") setShowArtworkArchive(false);
     if (tabId !== "events") setShowEventArchive(false);
+
+    setTimeout(() => {
+      const mainContent = document.querySelector('.admin-main');
+      if (mainContent) mainContent.scrollTop = 0;
+      window.scrollTo(0, 0);
+    }, 0);
   };
 
   const artworkArtists = [...new Set(artworks.map(a => a.artist_name).filter(Boolean))].sort();
@@ -664,6 +675,7 @@ export default function AdminDashboard() {
                     <option value="In Storage">In Storage</option>
                     <option value="On Loan">On Loan</option>
                     <option value="Under Restoration">Under Restoration</option>
+                    <option value="Deaccessioned">Deaccessioned</option> 
                   </select>
                 </div>
                 <div className="ex-filter-group">
@@ -730,7 +742,6 @@ export default function AdminDashboard() {
                   onUpdate={handleUpdateArtwork}
                   onDelete={handleDeleteArtwork}
                   onArchive={handleArtworkArchive}
-                  onDeaccession={handleDeaccessionArtwork}
                   loading={false}
                   error={artworksError}
                 />

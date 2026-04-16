@@ -1,5 +1,5 @@
-/* styles/RevenueReport.css */
-.revenue-report {
+/* styles/ArtCollectionReport.css */
+.art-collection-report {
   padding: 1.5rem;
   background: #ffffff;
   border: 1px solid #e5e5e5;
@@ -76,10 +76,7 @@
   border: none;
   font-size: 0.875rem;
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
   cursor: pointer;
-  transition: all 0.2s ease;
   color: #000000;
 }
 
@@ -95,7 +92,6 @@
   cursor: pointer;
   font-size: 0.875rem;
   margin-left: 0.5rem;
-  transition: all 0.2s ease;
 }
 
 .reset-btn:hover {
@@ -110,7 +106,7 @@
 
 .summary-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 1rem;
   margin-bottom: 1rem;
 }
@@ -118,70 +114,23 @@
 .summary-card {
   background: #f8f9fa;
   border: 1px solid #e5e5e5;
-  padding: 1.25rem;
+  padding: 1rem;
   text-align: center;
-}
-
-.summary-card.primary {
-  background: #c5a028;
-  border-color: #c5a028;
-}
-
-.summary-card.primary .summary-label {
-  color: rgba(0, 0, 0, 0.7);
-}
-
-.summary-card.primary .summary-value {
-  color: #000000;
 }
 
 .summary-label {
   font-size: 0.7rem;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
   color: #6b7280;
   margin-bottom: 0.5rem;
 }
 
 .summary-value {
-  font-size: 1.5rem;
+  font-size: 1.25rem;
   font-weight: 700;
   color: #1a1a2e;
 }
-
-/* Breakdown Grid - Fixed spacing */
-.breakdown-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 1rem;
-}
-
-.breakdown-item {
-  background: #f8f9fa;
-  border: 1px solid #e5e5e5;
-  padding: 0.75rem 1rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.breakdown-label {
-  font-size: 0.75rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  color: #6b7280;
-}
-
-.breakdown-value {
-  font-size: 0.875rem;
-  font-weight: 700;
-}
-
-.breakdown-item.ticket .breakdown-value { color: #c5a028; }
-.breakdown-item.donation .breakdown-value { color: #10b981; }
-.breakdown-item.cafe .breakdown-value { color: #3b82f6; }
-.breakdown-item.giftshop .breakdown-value { color: #8b5cf6; }
 
 /* Data Section */
 .data-section {
@@ -201,16 +150,11 @@
   font-size: 1rem;
   font-weight: 600;
   color: #1a1a2e;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
 }
 
 /* Table */
 .table-container {
   overflow-x: auto;
-  overflow-y: auto;
-  max-height: 500px;
-  min-height: 400px;
   border: 1px solid #e5e5e5;
 }
 
@@ -223,9 +167,6 @@
 .data-table thead {
   background: #f8f9fa;
   border-bottom: 1px solid #e5e5e5;
-  position: sticky;
-  top: 0;
-  z-index: 10;
 }
 
 .data-table th {
@@ -233,9 +174,8 @@
   padding: 0.875rem;
   font-weight: 600;
   color: #1f2937;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
   font-size: 0.7rem;
+  text-transform: uppercase;
   background: #f8f9fa;
 }
 
@@ -249,92 +189,81 @@
   background: #f8f9fa;
 }
 
-.amount-cell {
+.title-cell {
+  font-weight: 500;
+  color: #1a1a2e;
+}
+
+.value-cell {
   font-weight: 600;
   color: #1a1a2e;
 }
 
-/* Source Badges */
-.source-badge {
+/* Status Badges */
+.status-badge {
   display: inline-block;
   padding: 0.25rem 0.5rem;
   font-size: 0.7rem;
   font-weight: 600;
 }
 
-.source-badge.ticket {
-  background: #fef3c7;
-  color: #92400e;
-}
-
-.source-badge.donation {
+.badge-display {
   background: #d1fae5;
   color: #065f46;
 }
 
-.source-badge.cafe {
+.badge-storage {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.badge-loan {
   background: #e0e7ff;
   color: #3730a3;
 }
 
-.source-badge.gift-shop {
-  background: #f3e8ff;
-  color: #6b21a5;
+.badge-restoration {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.badge-deaccessioned {
+  background: #f3f4f6;
+  color: #374151;
 }
 
 /* Pagination */
 .pagination-container {
-  margin-top: 1.5rem;
+  margin-top: 1rem;
   padding-top: 1rem;
   border-top: 1px solid #e5e5e5;
+  display: flex;
+  justify-content: center;
 }
 
 .pagination-controls {
   display: flex;
   align-items: center;
-  justify-content: center;
   gap: 0.5rem;
   flex-wrap: wrap;
 }
 
-.pagination-btn {
+.pagination-controls button {
   padding: 0.375rem 0.75rem;
   background: #ffffff;
   border: 1px solid #e5e5e5;
   cursor: pointer;
-  transition: all 0.2s;
   font-size: 0.75rem;
 }
 
-.pagination-btn:hover:not(:disabled) {
+.pagination-controls button:hover:not(:disabled) {
   border-color: #c5a028;
   color: #c5a028;
-  background: #fffaf0;
 }
 
-.pagination-btn:disabled {
+.pagination-controls button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
-}
-
-.page-info {
-  font-size: 0.75rem;
-  color: #6b7280;
-}
-
-.rows-per-page {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-left: 0.5rem;
-  font-size: 0.75rem;
-}
-
-.rows-per-page select {
-  padding: 0.25rem 0.5rem;
-  border: 1px solid #e5e5e5;
-  background: #ffffff;
-  font-size: 0.75rem;
 }
 
 /* Loading & No Results */
@@ -347,16 +276,12 @@
 
 /* Responsive */
 @media (max-width: 768px) {
-  .revenue-report {
+  .art-collection-report {
     padding: 1rem;
   }
   
   .summary-grid {
-    grid-template-columns: 1fr;
-  }
-  
-  .breakdown-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, 1fr);
   }
   
   .filter-group {
@@ -373,27 +298,18 @@
     margin-left: 0;
   }
   
-  .data-header {
-    flex-direction: column;
-    align-items: stretch;
-  }
-  
   .pagination-controls {
     gap: 0.25rem;
   }
   
-  .pagination-btn {
+  .pagination-controls button {
     padding: 0.25rem 0.5rem;
     font-size: 0.7rem;
   }
-  
-  .rows-per-page {
-    margin-left: 0;
-    width: 100%;
-    justify-content: center;
-  }
-  
-  .table-container {
-    max-height: 350px;
+}
+
+@media (max-width: 480px) {
+  .summary-grid {
+    grid-template-columns: 1fr;
   }
 }

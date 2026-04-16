@@ -168,6 +168,97 @@ module.exports = (req, res, parsedUrl) => {
     return;
   }
 
+  // ==================== REPORT 2: ART COLLECTION REPORT ====================
+  // Tables: artwork, artist, gallery, museumbuilding
+  // Each artwork appears once with its CURRENT gallery info (from artwork.gallery_id)
+
+  if (parsedUrl.pathname === "/reports/art-collection-data") {
+    const artistId = query.artistId || "";
+    const startYear = query.startYear || "";
+    const endYear = query.endYear || "";
+    const status = query.status || "";
+    const medium = query.medium || "";
+    const minValue = query.minValue || "";
+    const maxValue = query.maxValue || "";
+    
+    let sql = `
+      SELECT 
+        a.artwork_id,
+        a.title,
+        a.creation_year,
+        a.medium,
+        a.dimensions,
+        a.current_display_status,
+        a.insurance_value,
+        CONCAT(ar.first_name, ' ', ar.last_name) as artist_name,
+        ar.nationality as artist_nationality,
+        g.gallery_name,
+        g.is_active as gallery_active,
+        b.building_name,
+        b.building_id
+      FROM artwork a
+      JOIN artist ar ON a.artist_id = ar.artist_id
+      LEFT JOIN gallery g ON a.gallery_id = g.gallery_id
+      LEFT JOIN museumbuilding b ON g.building_id = b.building_id
+      WHERE a.is_active = 1
+    `;
+    
+    const params = [];
+    
+    if (artistId) {
+      sql += ` AND a.artist_id = ?`;
+      params.push(artistId);
+    }
+    if (startYear) {
+      sql += ` AND a.creation_year >= ?`;
+      params.push(startYear);
+    }
+    if (endYear) {
+      sql += ` AND a.creation_year <= ?`;
+      params.push(endYear);
+    }
+    if (status) {
+      sql += ` AND a.current_display_status = ?`;
+      params.push(status);
+    }
+    if (medium) {
+      sql += ` AND a.medium = ?`;
+      params.push(medium);
+    }
+    if (minValue) {
+      sql += ` AND a.insurance_value >= ?`;
+      params.push(minValue);
+    }
+    if (maxValue) {
+      sql += ` AND a.insurance_value <= ?`;
+      params.push(maxValue);
+    }
+    
+    sql += ` ORDER BY a.creation_year DESC`;
+    
+    db.query(sql, params, (err, results) => {
+      if (err) return sendError(res, err);
+      
+      // Summary statistics
+      const statsSql = `
+        SELECT 
+          COUNT(*) as total_artworks,
+          ROUND(SUM(insurance_value), 2) as total_value,
+          ROUND(AVG(insurance_value), 2) as avg_value,
+          COUNT(DISTINCT artist_id) as total_artists,
+          COUNT(DISTINCT medium) as total_mediums,
+          COUNT(DISTINCT gallery_id) as total_galleries_used
+        FROM artwork a
+        WHERE a.is_active = 1
+      `;
+      db.query(statsSql, (err, stats) => {
+        if (err) return sendError(res, err);
+        sendJSON(res, { data: results, summary: stats[0] });
+      });
+    });
+    return;
+  }
+
   // ==================== REPORT 3: GIFT SHOP REPORT ====================
   if (parsedUrl.pathname === "/reports/giftshop-data") {
     const startDate = query.startDate || "1900-01-01";
