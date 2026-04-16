@@ -32,14 +32,19 @@ const DONATION_TIERS = ["Benefactor", "Leadership Circle"];
 
 const fmt = dateStr => {
   if (!dateStr) return "—";
-  return new Date(String(dateStr).slice(0, 10))
-    .toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+  // Just format the string directly without Date conversion
+  const date = String(dateStr).slice(0, 10);
+  const [year, month, day] = date.split("-");
+  const dateObj = new Date(year, month - 1, day);
+  return dateObj.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
 };
 
 const fmtShort = dateStr => {
   if (!dateStr) return "—";
-  return new Date(String(dateStr).slice(0, 10))
-    .toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
+  const date = String(dateStr).slice(0, 10);
+  const [year, month, day] = date.split("-");
+  const dateObj = new Date(year, month - 1, day);
+  return dateObj.toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
 };
 
 function validateProfile(form) {
