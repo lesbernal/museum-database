@@ -7,24 +7,30 @@ import {
 import "../styles/RevenueReport.css";
 
 const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
-
 const CHART_COLORS = ["#c5a028", "#1d4ed8", "#065f46", "#92400e", "#5b21b6", "#9d174d"];
 
 const formatNumber = (v) => {
   if (!v && v !== 0) return "0";
   return new Intl.NumberFormat("en-US").format(v);
 };
-
 const formatDate = (d) => {
   if (!d) return "—";
   const s = String(d).slice(0, 10);
   const [y, m, day] = s.split("-");
   return `${m}/${day}/${y}`;
 };
-
 const formatCurrency = (v) => {
   if (!v && v !== 0) return "$0.00";
   return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(v);
+};
+
+const LEVEL_COLORS = {
+  "Bronze":             { bg: "#fdf2e9", color: "#a04000" },
+  "Silver":             { bg: "#f2f3f4", color: "#566573" },
+  "Gold":               { bg: "#fef9e7", color: "#9a7d0a" },
+  "Platinum":           { bg: "#eaf4fb", color: "#1a5276" },
+  "Benefactor":         { bg: "#f3e8ff", color: "#6b21a8" },
+  "Leadership Circle":  { bg: "#fff1f2", color: "#9f1239" },
 };
 
 export default function VisitorAnalyticsReport() {
@@ -38,9 +44,14 @@ export default function VisitorAnalyticsReport() {
   const [topLimit,            setTopLimit]            = useState(10);
 
   // Event vs Tickets state
-  const [evtVsTixData,       setEvtVsTixData]       = useState([]);
-  const [evtVsTixSummary,    setEvtVsTixSummary]    = useState(null);
-  const [engagementBreakdown,setEngagementBreakdown]= useState([]);
+  const [evtVsTixData,        setEvtVsTixData]        = useState([]);
+  const [evtVsTixSummary,     setEvtVsTixSummary]     = useState(null);
+  const [engagementBreakdown, setEngagementBreakdown] = useState([]);
+
+  // Member Event Participation state
+  const [memberEventData,    setMemberEventData]    = useState([]);
+  const [memberEventSummary, setMemberEventSummary] = useState(null);
+  const [memberEventByLevel, setMemberEventByLevel] = useState([]);
 
   async function handleGenerate() {
     setLoading(true);
@@ -51,12 +62,18 @@ export default function VisitorAnalyticsReport() {
         const data = await res.json();
         setTopAttendeesData(Array.isArray(data.data) ? data.data : []);
         setTopAttendeesSummary(data.summary || null);
-      } else {
+      } else if (activeSection === "evtVsTix") {
         const res  = await fetch(`${BASE_URL}/reports/event-vs-tickets`);
         const data = await res.json();
         setEvtVsTixData(Array.isArray(data.data) ? data.data : []);
         setEvtVsTixSummary(data.summary || null);
         setEngagementBreakdown(Array.isArray(data.engagementBreakdown) ? data.engagementBreakdown : []);
+      } else if (activeSection === "memberEvents") {
+        const res  = await fetch(`${BASE_URL}/reports/member-event-participation`);
+        const data = await res.json();
+        setMemberEventData(Array.isArray(data.data) ? data.data : []);
+        setMemberEventSummary(data.summary || null);
+        setMemberEventByLevel(Array.isArray(data.byLevel) ? data.byLevel : []);
       }
       setHasGenerated(true);
     } catch (err) {
@@ -73,6 +90,9 @@ export default function VisitorAnalyticsReport() {
     setEvtVsTixData([]);
     setEvtVsTixSummary(null);
     setEngagementBreakdown([]);
+    setMemberEventData([]);
+    setMemberEventSummary(null);
+    setMemberEventByLevel([]);
     setTopLimit(10);
   }
 
@@ -84,23 +104,18 @@ export default function VisitorAnalyticsReport() {
       </div>
 
       {/* Section selector */}
-      <div style={{ display: "flex", gap: "1rem", marginBottom: "1.5rem", borderBottom: "1px solid var(--color-border)", paddingBottom: "1rem" }}>
+      <div style={{ display: "flex", gap: "1rem", marginBottom: "1.5rem", borderBottom: "1px solid var(--color-border)", paddingBottom: "1rem", flexWrap: "wrap" }}>
         {[
-          { id: "topAttendees", label: "Top Event Attendees" },
+          { id: "topAttendees", label: "Top Event Attendees"        },
           { id: "evtVsTix",     label: "Event vs Ticket Engagement" },
+          { id: "memberEvents", label: "Member Event Participation" },
         ].map(s => (
-          <button
-            key={s.id}
+          <button key={s.id}
             onClick={() => { setActiveSection(s.id); setHasGenerated(false); }}
             style={{
-              padding: "0.5rem 1.25rem",
-              border: "none",
-              background: "transparent",
-              fontFamily: "var(--font-primary)",
-              fontSize: "var(--font-size-sm)",
-              textTransform: "uppercase",
-              letterSpacing: "0.05em",
-              cursor: "pointer",
+              padding: "0.5rem 1.25rem", border: "none", background: "transparent",
+              fontFamily: "var(--font-primary)", fontSize: "var(--font-size-sm)",
+              textTransform: "uppercase", letterSpacing: "0.05em", cursor: "pointer",
               color: activeSection === s.id ? "var(--color-gold)" : "var(--color-gray)",
               borderBottom: activeSection === s.id ? "2px solid var(--color-gold)" : "2px solid transparent",
               transition: "all 0.15s",
@@ -133,6 +148,14 @@ export default function VisitorAnalyticsReport() {
               </p>
             </div>
           )}
+          {activeSection === "memberEvents" && (
+            <div className="filter-group">
+              <label>Report</label>
+              <p style={{ fontSize: "var(--font-size-sm)", color: "var(--color-gray)", margin: 0, paddingTop: "0.4rem" }}>
+                Shows all members and their event attendance
+              </p>
+            </div>
+          )}
           <div className="filter-group" style={{ justifyContent: "flex-end", flexDirection: "row", alignItems: "flex-end", gap: "0.5rem" }}>
             <button className="generate-btn" onClick={handleGenerate} disabled={loading}>
               {loading ? "Loading..." : "Generate Report"}
@@ -147,7 +170,6 @@ export default function VisitorAnalyticsReport() {
       {/* ── TOP ATTENDEES ── */}
       {hasGenerated && activeSection === "topAttendees" && (
         <>
-          {/* Summary stats */}
           {topAttendeesSummary && (
             <div className="summary-section">
               <div className="summary-grid">
@@ -170,13 +192,9 @@ export default function VisitorAnalyticsReport() {
               </div>
             </div>
           )}
-
-          {/* Bar chart */}
           {topAttendeesData.length > 0 && (
             <div className="data-section" style={{ marginBottom: "2rem" }}>
-              <div className="data-header">
-                <h3>Top {topLimit} Most Active Event Attendees</h3>
-              </div>
+              <div className="data-header"><h3>Top {topLimit} Most Active Event Attendees</h3></div>
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart
                   data={topAttendeesData.map(r => ({ name: r.full_name, events: r.total_events, spots: r.total_spots }))}
@@ -187,16 +205,12 @@ export default function VisitorAnalyticsReport() {
                   <YAxis tick={{ fontSize: 11 }} />
                   <Tooltip />
                   <Bar dataKey="events" name="Events Signed Up" radius={[2, 2, 0, 0]}>
-                    {topAttendeesData.map((_, i) => (
-                      <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
-                    ))}
+                    {topAttendeesData.map((_, i) => <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />)}
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
             </div>
           )}
-
-          {/* Table */}
           {topAttendeesData.length > 0 ? (
             <div className="data-section">
               <div className="data-header"><h3>Attendee Details</h3></div>
@@ -204,14 +218,8 @@ export default function VisitorAnalyticsReport() {
                 <table className="data-table">
                   <thead>
                     <tr>
-                      <th>#</th>
-                      <th>Name</th>
-                      <th>Email</th>
-                      <th>Role</th>
-                      <th>Events</th>
-                      <th>Total Spots</th>
-                      <th>Last Signup</th>
-                      <th>Event Types Attended</th>
+                      <th>#</th><th>Name</th><th>Email</th><th>Role</th>
+                      <th>Events</th><th>Total Spots</th><th>Last Signup</th><th>Event Types Attended</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -221,14 +229,7 @@ export default function VisitorAnalyticsReport() {
                         <td style={{ fontWeight: 500 }}>{r.full_name}</td>
                         <td>{r.email}</td>
                         <td>
-                          <span style={{
-                            padding: "0.2rem 0.6rem",
-                            borderRadius: "999px",
-                            fontSize: "0.72rem",
-                            fontWeight: 600,
-                            background: r.role === "member" ? "#fef9c3" : "#f3f4f6",
-                            color: r.role === "member" ? "#854d0e" : "#374151",
-                          }}>
+                          <span style={{ padding: "0.2rem 0.6rem", borderRadius: "999px", fontSize: "0.72rem", fontWeight: 600, background: r.role === "member" ? "#fef9c3" : "#f3f4f6", color: r.role === "member" ? "#854d0e" : "#374151" }}>
                             {r.role}
                           </span>
                         </td>
@@ -251,7 +252,6 @@ export default function VisitorAnalyticsReport() {
       {/* ── EVENT VS TICKETS ── */}
       {hasGenerated && activeSection === "evtVsTix" && (
         <>
-          {/* Summary stats */}
           {evtVsTixSummary && (
             <div className="summary-section">
               <div className="summary-grid">
@@ -279,13 +279,9 @@ export default function VisitorAnalyticsReport() {
               )}
             </div>
           )}
-
-          {/* Engagement breakdown chart */}
           {engagementBreakdown.length > 0 && (
             <div className="data-section" style={{ marginBottom: "2rem" }}>
-              <div className="data-header">
-                <h3>Visitor Engagement Breakdown</h3>
-              </div>
+              <div className="data-header"><h3>Visitor Engagement Breakdown</h3></div>
               <ResponsiveContainer width="100%" height={280}>
                 <BarChart data={engagementBreakdown} margin={{ top: 10, right: 20, left: 0, bottom: 5 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#e5e5e5" />
@@ -293,14 +289,10 @@ export default function VisitorAnalyticsReport() {
                   <YAxis tick={{ fontSize: 11 }} />
                   <Tooltip formatter={(v, n) => [formatNumber(v), n]} />
                   <Bar dataKey="count" name="Users" radius={[2, 2, 0, 0]}>
-                    {engagementBreakdown.map((_, i) => (
-                      <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
-                    ))}
+                    {engagementBreakdown.map((_, i) => <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />)}
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
-
-              {/* Percentage breakdown */}
               <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap", marginTop: "1rem" }}>
                 {engagementBreakdown.map((e, i) => (
                   <div key={e.type} style={{ flex: 1, minWidth: 140, padding: "0.75rem", background: "var(--color-white)", border: "1px solid var(--color-border)", borderRadius: 4, textAlign: "center" }}>
@@ -312,8 +304,6 @@ export default function VisitorAnalyticsReport() {
               </div>
             </div>
           )}
-
-          {/* Table */}
           {evtVsTixData.length > 0 ? (
             <div className="data-section">
               <div className="data-header"><h3>User Engagement Details</h3></div>
@@ -321,17 +311,13 @@ export default function VisitorAnalyticsReport() {
                 <table className="data-table">
                   <thead>
                     <tr>
-                      <th>Name</th>
-                      <th>Email</th>
-                      <th>Role</th>
-                      <th>Events Signed Up</th>
-                      <th>Tickets Purchased</th>
-                      <th>Engagement Type</th>
-                      <th>Total Ticket Spend</th>
+                      <th>Name</th><th>Email</th><th>Role</th>
+                      <th>Events Signed Up</th><th>Tickets Purchased</th>
+                      <th>Engagement Type</th><th>Total Ticket Spend</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {evtVsTixData.map((r, i) => {
+                    {evtVsTixData.map((r) => {
                       const engagementColors = {
                         "Both":         { bg: "#d1fae5", color: "#065f46" },
                         "Events Only":  { bg: "#dbeafe", color: "#1d4ed8" },
@@ -344,12 +330,7 @@ export default function VisitorAnalyticsReport() {
                           <td style={{ fontWeight: 500 }}>{r.full_name}</td>
                           <td>{r.email}</td>
                           <td>
-                            <span style={{
-                              padding: "0.2rem 0.6rem", borderRadius: "999px",
-                              fontSize: "0.72rem", fontWeight: 600,
-                              background: r.role === "member" ? "#fef9c3" : "#f3f4f6",
-                              color: r.role === "member" ? "#854d0e" : "#374151",
-                            }}>
+                            <span style={{ padding: "0.2rem 0.6rem", borderRadius: "999px", fontSize: "0.72rem", fontWeight: 600, background: r.role === "member" ? "#fef9c3" : "#f3f4f6", color: r.role === "member" ? "#854d0e" : "#374151" }}>
                               {r.role}
                             </span>
                           </td>
@@ -370,6 +351,105 @@ export default function VisitorAnalyticsReport() {
             </div>
           ) : (
             <div className="no-results">No engagement data found.</div>
+          )}
+        </>
+      )}
+
+      {/* ── MEMBER EVENT PARTICIPATION ── */}
+      {hasGenerated && activeSection === "memberEvents" && (
+        <>
+          {memberEventSummary && (
+            <div className="summary-section">
+              <div className="summary-grid">
+                <div className="summary-card primary">
+                  <div className="summary-label">Total Members</div>
+                  <div className="summary-value">{formatNumber(memberEventSummary.total_members)}</div>
+                </div>
+                <div className="summary-card">
+                  <div className="summary-label">Members Who Attended</div>
+                  <div className="summary-value">{formatNumber(memberEventSummary.members_who_attended)}</div>
+                </div>
+                <div className="summary-card">
+                  <div className="summary-label">Unique Events Attended</div>
+                  <div className="summary-value">{formatNumber(memberEventSummary.unique_events_attended)}</div>
+                </div>
+                <div className="summary-card">
+                  <div className="summary-label">Avg Events per Member</div>
+                  <div className="summary-value">{memberEventSummary.avg_events_per_active_member || "—"}</div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {memberEventByLevel.length > 0 && (
+            <div className="data-section" style={{ marginBottom: "2rem" }}>
+              <div className="data-header"><h3>Event Signups by Membership Level</h3></div>
+              <ResponsiveContainer width="100%" height={280}>
+                <BarChart data={memberEventByLevel} margin={{ top: 10, right: 20, left: 0, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e5e5" />
+                  <XAxis dataKey="membership_level" tick={{ fontSize: 11 }} />
+                  <YAxis tick={{ fontSize: 11 }} />
+                  <Tooltip />
+                  <Bar dataKey="total_signups" name="Total Signups" radius={[2, 2, 0, 0]}>
+                    {memberEventByLevel.map((_, i) => <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />)}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+              <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap", marginTop: "1rem" }}>
+                {memberEventByLevel.map((l, i) => (
+                  <div key={l.membership_level} style={{ flex: 1, minWidth: 140, padding: "0.75rem", background: "var(--color-white)", border: "1px solid var(--color-border)", borderRadius: 4, textAlign: "center" }}>
+                    <div style={{ fontSize: "1.5rem", fontWeight: 600, color: CHART_COLORS[i % CHART_COLORS.length] }}>
+                      {formatNumber(l.total_signups)}
+                    </div>
+                    <div style={{ fontSize: "0.72rem", textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--color-gray-light)" }}>
+                      {l.membership_level}
+                    </div>
+                    <div style={{ fontSize: "0.8rem", color: "var(--color-gray)", marginTop: 4 }}>
+                      {formatNumber(l.total_members)} members · avg {l.avg_events_per_member || 0} events
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {memberEventData.length > 0 ? (
+            <div className="data-section">
+              <div className="data-header"><h3>Member Event Participation Details</h3></div>
+              <div className="table-container">
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>#</th><th>Name</th><th>Email</th><th>Membership Level</th>
+                      <th>Events Attended</th><th>Total Spots</th><th>Last Signup</th><th>Event Types</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {memberEventData.map((r, i) => {
+                      const lvl = LEVEL_COLORS[r.membership_level] || { bg: "#f3f4f6", color: "#374151" };
+                      return (
+                        <tr key={r.user_id}>
+                          <td style={{ fontWeight: 600, color: "var(--color-gold)" }}>{i + 1}</td>
+                          <td style={{ fontWeight: 500 }}>{r.full_name}</td>
+                          <td>{r.email}</td>
+                          <td>
+                            <span style={{ padding: "0.2rem 0.6rem", borderRadius: "999px", fontSize: "0.72rem", fontWeight: 600, background: lvl.bg, color: lvl.color }}>
+                              {r.membership_level}
+                            </span>
+                          </td>
+                          <td style={{ textAlign: "center", fontWeight: 600 }}>{r.total_events_attended || 0}</td>
+                          <td style={{ textAlign: "center" }}>{r.total_spots_reserved || 0}</td>
+                          <td>{r.last_event_signup ? formatDate(r.last_event_signup) : "—"}</td>
+                          <td style={{ fontSize: "0.78rem", color: "var(--color-gray-light)" }}>{r.event_types_attended || "No events yet"}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ) : (
+            <div className="no-results">No member event participation data found.</div>
           )}
         </>
       )}
