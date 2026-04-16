@@ -1,6 +1,6 @@
 // src/pages/Home.jsx
 import { useEffect, useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import "../styles/Home.css";
 
 const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
@@ -8,10 +8,11 @@ const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 export default function Home() {
   const [events,       setEvents]       = useState([]);
   const [loading,      setLoading]      = useState(true);
-  const [currentSlide, setCurrentSlide] = useState(0);
+  const [currentIndex, setCurrentIndex] = useState(0);
   const [toast,        setToast]        = useState(null);
 
   const location = useLocation();
+  const navigate = useNavigate();
 
   // Show success toast from checkout
   useEffect(() => {
@@ -32,20 +33,36 @@ export default function Home() {
       .catch(() => setLoading(false));
   }, []);
 
+  // Auto-scroll every 5 seconds
   useEffect(() => {
     if (events.length === 0) return;
     const interval = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % Math.ceil(events.length / 4));
+      setCurrentIndex((prev) => (prev + 1) % events.length);
     }, 5000);
     return () => clearInterval(interval);
   }, [events.length]);
 
-  const handlePrevSlide = () => {
-    setCurrentSlide((prev) => (prev - 1 + Math.ceil(events.length / 4)) % Math.ceil(events.length / 4));
+  const handlePrevEvent = () => {
+    setCurrentIndex((prev) => (prev - 1 + events.length) % events.length);
   };
 
-  const handleNextSlide = () => {
-    setCurrentSlide((prev) => (prev + 1) % Math.ceil(events.length / 4));
+  const handleNextEvent = () => {
+    setCurrentIndex((prev) => (prev + 1) % events.length);
+  };
+
+  const handleEventClick = (eventId) => {
+    navigate(`/events?event=${eventId}`);
+  };
+
+  // Get visible events (3 at a time starting from currentIndex)
+  const getVisibleEvents = () => {
+    if (events.length === 0) return [];
+    const visible = [];
+    for (let i = 0; i < 3; i++) {
+      const index = (currentIndex + i) % events.length;
+      visible.push(events[index]);
+    }
+    return visible;
   };
 
   function getEventIcon(name = "") {
@@ -62,6 +79,8 @@ export default function Home() {
     if (lower.includes("music") || lower.includes("evening") || lower.includes("solstice")) return "🎶";
     return "🎭";
   }
+
+  const visibleEvents = getVisibleEvents();
 
   return (
     <>
@@ -95,8 +114,7 @@ export default function Home() {
           <div className="hero-overlay"></div>
           <div className="hero-content">
             <h1 className="hero-title">
-              Museum of Fine Arts,
-              <span className="hero-subtitle">Houston</span>
+              Museum of Fine Arts, Houston
             </h1>
             <p className="hero-description">
               Discover masterpieces from around the world, immerse yourself in art history,
@@ -110,17 +128,22 @@ export default function Home() {
           <section className="events-section">
             <div className="section-header">
               <h2>Current & Upcoming Events</h2>
-              <p>Explore exhibitions, lectures, and special programs</p>
+              <p>Explore tours, lectures, and more</p>
             </div>
 
             <div className="carousel-container">
-              <button className="carousel-btn prev" onClick={handlePrevSlide} aria-label="Previous">
+              <button className="carousel-btn prev" onClick={handlePrevEvent} aria-label="Previous">
                 ‹
               </button>
 
               <div className="carousel-track">
-                {events.slice(currentSlide * 4, (currentSlide + 1) * 4).map((event) => (
-                  <div className="event-card" key={event.event_id}>
+                {visibleEvents.map((event) => (
+                  <div 
+                    className="event-card" 
+                    key={event.event_id}
+                    onClick={() => handleEventClick(event.event_id)}
+                    style={{ cursor: "pointer" }}
+                  >
                     <div className="event-card-image">
                       <div className="event-icon">{getEventIcon(event.event_name)}</div>
                     </div>
@@ -137,20 +160,12 @@ export default function Home() {
                 ))}
               </div>
 
-              <button className="carousel-btn next" onClick={handleNextSlide} aria-label="Next">
+              <button className="carousel-btn next" onClick={handleNextEvent} aria-label="Next">
                 ›
               </button>
             </div>
 
-            <div className="carousel-dots">
-              {[...Array(Math.ceil(events.length / 4))].map((_, idx) => (
-                <button
-                  key={idx}
-                  className={`dot ${currentSlide === idx ? "active" : ""}`}
-                  onClick={() => setCurrentSlide(idx)}
-                />
-              ))}
-            </div>
+            {/* REMOVED: carousel-dots section - page buttons removed */}
           </section>
         )}
 

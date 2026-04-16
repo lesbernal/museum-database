@@ -5,6 +5,7 @@ import { Link, useNavigate } from "react-router-dom";
 import {
   getMyProfile, updateMyProfile, changeMyPassword,
   getMyVisitorRecord, getMyTickets, getMyDonations,
+  getMyCafeTransactions, getMyGiftShopTransactions,
 } from "../services/api";
 import { PasswordInput, PhoneInput, StateSelect, ZipInput } from "../components/FormUtils";
 import "../styles/Dashboard.css";
@@ -14,6 +15,7 @@ const TABS = [
   { id: "profile",   label: "My Profile" },
   { id: "visits",    label: "Visit History" },
   { id: "purchases", label: "Purchase History" },
+  { id: "orders",    label: "Orders" },
   { id: "password",  label: "Change Password" },
 ];
 
@@ -58,12 +60,15 @@ export default function VisitorDashboard() {
   const [visitorRec, setVisitorRec] = useState(null);
   const [tickets,    setTickets]    = useState([]);
   const [donations,  setDonations]  = useState([]);
+  const [cafeOrders, setCafeOrders] = useState([]);
+  const [giftOrders, setGiftOrders] = useState([]);
   const [loading,    setLoading]    = useState(true);
   const [saving,     setSaving]     = useState(false);
   const [feedback,   setFeedback]   = useState(null);
   const [form,       setForm]       = useState({});
   const [pwForm,     setPwForm]     = useState({ new_password: "", confirm_password: "" });
   const [pwErrors,   setPwErrors]   = useState({});
+  const [ordersTab,  setOrdersTab]  = useState("giftshop");
 
   const notify = (msg, type = "success") => {
     setFeedback({ msg, type });
@@ -74,13 +79,16 @@ export default function VisitorDashboard() {
     async function load() {
       setLoading(true);
       try {
-        const [prof, vis, tix, don] = await Promise.allSettled([
+        const [prof, vis, tix, don, cafe, gift] = await Promise.allSettled([
           getMyProfile(), getMyVisitorRecord(), getMyTickets(), getMyDonations(),
+          getMyCafeTransactions(), getMyGiftShopTransactions(),
         ]);
         if (prof.status === "fulfilled") { setProfile(prof.value); setForm(prof.value); }
         if (vis.status  === "fulfilled") setVisitorRec(vis.value);
         if (tix.status  === "fulfilled") setTickets(Array.isArray(tix.value) ? tix.value : []);
         if (don.status  === "fulfilled") setDonations(Array.isArray(don.value) ? don.value : []);
+        if (cafe.status === "fulfilled") setCafeOrders(Array.isArray(cafe.value) ? cafe.value : []);
+        if (gift.status === "fulfilled") setGiftOrders(Array.isArray(gift.value) ? gift.value : []);
       } catch (e) { notify(e.message, "error"); }
       finally { setLoading(false); }
     }
@@ -166,6 +174,12 @@ export default function VisitorDashboard() {
   const sortedVisitDates = Object.keys(groupedTickets).sort().reverse();
   const ticketTotal = tickets.reduce((s, t) => s + parseFloat(t.final_price || 0), 0);
   const donationTotal = donations.reduce((s, d) => s + parseFloat(d.amount || 0), 0);
+  const sortedCafeOrders = [...cafeOrders].sort(
+    (a, b) => new Date(b.transaction_datetime || 0) - new Date(a.transaction_datetime || 0)
+  );
+  const sortedGiftOrders = [...giftOrders].sort(
+    (a, b) => new Date(b.transaction_datetime || 0) - new Date(a.transaction_datetime || 0)
+  );
 
   return (
     <div className="dashboard-page visitor-dashboard">
@@ -401,6 +415,99 @@ export default function VisitorDashboard() {
             )}
 
             {/* ── CHANGE PASSWORD TAB ── */}
+            {activeTab === "orders" && (
+              <div className="ss-card">
+                <h2 className="ss-section-title">Orders</h2>
+
+                <div className="ss-tabs" style={{ marginBottom: 20 }}>
+                  <button
+                    className={`ss-tab ${ordersTab === "giftshop" ? "active" : ""}`}
+                    onClick={() => setOrdersTab("giftshop")}
+                  >
+                    Gift Shop
+                  </button>
+                  <button
+                    className={`ss-tab ${ordersTab === "cafe" ? "active" : ""}`}
+                    onClick={() => setOrdersTab("cafe")}
+                  >
+                    Cafe
+                  </button>
+                </div>
+
+                {ordersTab === "giftshop" && (
+                  <>
+                    <h3 style={{ fontSize: 13, fontWeight: 600, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 12 }}>
+                      Gift Shop Orders
+                    </h3>
+                    {sortedGiftOrders.length === 0 ? (
+                      <div className="ss-empty">
+                        No gift shop orders yet.{" "}
+                        <Link to="/gift-shop" style={{ color: "#c9a84c" }}>Visit the gift shop</Link>
+                      </div>
+                    ) : (
+                      <div style={{ border: "1px solid #e5e7eb", overflowX: "auto", marginBottom: 12 }}>
+                        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+                          <thead>
+                            <tr style={{ background: "#f9fafb", borderBottom: "1px solid #e5e7eb" }}>
+                              {["Order Date", "Order ID", "Payment", "Total"].map((h) => (
+                                <th key={h} style={{ padding: "0.625rem 1rem", textAlign: h === "Total" ? "right" : "left", color: "#6b7280", fontWeight: 600, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.07em" }}>{h}</th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {sortedGiftOrders.map((order, i) => (
+                              <tr key={order.transaction_id} style={{ borderBottom: i < sortedGiftOrders.length - 1 ? "1px solid #f3f4f6" : "none" }}>
+                                <td style={{ padding: "0.625rem 1rem", color: "#374151" }}>{fmt(order.transaction_datetime)}</td>
+                                <td style={{ padding: "0.625rem 1rem", color: "#374151" }}>#{order.transaction_id}</td>
+                                <td style={{ padding: "0.625rem 1rem", color: "#374151" }}>{order.payment_method || "—"}</td>
+                                <td style={{ padding: "0.625rem 1rem", color: "#374151", textAlign: "right" }}>${parseFloat(order.total_amount || 0).toFixed(2)}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </>
+                )}
+
+                {ordersTab === "cafe" && (
+                  <>
+                    <h3 style={{ fontSize: 13, fontWeight: 600, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 12 }}>
+                      Cafe Orders
+                    </h3>
+                    {sortedCafeOrders.length === 0 ? (
+                      <div className="ss-empty">
+                        No cafe orders yet.{" "}
+                        <Link to="/cafe" style={{ color: "#c9a84c" }}>Visit the cafe</Link>
+                      </div>
+                    ) : (
+                      <div style={{ border: "1px solid #e5e7eb", overflowX: "auto" }}>
+                        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+                          <thead>
+                            <tr style={{ background: "#f9fafb", borderBottom: "1px solid #e5e7eb" }}>
+                              {["Order Date", "Order ID", "Payment", "Total"].map((h) => (
+                                <th key={h} style={{ padding: "0.625rem 1rem", textAlign: h === "Total" ? "right" : "left", color: "#6b7280", fontWeight: 600, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.07em" }}>{h}</th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {sortedCafeOrders.map((order, i) => (
+                              <tr key={order.cafe_transaction_id} style={{ borderBottom: i < sortedCafeOrders.length - 1 ? "1px solid #f3f4f6" : "none" }}>
+                                <td style={{ padding: "0.625rem 1rem", color: "#374151" }}>{fmt(order.transaction_datetime)}</td>
+                                <td style={{ padding: "0.625rem 1rem", color: "#374151" }}>#{order.cafe_transaction_id}</td>
+                                <td style={{ padding: "0.625rem 1rem", color: "#374151" }}>{order.payment_method || "—"}</td>
+                                <td style={{ padding: "0.625rem 1rem", color: "#374151", textAlign: "right" }}>${parseFloat(order.total_amount || 0).toFixed(2)}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            )}
+
             {activeTab === "password" && (
               <div className="ss-card" style={{ maxWidth: 420 }}>
                 <h2 className="ss-section-title">Change Password</h2>

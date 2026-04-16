@@ -1,0 +1,106 @@
+/* EmployeeDashboard.css */
+
+.emp-edit-btn {
+  padding: 4px 12px;
+  background: #c9a84c;
+  color: #000;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.emp-edit-btn:hover {
+  background: #b8943a;
+}
+
+.emp-note {
+  margin-top: 16px;
+  padding: 8px 12px;
+  background: #fef3c7;
+  border-left: 3px solid #c9a84c;
+  font-size: 12px;
+  color: #92400e;
+}
+
+.emp-manager-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  margin-bottom: 20px;
+  background: #1e3a5f;
+  color: #a8d4f0;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  border: 1px solid #4a7fa5;
+}
+
+.member-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.member-renew-btn {
+  padding: 4px 10px;
+  background: #2563eb;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 11px;
+}
+
+.member-upgrade-btn {
+  padding: 4px 10px;
+  background: #16a34a;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 11px;
+}
+
+.member-downgrade-btn {
+  padding: 4px 10px;
+  background: #ea580c;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 11px;
+}
+
+.member-cancel-btn {
+  padding: 4px 10px;
+  background: #dc2626;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 11px;
+}
+
+.member-renew-btn:hover { background: #1d4ed8; }
+.member-upgrade-btn:hover { background: #15803d; }
+.member-downgrade-btn:hover { background: #c2410c; }
+.member-cancel-btn:hover { background: #b91c1c; }
+
+.member-manage-btn {
+  padding: 4px 12px;
+  background: #c9a84c;
+  color: #000;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.member-manage-btn:hover {
+  background: #b8943a;
+  transform: translateY(-1px);
+}
