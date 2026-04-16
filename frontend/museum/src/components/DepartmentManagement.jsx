@@ -103,6 +103,16 @@ const DepartmentManagement = forwardRef(function DepartmentManagement({ searchTe
     <div className="um-wrap">
       {feedback && <div className={`um-feedback ${feedback.type}`}>{feedback.msg}</div>}
 
+      {/* Add this header */}
+      <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "1rem" }}>
+        <button
+          className="um-add-btn"
+          onClick={() => { setForm({}); setModal("add"); }}
+        >
+          + Add Department
+        </button>
+      </div>
+
       <div className="um-table-container">
         {loading ? (
           <div className="um-empty">Loading…</div>
