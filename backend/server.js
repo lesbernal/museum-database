@@ -27,6 +27,7 @@ const handleBuildings = require("./handlers/buildings");
 const handleLogin = require("./handlers/auth");
 const handleReports = require("./handlers/reports");
 const handleMembershipTransactions = require("./handlers/membershiptransactions");
+const membershipExpiryCheck = require("./handlers/membershipExpiryCheck");
 
 const server = http.createServer((req, res) => {
   // Enable CORS
@@ -87,6 +88,10 @@ const server = http.createServer((req, res) => {
   // Membership Transactions — must be BEFORE /members
   if (parsedUrl.pathname.startsWith("/membershiptransactions")) {
     return handleMembershipTransactions(req, res, parsedUrl);
+  }
+
+  if (parsedUrl.pathname === "/check-membership-expiry") {
+    return membershipExpiryCheck(req, res);
   }
 
   // Tickets, Events, Donations
