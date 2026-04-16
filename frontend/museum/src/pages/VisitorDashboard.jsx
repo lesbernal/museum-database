@@ -5,18 +5,16 @@ import { Link, useNavigate } from "react-router-dom";
 import {
   getMyProfile, updateMyProfile, changeMyPassword,
   getMyVisitorRecord, getMyTickets, getMyDonations,
-  getMyCafeTransactions, getMyGiftShopTransactions,
 } from "../services/api";
 import { PasswordInput, PhoneInput, StateSelect, ZipInput } from "../components/FormUtils";
 import "../styles/Dashboard.css";
 import "../styles/SelfService.css";
 
 const TABS = [
-  { id: "profile",   label: "My Profile" },
-  { id: "visits",    label: "Visit History" },
+  { id: "profile",   label: "My Profile"      },
+  { id: "visits",    label: "Visit History"    },
   { id: "purchases", label: "Purchase History" },
-  { id: "orders",    label: "Orders" },
-  { id: "password",  label: "Change Password" },
+  { id: "password",  label: "Change Password"  },
 ];
 
 const fmt = dateStr => {
@@ -25,17 +23,16 @@ const fmt = dateStr => {
     .toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
 };
 
-// Validate and block save if required fields are blank/invalid
 function validateProfile(form) {
   const required = [
-    { key: "first_name",     label: "First name",     maxLen: 50,  lettersOnly: true  },
-    { key: "last_name",      label: "Last name",       maxLen: 50,  lettersOnly: true  },
-    { key: "email",          label: "Email",           maxLen: 255, lettersOnly: false },
-    { key: "phone_number",   label: "Phone number",    maxLen: 14,  lettersOnly: false },
-    { key: "street_address", label: "Street address",  maxLen: 50,  lettersOnly: false },
-    { key: "city",           label: "City",            maxLen: 30,  lettersOnly: false },
-    { key: "state",          label: "State",           maxLen: 2,   lettersOnly: false },
-    { key: "zip_code",       label: "Zip code",        maxLen: 5,   lettersOnly: false },
+    { key: "first_name",     label: "First name",    maxLen: 50,  lettersOnly: true  },
+    { key: "last_name",      label: "Last name",      maxLen: 50,  lettersOnly: true  },
+    { key: "email",          label: "Email",          maxLen: 255, lettersOnly: false },
+    { key: "phone_number",   label: "Phone number",   maxLen: 14,  lettersOnly: false },
+    { key: "street_address", label: "Street address", maxLen: 50,  lettersOnly: false },
+    { key: "city",           label: "City",           maxLen: 30,  lettersOnly: false },
+    { key: "state",          label: "State",          maxLen: 2,   lettersOnly: false },
+    { key: "zip_code",       label: "Zip code",       maxLen: 5,   lettersOnly: false },
   ];
   for (const f of required) {
     const val = (form[f.key] || "").trim();
@@ -55,20 +52,18 @@ export default function VisitorDashboard() {
   const userEmail   = localStorage.getItem("user_email") || "";
   const displayName = userEmail.split("@")[0];
 
-  const [activeTab,  setActiveTab]  = useState("profile");
-  const [profile,    setProfile]    = useState(null);
-  const [visitorRec, setVisitorRec] = useState(null);
-  const [tickets,    setTickets]    = useState([]);
-  const [donations,  setDonations]  = useState([]);
-  const [cafeOrders, setCafeOrders] = useState([]);
-  const [giftOrders, setGiftOrders] = useState([]);
-  const [loading,    setLoading]    = useState(true);
-  const [saving,     setSaving]     = useState(false);
-  const [feedback,   setFeedback]   = useState(null);
-  const [form,       setForm]       = useState({});
-  const [pwForm,     setPwForm]     = useState({ new_password: "", confirm_password: "" });
-  const [pwErrors,   setPwErrors]   = useState({});
-  const [ordersTab,  setOrdersTab]  = useState("giftshop");
+  const [activeTab,     setActiveTab]     = useState("profile");
+  const [profile,       setProfile]       = useState(null);
+  const [visitorRec,    setVisitorRec]    = useState(null);
+  const [tickets,       setTickets]       = useState([]);
+  const [donations,     setDonations]     = useState([]);
+  const [loading,       setLoading]       = useState(true);
+  const [saving,        setSaving]        = useState(false);
+  const [feedback,      setFeedback]      = useState(null);
+  const [form,          setForm]          = useState({});
+  const [pwForm,        setPwForm]        = useState({ new_password: "", confirm_password: "" });
+  const [pwErrors,      setPwErrors]      = useState({});
+  const [expandedDates, setExpandedDates] = useState({});
 
   const notify = (msg, type = "success") => {
     setFeedback({ msg, type });
@@ -79,23 +74,19 @@ export default function VisitorDashboard() {
     async function load() {
       setLoading(true);
       try {
-        const [prof, vis, tix, don, cafe, gift] = await Promise.allSettled([
+        const [prof, vis, tix, don] = await Promise.allSettled([
           getMyProfile(), getMyVisitorRecord(), getMyTickets(), getMyDonations(),
-          getMyCafeTransactions(), getMyGiftShopTransactions(),
         ]);
         if (prof.status === "fulfilled") { setProfile(prof.value); setForm(prof.value); }
         if (vis.status  === "fulfilled") setVisitorRec(vis.value);
         if (tix.status  === "fulfilled") setTickets(Array.isArray(tix.value) ? tix.value : []);
         if (don.status  === "fulfilled") setDonations(Array.isArray(don.value) ? don.value : []);
-        if (cafe.status === "fulfilled") setCafeOrders(Array.isArray(cafe.value) ? cafe.value : []);
-        if (gift.status === "fulfilled") setGiftOrders(Array.isArray(gift.value) ? gift.value : []);
       } catch (e) { notify(e.message, "error"); }
       finally { setLoading(false); }
     }
     load();
   }, []);
 
-  // Update visitor record based on tickets whose visit_date <= today
   useEffect(() => {
     if (!visitorRec || tickets.length === 0) return;
     const today = new Date().toISOString().slice(0, 10);
@@ -105,8 +96,7 @@ export default function VisitorDashboard() {
     if (completedVisits.length !== visitorRec.total_visits) {
       const latestVisit = completedVisits
         .map(t => String(t.visit_date).slice(0, 10))
-        .sort()
-        .reverse()[0];
+        .sort().reverse()[0];
       setVisitorRec(prev => ({
         ...prev,
         total_visits: completedVisits.length,
@@ -164,22 +154,19 @@ export default function VisitorDashboard() {
     finally { setSaving(false); }
   }
 
-  // Group tickets by visit date for cleaner display
-  const groupedTickets = tickets.reduce((acc, t) => {
+  function toggleDate(date) {
+    setExpandedDates(prev => ({ ...prev, [date]: !prev[date] }));
+  }
+
+  const groupedTickets   = tickets.reduce((acc, t) => {
     const key = String(t.visit_date).slice(0, 10);
     if (!acc[key]) acc[key] = [];
     acc[key].push(t);
     return acc;
   }, {});
   const sortedVisitDates = Object.keys(groupedTickets).sort().reverse();
-  const ticketTotal = tickets.reduce((s, t) => s + parseFloat(t.final_price || 0), 0);
-  const donationTotal = donations.reduce((s, d) => s + parseFloat(d.amount || 0), 0);
-  const sortedCafeOrders = [...cafeOrders].sort(
-    (a, b) => new Date(b.transaction_datetime || 0) - new Date(a.transaction_datetime || 0)
-  );
-  const sortedGiftOrders = [...giftOrders].sort(
-    (a, b) => new Date(b.transaction_datetime || 0) - new Date(a.transaction_datetime || 0)
-  );
+  const ticketTotal      = tickets.reduce((s, t) => s + parseFloat(t.final_price || 0), 0);
+  const donationTotal    = donations.reduce((s, d) => s + parseFloat(d.amount || 0), 0);
 
   return (
     <div className="dashboard-page visitor-dashboard">
@@ -190,7 +177,7 @@ export default function VisitorDashboard() {
           <h1>Welcome, {profile?.first_name || displayName}</h1>
           <p>Manage your account and explore your museum history.</p>
           <div className="dashboard-hero-actions">
-            <Link to="/" className="dashboard-back-btn">← Back to Home</Link>
+            <Link to="/" className="dashboard-back-btn">Back to Home</Link>
             <button className="dashboard-logout-btn" onClick={handleLogout}>Sign Out</button>
           </div>
         </div>
@@ -201,14 +188,14 @@ export default function VisitorDashboard() {
           {TABS.map(t => (
             <button key={t.id} className={`ss-tab ${activeTab === t.id ? "active" : ""}`}
               onClick={() => setActiveTab(t.id)}>
-              <span>{t.icon}</span> {t.label}
+              {t.label}
             </button>
           ))}
         </div>
 
         {feedback && <div className={`ss-feedback ${feedback.type}`}>{feedback.msg}</div>}
 
-        {loading ? <div className="ss-loading">Loading your information…</div> : (
+        {loading ? <div className="ss-loading">Loading your information...</div> : (
           <>
             {/* ── PROFILE TAB ── */}
             {activeTab === "profile" && (
@@ -255,7 +242,7 @@ export default function VisitorDashboard() {
                   </div>
                   <div className="ss-form-actions">
                     <button type="submit" className="ss-btn ss-btn-primary" disabled={saving}>
-                      {saving ? "Saving…" : "Save Changes"}
+                      {saving ? "Saving..." : "Save Changes"}
                     </button>
                   </div>
                 </form>
@@ -294,11 +281,11 @@ export default function VisitorDashboard() {
                             </thead>
                             <tbody>
                               {sortedVisitDates.map((date, i) => {
-                                const group = groupedTickets[date];
-                                const total = group.reduce((s, t) => s + parseFloat(t.final_price || 0), 0);
-                                const today = new Date().toISOString().slice(0, 10);
+                                const group  = groupedTickets[date];
+                                const total  = group.reduce((s, t) => s + parseFloat(t.final_price || 0), 0);
+                                const today  = new Date().toISOString().slice(0, 10);
                                 const status = date < today ? "Visited" : date === today ? "Today" : "Upcoming";
-                                const statusColor = status === "Visited" ? "#6b7280" : status === "Today" ? "#c9a84c" : "#1a5276";
+                                const statusColor = { Visited: "#6b7280", Today: "#c9a84c", Upcoming: "#1a5276" }[status];
                                 return (
                                   <tr key={date} style={{ borderBottom: i < sortedVisitDates.length - 1 ? "1px solid #f3f4f6" : "none" }}>
                                     <td style={{ padding: "0.625rem 1rem", color: "#374151", fontWeight: 500 }}>{fmt(date)}</td>
@@ -325,7 +312,6 @@ export default function VisitorDashboard() {
               <div className="ss-card">
                 <h2 className="ss-section-title">Purchase History</h2>
 
-                {/* Tickets — grouped by visit date */}
                 <h3 style={{ fontSize: 13, fontWeight: 600, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 12 }}>
                   Tickets
                 </h3>
@@ -335,45 +321,69 @@ export default function VisitorDashboard() {
                     <Link to="/tickets" style={{ color: "#c9a84c" }}>Buy tickets</Link>
                   </div>
                 ) : (
-                  <div style={{ border: "1px solid #e5e7eb", overflowX: "auto", marginBottom: 32 }}>
-                    <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
-                      <thead>
-                        <tr style={{ background: "#f9fafb", borderBottom: "1px solid #e5e7eb" }}>
-                          {["Visit Date","Tickets","Types","Total","Payment"].map(h => (
-                            <th key={h} style={{ padding: "0.625rem 1rem", textAlign: h === "Total" ? "right" : "left", color: "#6b7280", fontWeight: 600, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.07em" }}>{h}</th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {sortedVisitDates.map((date, i) => {
-                          const group = groupedTickets[date];
-                          const total = group.reduce((s, t) => s + parseFloat(t.final_price || 0), 0);
-                          const types = [...new Set(group.map(t => t.ticket_type))].join(", ");
-                          return (
-                            <tr key={date} style={{ borderBottom: i < sortedVisitDates.length - 1 ? "1px solid #f3f4f6" : "none" }}>
-                              <td style={{ padding: "0.625rem 1rem", color: "#374151" }}>{fmt(date)}</td>
-                              <td style={{ padding: "0.625rem 1rem", color: "#374151" }}>{group.length}</td>
-                              <td style={{ padding: "0.625rem 1rem", color: "#374151" }}>{types}</td>
-                              <td style={{ padding: "0.625rem 1rem", color: "#374151", textAlign: "right" }}>${total.toFixed(2)}</td>
-                              <td style={{ padding: "0.625rem 1rem", color: "#374151" }}>{group[0]?.payment_method || "—"}</td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                      <tfoot>
-                        <tr style={{ background: "#f9fafb", borderTop: "1px solid #e5e7eb" }}>
-                          <td colSpan={3} style={{ padding: "0.625rem 1rem", fontWeight: 600, fontSize: 12, color: "#374151" }}>
-                            {tickets.length} ticket{tickets.length !== 1 ? "s" : ""} across {sortedVisitDates.length} visit{sortedVisitDates.length !== 1 ? "s" : ""}
-                          </td>
-                          <td style={{ padding: "0.625rem 1rem", fontWeight: 600, fontSize: 12, color: "#374151", textAlign: "right" }}>${ticketTotal.toFixed(2)}</td>
-                          <td />
-                        </tr>
-                      </tfoot>
-                    </table>
-                  </div>
+                  <>
+                    <p style={{ fontSize: 12, color: "#9ca3af", marginBottom: 8 }}>Click a row to see individual tickets.</p>
+                    <div style={{ border: "1px solid #e5e7eb", overflowX: "auto", marginBottom: 32 }}>
+                      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+                        <thead>
+                          <tr style={{ background: "#f9fafb", borderBottom: "1px solid #e5e7eb" }}>
+                            {["","Visit Date","Tickets","Types","Total","Payment"].map(h => (
+                              <th key={h} style={{ padding: "0.625rem 1rem", textAlign: h === "Total" ? "right" : "left", color: "#6b7280", fontWeight: 600, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.07em", width: h === "" ? 32 : "auto" }}>{h}</th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {sortedVisitDates.map((date, i) => {
+                            const group    = groupedTickets[date];
+                            const total    = group.reduce((s, t) => s + parseFloat(t.final_price || 0), 0);
+                            const types    = [...new Set(group.map(t => t.ticket_type))].join(", ");
+                            const expanded = !!expandedDates[date];
+                            return (
+                              <>
+                                <tr key={date}
+                                  style={{ borderBottom: expanded ? "none" : i < sortedVisitDates.length - 1 ? "1px solid #f3f4f6" : "none", background: expanded ? "#fafaf9" : "transparent", cursor: "pointer" }}
+                                  onClick={() => toggleDate(date)}>
+                                  <td style={{ padding: "0.625rem 0.5rem 0.625rem 1rem", color: "#9ca3af", fontSize: 11 }}>
+                                    {expanded ? "▾" : "▸"}
+                                  </td>
+                                  <td style={{ padding: "0.625rem 1rem", color: "#374151", fontWeight: 500 }}>{fmt(date)}</td>
+                                  <td style={{ padding: "0.625rem 1rem", color: "#374151" }}>{group.length}</td>
+                                  <td style={{ padding: "0.625rem 1rem", color: "#374151" }}>{types}</td>
+                                  <td style={{ padding: "0.625rem 1rem", color: "#374151", textAlign: "right" }}>${total.toFixed(2)}</td>
+                                  <td style={{ padding: "0.625rem 1rem", color: "#374151" }}>{group[0]?.payment_method || "—"}</td>
+                                </tr>
+                                {expanded && group.map((t, j) => (
+                                  <tr key={t.ticket_id} style={{
+                                    background: "#f9fafb",
+                                    borderBottom: j < group.length - 1 ? "1px solid #f0f0ee" : i < sortedVisitDates.length - 1 ? "1px solid #e5e7eb" : "none",
+                                  }}>
+                                    <td />
+                                    <td style={{ padding: "0.5rem 1rem 0.5rem 2rem", color: "#6b7280", fontSize: 12 }}>Ticket #{t.ticket_id}</td>
+                                    <td style={{ padding: "0.5rem 1rem", color: "#6b7280", fontSize: 12 }}>{t.ticket_type}</td>
+                                    <td style={{ padding: "0.5rem 1rem", color: "#6b7280", fontSize: 12 }}>{t.discount_type || "None"}</td>
+                                    <td style={{ padding: "0.5rem 1rem", color: "#6b7280", fontSize: 12, textAlign: "right" }}>${parseFloat(t.final_price || 0).toFixed(2)}</td>
+                                    <td />
+                                  </tr>
+                                ))}
+                              </>
+                            );
+                          })}
+                        </tbody>
+                        <tfoot>
+                          <tr style={{ background: "#f9fafb", borderTop: "1px solid #e5e7eb" }}>
+                            <td />
+                            <td colSpan={3} style={{ padding: "0.625rem 1rem", fontWeight: 600, fontSize: 12, color: "#374151" }}>
+                              {tickets.length} ticket{tickets.length !== 1 ? "s" : ""} across {sortedVisitDates.length} visit{sortedVisitDates.length !== 1 ? "s" : ""}
+                            </td>
+                            <td style={{ padding: "0.625rem 1rem", fontWeight: 600, fontSize: 12, color: "#374151", textAlign: "right" }}>${ticketTotal.toFixed(2)}</td>
+                            <td />
+                          </tr>
+                        </tfoot>
+                      </table>
+                    </div>
+                  </>
                 )}
 
-                {/* Donations */}
                 <h3 style={{ fontSize: 13, fontWeight: 600, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 12 }}>
                   Donations
                 </h3>
@@ -414,99 +424,6 @@ export default function VisitorDashboard() {
             )}
 
             {/* ── CHANGE PASSWORD TAB ── */}
-            {activeTab === "orders" && (
-              <div className="ss-card">
-                <h2 className="ss-section-title">Orders</h2>
-
-                <div className="ss-tabs" style={{ marginBottom: 20 }}>
-                  <button
-                    className={`ss-tab ${ordersTab === "giftshop" ? "active" : ""}`}
-                    onClick={() => setOrdersTab("giftshop")}
-                  >
-                    Gift Shop
-                  </button>
-                  <button
-                    className={`ss-tab ${ordersTab === "cafe" ? "active" : ""}`}
-                    onClick={() => setOrdersTab("cafe")}
-                  >
-                    Cafe
-                  </button>
-                </div>
-
-                {ordersTab === "giftshop" && (
-                  <>
-                    <h3 style={{ fontSize: 13, fontWeight: 600, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 12 }}>
-                      Gift Shop Orders
-                    </h3>
-                    {sortedGiftOrders.length === 0 ? (
-                      <div className="ss-empty">
-                        No gift shop orders yet.{" "}
-                        <Link to="/gift-shop" style={{ color: "#c9a84c" }}>Visit the gift shop</Link>
-                      </div>
-                    ) : (
-                      <div style={{ border: "1px solid #e5e7eb", overflowX: "auto", marginBottom: 12 }}>
-                        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
-                          <thead>
-                            <tr style={{ background: "#f9fafb", borderBottom: "1px solid #e5e7eb" }}>
-                              {["Order Date", "Order ID", "Payment", "Total"].map((h) => (
-                                <th key={h} style={{ padding: "0.625rem 1rem", textAlign: h === "Total" ? "right" : "left", color: "#6b7280", fontWeight: 600, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.07em" }}>{h}</th>
-                              ))}
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {sortedGiftOrders.map((order, i) => (
-                              <tr key={order.transaction_id} style={{ borderBottom: i < sortedGiftOrders.length - 1 ? "1px solid #f3f4f6" : "none" }}>
-                                <td style={{ padding: "0.625rem 1rem", color: "#374151" }}>{fmt(order.transaction_datetime)}</td>
-                                <td style={{ padding: "0.625rem 1rem", color: "#374151" }}>#{order.transaction_id}</td>
-                                <td style={{ padding: "0.625rem 1rem", color: "#374151" }}>{order.payment_method || "—"}</td>
-                                <td style={{ padding: "0.625rem 1rem", color: "#374151", textAlign: "right" }}>${parseFloat(order.total_amount || 0).toFixed(2)}</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    )}
-                  </>
-                )}
-
-                {ordersTab === "cafe" && (
-                  <>
-                    <h3 style={{ fontSize: 13, fontWeight: 600, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 12 }}>
-                      Cafe Orders
-                    </h3>
-                    {sortedCafeOrders.length === 0 ? (
-                      <div className="ss-empty">
-                        No cafe orders yet.{" "}
-                        <Link to="/cafe" style={{ color: "#c9a84c" }}>Visit the cafe</Link>
-                      </div>
-                    ) : (
-                      <div style={{ border: "1px solid #e5e7eb", overflowX: "auto" }}>
-                        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
-                          <thead>
-                            <tr style={{ background: "#f9fafb", borderBottom: "1px solid #e5e7eb" }}>
-                              {["Order Date", "Order ID", "Payment", "Total"].map((h) => (
-                                <th key={h} style={{ padding: "0.625rem 1rem", textAlign: h === "Total" ? "right" : "left", color: "#6b7280", fontWeight: 600, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.07em" }}>{h}</th>
-                              ))}
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {sortedCafeOrders.map((order, i) => (
-                              <tr key={order.cafe_transaction_id} style={{ borderBottom: i < sortedCafeOrders.length - 1 ? "1px solid #f3f4f6" : "none" }}>
-                                <td style={{ padding: "0.625rem 1rem", color: "#374151" }}>{fmt(order.transaction_datetime)}</td>
-                                <td style={{ padding: "0.625rem 1rem", color: "#374151" }}>#{order.cafe_transaction_id}</td>
-                                <td style={{ padding: "0.625rem 1rem", color: "#374151" }}>{order.payment_method || "—"}</td>
-                                <td style={{ padding: "0.625rem 1rem", color: "#374151", textAlign: "right" }}>${parseFloat(order.total_amount || 0).toFixed(2)}</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    )}
-                  </>
-                )}
-              </div>
-            )}
-
             {activeTab === "password" && (
               <div className="ss-card" style={{ maxWidth: 420 }}>
                 <h2 className="ss-section-title">Change Password</h2>
@@ -529,7 +446,7 @@ export default function VisitorDashboard() {
                   </div>
                   <div className="ss-form-actions">
                     <button type="submit" className="ss-btn ss-btn-primary" disabled={saving}>
-                      {saving ? "Updating…" : "Update Password"}
+                      {saving ? "Updating..." : "Update Password"}
                     </button>
                   </div>
                 </form>
