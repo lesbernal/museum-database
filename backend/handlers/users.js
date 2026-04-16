@@ -35,12 +35,12 @@ module.exports = (req, res, parsedUrl) => {
   console.log("URL parts:", urlParts);
 
   // Allow public signup — POST /users requires no token
-  if(req.method === "POST" && urlParts.length === 1) {
-  // falls through to the POST handler below — no auth needed
+  if (req.method === "POST" && urlParts.length === 1) {
+    // falls through to POST handler below — no auth needed
   } else if (!user || (!isPrivileged && !isSelfLookup && !isSelfUpdate)) {
-  console.log("Access denied - user:", user, "isPrivileged:", isPrivileged);
-  res.writeHead(403, { "Content-Type": "application/json" });
-  return res.end(JSON.stringify({ error: "Forbidden: insufficient permissions" }));
+    console.log("Access denied - user:", user, "isPrivileged:", isPrivileged);
+    res.writeHead(403, { "Content-Type": "application/json" });
+    return res.end(JSON.stringify({ error: "Forbidden: insufficient permissions" }));
   }
 
   // ============================ USERS ============================
@@ -69,7 +69,7 @@ module.exports = (req, res, parsedUrl) => {
     );
   }
 
-  // POST user
+  // POST user (public signup — no auth required)
   else if (req.method === "POST") {
     parseBody(req, data => {
       const sql = `
@@ -107,36 +107,12 @@ module.exports = (req, res, parsedUrl) => {
     parseBody(req, data => {
 
       if (isPrivileged) {
-        // ── Admin / employee: can update role too ──────────────────────────
+        // ── Admin / employee: can update role + date_of_birth ─────────────
         const sql = `
           UPDATE user SET
           first_name=?, last_name=?, email=?, phone_number=?,
           street_address=?, city=?, state=?, zip_code=?,
-          role=?
-          WHERE user_id=?
-        `;
-        db.query(sql, [
-          data.first_name     || "",
-          data.last_name      || "",
-          data.email          || "",
-          data.phone_number   || "",
-          data.street_address || "",
-          data.city           || "",
-          data.state          || "",
-          data.zip_code       || "",
-          data.role           || "visitor",
-          urlParts[1]
-        ], err => {
-          if (err) return sendError(res, err);
-          sendJSON(res, { message: "User updated" });
-        });
-
-      } else {
-        // ── Self-update: personal info only, role stays unchanged ──────────
-        const sql = `
-          UPDATE user SET
-          first_name=?, last_name=?, email=?, phone_number=?,
-          street_address=?, city=?, state=?, zip_code=?, date_of_birth=?
+          date_of_birth=?, role=?
           WHERE user_id=?
         `;
         db.query(sql, [
@@ -149,11 +125,60 @@ module.exports = (req, res, parsedUrl) => {
           data.state          || "",
           data.zip_code       || "",
           data.date_of_birth  || null,
+          data.role           || "visitor",
           urlParts[1]
         ], err => {
           if (err) return sendError(res, err);
           sendJSON(res, { message: "User updated" });
         });
+
+      } else {
+        // ── Self-update: fetch current values first so no field gets
+        //    accidentally nulled (fixes password change wiping date_of_birth)
+        db.query(
+          "SELECT * FROM user WHERE user_id = ?",
+          [urlParts[1]],
+          (err, rows) => {
+            if (err) return sendError(res, err);
+            const current = rows[0] || {};
+
+            // Build SQL dynamically — include password only if provided
+            const hasPassword = data.password && data.password.length > 0;
+
+            const sql = hasPassword
+              ? `UPDATE user SET
+                 first_name=?, last_name=?, email=?, phone_number=?,
+                 street_address=?, city=?, state=?, zip_code=?,
+                 date_of_birth=?, password=?
+                 WHERE user_id=?`
+              : `UPDATE user SET
+                 first_name=?, last_name=?, email=?, phone_number=?,
+                 street_address=?, city=?, state=?, zip_code=?,
+                 date_of_birth=?
+                 WHERE user_id=?`;
+
+            // Use incoming value if provided, otherwise keep existing DB value
+            const values = [
+              data.first_name     !== undefined ? data.first_name     : current.first_name,
+              data.last_name      !== undefined ? data.last_name      : current.last_name,
+              data.email          !== undefined ? data.email          : current.email,
+              data.phone_number   !== undefined ? data.phone_number   : current.phone_number,
+              data.street_address !== undefined ? data.street_address : current.street_address,
+              data.city           !== undefined ? data.city           : current.city,
+              data.state          !== undefined ? data.state          : current.state,
+              data.zip_code       !== undefined ? data.zip_code       : current.zip_code,
+              data.date_of_birth  !== undefined ? data.date_of_birth  : current.date_of_birth,
+            ];
+
+            if (hasPassword) values.push(data.password);
+            values.push(urlParts[1]);
+
+            db.query(sql, values, err => {
+              if (err) return sendError(res, err);
+              sendJSON(res, { message: "User updated" });
+            });
+          }
+        );
       }
     });
   }
