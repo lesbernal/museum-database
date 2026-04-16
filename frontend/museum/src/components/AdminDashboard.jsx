@@ -35,6 +35,9 @@ export default function AdminDashboard() {
   const [showGalleryArchive, setShowGalleryArchive] = useState(false);
   const [showArtworkArchive, setShowArtworkArchive] = useState(false);
   const [showEventArchive, setShowEventArchive] = useState(false);
+  const [endedEvents, setEndedEvents] = useState([]);
+  const [showEndedExhibitions, setShowEndedExhibitions] = useState(true);
+  const [showEndedEvents, setShowEndedEvents] = useState(true);
 
   // Data
   const [artists, setArtists] = useState([]);
@@ -153,8 +156,14 @@ export default function AdminDashboard() {
     catch (err) { setGalleriesError("Failed to load galleries"); console.error(err); }
   };
   const loadEvents = async () => {
-    try { const data = await getEvents(); setEvents(data); setEventsError(""); }
-    catch (err) { setEventsError("Failed to load events"); console.error(err); }
+    try {
+      const data = await getEvents();
+      setEvents(data);
+      setEventsError("");
+      const now = new Date();
+      const ended = data.filter(e => new Date(e.event_date) < now);
+      setEndedEvents(ended);
+    } catch (err) { setEventsError("Failed to load events"); console.error(err); }
   };
   const loadStockAlerts = async () => {
     try {
@@ -442,39 +451,55 @@ export default function AdminDashboard() {
 
   return (
     <>
-      {showStockToast && stockAlerts.length > 0 && (
-        <div className="dashboard-stock-toast">
-          <div className="dashboard-stock-toast-content">
-            <div className="dashboard-stock-toast-title">
-              Inventory alerts
+      <div className="dashboard-toasts-stack">
+        {showStockToast && stockAlerts.length > 0 && (
+          <div className="dashboard-stock-toast">
+            <div className="dashboard-stock-toast-content">
+              <div className="dashboard-stock-toast-title">Inventory Alerts</div>
+              <div className="dashboard-stock-toast-list">
+                {stockAlerts.map((alert) => (
+                  <div key={`${alert.source}-${alert.name}`} className="dashboard-stock-toast-item">
+                    <strong>{alert.name}</strong> in <strong>{alert.source}</strong> is at <strong>{alert.stock}</strong>.
+                  </div>
+                ))}
+              </div>
             </div>
-            <div className="dashboard-stock-toast-list">
-              {stockAlerts.map((alert) => (
-                <div key={`${alert.source}-${alert.name}`} className="dashboard-stock-toast-item">
-                  <strong>{alert.name}</strong> in <strong>{alert.source}</strong> is at <strong>{alert.stock}</strong>.
-                </div>
-              ))}
-            </div>
+            <button type="button" onClick={() => setShowStockToast(false)}>Dismiss</button>
           </div>
-          <button type="button" onClick={() => setShowStockToast(false)}>Dismiss</button>
-        </div>
-      )}
+        )}
 
-      {endedExhibitions.length > 0 && (
-        <div className="dashboard-stock-toast">
-          <div className="dashboard-stock-toast-content">
-            <div className="dashboard-stock-toast-title">Exhibitions have ended</div>
-            <div className="dashboard-stock-toast-list">
-              {endedExhibitions.map(e => (
-                <div key={e.exhibition_id} className="dashboard-stock-toast-item">
-                  <strong>{e.exhibition_name}</strong> ended on <strong>{new Date(e.end_date).toLocaleDateString()}</strong> — consider archiving it.
-                </div>
-              ))}
+        {showEndedExhibitions && endedExhibitions.length > 0 && (
+          <div className="dashboard-stock-toast">
+            <div className="dashboard-stock-toast-content">
+              <div className="dashboard-stock-toast-title">Exhibitions Have Ended</div>
+              <div className="dashboard-stock-toast-list">
+                {endedExhibitions.map(e => (
+                  <div key={e.exhibition_id} className="dashboard-stock-toast-item">
+                    <strong>{e.exhibition_name}</strong> ended on <strong>{new Date(e.end_date).toLocaleDateString()}</strong> — consider archiving it.
+                  </div>
+                ))}
+              </div>
             </div>
+            <button onClick={() => setShowEndedExhibitions(false)}>Dismiss</button>
           </div>
-          <button onClick={() => setEndedExhibitions([])}>Dismiss</button>
-        </div>
-      )}
+        )}
+
+        {showEndedEvents && endedEvents.length > 0 && (
+          <div className="dashboard-stock-toast">
+            <div className="dashboard-stock-toast-content">
+              <div className="dashboard-stock-toast-title">Past Events</div>
+              <div className="dashboard-stock-toast-list">
+                {endedEvents.map(e => (
+                  <div key={e.event_id} className="dashboard-stock-toast-item">
+                    <strong>{e.event_name}</strong> occurred on <strong>{new Date(e.event_date).toLocaleDateString()}</strong> — consider archiving it.
+                  </div>
+                ))}
+              </div>
+            </div>
+            <button onClick={() => setShowEndedEvents(false)}>Dismiss</button>
+          </div>
+        )}
+      </div>
 
       <div className="admin-dashboard">
         <button
@@ -675,7 +700,7 @@ export default function AdminDashboard() {
                     <option value="In Storage">In Storage</option>
                     <option value="On Loan">On Loan</option>
                     <option value="Under Restoration">Under Restoration</option>
-                    <option value="Deaccessioned">Deaccessioned</option> 
+                    <option value="Deaccessioned">Deaccessioned</option>
                   </select>
                 </div>
                 <div className="ex-filter-group">
