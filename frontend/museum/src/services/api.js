@@ -155,6 +155,10 @@ export async function getMyTickets() {
   return authRequest(`/tickets?user_id=${user_id}`, {}, "Failed to fetch tickets");
 }
 
+export async function getTickets() {
+  return authRequest("/tickets", {}, "Failed to fetch tickets");
+}
+
 // ── DONATIONS ─────────────────────────────────────────────────────────────────
 export async function postDonation(donation) {
   const userId = localStorage.getItem("user_id"); // ← change token to user_id
@@ -173,6 +177,10 @@ export async function postDonation(donation) {
 export async function getMyDonations() {
   const user_id = localStorage.getItem("user_id");
   return authRequest(`/donations?user_id=${user_id}`, {}, "Failed to fetch donations");
+}
+
+export async function getDonations() {
+  return authRequest("/donations", {}, "Failed to fetch donations");
 }
 
 // ── REPORTS ───────────────────────────────────────────────────────────────────

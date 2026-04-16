@@ -20,9 +20,8 @@ import GiftShopCartPage from "./pages/GiftShopCartPage";
 import AdminDashboard from "./components/AdminDashboard";
 import TicketPage from "./pages/Tickets";
 import DonationPage from "./pages/Donations";
-import EventsPage from "./pages/Events";
-import VisitorDashboard  from "./pages/VisitorDashboard";
-import MemberDashboard   from "./pages/MemberDashboard";
+import VisitorDashboard from "./pages/VisitorDashboard";
+import MemberDashboard from "./pages/MemberDashboard";
 import EmployeeDashboard from "./pages/EmployeeDashboard";
 import MembershipPage from "./pages/MembershipPage";
 import CheckoutPage from "./pages/CheckoutPage";
@@ -32,50 +31,46 @@ function App() {
     <BrowserRouter>
       <Navbar />
       <Routes>
-        {/* ── Public ── */}
-        <Route path="/"        element={<Home />} />
-        <Route path="/home"    element={<Navigate to="/" replace />} />
-        <Route path="/visit"   element={<Visit />} />
-        <Route path="/login"   element={<Login />} />
+        {/* ── Public Routes ── */}
+        <Route path="/" element={<Home />} />
+        <Route path="/home" element={<Navigate to="/" replace />} />
+        <Route path="/visit" element={<Visit />} />
+        <Route path="/login" element={<Login />} />
         <Route path="/artists" element={<ArtistsGallery />} />
-        <Route path="/tickets" element={<TicketPage />} />
-        <Route path="/donations" element={<DonationPage />} />
-        <Route path="/events" element={<EventsPage />} />
-        <Route path="/membership" element={<MembershipPage />} />
-        <Route path="/checkout" element={<CheckoutPage />} />
-
-        {/* Admin Only Routes */}
-        <Route
-          path="/admin"
-          element={
-            <AdminDashboard /> // or wrap with ProtectedRoute if needed
-          }
-        />
-
-        {/* Fallback route */}
         <Route path="/artworks" element={<Artworks />} />
         <Route path="/exhibitions" element={<Exhibitions />} />
         <Route path="/events" element={<Events />} />
         <Route path="/buildings" element={<Buildings />} />
+        <Route path="/tickets" element={<TicketPage />} />
+        <Route path="/donations" element={<DonationPage />} />
+        <Route path="/membership" element={<MembershipPage />} />
+        <Route path="/checkout" element={<CheckoutPage />} />
+        
+        {/* Cafe Routes */}
         <Route path="/cafe" element={<CafePage />} />
         <Route path="/cafe/cart" element={<CafeCartPage />} />
         <Route path="/cafe/checkout" element={<Navigate to="/cafe/cart" replace />} />
+        
+        {/* Gift Shop Routes */}
         <Route path="/gift-shop" element={<GiftShopPage />} />
         <Route path="/gift-shop/cart" element={<GiftShopCartPage />} />
         <Route path="/gift-shop/checkout" element={<Navigate to="/gift-shop/cart" replace />} />
-        {/* ── Visitor — logged in, role "visitor" ── */}
+
+        {/* ── Protected Routes by Role ── */}
+        
+        {/* Visitor — logged in, role "visitor" */}
         <Route path="/visitor-dashboard"
           element={<ProtectedRoute requiredRole="visitor"><VisitorDashboard /></ProtectedRoute>} />
 
-        {/* ── Member — logged in, role "member" ── */}
+        {/* Member — logged in, role "member" */}
         <Route path="/member-dashboard"
           element={<ProtectedRoute requiredRole="member"><MemberDashboard /></ProtectedRoute>} />
 
-        {/* ── Employee — logged in, role "employee" ── */}
+        {/* Employee — logged in, role "employee" */}
         <Route path="/employee-dashboard"
           element={<ProtectedRoute requiredRole="employee"><EmployeeDashboard /></ProtectedRoute>} />
 
-        {/* ── Admin — logged in, role "admin" ── */}
+        {/* Admin — logged in, role "admin" */}
         <Route path="/admin"
           element={<ProtectedRoute requiredRole="admin"><AdminDashboard /></ProtectedRoute>} />
 
