@@ -5,17 +5,16 @@ import { Link, useNavigate } from "react-router-dom";
 import {
   getMyProfile, updateMyProfile, changeMyPassword,
   getMyVisitorRecord, getMyTickets, getMyDonations,
-  getMyEventSignups,
 } from "../services/api";
 import { PasswordInput, PhoneInput, StateSelect, ZipInput } from "../components/FormUtils";
 import "../styles/Dashboard.css";
 import "../styles/SelfService.css";
 
 const TABS = [
-  { id: "profile",   label: "My Profile"       },
-  { id: "visits",    label: "Visit History"    },
+  { id: "profile",   label: "My Profile" },
+  { id: "visits",    label: "Visit History" },
   { id: "purchases", label: "Purchase History" },
-  { id: "password",  label: "Change Password"  },
+  { id: "password",  label: "Change Password" },
 ];
 
 const fmt = dateStr => {
@@ -24,23 +23,47 @@ const fmt = dateStr => {
     .toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
 };
 
+// Validate and block save if required fields are blank/invalid
+function validateProfile(form) {
+  const required = [
+    { key: "first_name",     label: "First name",     maxLen: 50,  lettersOnly: true  },
+    { key: "last_name",      label: "Last name",       maxLen: 50,  lettersOnly: true  },
+    { key: "email",          label: "Email",           maxLen: 255, lettersOnly: false },
+    { key: "phone_number",   label: "Phone number",    maxLen: 14,  lettersOnly: false },
+    { key: "street_address", label: "Street address",  maxLen: 50,  lettersOnly: false },
+    { key: "city",           label: "City",            maxLen: 30,  lettersOnly: false },
+    { key: "state",          label: "State",           maxLen: 2,   lettersOnly: false },
+    { key: "zip_code",       label: "Zip code",        maxLen: 5,   lettersOnly: false },
+  ];
+  for (const f of required) {
+    const val = (form[f.key] || "").trim();
+    if (!val) return `${f.label} is required and cannot be blank.`;
+    if (val.length > f.maxLen) return `${f.label} cannot exceed ${f.maxLen} characters.`;
+    if (f.lettersOnly && !/^[a-zA-Z\s\-']+$/.test(val))
+      return `${f.label} can only contain letters, spaces, hyphens, and apostrophes.`;
+  }
+  const phoneDigits = (form.phone_number || "").replace(/\D/g, "");
+  if (phoneDigits.length !== 10) return "Phone number must be exactly 10 digits.";
+  if (!/^\d{5}$/.test((form.zip_code || "").trim())) return "Zip code must be exactly 5 digits.";
+  return null;
+}
+
 export default function VisitorDashboard() {
   const navigate    = useNavigate();
   const userEmail   = localStorage.getItem("user_email") || "";
   const displayName = userEmail.split("@")[0];
 
-  const [activeTab,    setActiveTab]    = useState("profile");
-  const [profile,      setProfile]      = useState(null);
-  const [visitorRec,   setVisitorRec]   = useState(null);
-  const [tickets,      setTickets]      = useState([]);
-  const [donations,    setDonations]    = useState([]);
-  const [eventSignups, setEventSignups] = useState([]);
-  const [loading,      setLoading]      = useState(true);
-  const [saving,       setSaving]       = useState(false);
-  const [feedback,     setFeedback]     = useState(null);
-  const [form,         setForm]         = useState({});
-  const [pwForm,       setPwForm]       = useState({ new_password: "", confirm_password: "" });
-  const [pwErrors,     setPwErrors]     = useState({});
+  const [activeTab,  setActiveTab]  = useState("profile");
+  const [profile,    setProfile]    = useState(null);
+  const [visitorRec, setVisitorRec] = useState(null);
+  const [tickets,    setTickets]    = useState([]);
+  const [donations,  setDonations]  = useState([]);
+  const [loading,    setLoading]    = useState(true);
+  const [saving,     setSaving]     = useState(false);
+  const [feedback,   setFeedback]   = useState(null);
+  const [form,       setForm]       = useState({});
+  const [pwForm,     setPwForm]     = useState({ new_password: "", confirm_password: "" });
+  const [pwErrors,   setPwErrors]   = useState({});
 
   const notify = (msg, type = "success") => {
     setFeedback({ msg, type });
@@ -51,20 +74,38 @@ export default function VisitorDashboard() {
     async function load() {
       setLoading(true);
       try {
-        const [prof, vis, tix, don, signups] = await Promise.allSettled([
-          getMyProfile(), getMyVisitorRecord(), getMyTickets(),
-          getMyDonations(), getMyEventSignups(),
+        const [prof, vis, tix, don] = await Promise.allSettled([
+          getMyProfile(), getMyVisitorRecord(), getMyTickets(), getMyDonations(),
         ]);
-        if (prof.status    === "fulfilled") { setProfile(prof.value); setForm(prof.value); }
-        if (vis.status     === "fulfilled") setVisitorRec(vis.value);
-        if (tix.status     === "fulfilled") setTickets(Array.isArray(tix.value) ? tix.value : []);
-        if (don.status     === "fulfilled") setDonations(Array.isArray(don.value) ? don.value : []);
-        if (signups.status === "fulfilled") setEventSignups(Array.isArray(signups.value) ? signups.value : []);
+        if (prof.status === "fulfilled") { setProfile(prof.value); setForm(prof.value); }
+        if (vis.status  === "fulfilled") setVisitorRec(vis.value);
+        if (tix.status  === "fulfilled") setTickets(Array.isArray(tix.value) ? tix.value : []);
+        if (don.status  === "fulfilled") setDonations(Array.isArray(don.value) ? don.value : []);
       } catch (e) { notify(e.message, "error"); }
       finally { setLoading(false); }
     }
     load();
   }, []);
+
+  // Update visitor record based on tickets whose visit_date <= today
+  useEffect(() => {
+    if (!visitorRec || tickets.length === 0) return;
+    const today = new Date().toISOString().slice(0, 10);
+    const completedVisits = tickets.filter(t =>
+      t.visit_date && String(t.visit_date).slice(0, 10) <= today
+    );
+    if (completedVisits.length !== visitorRec.total_visits) {
+      const latestVisit = completedVisits
+        .map(t => String(t.visit_date).slice(0, 10))
+        .sort()
+        .reverse()[0];
+      setVisitorRec(prev => ({
+        ...prev,
+        total_visits: completedVisits.length,
+        last_visit_date: latestVisit || prev.last_visit_date,
+      }));
+    }
+  }, [tickets, visitorRec]);
 
   function handleLogout() {
     ["token","role","user_id","user_email"].forEach(k => localStorage.removeItem(k));
@@ -78,17 +119,19 @@ export default function VisitorDashboard() {
 
   async function handleProfileSave(e) {
     e.preventDefault();
+    const err = validateProfile(form);
+    if (err) { notify(err, "error"); return; }
     setSaving(true);
     try {
       await updateMyProfile({
-        first_name:     form.first_name,
-        last_name:      form.last_name,
-        email:          form.email,
+        first_name:     form.first_name.trim(),
+        last_name:      form.last_name.trim(),
+        email:          form.email.trim(),
         phone_number:   form.phone_number,
-        street_address: form.street_address,
-        city:           form.city,
+        street_address: form.street_address.trim(),
+        city:           form.city.trim(),
         state:          form.state,
-        zip_code:       form.zip_code,
+        zip_code:       form.zip_code.trim(),
         date_of_birth:  form.date_of_birth ? form.date_of_birth.slice(0, 10) : null,
       });
       setProfile({ ...profile, ...form });
@@ -112,6 +155,17 @@ export default function VisitorDashboard() {
     } catch (e) { notify(e.message, "error"); }
     finally { setSaving(false); }
   }
+
+  // Group tickets by visit date for cleaner display
+  const groupedTickets = tickets.reduce((acc, t) => {
+    const key = String(t.visit_date).slice(0, 10);
+    if (!acc[key]) acc[key] = [];
+    acc[key].push(t);
+    return acc;
+  }, {});
+  const sortedVisitDates = Object.keys(groupedTickets).sort().reverse();
+  const ticketTotal = tickets.reduce((s, t) => s + parseFloat(t.final_price || 0), 0);
+  const donationTotal = donations.reduce((s, d) => s + parseFloat(d.amount || 0), 0);
 
   return (
     <div className="dashboard-page visitor-dashboard">
@@ -149,41 +203,39 @@ export default function VisitorDashboard() {
                 <form className="ss-form" onSubmit={handleProfileSave}>
                   <div className="ss-form-grid">
                     <div className="ss-form-group">
-                      <label>First Name</label>
-                      <input name="first_name" value={form.first_name || ""} onChange={handleFormChange} />
+                      <label>First Name *</label>
+                      <input name="first_name" value={form.first_name || ""} onChange={handleFormChange} maxLength={50} />
                     </div>
                     <div className="ss-form-group">
-                      <label>Last Name</label>
-                      <input name="last_name" value={form.last_name || ""} onChange={handleFormChange} />
+                      <label>Last Name *</label>
+                      <input name="last_name" value={form.last_name || ""} onChange={handleFormChange} maxLength={50} />
                     </div>
                     <div className="ss-form-group full">
-                      <label>Email</label>
-                      <input name="email" type="email" value={form.email || ""} onChange={handleFormChange} />
+                      <label>Email *</label>
+                      <input name="email" type="email" value={form.email || ""} onChange={handleFormChange} maxLength={255} />
                     </div>
                     <div className="ss-form-group">
-                      <label>Phone Number</label>
+                      <label>Phone Number *</label>
                       <PhoneInput name="phone_number" value={form.phone_number || ""} onChange={handleFormChange} />
                     </div>
                     <div className="ss-form-group">
                       <label>Date of Birth</label>
-                      <input name="date_of_birth" type="date"
-                        value={form.date_of_birth?.slice(0, 10) || ""}
-                        onChange={handleFormChange} />
+                      <input name="date_of_birth" type="date" value={form.date_of_birth?.slice(0, 10) || ""} onChange={handleFormChange} />
                     </div>
                     <div className="ss-form-group full">
-                      <label>Street Address</label>
-                      <input name="street_address" value={form.street_address || ""} onChange={handleFormChange} />
+                      <label>Street Address * <span style={{ fontSize: 10, color: "#9ca3af" }}>(max 50 chars)</span></label>
+                      <input name="street_address" value={form.street_address || ""} onChange={handleFormChange} maxLength={50} />
                     </div>
                     <div className="ss-form-group">
-                      <label>City</label>
-                      <input name="city" value={form.city || ""} onChange={handleFormChange} />
+                      <label>City * <span style={{ fontSize: 10, color: "#9ca3af" }}>(max 30 chars)</span></label>
+                      <input name="city" value={form.city || ""} onChange={handleFormChange} maxLength={30} />
                     </div>
                     <div className="ss-form-group">
-                      <label>State</label>
+                      <label>State *</label>
                       <StateSelect name="state" value={form.state || ""} onChange={handleFormChange} />
                     </div>
                     <div className="ss-form-group">
-                      <label>Zip Code</label>
+                      <label>Zip Code *</label>
                       <ZipInput name="zip_code" value={form.zip_code || ""} onChange={handleFormChange} />
                     </div>
                   </div>
@@ -200,63 +252,56 @@ export default function VisitorDashboard() {
             {activeTab === "visits" && (
               <div className="ss-card">
                 <h2 className="ss-section-title">Visit History</h2>
-
-                {/* Visit stats */}
                 {visitorRec ? (
-                  <div className="ss-stat-grid" style={{ marginBottom: 32 }}>
-                    <div className="ss-stat">
-                      <span className="ss-stat-value">{visitorRec.total_visits ?? 0}</span>
-                      <span className="ss-stat-label">Total Visits</span>
+                  <>
+                    <div className="ss-stat-grid" style={{ marginBottom: 24 }}>
+                      <div className="ss-stat">
+                        <span className="ss-stat-value">{visitorRec.total_visits ?? 0}</span>
+                        <span className="ss-stat-label">Total Visits</span>
+                      </div>
+                      <div className="ss-stat">
+                        <span className="ss-stat-value">{fmt(visitorRec.last_visit_date)}</span>
+                        <span className="ss-stat-label">Last Visit</span>
+                      </div>
                     </div>
-                    <div className="ss-stat">
-                      <span className="ss-stat-value">{fmt(visitorRec.last_visit_date)}</span>
-                      <span className="ss-stat-label">Last Visit</span>
-                    </div>
-                  </div>
+                    {sortedVisitDates.length > 0 && (
+                      <>
+                        <h3 style={{ fontSize: 13, fontWeight: 600, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 12 }}>
+                          Upcoming & Past Visits
+                        </h3>
+                        <div style={{ border: "1px solid #e5e7eb", overflowX: "auto" }}>
+                          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+                            <thead>
+                              <tr style={{ background: "#f9fafb", borderBottom: "1px solid #e5e7eb" }}>
+                                {["Visit Date","Tickets","Status","Total Paid"].map(h => (
+                                  <th key={h} style={{ padding: "0.625rem 1rem", textAlign: h === "Total Paid" ? "right" : "left", color: "#6b7280", fontWeight: 600, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.07em" }}>{h}</th>
+                                ))}
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {sortedVisitDates.map((date, i) => {
+                                const group = groupedTickets[date];
+                                const total = group.reduce((s, t) => s + parseFloat(t.final_price || 0), 0);
+                                const today = new Date().toISOString().slice(0, 10);
+                                const status = date < today ? "Visited" : date === today ? "Today" : "Upcoming";
+                                const statusColor = status === "Visited" ? "#6b7280" : status === "Today" ? "#c9a84c" : "#1a5276";
+                                return (
+                                  <tr key={date} style={{ borderBottom: i < sortedVisitDates.length - 1 ? "1px solid #f3f4f6" : "none" }}>
+                                    <td style={{ padding: "0.625rem 1rem", color: "#374151", fontWeight: 500 }}>{fmt(date)}</td>
+                                    <td style={{ padding: "0.625rem 1rem", color: "#374151" }}>{group.length} ticket{group.length > 1 ? "s" : ""}</td>
+                                    <td style={{ padding: "0.625rem 1rem", color: statusColor, fontWeight: 500 }}>{status}</td>
+                                    <td style={{ padding: "0.625rem 1rem", color: "#374151", textAlign: "right" }}>${total.toFixed(2)}</td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                      </>
+                    )}
+                  </>
                 ) : (
-                  <div className="ss-empty" style={{ marginBottom: 24 }}>No visit records found.</div>
-                )}
-
-                {/* Event signups */}
-                <h3 style={{ fontSize: 13, fontWeight: 600, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 12 }}>
-                  Events Signed Up For
-                </h3>
-                {eventSignups.length === 0 ? (
-                  <div className="ss-empty">
-                    No events signed up yet.{" "}
-                    <Link to="/events" style={{ color: "#c9a84c" }}>Browse events</Link>
-                  </div>
-                ) : (
-                  <div style={{ border: "1px solid #e5e7eb", overflowX: "auto" }}>
-                    <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
-                      <thead>
-                        <tr style={{ background: "#f9fafb", borderBottom: "1px solid #e5e7eb" }}>
-                          {["Event", "Type", "Event Date", "Signup Date", "Qty", "Location"].map(h => (
-                            <th key={h} style={{ padding: "0.625rem 1rem", textAlign: "left", color: "#6b7280", fontWeight: 600, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.07em", whiteSpace: "nowrap" }}>{h}</th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {eventSignups.map((s, i) => (
-                          <tr key={s.signup_id} style={{ borderBottom: i < eventSignups.length - 1 ? "1px solid #f3f4f6" : "none" }}>
-                            <td style={{ padding: "0.625rem 1rem", color: "#374151", fontWeight: 500 }}>{s.event_name}</td>
-                            <td style={{ padding: "0.625rem 1rem", color: "#374151" }}>{s.event_type || "General"}</td>
-                            <td style={{ padding: "0.625rem 1rem", color: "#374151" }}>{fmt(s.event_date)}</td>
-                            <td style={{ padding: "0.625rem 1rem", color: "#374151" }}>{fmt(s.signup_date)}</td>
-                            <td style={{ padding: "0.625rem 1rem", color: "#374151" }}>{s.quantity}</td>
-                            <td style={{ padding: "0.625rem 1rem", color: "#374151" }}>{s.gallery_name || "—"}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                      <tfoot>
-                        <tr style={{ background: "#f9fafb", borderTop: "1px solid #e5e7eb" }}>
-                          <td colSpan={6} style={{ padding: "0.625rem 1rem", fontWeight: 600, fontSize: 12, color: "#374151" }}>
-                            Total Events: {eventSignups.length} &nbsp;·&nbsp; Total Spots: {eventSignups.reduce((s, e) => s + e.quantity, 0)}
-                          </td>
-                        </tr>
-                      </tfoot>
-                    </table>
-                  </div>
+                  <div className="ss-empty">No visit records found.</div>
                 )}
               </div>
             )}
@@ -266,6 +311,7 @@ export default function VisitorDashboard() {
               <div className="ss-card">
                 <h2 className="ss-section-title">Purchase History</h2>
 
+                {/* Tickets — grouped by visit date */}
                 <h3 style={{ fontSize: 13, fontWeight: 600, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 12 }}>
                   Tickets
                 </h3>
@@ -279,33 +325,33 @@ export default function VisitorDashboard() {
                     <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
                       <thead>
                         <tr style={{ background: "#f9fafb", borderBottom: "1px solid #e5e7eb" }}>
-                          {["Purchase Date","Visit Date","Type","Discount","Price","Payment"].map(h => (
-                            <th key={h} style={{ padding: "0.625rem 1rem", textAlign: h === "Price" ? "right" : "left", color: "#6b7280", fontWeight: 600, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.07em", whiteSpace: "nowrap" }}>{h}</th>
+                          {["Visit Date","Tickets","Types","Total","Payment"].map(h => (
+                            <th key={h} style={{ padding: "0.625rem 1rem", textAlign: h === "Total" ? "right" : "left", color: "#6b7280", fontWeight: 600, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.07em" }}>{h}</th>
                           ))}
                         </tr>
                       </thead>
                       <tbody>
-                        {tickets.map((t, i) => (
-                          <tr key={t.ticket_id} style={{ borderBottom: i < tickets.length - 1 ? "1px solid #f3f4f6" : "none" }}>
-                            <td style={{ padding: "0.625rem 1rem", color: "#374151" }}>{fmt(t.purchase_date)}</td>
-                            <td style={{ padding: "0.625rem 1rem", color: "#374151" }}>{fmt(t.visit_date)}</td>
-                            <td style={{ padding: "0.625rem 1rem", color: "#374151" }}>{t.ticket_type}</td>
-                            <td style={{ padding: "0.625rem 1rem", color: "#374151" }}>{t.discount_type}</td>
-                            <td style={{ padding: "0.625rem 1rem", color: "#374151", textAlign: "right" }}>
-                              {t.final_price != null ? `$${parseFloat(t.final_price).toFixed(2)}` : "—"}
-                            </td>
-                            <td style={{ padding: "0.625rem 1rem", color: "#374151" }}>{t.payment_method}</td>
-                          </tr>
-                        ))}
+                        {sortedVisitDates.map((date, i) => {
+                          const group = groupedTickets[date];
+                          const total = group.reduce((s, t) => s + parseFloat(t.final_price || 0), 0);
+                          const types = [...new Set(group.map(t => t.ticket_type))].join(", ");
+                          return (
+                            <tr key={date} style={{ borderBottom: i < sortedVisitDates.length - 1 ? "1px solid #f3f4f6" : "none" }}>
+                              <td style={{ padding: "0.625rem 1rem", color: "#374151" }}>{fmt(date)}</td>
+                              <td style={{ padding: "0.625rem 1rem", color: "#374151" }}>{group.length}</td>
+                              <td style={{ padding: "0.625rem 1rem", color: "#374151" }}>{types}</td>
+                              <td style={{ padding: "0.625rem 1rem", color: "#374151", textAlign: "right" }}>${total.toFixed(2)}</td>
+                              <td style={{ padding: "0.625rem 1rem", color: "#374151" }}>{group[0]?.payment_method || "—"}</td>
+                            </tr>
+                          );
+                        })}
                       </tbody>
                       <tfoot>
                         <tr style={{ background: "#f9fafb", borderTop: "1px solid #e5e7eb" }}>
-                          <td colSpan={4} style={{ padding: "0.625rem 1rem", fontWeight: 600, fontSize: 12, color: "#374151" }}>
-                            Total Tickets: {tickets.length}
+                          <td colSpan={3} style={{ padding: "0.625rem 1rem", fontWeight: 600, fontSize: 12, color: "#374151" }}>
+                            {tickets.length} ticket{tickets.length !== 1 ? "s" : ""} across {sortedVisitDates.length} visit{sortedVisitDates.length !== 1 ? "s" : ""}
                           </td>
-                          <td style={{ padding: "0.625rem 1rem", fontWeight: 600, fontSize: 12, color: "#374151", textAlign: "right" }}>
-                            ${tickets.reduce((s, t) => s + parseFloat(t.final_price || 0), 0).toFixed(2)}
-                          </td>
+                          <td style={{ padding: "0.625rem 1rem", fontWeight: 600, fontSize: 12, color: "#374151", textAlign: "right" }}>${ticketTotal.toFixed(2)}</td>
                           <td />
                         </tr>
                       </tfoot>
@@ -313,6 +359,7 @@ export default function VisitorDashboard() {
                   </div>
                 )}
 
+                {/* Donations */}
                 <h3 style={{ fontSize: 13, fontWeight: 600, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 12 }}>
                   Donations
                 </h3>
@@ -336,18 +383,14 @@ export default function VisitorDashboard() {
                           <tr key={d.donation_id} style={{ borderBottom: i < donations.length - 1 ? "1px solid #f3f4f6" : "none" }}>
                             <td style={{ padding: "0.625rem 1rem", color: "#374151" }}>{fmt(d.donation_date)}</td>
                             <td style={{ padding: "0.625rem 1rem", color: "#374151" }}>{d.donation_type}</td>
-                            <td style={{ padding: "0.625rem 1rem", color: "#374151", textAlign: "right" }}>
-                              {d.amount != null ? `$${parseFloat(d.amount).toFixed(2)}` : "—"}
-                            </td>
+                            <td style={{ padding: "0.625rem 1rem", color: "#374151", textAlign: "right" }}>${parseFloat(d.amount || 0).toFixed(2)}</td>
                           </tr>
                         ))}
                       </tbody>
                       <tfoot>
                         <tr style={{ background: "#f9fafb", borderTop: "1px solid #e5e7eb" }}>
                           <td colSpan={2} style={{ padding: "0.625rem 1rem", fontWeight: 600, fontSize: 12, color: "#374151" }}>Total Donated</td>
-                          <td style={{ padding: "0.625rem 1rem", fontWeight: 600, fontSize: 12, color: "#374151", textAlign: "right" }}>
-                            ${donations.reduce((s, d) => s + parseFloat(d.amount || 0), 0).toFixed(2)}
-                          </td>
+                          <td style={{ padding: "0.625rem 1rem", fontWeight: 600, fontSize: 12, color: "#374151", textAlign: "right" }}>${donationTotal.toFixed(2)}</td>
                         </tr>
                       </tfoot>
                     </table>
@@ -364,16 +407,14 @@ export default function VisitorDashboard() {
                   <div className="ss-form-grid" style={{ gridTemplateColumns: "1fr" }}>
                     <div className="ss-form-group">
                       <label>New Password <span style={{ fontSize: 10, color: "#9ca3af" }}>(min. 6 characters)</span></label>
-                      <PasswordInput
-                        value={pwForm.new_password}
+                      <PasswordInput value={pwForm.new_password}
                         onChange={e => setPwForm(p => ({ ...p, new_password: e.target.value }))}
                         placeholder="Min. 6 characters" required />
                       {pwErrors.new_password && <span style={{ fontSize: 11, color: "#dc2626" }}>{pwErrors.new_password}</span>}
                     </div>
                     <div className="ss-form-group">
                       <label>Confirm New Password</label>
-                      <PasswordInput
-                        value={pwForm.confirm_password}
+                      <PasswordInput value={pwForm.confirm_password}
                         onChange={e => setPwForm(p => ({ ...p, confirm_password: e.target.value }))}
                         placeholder="Repeat new password" required />
                       {pwErrors.confirm_password && <span style={{ fontSize: 11, color: "#dc2626" }}>{pwErrors.confirm_password}</span>}
