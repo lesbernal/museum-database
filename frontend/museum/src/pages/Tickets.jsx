@@ -66,6 +66,8 @@ export default function Tickets() {
     if (!userId)           return setErrorMsg("Please log in first.");
     if (!visitDate)        return setErrorMsg("Select a visit date.");
     if (visitDate < today) return setErrorMsg("Visit date must be today or a future date.");
+    const selectedDay = new Date(visitDate + "T00:00:00").getDay();
+    if (selectedDay === 1) return setErrorMsg("The museum is closed on Mondays. Please select a different date.");
     if (totalTickets === 0) return setErrorMsg("Please select at least one ticket.");
 
     const tickets = TICKET_TYPES
