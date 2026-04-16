@@ -13,30 +13,37 @@ module.exports = (req, res) => {
   req.on("end", async () => {
     try {
       const { email, password } = JSON.parse(body);
-      
-      console.log("Login attempt for email:", email); // DEBUG
+
+      console.log("Login attempt for email:", email);
 
       db.query(
-        "SELECT * FROM user WHERE email = ?",
+        `SELECT u.*, 
+          CASE 
+            WHEN m.user_id IS NOT NULL AND m.expiration_date >= CURDATE() THEN 'member'
+            ELSE u.role 
+          END as role
+         FROM user u
+         LEFT JOIN member m ON u.user_id = m.user_id
+         WHERE u.email = ?`,
         [email],
         (err, results) => {
           if (err) {
-            console.error("Database error:", err); // DEBUG
+            console.error("Database error:", err);
             return sendError(res, err);
           }
-          
-          console.log("Query results:", results); // DEBUG - See what comes back
-          
+
+          console.log("Query results:", results);
+
           const user = results[0];
-          
+
           if (!user) {
-            console.log("User not found"); // DEBUG
+            console.log("User not found");
             res.writeHead(401, { "Content-Type": "application/json" });
             return res.end(JSON.stringify({ error: "Invalid credentials" }));
           }
-          
-          console.log("User found - ID:", user.user_id, "Role:", user.role); // DEBUG
-          
+
+          console.log("User found - ID:", user.user_id, "Role:", user.role);
+
           if (user.password !== password) {
             console.log("Password mismatch");
             res.writeHead(401, { "Content-Type": "application/json" });
@@ -49,17 +56,17 @@ module.exports = (req, res) => {
             { expiresIn: "1h" }
           );
 
-          console.log("Sending response with role:", user.role); // DEBUG
+          console.log("Sending response with role:", user.role);
 
-          sendJSON(res, { 
-            token, 
-            user_id: user.user_id, 
-            role: user.role
+          sendJSON(res, {
+            token,
+            user_id: user.user_id,
+            role: user.role,
           });
         }
       );
     } catch (err) {
-      console.error("Parse error:", err); // DEBUG
+      console.error("Parse error:", err);
       sendError(res, err);
     }
   });
