@@ -27,7 +27,7 @@ const DepartmentManagement = forwardRef(function DepartmentManagement({ searchTe
   const [saving, setSaving] = useState(false);
   const [feedback, setFeedback] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
-  const [localSearchTerm, setLocalSearchTerm] = useState("");
+  const [localSearch, setLocalSearch] = useState("");
 
   const notify = (msg, type = "success") => {
     setFeedback({ msg, type });
@@ -53,8 +53,8 @@ const DepartmentManagement = forwardRef(function DepartmentManagement({ searchTe
     openAdd: () => { setForm({}); setModal("add"); }
   }));
 
-  // Use localSearchTerm for filtering, fallback to prop if needed
-  const searchValue = localSearchTerm || searchTerm;
+  // Use localSearch for filtering, fallback to prop if needed
+  const searchValue = localSearch || searchTerm;
   
   const filtered = records.filter(r =>
     TABLE_COLS.some(col =>
