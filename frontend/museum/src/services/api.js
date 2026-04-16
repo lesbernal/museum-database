@@ -245,6 +245,13 @@ export async function deleteCafeItem(id) {
 export async function getCafeTransactions() {
   return request("/cafetransactions", {}, "Failed to fetch cafe transactions");
 }
+export async function getMyCafeTransactions() {
+  const user_id = Number(localStorage.getItem("user_id"));
+  const transactions = await getCafeTransactions();
+  return Array.isArray(transactions)
+    ? transactions.filter((transaction) => Number(transaction.user_id) === user_id)
+    : [];
+}
 export async function createCafeTransaction(transaction) {
   return request("/cafetransactions", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(transaction) }, "Failed to create cafe transaction");
 }
@@ -282,6 +289,13 @@ export async function deleteGiftShopItem(id) {
 }
 export async function getGiftShopTransactions() {
   return request("/giftshoptransactions", {}, "Failed to fetch gift shop transactions");
+}
+export async function getMyGiftShopTransactions() {
+  const user_id = Number(localStorage.getItem("user_id"));
+  const transactions = await getGiftShopTransactions();
+  return Array.isArray(transactions)
+    ? transactions.filter((transaction) => Number(transaction.user_id) === user_id)
+    : [];
 }
 export async function createGiftShopTransaction(transaction) {
   return request("/giftshoptransactions", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(transaction) }, "Failed to create gift shop transaction");
