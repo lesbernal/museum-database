@@ -5,7 +5,7 @@ import { Link, useNavigate } from "react-router-dom";
 import {
   getMyProfile, updateMyProfile, changeMyPassword,
   getMyEmployeeRecord, getMembers, getCafeTransactions,
-  getGiftShopTransactions, getArtworks, getExhibitions, 
+  getGiftShopTransactions, getArtworks, getExhibitions,
   getEvents, getArtists, getProvenance, getDonations,
   getVisitors, getTickets, getGalleries,
   createMembershipTransaction,
@@ -116,14 +116,14 @@ function DataTable({ columns, rows, keyField, onEdit, canEdit = false }) {
               {columns.map(c => (
                 <td key={c.key} style={{ padding: "0.625rem 1rem", color: "#374151", textAlign: c.right ? "right" : "left" }}>
                   {c.render ? c.render(r[c.key], r) : (r[c.key] ?? "—")}
-                 </td>
+                </td>
               ))}
               {canEdit && (
                 <td style={{ padding: "0.625rem 1rem" }}>
                   <button onClick={() => onEdit(r)} className="emp-edit-btn">Edit</button>
                 </td>
               )}
-             </tr>
+            </tr>
           ))}
         </tbody>
       </table>
@@ -212,10 +212,10 @@ const MembershipActionModal = ({ isOpen, member, onClose, onSuccess, notify }) =
 
   const currentLevel = member.membership_level;
   const currentIndex = TIER_ORDER.indexOf(currentLevel);
-  
+
   // Get available tiers based on action
   const getAvailableTiers = () => {
-    switch(action) {
+    switch (action) {
       case 'upgrade':
         return TIER_ORDER.slice(currentIndex + 1);
       case 'downgrade':
@@ -248,7 +248,7 @@ const MembershipActionModal = ({ isOpen, member, onClose, onSuccess, notify }) =
       const amount = TIER_PRICES[selectedTier];
 
       const confirmMsg = `${action.toUpperCase()} MEMBERSHIP\n\nMember: ${member.first_name} ${member.last_name}\nCurrent: ${currentLevel}\nNew: ${selectedTier}\nAmount: $${amount}\n\nContinue?`;
-      
+
       if (confirm(confirmMsg)) {
         await createMembershipTransaction({
           user_id: member.user_id,
@@ -275,7 +275,7 @@ const MembershipActionModal = ({ isOpen, member, onClose, onSuccess, notify }) =
           <h3>Manage Membership — {member.first_name} {member.last_name}</h3>
           <button className="um-modal-close" onClick={onClose}>×</button>
         </div>
-        
+
         <div className="um-modal-body">
           <div className="um-form-grid">
             <div className="um-form-group full">
@@ -315,8 +315,8 @@ const MembershipActionModal = ({ isOpen, member, onClose, onSuccess, notify }) =
             {action !== 'cancel' && (
               <div className="um-form-group full">
                 <label>Select Tier</label>
-                <select 
-                  value={selectedTier} 
+                <select
+                  value={selectedTier}
                   onChange={(e) => setSelectedTier(e.target.value)}
                   disabled={action === 'renew'}
                 >
@@ -356,16 +356,16 @@ const MembershipActionModal = ({ isOpen, member, onClose, onSuccess, notify }) =
           <button type="button" className="um-cancel-btn" onClick={onClose}>
             Cancel
           </button>
-          <button 
-            type="button" 
-            className="um-save-btn" 
+          <button
+            type="button"
+            className="um-save-btn"
             onClick={handleSubmit}
             disabled={!canProceed || loading}
           >
-            {loading ? 'Processing...' : 
-              action === 'cancel' ? 'Cancel Membership' : 
-              action === 'upgrade' ? 'Upgrade' : 
-              action === 'downgrade' ? 'Downgrade' : 'Renew'
+            {loading ? 'Processing...' :
+              action === 'cancel' ? 'Cancel Membership' :
+                action === 'upgrade' ? 'Upgrade' :
+                  action === 'downgrade' ? 'Downgrade' : 'Renew'
             }
           </button>
         </div>
@@ -391,7 +391,7 @@ export default function EmployeeDashboard() {
   const [teamMembers, setTeamMembers] = useState([]);
   const [selectedMember, setSelectedMember] = useState(null);
   const [actionModalOpen, setActionModalOpen] = useState(false);
-    
+
   // Data states
   const [artists, setArtists] = useState([]);
   const [artworks, setArtworks] = useState([]);
@@ -407,7 +407,7 @@ export default function EmployeeDashboard() {
   const [giftItems, setGiftItems] = useState([]);
   const [visitors, setVisitors] = useState([]);
   const [tickets, setTickets] = useState([]);
-  
+
   // Edit modal state
   const [editingItem, setEditingItem] = useState(null);
   const [editType, setEditType] = useState(null);
@@ -431,11 +431,11 @@ export default function EmployeeDashboard() {
   const handleMembershipAction = async (member, action) => {
     const currentLevel = member.membership_level;
     const currentIndex = TIER_ORDER.indexOf(currentLevel);
-    
+
     let newLevel = currentLevel;
     let transactionType = 'Renewal';
-    
-    switch(action) {
+
+    switch (action) {
       case 'renew':
         newLevel = currentLevel;
         transactionType = 'Renewal';
@@ -464,10 +464,10 @@ export default function EmployeeDashboard() {
               ...member,
               expiration_date: new Date().toISOString().slice(0, 10), // Set expiration to today
             });
-            
+
             // Update user role to visitor
             await updateUser(member.user_id, { role: 'visitor' });
-            
+
             // Record cancellation
             await createMembershipTransaction({
               user_id: member.user_id,
@@ -476,7 +476,7 @@ export default function EmployeeDashboard() {
               payment_method: "Admin Processed",
               transaction_type: 'Cancellation',
             });
-            
+
             notify(`Membership cancelled for ${member.first_name} ${member.last_name}`);
             refreshMembers();
           } catch (err) {
@@ -485,10 +485,10 @@ export default function EmployeeDashboard() {
         }
         return;
     }
-    
+
     // Process renewal/upgrade/downgrade
     const confirmMsg = `${action.toUpperCase()}: ${member.first_name} ${member.last_name}\n\nCurrent: ${currentLevel}\nNew: ${newLevel}\nAmount: $${TIER_PRICES[newLevel]}\n\nContinue?`;
-    
+
     if (confirm(confirmMsg)) {
       try {
         await createMembershipTransaction({
@@ -550,7 +550,7 @@ export default function EmployeeDashboard() {
   // Load data based on department permissions
   useEffect(() => {
     if (!empRecord) return;
-    
+
     async function loadData() {
       try {
         if (permissions.tabs.includes('artists')) {
@@ -606,7 +606,7 @@ export default function EmployeeDashboard() {
   }, [empRecord]);
 
   function handleLogout() {
-    ["token","role","user_id","user_email"].forEach(k => localStorage.removeItem(k));
+    ["token", "role", "user_id", "user_email"].forEach(k => localStorage.removeItem(k));
     navigate("/login");
   }
 
@@ -648,7 +648,7 @@ export default function EmployeeDashboard() {
     setPwErrors({});
     setSaving(true);
     try {
-      await changeMyPassword(pwForm.new_password);
+      await changeMyPassword(pwForm.new_password, profile);
       notify("Password changed successfully");
       setPwForm({ new_password: "", confirm_password: "" });
     } catch (e) { notify(e.message, "error"); }
@@ -770,6 +770,21 @@ export default function EmployeeDashboard() {
                   <input name="email" type="email" value={form.email || ""} onChange={handleFormChange} /></div>
                 <div className="ss-form-group"><label>Phone *</label>
                   <input name="phone_number" value={form.phone_number || ""} onChange={handleFormChange} /></div>
+                <div className="ss-form-group">
+                  <label>Date of Birth</label>
+                  <input
+                    name="date_of_birth"
+                    type="date"
+                    value={form.date_of_birth?.slice(0, 10) || ""}
+                    onChange={handleFormChange}
+                    disabled={!!profile?.date_of_birth}
+                  />
+                  {profile?.date_of_birth && (
+                    <span style={{ fontSize: "0.75rem", color: "#9ca3af" }}>
+                      Date of birth cannot be changed after it has been set.
+                    </span>
+                  )}
+                </div>
                 <div className="ss-form-group full"><label>Street Address</label>
                   <input name="street_address" value={form.street_address || ""} onChange={handleFormChange} /></div>
                 <div className="ss-form-group"><label>City</label>
@@ -826,9 +841,9 @@ export default function EmployeeDashboard() {
         return (
           <div className="ss-card">
             <h2 className="ss-section-title">Artists</h2>
-            <DataTable 
-              keyField="artist_id" 
-              rows={artists} 
+            <DataTable
+              keyField="artist_id"
+              rows={artists}
               canEdit={canEdit('artists')}
               onEdit={(item) => handleEdit(item, 'artist')}
               columns={[
@@ -837,7 +852,7 @@ export default function EmployeeDashboard() {
                 { key: "last_name", label: "Last Name" },
                 { key: "nationality", label: "Nationality" },
                 { key: "birth_year", label: "Born" },
-              ]} 
+              ]}
             />
             <p className="emp-note">⚠️ Employees can edit but cannot delete artists. Contact admin for deletions.</p>
           </div>
@@ -847,9 +862,9 @@ export default function EmployeeDashboard() {
         return (
           <div className="ss-card">
             <h2 className="ss-section-title">Artworks</h2>
-            <DataTable 
-              keyField="artwork_id" 
-              rows={artworks} 
+            <DataTable
+              keyField="artwork_id"
+              rows={artworks}
               canEdit={canEdit('artwork')}
               onEdit={(item) => handleEdit(item, 'artwork')}
               columns={[
@@ -858,7 +873,7 @@ export default function EmployeeDashboard() {
                 { key: "medium", label: "Medium" },
                 { key: "creation_year", label: "Year" },
                 { key: "current_display_status", label: "Status" },
-              ]} 
+              ]}
             />
           </div>
         );
@@ -867,9 +882,9 @@ export default function EmployeeDashboard() {
         return (
           <div className="ss-card">
             <h2 className="ss-section-title">Exhibitions</h2>
-            <DataTable 
-              keyField="exhibition_id" 
-              rows={exhibitions} 
+            <DataTable
+              keyField="exhibition_id"
+              rows={exhibitions}
               canEdit={canEdit('exhibitions')}
               onEdit={(item) => handleEdit(item, 'exhibition')}
               columns={[
@@ -878,7 +893,7 @@ export default function EmployeeDashboard() {
                 { key: "exhibition_type", label: "Type" },
                 { key: "start_date", label: "Start", render: fmt },
                 { key: "end_date", label: "End", render: fmt },
-              ]} 
+              ]}
             />
           </div>
         );
@@ -887,9 +902,9 @@ export default function EmployeeDashboard() {
         return (
           <div className="ss-card">
             <h2 className="ss-section-title">Galleries</h2>
-            <DataTable 
-              keyField="gallery_id" 
-              rows={galleries} 
+            <DataTable
+              keyField="gallery_id"
+              rows={galleries}
               canEdit={canEdit('galleries')}
               onEdit={(item) => handleEdit(item, 'gallery')}
               columns={[
@@ -897,7 +912,7 @@ export default function EmployeeDashboard() {
                 { key: "gallery_name", label: "Name" },
                 { key: "floor_number", label: "Floor" },
                 { key: "square_footage", label: "Sq Ft" },
-              ]} 
+              ]}
             />
           </div>
         );
@@ -906,9 +921,9 @@ export default function EmployeeDashboard() {
         return (
           <div className="ss-card">
             <h2 className="ss-section-title">Events</h2>
-            <DataTable 
-              keyField="event_id" 
-              rows={events} 
+            <DataTable
+              keyField="event_id"
+              rows={events}
               canEdit={canEdit('events')}
               onEdit={(item) => handleEdit(item, 'event')}
               columns={[
@@ -916,55 +931,55 @@ export default function EmployeeDashboard() {
                 { key: "event_name", label: "Name" },
                 { key: "event_date", label: "Date", render: fmt },
                 { key: "capacity", label: "Capacity" },
-              ]} 
+              ]}
             />
           </div>
         );
 
       case "members": {
-      const activeMembers = members.filter(m => m.expiration_date && new Date(m.expiration_date) > new Date()).length;
-      const allMembers = members;
-      
-      return (
-        <div className="ss-card">
-          <h2 className="ss-section-title">Member Management</h2>
-          <div className="ss-stat-grid" style={{ marginBottom: 24 }}>
-            <div className="ss-stat"><span className="ss-stat-value">{allMembers.length}</span><span className="ss-stat-label">Total Members</span></div>
-            <div className="ss-stat"><span className="ss-stat-value">{activeMembers}</span><span className="ss-stat-label">Active Members</span></div>
-            <div className="ss-stat"><span className="ss-stat-value">{allMembers.length - activeMembers}</span><span className="ss-stat-label">Expired Members</span></div>
+        const activeMembers = members.filter(m => m.expiration_date && new Date(m.expiration_date) > new Date()).length;
+        const allMembers = members;
+
+        return (
+          <div className="ss-card">
+            <h2 className="ss-section-title">Member Management</h2>
+            <div className="ss-stat-grid" style={{ marginBottom: 24 }}>
+              <div className="ss-stat"><span className="ss-stat-value">{allMembers.length}</span><span className="ss-stat-label">Total Members</span></div>
+              <div className="ss-stat"><span className="ss-stat-value">{activeMembers}</span><span className="ss-stat-label">Active Members</span></div>
+              <div className="ss-stat"><span className="ss-stat-value">{allMembers.length - activeMembers}</span><span className="ss-stat-label">Expired Members</span></div>
+            </div>
+
+            <DataTable
+              keyField="user_id"
+              rows={allMembers}
+              columns={[
+                { key: "user_id", label: "ID" },
+                { key: "first_name", label: "First Name" },
+                { key: "last_name", label: "Last Name" },
+                { key: "email", label: "Email" },
+                { key: "membership_level", label: "Level" },
+                { key: "join_date", label: "Joined", render: fmt },
+                { key: "expiration_date", label: "Expires", render: fmt },
+                {
+                  key: "_actions",
+                  label: "Actions",
+                  render: (_, member) => (
+                    <button
+                      onClick={() => {
+                        setSelectedMember(member);
+                        setActionModalOpen(true);
+                      }}
+                      className="member-manage-btn"
+                    >
+                      Manage
+                    </button>
+                  )
+                },
+              ]}
+            />
           </div>
-          
-          <DataTable 
-            keyField="user_id" 
-            rows={allMembers} 
-            columns={[
-              { key: "user_id", label: "ID" },
-              { key: "first_name", label: "First Name" },
-              { key: "last_name", label: "Last Name" },
-              { key: "email", label: "Email" },
-              { key: "membership_level", label: "Level" },
-              { key: "join_date", label: "Joined", render: fmt },
-              { key: "expiration_date", label: "Expires", render: fmt },
-              { 
-                key: "_actions", 
-                label: "Actions",
-                render: (_, member) => (
-                  <button 
-                    onClick={() => {
-                      setSelectedMember(member);
-                      setActionModalOpen(true);
-                    }} 
-                    className="member-manage-btn"
-                  >
-                    Manage
-                  </button>
-                )
-              },
-            ]} 
-          />
-        </div>
-      );
-    }
+        );
+      }
 
       case "cafe":
         return (
@@ -1112,11 +1127,11 @@ export default function EmployeeDashboard() {
                 <button key={tab} className={`ss-tab ${activeTab === tab ? "active" : ""}`}
                   onClick={() => setActiveTab(tab)}>
                   {tab === "jobinfo" ? "Job Info" :
-                   tab === "artwork" ? "Artworks" :
-                   tab === "giftshop" ? "Gift Shop" :
-                   tab === "transactions" ? "Transactions" :
-                   tab === "password" ? "Change Password" :
-                   tab.charAt(0).toUpperCase() + tab.slice(1)}
+                    tab === "artwork" ? "Artworks" :
+                      tab === "giftshop" ? "Gift Shop" :
+                        tab === "transactions" ? "Transactions" :
+                          tab === "password" ? "Change Password" :
+                            tab.charAt(0).toUpperCase() + tab.slice(1)}
                 </button>
               ))}
             </div>
@@ -1126,7 +1141,7 @@ export default function EmployeeDashboard() {
         )}
       </div>
 
-      <EditModal 
+      <EditModal
         isOpen={!!editingItem}
         item={editingItem}
         fields={getEditFields(editType)}

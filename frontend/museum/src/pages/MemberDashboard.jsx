@@ -177,7 +177,7 @@ export default function MemberDashboard() {
     setPwErrors({});
     setSaving(true);
     try {
-      await changeMyPassword(pwForm.new_password);
+      await changeMyPassword(pwForm.new_password, profile);
       notify("Password changed successfully");
       setPwForm({ new_password: "", confirm_password: "" });
     } catch (e) { notify(e.message, "error"); }
