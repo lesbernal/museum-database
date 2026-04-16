@@ -5,27 +5,27 @@ import { Link, useNavigate } from "react-router-dom";
 import {
   getMyProfile, updateMyProfile, changeMyPassword,
   getMyVisitorRecord, getMyMemberRecord, getMyMembershipTransactions,
-  getMyTickets, getMyDonations, getMyEventSignups,
+  getMyTickets, getMyDonations,
 } from "../services/api";
 import { PasswordInput, PhoneInput, StateSelect, ZipInput } from "../components/FormUtils";
 import "../styles/Dashboard.css";
 import "../styles/SelfService.css";
 
 const TABS = [
-  { id: "profile",   label: "My Profile"        },
-  { id: "membership", label: "Membership"       },
-  { id: "visits",    label: "Visit History"     },
-  { id: "purchases", label: "Purchase History"  },
-  { id: "password",  label: "Change Password"   },
+  { id: "profile",    label: "My Profile" },
+  { id: "membership", label: "Membership" },
+  { id: "visits",     label: "Visit History" },
+  { id: "purchases",  label: "Purchase History" },
+  { id: "password",   label: "Change Password" },
 ];
 
 const LEVEL_COLORS = {
-  Bronze:             { bg: "#fdf2e9", color: "#a04000", border: "#f0a070" },
-  Silver:             { bg: "#f2f3f4", color: "#566573", border: "#aab7b8" },
-  Gold:               { bg: "#fef9e7", color: "#9a7d0a", border: "#f4d03f" },
-  Platinum:           { bg: "#eaf4fb", color: "#1a5276", border: "#7fb3d3" },
-  Benefactor:         { bg: "#f3e8ff", color: "#6b21a8", border: "#c084fc" },
-  "Leadership Circle":{ bg: "#fff1f2", color: "#9f1239", border: "#fb7185" },
+  Bronze:              { bg: "#fdf2e9", color: "#a04000", border: "#f0a070" },
+  Silver:              { bg: "#f2f3f4", color: "#566573", border: "#aab7b8" },
+  Gold:                { bg: "#fef9e7", color: "#9a7d0a", border: "#f4d03f" },
+  Platinum:            { bg: "#eaf4fb", color: "#1a5276", border: "#7fb3d3" },
+  Benefactor:          { bg: "#f3e8ff", color: "#6b21a8", border: "#c084fc" },
+  "Leadership Circle": { bg: "#fff1f2", color: "#9f1239", border: "#fb7185" },
 };
 const DEFAULT_STYLE = { bg: "#f3f4f6", color: "#374151", border: "#d1d5db" };
 const DONATION_TIERS = ["Benefactor", "Leadership Circle"];
@@ -36,25 +36,54 @@ const fmt = dateStr => {
     .toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
 };
 
+const fmtShort = dateStr => {
+  if (!dateStr) return "—";
+  return new Date(String(dateStr).slice(0, 10))
+    .toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
+};
+
+function validateProfile(form) {
+  const required = [
+    { key: "first_name",     label: "First name",    maxLen: 50,  lettersOnly: true  },
+    { key: "last_name",      label: "Last name",      maxLen: 50,  lettersOnly: true  },
+    { key: "email",          label: "Email",          maxLen: 255, lettersOnly: false },
+    { key: "phone_number",   label: "Phone number",   maxLen: 14,  lettersOnly: false },
+    { key: "street_address", label: "Street address", maxLen: 50,  lettersOnly: false },
+    { key: "city",           label: "City",           maxLen: 30,  lettersOnly: false },
+    { key: "state",          label: "State",          maxLen: 2,   lettersOnly: false },
+    { key: "zip_code",       label: "Zip code",       maxLen: 5,   lettersOnly: false },
+  ];
+  for (const f of required) {
+    const val = (form[f.key] || "").trim();
+    if (!val) return `${f.label} is required and cannot be blank.`;
+    if (val.length > f.maxLen) return `${f.label} cannot exceed ${f.maxLen} characters.`;
+    if (f.lettersOnly && !/^[a-zA-Z\s\-']+$/.test(val))
+      return `${f.label} can only contain letters, spaces, hyphens, and apostrophes.`;
+  }
+  const phoneDigits = (form.phone_number || "").replace(/\D/g, "");
+  if (phoneDigits.length !== 10) return "Phone number must be exactly 10 digits.";
+  if (!/^\d{5}$/.test((form.zip_code || "").trim())) return "Zip code must be exactly 5 digits.";
+  return null;
+}
+
 export default function MemberDashboard() {
   const navigate    = useNavigate();
   const userEmail   = localStorage.getItem("user_email") || "";
   const displayName = userEmail.split("@")[0];
 
-  const [activeTab,    setActiveTab]    = useState("profile");
-  const [profile,      setProfile]      = useState(null);
-  const [visitorRec,   setVisitorRec]   = useState(null);
-  const [memberRec,    setMemberRec]    = useState(null);
-  const [memberTxns,   setMemberTxns]   = useState([]);
-  const [tickets,      setTickets]      = useState([]);
-  const [donations,    setDonations]    = useState([]);
-  const [eventSignups, setEventSignups] = useState([]);
-  const [loading,      setLoading]      = useState(true);
-  const [saving,       setSaving]       = useState(false);
-  const [feedback,     setFeedback]     = useState(null);
-  const [form,         setForm]         = useState({});
-  const [pwForm,       setPwForm]       = useState({ new_password: "", confirm_password: "" });
-  const [pwErrors,     setPwErrors]     = useState({});
+  const [activeTab,  setActiveTab]  = useState("profile");
+  const [profile,    setProfile]    = useState(null);
+  const [visitorRec, setVisitorRec] = useState(null);
+  const [memberRec,  setMemberRec]  = useState(null);
+  const [memberTxns, setMemberTxns] = useState([]);
+  const [tickets,    setTickets]    = useState([]);
+  const [donations,  setDonations]  = useState([]);
+  const [loading,    setLoading]    = useState(true);
+  const [saving,     setSaving]     = useState(false);
+  const [feedback,   setFeedback]   = useState(null);
+  const [form,       setForm]       = useState({});
+  const [pwForm,     setPwForm]     = useState({ new_password: "", confirm_password: "" });
+  const [pwErrors,   setPwErrors]   = useState({});
 
   const notify = (msg, type = "success") => {
     setFeedback({ msg, type });
@@ -65,18 +94,16 @@ export default function MemberDashboard() {
     async function load() {
       setLoading(true);
       try {
-        const [prof, vis, mem, txns, tix, don, signups] = await Promise.allSettled([
+        const [prof, vis, mem, txns, tix, don] = await Promise.allSettled([
           getMyProfile(), getMyVisitorRecord(), getMyMemberRecord(),
           getMyMembershipTransactions(), getMyTickets(), getMyDonations(),
-          getMyEventSignups(),
         ]);
-        if (prof.status    === "fulfilled") { setProfile(prof.value); setForm(prof.value); }
-        if (vis.status     === "fulfilled") setVisitorRec(vis.value);
-        if (mem.status     === "fulfilled") setMemberRec(mem.value?.user_id ? mem.value : null);
-        if (txns.status    === "fulfilled") setMemberTxns(Array.isArray(txns.value) ? txns.value : []);
-        if (tix.status     === "fulfilled") setTickets(Array.isArray(tix.value) ? tix.value : []);
-        if (don.status     === "fulfilled") setDonations(Array.isArray(don.value) ? don.value : []);
-        if (signups.status === "fulfilled") setEventSignups(Array.isArray(signups.value) ? signups.value : []);
+        if (prof.status  === "fulfilled") { setProfile(prof.value); setForm(prof.value); }
+        if (vis.status   === "fulfilled") setVisitorRec(vis.value);
+        if (mem.status   === "fulfilled") setMemberRec(mem.value?.user_id ? mem.value : null);
+        if (txns.status  === "fulfilled") setMemberTxns(Array.isArray(txns.value) ? txns.value : []);
+        if (tix.status   === "fulfilled") setTickets(Array.isArray(tix.value) ? tix.value : []);
+        if (don.status   === "fulfilled") setDonations(Array.isArray(don.value) ? don.value : []);
       } catch (e) { notify(e.message, "error"); }
       finally { setLoading(false); }
     }
@@ -84,7 +111,7 @@ export default function MemberDashboard() {
   }, []);
 
   function handleLogout() {
-    ["token", "role", "user_id", "user_email"].forEach(k => localStorage.removeItem(k));
+    ["token","role","user_id","user_email"].forEach(k => localStorage.removeItem(k));
     navigate("/login");
   }
 
@@ -95,17 +122,20 @@ export default function MemberDashboard() {
 
   async function handleProfileSave(e) {
     e.preventDefault();
+    const err = validateProfile(form);
+    if (err) { notify(err, "error"); return; }
     setSaving(true);
     try {
       await updateMyProfile({
-        first_name:     form.first_name,
-        last_name:      form.last_name,
-        email:          form.email,
+        first_name:     form.first_name.trim(),
+        last_name:      form.last_name.trim(),
+        email:          form.email.trim(),
         phone_number:   form.phone_number,
-        street_address: form.street_address,
-        city:           form.city,
+        street_address: form.street_address.trim(),
+        city:           form.city.trim(),
         state:          form.state,
-        zip_code:       form.zip_code,
+        zip_code:       form.zip_code.trim(),
+        date_of_birth:  form.date_of_birth ? form.date_of_birth.slice(0, 10) : null,
       });
       setProfile({ ...profile, ...form });
       notify("Profile updated successfully");
@@ -132,11 +162,56 @@ export default function MemberDashboard() {
   const daysUntilExpiry = memberRec?.expiration_date
     ? Math.ceil((new Date(memberRec.expiration_date) - new Date()) / (1000 * 60 * 60 * 24))
     : null;
-  const levelStyle   = LEVEL_COLORS[memberRec?.membership_level] || DEFAULT_STYLE;
+  const levelStyle     = LEVEL_COLORS[memberRec?.membership_level] || DEFAULT_STYLE;
   const isDonationTier = DONATION_TIERS.includes(memberRec?.membership_level);
+  const showExpiryWarning = daysUntilExpiry !== null && daysUntilExpiry <= 30 && daysUntilExpiry > 0;
+  const isExpired = daysUntilExpiry !== null && daysUntilExpiry <= 0;
+
+  // Group tickets by visit date
+  const groupedTickets = tickets.reduce((acc, t) => {
+    const key = String(t.visit_date).slice(0, 10);
+    if (!acc[key]) acc[key] = [];
+    acc[key].push(t);
+    return acc;
+  }, {});
+  const sortedVisitDates = Object.keys(groupedTickets).sort().reverse();
+  const ticketTotal  = tickets.reduce((s, t) => s + parseFloat(t.final_price || 0), 0);
+  const donationTotal = donations.reduce((s, d) => s + parseFloat(d.amount || 0), 0);
+  const membershipTotal = memberTxns.reduce((s, t) => s + parseFloat(t.amount || 0), 0);
 
   return (
     <div className="dashboard-page member-dashboard">
+      {/* ── Expiry notification banner ── */}
+      {(showExpiryWarning || isExpired) && (
+        <div style={{
+          background: isExpired ? "#fee2e2" : "#fef3c7",
+          color: isExpired ? "#991b1b" : "#92400e",
+          padding: "12px 24px",
+          fontSize: 13,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 12,
+          borderBottom: `1px solid ${isExpired ? "#fecaca" : "#fde68a"}`,
+        }}>
+          <span>
+            {isExpired
+              ? "Your membership has expired. Renew now to keep your benefits."
+              : `Your membership expires in ${daysUntilExpiry} day${daysUntilExpiry === 1 ? "" : "s"}. Renew soon to avoid losing your benefits.`}
+          </span>
+          {!isDonationTier && (
+            <Link to="/membership" style={{
+              padding: "6px 16px", background: isExpired ? "#991b1b" : "#92400e",
+              color: "#fff", textDecoration: "none", fontSize: 12,
+              fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em",
+              whiteSpace: "nowrap",
+            }}>
+              Renew Now
+            </Link>
+          )}
+        </div>
+      )}
+
       <div className="dashboard-hero member-hero">
         <div className="dashboard-hero-overlay" />
         <div className="dashboard-hero-content">
@@ -171,41 +246,39 @@ export default function MemberDashboard() {
                 <form className="ss-form" onSubmit={handleProfileSave}>
                   <div className="ss-form-grid">
                     <div className="ss-form-group">
-                      <label>First Name</label>
-                      <input name="first_name" value={form.first_name || ""} onChange={handleFormChange} />
+                      <label>First Name *</label>
+                      <input name="first_name" value={form.first_name || ""} onChange={handleFormChange} maxLength={50} />
                     </div>
                     <div className="ss-form-group">
-                      <label>Last Name</label>
-                      <input name="last_name" value={form.last_name || ""} onChange={handleFormChange} />
+                      <label>Last Name *</label>
+                      <input name="last_name" value={form.last_name || ""} onChange={handleFormChange} maxLength={50} />
                     </div>
                     <div className="ss-form-group full">
-                      <label>Email</label>
-                      <input name="email" type="email" value={form.email || ""} onChange={handleFormChange} />
+                      <label>Email *</label>
+                      <input name="email" type="email" value={form.email || ""} onChange={handleFormChange} maxLength={255} />
                     </div>
                     <div className="ss-form-group">
-                      <label>Phone Number</label>
+                      <label>Phone Number *</label>
                       <PhoneInput name="phone_number" value={form.phone_number || ""} onChange={handleFormChange} />
                     </div>
                     <div className="ss-form-group">
                       <label>Date of Birth</label>
-                      <input name="date_of_birth" type="date"
-                        value={form.date_of_birth?.slice(0, 10) || ""}
-                        readOnly />
+                      <input name="date_of_birth" type="date" value={form.date_of_birth?.slice(0, 10) || ""} onChange={handleFormChange} />
                     </div>
                     <div className="ss-form-group full">
-                      <label>Street Address</label>
-                      <input name="street_address" value={form.street_address || ""} onChange={handleFormChange} />
+                      <label>Street Address * <span style={{ fontSize: 10, color: "#9ca3af" }}>(max 50 chars)</span></label>
+                      <input name="street_address" value={form.street_address || ""} onChange={handleFormChange} maxLength={50} />
                     </div>
                     <div className="ss-form-group">
-                      <label>City</label>
-                      <input name="city" value={form.city || ""} onChange={handleFormChange} />
+                      <label>City * <span style={{ fontSize: 10, color: "#9ca3af" }}>(max 30 chars)</span></label>
+                      <input name="city" value={form.city || ""} onChange={handleFormChange} maxLength={30} />
                     </div>
                     <div className="ss-form-group">
-                      <label>State</label>
+                      <label>State *</label>
                       <StateSelect name="state" value={form.state || ""} onChange={handleFormChange} />
                     </div>
                     <div className="ss-form-group">
-                      <label>Zip Code</label>
+                      <label>Zip Code *</label>
                       <ZipInput name="zip_code" value={form.zip_code || ""} onChange={handleFormChange} />
                     </div>
                   </div>
@@ -242,7 +315,7 @@ export default function MemberDashboard() {
                       {daysUntilExpiry !== null && (
                         <div className="ss-stat">
                           <span className="ss-stat-value" style={{ color: daysUntilExpiry < 30 ? "#c0392b" : "inherit" }}>
-                            {daysUntilExpiry > 0 ? `${daysUntilExpiry} days` : "Expired"}
+                            {isExpired ? "Expired" : `${daysUntilExpiry} days`}
                           </span>
                           <span className="ss-stat-label">Until Expiry</span>
                         </div>
@@ -255,7 +328,7 @@ export default function MemberDashboard() {
                     <div style={{ marginTop: 24 }}>
                       {isDonationTier ? (
                         <p style={{ fontSize: 13, color: "#6b7280", lineHeight: 1.6 }}>
-                          Your <strong>{memberRec.membership_level}</strong> status was earned through your generous donations.{" "}
+                          Your <strong>{memberRec.membership_level}</strong> status was earned through donations.{" "}
                           <Link to="/donations" style={{ color: "#c9a84c" }}>Make a donation</Link>
                         </p>
                       ) : (
@@ -265,7 +338,7 @@ export default function MemberDashboard() {
                           fontWeight: 500, textTransform: "uppercase",
                           letterSpacing: "0.06em", textDecoration: "none",
                         }}>
-                          {daysUntilExpiry !== null && daysUntilExpiry <= 60 ? "Renew Membership" : "Upgrade or Renew"}
+                          {isExpired ? "Renew Membership" : daysUntilExpiry <= 60 ? "Renew Membership" : "Upgrade or Renew"}
                         </Link>
                       )}
                     </div>
@@ -278,7 +351,7 @@ export default function MemberDashboard() {
                           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
                             <thead>
                               <tr style={{ background: "#f9fafb", borderBottom: "1px solid #e5e7eb" }}>
-                                {["Date", "Level", "Type", "Amount"].map(h => (
+                                {["Date","Level","Type","Amount"].map(h => (
                                   <th key={h} style={{ padding: "0.625rem 1rem", textAlign: h === "Amount" ? "right" : "left", color: "#6b7280", fontWeight: 600, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.07em" }}>{h}</th>
                                 ))}
                               </tr>
@@ -286,14 +359,10 @@ export default function MemberDashboard() {
                             <tbody>
                               {memberTxns.map((t, i) => (
                                 <tr key={t.transaction_id} style={{ borderBottom: i < memberTxns.length - 1 ? "1px solid #f3f4f6" : "none" }}>
-                                  <td style={{ padding: "0.625rem 1rem", color: "#374151" }}>
-                                    {new Date(t.transaction_date).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })}
-                                  </td>
+                                  <td style={{ padding: "0.625rem 1rem", color: "#374151" }}>{fmtShort(t.transaction_date)}</td>
                                   <td style={{ padding: "0.625rem 1rem", color: "#374151" }}>{t.membership_level}</td>
                                   <td style={{ padding: "0.625rem 1rem", color: "#374151" }}>{t.transaction_type}</td>
-                                  <td style={{ padding: "0.625rem 1rem", color: "#374151", textAlign: "right" }}>
-                                    ${Number(t.amount).toFixed(2)}
-                                  </td>
+                                  <td style={{ padding: "0.625rem 1rem", color: "#374151", textAlign: "right" }}>${Number(t.amount).toFixed(2)}</td>
                                 </tr>
                               ))}
                             </tbody>
@@ -315,63 +384,21 @@ export default function MemberDashboard() {
             {activeTab === "visits" && (
               <div className="ss-card">
                 <h2 className="ss-section-title">Visit History</h2>
-
-                {/* Visit stats */}
                 {visitorRec ? (
-                  <div className="ss-stat-grid" style={{ marginBottom: 32 }}>
-                    <div className="ss-stat">
-                      <span className="ss-stat-value">{visitorRec.total_visits ?? 0}</span>
-                      <span className="ss-stat-label">Total Visits</span>
+                  <>
+                    <div className="ss-stat-grid" style={{ marginBottom: 24 }}>
+                      <div className="ss-stat">
+                        <span className="ss-stat-value">{visitorRec.total_visits ?? 0}</span>
+                        <span className="ss-stat-label">Total Visits</span>
+                      </div>
+                      <div className="ss-stat">
+                        <span className="ss-stat-value">{fmtShort(visitorRec.last_visit_date)}</span>
+                        <span className="ss-stat-label">Last Visit</span>
+                      </div>
                     </div>
-                    <div className="ss-stat">
-                      <span className="ss-stat-value">{fmt(visitorRec.last_visit_date)}</span>
-                      <span className="ss-stat-label">Last Visit</span>
-                    </div>
-                  </div>
+                  </>
                 ) : (
-                  <div className="ss-empty" style={{ marginBottom: 24 }}>No visit records found.</div>
-                )}
-
-                {/* Event signups */}
-                <h3 style={{ fontSize: 13, fontWeight: 600, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 12 }}>
-                  Events Signed Up For
-                </h3>
-                {eventSignups.length === 0 ? (
-                  <div className="ss-empty">
-                    No events signed up yet.{" "}
-                    <Link to="/events" style={{ color: "#c9a84c" }}>Browse events</Link>
-                  </div>
-                ) : (
-                  <div style={{ border: "1px solid #e5e7eb", overflowX: "auto" }}>
-                    <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
-                      <thead>
-                        <tr style={{ background: "#f9fafb", borderBottom: "1px solid #e5e7eb" }}>
-                          {["Event", "Type", "Event Date", "Signup Date", "Qty", "Location"].map(h => (
-                            <th key={h} style={{ padding: "0.625rem 1rem", textAlign: "left", color: "#6b7280", fontWeight: 600, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.07em", whiteSpace: "nowrap" }}>{h}</th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {eventSignups.map((s, i) => (
-                          <tr key={s.signup_id} style={{ borderBottom: i < eventSignups.length - 1 ? "1px solid #f3f4f6" : "none" }}>
-                            <td style={{ padding: "0.625rem 1rem", color: "#374151", fontWeight: 500 }}>{s.event_name}</td>
-                            <td style={{ padding: "0.625rem 1rem", color: "#374151" }}>{s.event_type || "General"}</td>
-                            <td style={{ padding: "0.625rem 1rem", color: "#374151" }}>{fmt(s.event_date)}</td>
-                            <td style={{ padding: "0.625rem 1rem", color: "#374151" }}>{fmt(s.signup_date)}</td>
-                            <td style={{ padding: "0.625rem 1rem", color: "#374151" }}>{s.quantity}</td>
-                            <td style={{ padding: "0.625rem 1rem", color: "#374151" }}>{s.gallery_name || "—"}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                      <tfoot>
-                        <tr style={{ background: "#f9fafb", borderTop: "1px solid #e5e7eb" }}>
-                          <td colSpan={6} style={{ padding: "0.625rem 1rem", fontWeight: 600, fontSize: 12, color: "#374151" }}>
-                            Total Events: {eventSignups.length} &nbsp;·&nbsp; Total Spots: {eventSignups.reduce((s, e) => s + e.quantity, 0)}
-                          </td>
-                        </tr>
-                      </tfoot>
-                    </table>
-                  </div>
+                  <div className="ss-empty">No visit records found.</div>
                 )}
               </div>
             )}
@@ -381,6 +408,45 @@ export default function MemberDashboard() {
               <div className="ss-card">
                 <h2 className="ss-section-title">Purchase History</h2>
 
+                {/* Membership transactions */}
+                <h3 style={{ fontSize: 13, fontWeight: 600, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 12 }}>
+                  Memberships
+                </h3>
+                {memberTxns.length === 0 ? (
+                  <div className="ss-empty" style={{ marginBottom: 24 }}>No membership purchases yet.</div>
+                ) : (
+                  <div style={{ border: "1px solid #e5e7eb", overflowX: "auto", marginBottom: 32 }}>
+                    <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+                      <thead>
+                        <tr style={{ background: "#f9fafb", borderBottom: "1px solid #e5e7eb" }}>
+                          {["Date","Level","Type","Amount","Payment"].map(h => (
+                            <th key={h} style={{ padding: "0.625rem 1rem", textAlign: h === "Amount" ? "right" : "left", color: "#6b7280", fontWeight: 600, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.07em" }}>{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {memberTxns.map((t, i) => (
+                          <tr key={t.transaction_id} style={{ borderBottom: i < memberTxns.length - 1 ? "1px solid #f3f4f6" : "none" }}>
+                            <td style={{ padding: "0.625rem 1rem", color: "#374151" }}>{fmtShort(t.transaction_date)}</td>
+                            <td style={{ padding: "0.625rem 1rem", color: "#374151" }}>{t.membership_level}</td>
+                            <td style={{ padding: "0.625rem 1rem", color: "#374151" }}>{t.transaction_type}</td>
+                            <td style={{ padding: "0.625rem 1rem", color: "#374151", textAlign: "right" }}>${Number(t.amount).toFixed(2)}</td>
+                            <td style={{ padding: "0.625rem 1rem", color: "#374151" }}>{t.payment_method}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                      <tfoot>
+                        <tr style={{ background: "#f9fafb", borderTop: "1px solid #e5e7eb" }}>
+                          <td colSpan={3} style={{ padding: "0.625rem 1rem", fontWeight: 600, fontSize: 12, color: "#374151" }}>Total</td>
+                          <td style={{ padding: "0.625rem 1rem", fontWeight: 600, fontSize: 12, color: "#374151", textAlign: "right" }}>${membershipTotal.toFixed(2)}</td>
+                          <td />
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+                )}
+
+                {/* Tickets — grouped by visit date */}
                 <h3 style={{ fontSize: 13, fontWeight: 600, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 12 }}>
                   Tickets
                 </h3>
@@ -394,40 +460,39 @@ export default function MemberDashboard() {
                     <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
                       <thead>
                         <tr style={{ background: "#f9fafb", borderBottom: "1px solid #e5e7eb" }}>
-                          {["Purchase Date","Visit Date","Type","Discount","Price","Payment"].map(h => (
-                            <th key={h} style={{ padding: "0.625rem 1rem", textAlign: h === "Price" ? "right" : "left", color: "#6b7280", fontWeight: 600, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.07em", whiteSpace: "nowrap" }}>{h}</th>
+                          {["Visit Date","Tickets","Types","Total"].map(h => (
+                            <th key={h} style={{ padding: "0.625rem 1rem", textAlign: h === "Total" ? "right" : "left", color: "#6b7280", fontWeight: 600, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.07em" }}>{h}</th>
                           ))}
                         </tr>
                       </thead>
                       <tbody>
-                        {tickets.map((t, i) => (
-                          <tr key={t.ticket_id} style={{ borderBottom: i < tickets.length - 1 ? "1px solid #f3f4f6" : "none" }}>
-                            <td style={{ padding: "0.625rem 1rem", color: "#374151" }}>{fmt(t.purchase_date)}</td>
-                            <td style={{ padding: "0.625rem 1rem", color: "#374151" }}>{fmt(t.visit_date)}</td>
-                            <td style={{ padding: "0.625rem 1rem", color: "#374151" }}>{t.ticket_type}</td>
-                            <td style={{ padding: "0.625rem 1rem", color: "#374151" }}>{t.discount_type}</td>
-                            <td style={{ padding: "0.625rem 1rem", color: "#374151", textAlign: "right" }}>
-                              {t.final_price != null ? `$${parseFloat(t.final_price).toFixed(2)}` : "—"}
-                            </td>
-                            <td style={{ padding: "0.625rem 1rem", color: "#374151" }}>{t.payment_method}</td>
-                          </tr>
-                        ))}
+                        {sortedVisitDates.map((date, i) => {
+                          const group = groupedTickets[date];
+                          const total = group.reduce((s, t) => s + parseFloat(t.final_price || 0), 0);
+                          const types = [...new Set(group.map(t => t.ticket_type))].join(", ");
+                          return (
+                            <tr key={date} style={{ borderBottom: i < sortedVisitDates.length - 1 ? "1px solid #f3f4f6" : "none" }}>
+                              <td style={{ padding: "0.625rem 1rem", color: "#374151" }}>{fmtShort(date)}</td>
+                              <td style={{ padding: "0.625rem 1rem", color: "#374151" }}>{group.length}</td>
+                              <td style={{ padding: "0.625rem 1rem", color: "#374151" }}>{types}</td>
+                              <td style={{ padding: "0.625rem 1rem", color: "#374151", textAlign: "right" }}>${total.toFixed(2)}</td>
+                            </tr>
+                          );
+                        })}
                       </tbody>
                       <tfoot>
                         <tr style={{ background: "#f9fafb", borderTop: "1px solid #e5e7eb" }}>
-                          <td colSpan={4} style={{ padding: "0.625rem 1rem", fontWeight: 600, fontSize: 12, color: "#374151" }}>
-                            Total Tickets: {tickets.length}
+                          <td colSpan={3} style={{ padding: "0.625rem 1rem", fontWeight: 600, fontSize: 12, color: "#374151" }}>
+                            {tickets.length} ticket{tickets.length !== 1 ? "s" : ""} across {sortedVisitDates.length} visit{sortedVisitDates.length !== 1 ? "s" : ""}
                           </td>
-                          <td style={{ padding: "0.625rem 1rem", fontWeight: 600, fontSize: 12, color: "#374151", textAlign: "right" }}>
-                            ${tickets.reduce((s, t) => s + parseFloat(t.final_price || 0), 0).toFixed(2)}
-                          </td>
-                          <td />
+                          <td style={{ padding: "0.625rem 1rem", fontWeight: 600, fontSize: 12, color: "#374151", textAlign: "right" }}>${ticketTotal.toFixed(2)}</td>
                         </tr>
                       </tfoot>
                     </table>
                   </div>
                 )}
 
+                {/* Donations */}
                 <h3 style={{ fontSize: 13, fontWeight: 600, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 12 }}>
                   Donations
                 </h3>
@@ -449,20 +514,16 @@ export default function MemberDashboard() {
                       <tbody>
                         {donations.map((d, i) => (
                           <tr key={d.donation_id} style={{ borderBottom: i < donations.length - 1 ? "1px solid #f3f4f6" : "none" }}>
-                            <td style={{ padding: "0.625rem 1rem", color: "#374151" }}>{fmt(d.donation_date)}</td>
+                            <td style={{ padding: "0.625rem 1rem", color: "#374151" }}>{fmtShort(d.donation_date)}</td>
                             <td style={{ padding: "0.625rem 1rem", color: "#374151" }}>{d.donation_type}</td>
-                            <td style={{ padding: "0.625rem 1rem", color: "#374151", textAlign: "right" }}>
-                              {d.amount != null ? `$${parseFloat(d.amount).toFixed(2)}` : "—"}
-                            </td>
+                            <td style={{ padding: "0.625rem 1rem", color: "#374151", textAlign: "right" }}>${parseFloat(d.amount || 0).toFixed(2)}</td>
                           </tr>
                         ))}
                       </tbody>
                       <tfoot>
                         <tr style={{ background: "#f9fafb", borderTop: "1px solid #e5e7eb" }}>
                           <td colSpan={2} style={{ padding: "0.625rem 1rem", fontWeight: 600, fontSize: 12, color: "#374151" }}>Total Donated</td>
-                          <td style={{ padding: "0.625rem 1rem", fontWeight: 600, fontSize: 12, color: "#374151", textAlign: "right" }}>
-                            ${donations.reduce((s, d) => s + parseFloat(d.amount || 0), 0).toFixed(2)}
-                          </td>
+                          <td style={{ padding: "0.625rem 1rem", fontWeight: 600, fontSize: 12, color: "#374151", textAlign: "right" }}>${donationTotal.toFixed(2)}</td>
                         </tr>
                       </tfoot>
                     </table>
@@ -479,16 +540,14 @@ export default function MemberDashboard() {
                   <div className="ss-form-grid" style={{ gridTemplateColumns: "1fr" }}>
                     <div className="ss-form-group">
                       <label>New Password <span style={{ fontSize: 10, color: "#9ca3af" }}>(min. 6 characters)</span></label>
-                      <PasswordInput
-                        value={pwForm.new_password}
+                      <PasswordInput value={pwForm.new_password}
                         onChange={e => setPwForm(p => ({ ...p, new_password: e.target.value }))}
                         placeholder="Min. 6 characters" required />
                       {pwErrors.new_password && <span style={{ fontSize: 11, color: "#dc2626" }}>{pwErrors.new_password}</span>}
                     </div>
                     <div className="ss-form-group">
                       <label>Confirm New Password</label>
-                      <PasswordInput
-                        value={pwForm.confirm_password}
+                      <PasswordInput value={pwForm.confirm_password}
                         onChange={e => setPwForm(p => ({ ...p, confirm_password: e.target.value }))}
                         placeholder="Repeat new password" required />
                       {pwErrors.confirm_password && <span style={{ fontSize: 11, color: "#dc2626" }}>{pwErrors.confirm_password}</span>}

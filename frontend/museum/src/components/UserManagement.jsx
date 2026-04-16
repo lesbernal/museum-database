@@ -1,4 +1,3 @@
-import { formatToCST } from "../utils/dateUtils";
 // components/UserManagement.jsx
 
 import { useState, useEffect, useCallback, useImperativeHandle, useRef, forwardRef } from "react";
@@ -7,6 +6,7 @@ import {
   getEmployees, createEmployee, updateEmployee, deleteEmployee,
   getVisitors,  createVisitor,  updateVisitor,  deleteVisitor,
   getMembers,   createMember,   updateMember,   deleteMember,
+  getDepartments,
 } from "../services/api";
 import "../styles/UserManagement.css";
 
@@ -14,9 +14,10 @@ const SUB_TABS = [
   { id: "users",     label: "Users" },
   { id: "employees", label: "Employees" },
   { id: "visitors",  label: "Visitors" },
-  { id: "members",   label: "Members"},
+  { id: "members",   label: "Members" },
 ];
 
+// department_id field is handled specially as a dropdown — see renderField()
 const FIELDS = {
   users: [
     { key: "first_name",     label: "First Name",    required: true },
@@ -34,7 +35,7 @@ const FIELDS = {
   ],
   employees: [
     { key: "user_id",         label: "User ID",         required: true, editDisabled: true },
-    { key: "department_id",   label: "Department ID",   required: true, type: "number" },
+    { key: "department_id",   label: "Department",      required: true, type: "dept_select" },
     { key: "job_title",       label: "Job Title",       required: true },
     { key: "hire_date",       label: "Hire Date",       required: true, type: "date" },
     { key: "salary",          label: "Salary",          required: true, type: "number" },
@@ -81,15 +82,16 @@ function trimDates(record) {
 }
 
 const UserManagement = forwardRef(function UserManagement({ searchTerm = "", onSubTabChange }, ref) {
-  const [subTab,       setSubTab]       = useState("users");
-  const [records,      setRecords]      = useState([]);
-  const [loading,      setLoading]      = useState(true);
-  const [modal,        setModal]        = useState(null);
-  const [selected,     setSelected]     = useState(null);
-  const [form,         setForm]         = useState({});
-  const [saving,       setSaving]       = useState(false);
-  const [feedback,     setFeedback]     = useState(null);
-  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [subTab,        setSubTab]        = useState("users");
+  const [records,       setRecords]       = useState([]);
+  const [departments,   setDepartments]   = useState([]);
+  const [loading,       setLoading]       = useState(true);
+  const [modal,         setModal]         = useState(null);
+  const [selected,      setSelected]      = useState(null);
+  const [form,          setForm]          = useState({});
+  const [saving,        setSaving]        = useState(false);
+  const [feedback,      setFeedback]      = useState(null);
+  const [deleteTarget,  setDeleteTarget]  = useState(null);
   const [localSearchTerm, setLocalSearchTerm] = useState("");
 
   const pendingForm = useRef(null);
@@ -98,6 +100,13 @@ const UserManagement = forwardRef(function UserManagement({ searchTerm = "", onS
     setFeedback({ msg, type });
     setTimeout(() => setFeedback(null), 3000);
   };
+
+  // Load departments once for the dropdown
+  useEffect(() => {
+    getDepartments()
+      .then(data => setDepartments(Array.isArray(data) ? data : []))
+      .catch(() => {});
+  }, []);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -131,10 +140,8 @@ const UserManagement = forwardRef(function UserManagement({ searchTerm = "", onS
 
   const fields    = FIELDS[subTab];
   const tableCols = TABLE_COLS[subTab];
-
-  // Use localSearchTerm for filtering, fallback to prop if needed
   const searchValue = localSearchTerm || searchTerm;
-  
+
   const filtered = records.filter(r =>
     tableCols.some(col =>
       String(r[col] ?? "").toLowerCase().includes(searchValue.toLowerCase())
@@ -146,7 +153,7 @@ const UserManagement = forwardRef(function UserManagement({ searchTerm = "", onS
 
   const handleSubTabChange = (id) => {
     setSubTab(id);
-    setLocalSearchTerm(""); // Reset search when changing tabs
+    setLocalSearchTerm("");
     closeModal();
     if (onSubTabChange) onSubTabChange(id);
   };
@@ -162,59 +169,23 @@ const UserManagement = forwardRef(function UserManagement({ searchTerm = "", onS
           const createdId = result.user_id || form.user_id;
 
           if (form.role === "employee") {
-            const confirm = window.confirm(
-              `User created! Would you like to add their employee details now?\n\n` +
-              `This will switch to the Employees tab with User ID (${createdId}) pre-filled.`
-            );
-            if (confirm) {
-              closeModal(); load();
-              pendingForm.current = { user_id: createdId };
-              handleSubTabChange("employees");
-              return;
-            }
+            const confirm = window.confirm(`User created! Would you like to add their employee details now?\n\nThis will switch to the Employees tab with User ID (${createdId}) pre-filled.`);
+            if (confirm) { closeModal(); load(); pendingForm.current = { user_id: createdId }; handleSubTabChange("employees"); return; }
           }
-
           if (form.role === "visitor") {
-            const confirm = window.confirm(
-              `User created! Would you like to add their visitor details now?\n\n` +
-              `This will switch to the Visitors tab with User ID (${createdId}) pre-filled.`
-            );
-            if (confirm) {
-              closeModal(); load();
-              pendingForm.current = { user_id: createdId };
-              handleSubTabChange("visitors");
-              return;
-            }
+            const confirm = window.confirm(`User created! Would you like to add their visitor details now?\n\nThis will switch to the Visitors tab with User ID (${createdId}) pre-filled.`);
+            if (confirm) { closeModal(); load(); pendingForm.current = { user_id: createdId }; handleSubTabChange("visitors"); return; }
           }
-
           if (form.role === "member") {
-            const confirmVisitor = window.confirm(
-              `User created! Members require a visitor record first.\n\n` +
-              `Would you like to add their visitor details now?\n` +
-              `(You will then be prompted to add their membership details.)`
-            );
-            if (confirmVisitor) {
-              closeModal(); load();
-              pendingForm.current = { user_id: createdId };
-              handleSubTabChange("visitors");
-              return;
-            }
+            const confirmVisitor = window.confirm(`User created! Members require a visitor record first.\n\nWould you like to add their visitor details now?`);
+            if (confirmVisitor) { closeModal(); load(); pendingForm.current = { user_id: createdId }; handleSubTabChange("visitors"); return; }
           }
         }
 
         if (subTab === "visitors") {
           const createdId = result.user_id || form.user_id;
-          const confirmMember = window.confirm(
-            `Visitor record created! Is this visitor also a member?\n\n` +
-            `Would you like to add their membership details now?\n` +
-            `This will switch to the Members tab with User ID (${createdId}) pre-filled.`
-          );
-          if (confirmMember) {
-            closeModal(); load();
-            pendingForm.current = { user_id: createdId };
-            handleSubTabChange("members");
-            return;
-          }
+          const confirmMember = window.confirm(`Visitor record created! Is this visitor also a member?\n\nWould you like to add their membership details now?`);
+          if (confirmMember) { closeModal(); load(); pendingForm.current = { user_id: createdId }; handleSubTabChange("members"); return; }
         }
 
       } else {
@@ -253,11 +224,66 @@ const UserManagement = forwardRef(function UserManagement({ searchTerm = "", onS
       return <span className={`um-badge um-badge-${r[col]}`}>{r[col]}</span>;
     if (col === "membership_level")
       return <span className="um-badge um-badge-member">{r[col]}</span>;
+    // Show department name instead of ID in table
+    if (col === "department_id") {
+      const dept = departments.find(d => d.department_id === r[col]);
+      return dept ? dept.department_name : String(r[col] ?? "—");
+    }
     const val = r[col];
     if (!val) return "—";
     if (typeof val === "string" && /^\d{4}-\d{2}-\d{2}/.test(val))
       return val.slice(0, 10);
     return String(val);
+  };
+
+  // Render a form field — handles dept_select specially
+  const renderField = (f) => {
+    if (f.type === "dept_select") {
+      return (
+        <select
+          value={form[f.key] || ""}
+          onChange={e => setForm(p => ({ ...p, [f.key]: e.target.value }))}
+          disabled={f.editDisabled && modal === "edit"}
+        >
+          <option value="">— Select Department —</option>
+          {departments.map(d => (
+            <option key={d.department_id} value={d.department_id}>
+              {d.department_name} (ID: {d.department_id})
+            </option>
+          ))}
+        </select>
+      );
+    }
+    if (f.type === "select") {
+      return (
+        <select value={form[f.key] || ""}
+          onChange={e => setForm(p => ({ ...p, [f.key]: e.target.value }))}>
+          <option value="">— Select —</option>
+          {f.options.map(o => <option key={o} value={o}>{o}</option>)}
+        </select>
+      );
+    }
+    if (f.type === "checkbox") {
+      return (
+        <div style={{ display: "flex", alignItems: "center", gap: 8, paddingTop: 6 }}>
+          <input type="checkbox" id={`cb-${f.key}`}
+            checked={!!form[f.key]}
+            onChange={e => setForm(p => ({ ...p, [f.key]: e.target.checked ? 1 : 0 }))}
+            style={{ width: 16, height: 16, cursor: "pointer" }} />
+          <label htmlFor={`cb-${f.key}`} style={{ fontSize: "0.875rem", color: "#374151", cursor: "pointer", marginBottom: 0 }}>
+            Grant manager permissions
+          </label>
+        </div>
+      );
+    }
+    return (
+      <input
+        type={f.type || "text"}
+        value={form[f.key] || ""}
+        disabled={f.editDisabled && modal === "edit"}
+        onChange={e => setForm(p => ({ ...p, [f.key]: e.target.value }))}
+      />
+    );
   };
 
   return (
@@ -273,20 +299,14 @@ const UserManagement = forwardRef(function UserManagement({ searchTerm = "", onS
         ))}
       </div>
 
-      {/* Header with search and add button (matching ArtworkManager pattern) */}
+      {/* Header: search + add button */}
       <div style={{ display: "flex", gap: "0.75rem", alignItems: "center", marginBottom: "1.5rem", flexWrap: "wrap" }}>
         <input
           type="text"
           placeholder={`Search ${subTab} by name, email, or ID...`}
           value={localSearchTerm}
           onChange={e => setLocalSearchTerm(e.target.value)}
-          style={{
-            flex: 1, minWidth: 200,
-            padding: "0.625rem 0.75rem",
-            border: "1px solid #e5e7eb",
-            fontSize: "0.875rem",
-            outline: "none",
-          }}
+          style={{ flex: 1, minWidth: 200, padding: "0.625rem 0.75rem", border: "1px solid #e5e7eb", fontSize: "0.875rem", outline: "none" }}
         />
         <button className="add-btn" onClick={() => { setForm({}); setModal("add"); }}>
           + ADD NEW {subTab.slice(0, -1).toUpperCase()}
@@ -305,7 +325,11 @@ const UserManagement = forwardRef(function UserManagement({ searchTerm = "", onS
           <table className="um-table">
             <thead>
               <tr>
-                {tableCols.map(c => <th key={c}>{c.replace(/_/g, " ")}</th>)}
+                {tableCols.map(c => (
+                  <th key={c}>
+                    {c === "department_id" ? "Department" : c.replace(/_/g, " ")}
+                  </th>
+                ))}
                 <th>Actions</th>
               </tr>
             </thead>
@@ -341,36 +365,7 @@ const UserManagement = forwardRef(function UserManagement({ searchTerm = "", onS
                   .map(f => (
                     <div className={`um-form-group${f.full ? " full" : ""}`} key={f.key}>
                       <label>{f.label}{f.required ? " *" : ""}</label>
-
-                      {f.type === "select" ? (
-                        <select value={form[f.key] || ""}
-                          onChange={e => setForm(p => ({ ...p, [f.key]: e.target.value }))}>
-                          <option value="">— Select —</option>
-                          {f.options.map(o => <option key={o} value={o}>{o}</option>)}
-                        </select>
-
-                      ) : f.type === "checkbox" ? (
-                        <div style={{ display: "flex", alignItems: "center", gap: 8, paddingTop: 6 }}>
-                          <input
-                            type="checkbox"
-                            id={`cb-${f.key}`}
-                            checked={!!form[f.key]}
-                            onChange={e => setForm(p => ({ ...p, [f.key]: e.target.checked ? 1 : 0 }))}
-                            style={{ width: 16, height: 16, cursor: "pointer" }}
-                          />
-                          <label htmlFor={`cb-${f.key}`} style={{ fontSize: "0.875rem", color: "#374151", cursor: "pointer", marginBottom: 0 }}>
-                            Grant manager permissions
-                          </label>
-                        </div>
-
-                      ) : (
-                        <input
-                          type={f.type || "text"}
-                          value={form[f.key] || ""}
-                          disabled={f.editDisabled && modal === "edit"}
-                          onChange={e => setForm(p => ({ ...p, [f.key]: e.target.value }))}
-                        />
-                      )}
+                      {renderField(f)}
                     </div>
                   ))}
               </div>

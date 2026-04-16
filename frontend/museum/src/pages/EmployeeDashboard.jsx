@@ -1,5 +1,4 @@
 // pages/EmployeeDashboard.jsx
-// PROTECTED — requires login with role "employee"
 
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
@@ -13,7 +12,6 @@ import { PasswordInput, PhoneInput, StateSelect, ZipInput } from "../components/
 import "../styles/Dashboard.css";
 import "../styles/SelfService.css";
 
-// ── Department groupings ──────────────────────────────────────────────────────
 const DEPT_GROUPS = {
   operations:    [1],
   collections:   [2, 3],
@@ -32,32 +30,31 @@ function getDeptGroup(department_id) {
 
 function getTabsForGroup(group, isManager) {
   const base = [
-    { id: "profile", label: "My Profile"},
-    { id: "jobinfo", label: "Job Info"},
+    { id: "profile", label: "My Profile" },
+    { id: "jobinfo", label: "Job Info" },
   ];
   const groupTabs = {
     operations:    [],
     collections:   [
-      { id: "artworks",    label: "Artworks"},
-      { id: "exhibitions", label: "Exhibitions"},
+      { id: "artworks",    label: "Artworks" },
+      { id: "exhibitions", label: "Exhibitions" },
     ],
-    guestServices: [{ id: "visitors",     label: "Visitor Stats"}],
-    revenue:       [{ id: "transactions", label: "Transactions"}],
+    guestServices: [{ id: "visitors",     label: "Visitor Stats" }],
+    revenue:       [{ id: "transactions", label: "Transactions" }],
     development:   [
-      { id: "members",   label: "Members"},
-      { id: "donations", label: "Donations"},
+      { id: "members",   label: "Members" },
+      { id: "donations", label: "Donations" },
     ],
   };
-  const managerTabs = isManager ? [{ id: "staff", label: "My Team"}] : [];
+  const managerTabs = isManager ? [{ id: "staff", label: "My Team" }] : [];
   return [
     ...base,
     ...(groupTabs[group] || []),
     ...managerTabs,
-    { id: "password", label: "Change Password"},
+    { id: "password", label: "Change Password" },
   ];
 }
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
 const fmt = dateStr => {
   if (!dateStr) return "—";
   return new Date(String(dateStr).slice(0, 10))
@@ -65,6 +62,30 @@ const fmt = dateStr => {
 };
 const currency = val =>
   val === null || val === undefined ? "—" : `$${parseFloat(val).toFixed(2)}`;
+
+function validateProfile(form) {
+  const required = [
+    { key: "first_name",     label: "First name",    maxLen: 50,  lettersOnly: true  },
+    { key: "last_name",      label: "Last name",      maxLen: 50,  lettersOnly: true  },
+    { key: "email",          label: "Email",          maxLen: 255, lettersOnly: false },
+    { key: "phone_number",   label: "Phone number",   maxLen: 14,  lettersOnly: false },
+    { key: "street_address", label: "Street address", maxLen: 50,  lettersOnly: false },
+    { key: "city",           label: "City",           maxLen: 30,  lettersOnly: false },
+    { key: "state",          label: "State",          maxLen: 2,   lettersOnly: false },
+    { key: "zip_code",       label: "Zip code",       maxLen: 5,   lettersOnly: false },
+  ];
+  for (const f of required) {
+    const val = (form[f.key] || "").trim();
+    if (!val) return `${f.label} is required and cannot be blank.`;
+    if (val.length > f.maxLen) return `${f.label} cannot exceed ${f.maxLen} characters.`;
+    if (f.lettersOnly && !/^[a-zA-Z\s\-']+$/.test(val))
+      return `${f.label} can only contain letters, spaces, hyphens, and apostrophes.`;
+  }
+  const phoneDigits = (form.phone_number || "").replace(/\D/g, "");
+  if (phoneDigits.length !== 10) return "Phone number must be exactly 10 digits.";
+  if (!/^\d{5}$/.test((form.zip_code || "").trim())) return "Zip code must be exactly 5 digits.";
+  return null;
+}
 
 function DataTable({ columns, rows, keyField }) {
   if (!rows || rows.length === 0)
@@ -97,10 +118,9 @@ function DataTable({ columns, rows, keyField }) {
   );
 }
 
-const TIER_PRICES = { Bronze: 75, Silver: 150, Gold: 300, Platinum: 600 };
-const PAYMENT_METHODS = ["Credit Card", "Debit Card", "Check", "Cash"];
+const TIER_PRICES    = { Bronze: 75, Silver: 150, Gold: 300, Platinum: 600 };
+const PAYMENT_METHODS = ["Credit Card", "Debit Card"];
 
-// ── Renewal modal (Development dept) ─────────────────────────────────────────
 function RenewalModal({ member, onClose, onSuccess, notify }) {
   const [tier,    setTier]    = useState(member.membership_level || "Bronze");
   const [payment, setPayment] = useState("Credit Card");
@@ -110,20 +130,16 @@ function RenewalModal({ member, onClose, onSuccess, notify }) {
     e.preventDefault();
     setSaving(true);
     try {
-      const existingLevel = member.membership_level;
       const tiers = Object.keys(TIER_PRICES);
-      const transaction_type =
-        !existingLevel ? "New"
+      const existingLevel = member.membership_level;
+      const transaction_type = !existingLevel ? "New"
         : tier === existingLevel ? "Renewal"
         : tiers.indexOf(tier) > tiers.indexOf(existingLevel) ? "Upgrade"
         : "Renewal";
 
       await createMembershipTransaction({
-        user_id:          member.user_id,
-        membership_level: tier,
-        amount:           TIER_PRICES[tier],
-        payment_method:   payment,
-        transaction_type,
+        user_id: member.user_id, membership_level: tier,
+        amount: TIER_PRICES[tier], payment_method: payment, transaction_type,
       });
       notify(`Membership ${transaction_type.toLowerCase()} processed for ${member.first_name} ${member.last_name}`);
       onSuccess();
@@ -145,7 +161,7 @@ function RenewalModal({ member, onClose, onSuccess, notify }) {
         <form onSubmit={handleSubmit}>
           <div className="um-modal-body">
             <div style={{ fontSize: 13, color: "#6b7280", marginBottom: 8 }}>
-              Current level: <strong>{member.membership_level || "None"}</strong>
+              Current: <strong>{member.membership_level || "None"}</strong>
               {member.expiration_date && ` · Expires ${fmt(member.expiration_date)}`}
             </div>
             <div className="um-form-grid">
@@ -164,7 +180,7 @@ function RenewalModal({ member, onClose, onSuccess, notify }) {
                 </select>
               </div>
             </div>
-            <div style={{ background: "#f9fafb", border: "1px solid #e5e7eb", padding: "10px 14px", fontSize: 13, color: "#374151" }}>
+            <div style={{ background: "#f9fafb", border: "1px solid #e5e7eb", padding: "10px 14px", fontSize: 13 }}>
               Amount: <strong>{currency(TIER_PRICES[tier])}</strong> · New expiry: <strong>1 year from today</strong>
             </div>
           </div>
@@ -180,23 +196,22 @@ function RenewalModal({ member, onClose, onSuccess, notify }) {
   );
 }
 
-// ── Main component ────────────────────────────────────────────────────────────
 export default function EmployeeDashboard() {
   const navigate = useNavigate();
   const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5000";
   const authHeader = () => ({ Authorization: `Bearer ${localStorage.getItem("token")}` });
 
-  const [activeTab,    setActiveTab]    = useState("profile");
-  const [profile,      setProfile]      = useState(null);
-  const [empRecord,    setEmpRecord]    = useState(null);
-  const [tabData,      setTabData]      = useState({});
-  const [loading,      setLoading]      = useState(true);
-  const [tabLoading,   setTabLoading]   = useState(false);
-  const [saving,       setSaving]       = useState(false);
-  const [feedback,     setFeedback]     = useState(null);
-  const [form,         setForm]         = useState({});
-  const [pwForm,       setPwForm]       = useState({ new_password: "", confirm_password: "" });
-  const [pwErrors,     setPwErrors]     = useState({});
+  const [activeTab,     setActiveTab]     = useState("profile");
+  const [profile,       setProfile]       = useState(null);
+  const [empRecord,     setEmpRecord]     = useState(null);
+  const [tabData,       setTabData]       = useState({});
+  const [loading,       setLoading]       = useState(true);
+  const [tabLoading,    setTabLoading]    = useState(false);
+  const [saving,        setSaving]        = useState(false);
+  const [feedback,      setFeedback]      = useState(null);
+  const [form,          setForm]          = useState({});
+  const [pwForm,        setPwForm]        = useState({ new_password: "", confirm_password: "" });
+  const [pwErrors,      setPwErrors]      = useState({});
   const [renewalMember, setRenewalMember] = useState(null);
 
   const notify = (msg, type = "success") => {
@@ -208,7 +223,9 @@ export default function EmployeeDashboard() {
     async function load() {
       setLoading(true);
       try {
-        const [prof, emp] = await Promise.allSettled([getMyProfile(), getMyEmployeeRecord()]);
+        const [prof, emp] = await Promise.allSettled([
+          getMyProfile(), getMyEmployeeRecord(),
+        ]);
         if (prof.status === "fulfilled") { setProfile(prof.value); setForm(prof.value); }
         if (emp.status  === "fulfilled") setEmpRecord(emp.value?.user_id ? emp.value : null);
       } catch (e) { notify(e.message, "error"); }
@@ -220,6 +237,7 @@ export default function EmployeeDashboard() {
   const deptGroup = getDeptGroup(empRecord?.department_id);
   const isManager = !!empRecord?.is_manager;
   const tabs      = getTabsForGroup(deptGroup, isManager);
+  // Show department name from join, fall back to ID if name not available
   const deptName  = empRecord?.department_name || `Department ${empRecord?.department_id || ""}`;
 
   useEffect(() => {
@@ -272,14 +290,21 @@ export default function EmployeeDashboard() {
   }
 
   async function handleProfileSave(e) {
-    e.preventDefault(); setSaving(true);
+    e.preventDefault();
+    const err = validateProfile(form);
+    if (err) { notify(err, "error"); return; }
+    setSaving(true);
     try {
       await updateMyProfile({
-        first_name: form.first_name, last_name: form.last_name,
-        email: form.email, phone_number: form.phone_number,
-        street_address: form.street_address, city: form.city,
-        state: form.state, zip_code: form.zip_code,
-        date_of_birth: form.date_of_birth ? form.date_of_birth.slice(0, 10) : null,
+        first_name:     form.first_name.trim(),
+        last_name:      form.last_name.trim(),
+        email:          form.email.trim(),
+        phone_number:   form.phone_number,
+        street_address: form.street_address.trim(),
+        city:           form.city.trim(),
+        state:          form.state,
+        zip_code:       form.zip_code.trim(),
+        date_of_birth:  form.date_of_birth ? form.date_of_birth.slice(0, 10) : null,
       });
       setProfile({ ...profile, ...form });
       notify("Profile updated successfully");
@@ -309,30 +334,29 @@ export default function EmployeeDashboard() {
     if (tabLoading) return <div className="ss-loading">Loading…</div>;
 
     switch (activeTab) {
-
       case "profile":
         return (
           <div className="ss-card">
             <h2 className="ss-section-title">My Profile</h2>
             <form className="ss-form" onSubmit={handleProfileSave}>
               <div className="ss-form-grid">
-                <div className="ss-form-group"><label>First Name</label>
-                  <input name="first_name" value={form.first_name || ""} onChange={handleFormChange} /></div>
-                <div className="ss-form-group"><label>Last Name</label>
-                  <input name="last_name" value={form.last_name || ""} onChange={handleFormChange} /></div>
-                <div className="ss-form-group full"><label>Email</label>
-                  <input name="email" type="email" value={form.email || ""} onChange={handleFormChange} /></div>
-                <div className="ss-form-group"><label>Phone Number</label>
+                <div className="ss-form-group"><label>First Name *</label>
+                  <input name="first_name" value={form.first_name || ""} onChange={handleFormChange} maxLength={50} /></div>
+                <div className="ss-form-group"><label>Last Name *</label>
+                  <input name="last_name" value={form.last_name || ""} onChange={handleFormChange} maxLength={50} /></div>
+                <div className="ss-form-group full"><label>Email *</label>
+                  <input name="email" type="email" value={form.email || ""} onChange={handleFormChange} maxLength={255} /></div>
+                <div className="ss-form-group"><label>Phone Number *</label>
                   <PhoneInput name="phone_number" value={form.phone_number || ""} onChange={handleFormChange} /></div>
                 <div className="ss-form-group"><label>Date of Birth</label>
                   <input name="date_of_birth" type="date" value={form.date_of_birth?.slice(0, 10) || ""} onChange={handleFormChange} /></div>
-                <div className="ss-form-group full"><label>Street Address</label>
-                  <input name="street_address" value={form.street_address || ""} onChange={handleFormChange} /></div>
-                <div className="ss-form-group"><label>City</label>
-                  <input name="city" value={form.city || ""} onChange={handleFormChange} /></div>
-                <div className="ss-form-group"><label>State</label>
+                <div className="ss-form-group full"><label>Street Address * <span style={{ fontSize: 10, color: "#9ca3af" }}>(max 50 chars)</span></label>
+                  <input name="street_address" value={form.street_address || ""} onChange={handleFormChange} maxLength={50} /></div>
+                <div className="ss-form-group"><label>City * <span style={{ fontSize: 10, color: "#9ca3af" }}>(max 30 chars)</span></label>
+                  <input name="city" value={form.city || ""} onChange={handleFormChange} maxLength={30} /></div>
+                <div className="ss-form-group"><label>State *</label>
                   <StateSelect name="state" value={form.state || ""} onChange={handleFormChange} /></div>
-                <div className="ss-form-group"><label>Zip Code</label>
+                <div className="ss-form-group"><label>Zip Code *</label>
                   <ZipInput name="zip_code" value={form.zip_code || ""} onChange={handleFormChange} /></div>
               </div>
               <div className="ss-form-actions">
@@ -356,11 +380,27 @@ export default function EmployeeDashboard() {
                   </div>
                 )}
                 <div className="ss-stat-grid">
-                  <div className="ss-stat"><span className="ss-stat-value">{deptName}</span><span className="ss-stat-label">Department</span></div>
-                  <div className="ss-stat"><span className="ss-stat-value">{empRecord.job_title || "—"}</span><span className="ss-stat-label">Job Title</span></div>
-                  <div className="ss-stat"><span className="ss-stat-value">{empRecord.employment_type || "—"}</span><span className="ss-stat-label">Employment Type</span></div>
-                  <div className="ss-stat"><span className="ss-stat-value">{fmt(empRecord.hire_date)}</span><span className="ss-stat-label">Hire Date</span></div>
-                  <div className="ss-stat"><span className="ss-stat-value">{currency(empRecord.salary)}</span><span className="ss-stat-label">Annual Salary</span></div>
+                  {/* Show department NAME not number */}
+                  <div className="ss-stat">
+                    <span className="ss-stat-value" style={{ fontSize: 16 }}>{deptName}</span>
+                    <span className="ss-stat-label">Department</span>
+                  </div>
+                  <div className="ss-stat">
+                    <span className="ss-stat-value" style={{ fontSize: 16 }}>{empRecord.job_title || "—"}</span>
+                    <span className="ss-stat-label">Job Title</span>
+                  </div>
+                  <div className="ss-stat">
+                    <span className="ss-stat-value" style={{ fontSize: 16 }}>{empRecord.employment_type || "—"}</span>
+                    <span className="ss-stat-label">Employment Type</span>
+                  </div>
+                  <div className="ss-stat">
+                    <span className="ss-stat-value" style={{ fontSize: 16 }}>{fmt(empRecord.hire_date)}</span>
+                    <span className="ss-stat-label">Hire Date</span>
+                  </div>
+                  <div className="ss-stat">
+                    <span className="ss-stat-value" style={{ fontSize: 16 }}>{currency(empRecord.salary)}</span>
+                    <span className="ss-stat-label">Annual Salary</span>
+                  </div>
                 </div>
               </>
             ) : (
@@ -373,7 +413,6 @@ export default function EmployeeDashboard() {
         return (
           <div className="ss-card">
             <h2 className="ss-section-title">Artworks</h2>
-            <p style={{ fontSize: 13, color: "#6b7280", marginBottom: 16 }}>Read-only view of the museum collection.</p>
             <DataTable keyField="artwork_id" rows={Array.isArray(d) ? d : []} columns={[
               { key: "artwork_id",             label: "ID" },
               { key: "title",                  label: "Title" },
@@ -484,10 +523,8 @@ export default function EmployeeDashboard() {
               {
                 key: "_action", label: "Action",
                 render: (_, row) => (
-                  <button
-                    onClick={() => setRenewalMember(row)}
-                    style={{ padding: "4px 12px", background: "#c9a84c", color: "#000", border: "none", cursor: "pointer", fontSize: 12, fontWeight: 500 }}
-                  >
+                  <button onClick={() => setRenewalMember(row)}
+                    style={{ padding: "4px 12px", background: "#c9a84c", color: "#000", border: "none", cursor: "pointer", fontSize: 12, fontWeight: 500 }}>
                     Process
                   </button>
                 )
@@ -580,8 +617,13 @@ export default function EmployeeDashboard() {
           <span className="dashboard-role-badge employee-badge">
             {isManager ? "Manager" : "Employee"}
           </span>
-          <h1>{loading ? "Staff Portal" : `Welcome, ${profile?.first_name || "Staff"}`}</h1>
-          <p>{deptName}{empRecord?.job_title ? ` — ${empRecord.job_title}` : ""}</p>
+          {/* FIX: use white color explicitly so name is visible on dark hero */}
+          <h1 style={{ color: "#fff" }}>
+            {loading ? "Staff Portal" : `Welcome, ${profile?.first_name || "Staff"}`}
+          </h1>
+          <p style={{ color: "rgba(255,255,255,0.8)" }}>
+            {deptName}{empRecord?.job_title ? ` — ${empRecord.job_title}` : ""}
+          </p>
           <div className="dashboard-hero-actions">
             <Link to="/" className="dashboard-back-btn">← Back to Home</Link>
             <button className="dashboard-logout-btn" onClick={handleLogout}>Sign Out</button>
@@ -606,14 +648,12 @@ export default function EmployeeDashboard() {
         )}
       </div>
 
-      {/* Renewal modal — Development dept only */}
       {renewalMember && (
         <RenewalModal
           member={renewalMember}
           notify={notify}
           onClose={() => setRenewalMember(null)}
           onSuccess={() => {
-            // Refresh members tab
             setTabData(prev => ({ ...prev, members: undefined }));
             setActiveTab("profile");
             setTimeout(() => setActiveTab("members"), 100);
