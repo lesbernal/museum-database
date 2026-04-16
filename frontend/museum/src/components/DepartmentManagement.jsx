@@ -29,7 +29,7 @@ const DepartmentManagement = forwardRef(function DepartmentManagement({ searchTe
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [localSearch, setLocalSearch] = useState("");
   const [errors, setErrors] = useState({});
-  
+
 
   const notify = (msg, type = "success") => {
     setFeedback({ msg, type });
@@ -68,7 +68,9 @@ const DepartmentManagement = forwardRef(function DepartmentManagement({ searchTe
   const closeModal = () => { setModal(null); setSelected(null); setForm({}); setErrors({});; };
 
   const handleSave = async () => {
+    const newErrors = {};
     const budget = Number(form.budget);
+
     if (!form.budget && form.budget !== 0) {
       newErrors.budget = "Budget is required";
     } else if (isNaN(budget) || budget < 0) {
@@ -76,10 +78,12 @@ const DepartmentManagement = forwardRef(function DepartmentManagement({ searchTe
     } else if (budget > 100000000) {
       newErrors.budget = "Budget cannot exceed $100,000,000";
     }
+
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
     }
+
     setErrors({});
     setSaving(true);
     try {
@@ -98,7 +102,7 @@ const DepartmentManagement = forwardRef(function DepartmentManagement({ searchTe
       setSaving(false);
     }
   };
-
+  
   const confirmDelete = (r) => { setDeleteTarget(r); setModal("confirm"); };
   const handleDelete = async () => {
     try {
