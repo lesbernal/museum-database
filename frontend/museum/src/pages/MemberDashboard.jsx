@@ -5,26 +5,27 @@ import { Link, useNavigate } from "react-router-dom";
 import {
   getMyProfile, updateMyProfile, changeMyPassword,
   getMyVisitorRecord, getMyMemberRecord, getMyMembershipTransactions,
+  getMyTickets, getMyDonations, getMyEventSignups,
 } from "../services/api";
 import { PasswordInput, PhoneInput, StateSelect, ZipInput } from "../components/FormUtils";
 import "../styles/Dashboard.css";
 import "../styles/SelfService.css";
 
 const TABS = [
-  { id: "profile", label: "My Profile"         },
-  { id: "membership", label: "Membership"      },
-  { id: "visits", label: "Visit History"       },
-  { id: "purchases", label: "Purchase History" },
-  { id: "password", label: "Change Password"   },
+  { id: "profile",   label: "My Profile"        },
+  { id: "membership", label: "Membership"       },
+  { id: "visits",    label: "Visit History"     },
+  { id: "purchases", label: "Purchase History"  },
+  { id: "password",  label: "Change Password"   },
 ];
 
 const LEVEL_COLORS = {
-  Bronze: { bg: "#fdf2e9", color: "#a04000", border: "#f0a070" },
-  Silver: { bg: "#f2f3f4", color: "#566573", border: "#aab7b8" },
-  Gold: { bg: "#fef9e7", color: "#9a7d0a", border: "#f4d03f" },
-  Platinum: { bg: "#eaf4fb", color: "#1a5276", border: "#7fb3d3" },
-  Benefactor: { bg: "#f3e8ff", color: "#6b21a8", border: "#c084fc" },
-  "Leadership Circle": { bg: "#fff1f2", color: "#9f1239", border: "#fb7185" },
+  Bronze:             { bg: "#fdf2e9", color: "#a04000", border: "#f0a070" },
+  Silver:             { bg: "#f2f3f4", color: "#566573", border: "#aab7b8" },
+  Gold:               { bg: "#fef9e7", color: "#9a7d0a", border: "#f4d03f" },
+  Platinum:           { bg: "#eaf4fb", color: "#1a5276", border: "#7fb3d3" },
+  Benefactor:         { bg: "#f3e8ff", color: "#6b21a8", border: "#c084fc" },
+  "Leadership Circle":{ bg: "#fff1f2", color: "#9f1239", border: "#fb7185" },
 };
 const DEFAULT_STYLE = { bg: "#f3f4f6", color: "#374151", border: "#d1d5db" };
 const DONATION_TIERS = ["Benefactor", "Leadership Circle"];
@@ -36,21 +37,24 @@ const fmt = dateStr => {
 };
 
 export default function MemberDashboard() {
-  const navigate = useNavigate();
-  const userEmail = localStorage.getItem("user_email") || "";
+  const navigate    = useNavigate();
+  const userEmail   = localStorage.getItem("user_email") || "";
   const displayName = userEmail.split("@")[0];
 
-  const [activeTab, setActiveTab] = useState("profile");
-  const [profile, setProfile] = useState(null);
-  const [visitorRec, setVisitorRec] = useState(null);
-  const [memberRec, setMemberRec] = useState(null);
-  const [memberTxns, setMemberTxns] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [feedback, setFeedback] = useState(null);
-  const [form, setForm] = useState({});
-  const [pwForm, setPwForm] = useState({ new_password: "", confirm_password: "" });
-  const [pwErrors, setPwErrors] = useState({});
+  const [activeTab,    setActiveTab]    = useState("profile");
+  const [profile,      setProfile]      = useState(null);
+  const [visitorRec,   setVisitorRec]   = useState(null);
+  const [memberRec,    setMemberRec]    = useState(null);
+  const [memberTxns,   setMemberTxns]   = useState([]);
+  const [tickets,      setTickets]      = useState([]);
+  const [donations,    setDonations]    = useState([]);
+  const [eventSignups, setEventSignups] = useState([]);
+  const [loading,      setLoading]      = useState(true);
+  const [saving,       setSaving]       = useState(false);
+  const [feedback,     setFeedback]     = useState(null);
+  const [form,         setForm]         = useState({});
+  const [pwForm,       setPwForm]       = useState({ new_password: "", confirm_password: "" });
+  const [pwErrors,     setPwErrors]     = useState({});
 
   const notify = (msg, type = "success") => {
     setFeedback({ msg, type });
@@ -61,14 +65,18 @@ export default function MemberDashboard() {
     async function load() {
       setLoading(true);
       try {
-        const [prof, vis, mem, txns] = await Promise.allSettled([
-          getMyProfile(), getMyVisitorRecord(),
-          getMyMemberRecord(), getMyMembershipTransactions(),
+        const [prof, vis, mem, txns, tix, don, signups] = await Promise.allSettled([
+          getMyProfile(), getMyVisitorRecord(), getMyMemberRecord(),
+          getMyMembershipTransactions(), getMyTickets(), getMyDonations(),
+          getMyEventSignups(),
         ]);
-        if (prof.status === "fulfilled") { setProfile(prof.value); setForm(prof.value); }
-        if (vis.status === "fulfilled") setVisitorRec(vis.value);
-        if (mem.status === "fulfilled") setMemberRec(mem.value?.user_id ? mem.value : null);
-        if (txns.status === "fulfilled") setMemberTxns(Array.isArray(txns.value) ? txns.value : []);
+        if (prof.status    === "fulfilled") { setProfile(prof.value); setForm(prof.value); }
+        if (vis.status     === "fulfilled") setVisitorRec(vis.value);
+        if (mem.status     === "fulfilled") setMemberRec(mem.value?.user_id ? mem.value : null);
+        if (txns.status    === "fulfilled") setMemberTxns(Array.isArray(txns.value) ? txns.value : []);
+        if (tix.status     === "fulfilled") setTickets(Array.isArray(tix.value) ? tix.value : []);
+        if (don.status     === "fulfilled") setDonations(Array.isArray(don.value) ? don.value : []);
+        if (signups.status === "fulfilled") setEventSignups(Array.isArray(signups.value) ? signups.value : []);
       } catch (e) { notify(e.message, "error"); }
       finally { setLoading(false); }
     }
@@ -90,14 +98,14 @@ export default function MemberDashboard() {
     setSaving(true);
     try {
       await updateMyProfile({
-        first_name: form.first_name,
-        last_name: form.last_name,
-        email: form.email,
-        phone_number: form.phone_number,
+        first_name:     form.first_name,
+        last_name:      form.last_name,
+        email:          form.email,
+        phone_number:   form.phone_number,
         street_address: form.street_address,
-        city: form.city,
-        state: form.state,
-        zip_code: form.zip_code,
+        city:           form.city,
+        state:          form.state,
+        zip_code:       form.zip_code,
       });
       setProfile({ ...profile, ...form });
       notify("Profile updated successfully");
@@ -124,7 +132,7 @@ export default function MemberDashboard() {
   const daysUntilExpiry = memberRec?.expiration_date
     ? Math.ceil((new Date(memberRec.expiration_date) - new Date()) / (1000 * 60 * 60 * 24))
     : null;
-  const levelStyle = LEVEL_COLORS[memberRec?.membership_level] || DEFAULT_STYLE;
+  const levelStyle   = LEVEL_COLORS[memberRec?.membership_level] || DEFAULT_STYLE;
   const isDonationTier = DONATION_TIERS.includes(memberRec?.membership_level);
 
   return (
@@ -307,8 +315,10 @@ export default function MemberDashboard() {
             {activeTab === "visits" && (
               <div className="ss-card">
                 <h2 className="ss-section-title">Visit History</h2>
+
+                {/* Visit stats */}
                 {visitorRec ? (
-                  <div className="ss-stat-grid">
+                  <div className="ss-stat-grid" style={{ marginBottom: 32 }}>
                     <div className="ss-stat">
                       <span className="ss-stat-value">{visitorRec.total_visits ?? 0}</span>
                       <span className="ss-stat-label">Total Visits</span>
@@ -319,7 +329,49 @@ export default function MemberDashboard() {
                     </div>
                   </div>
                 ) : (
-                  <div className="ss-empty">No visit records found.</div>
+                  <div className="ss-empty" style={{ marginBottom: 24 }}>No visit records found.</div>
+                )}
+
+                {/* Event signups */}
+                <h3 style={{ fontSize: 13, fontWeight: 600, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 12 }}>
+                  Events Signed Up For
+                </h3>
+                {eventSignups.length === 0 ? (
+                  <div className="ss-empty">
+                    No events signed up yet.{" "}
+                    <Link to="/events" style={{ color: "#c9a84c" }}>Browse events</Link>
+                  </div>
+                ) : (
+                  <div style={{ border: "1px solid #e5e7eb", overflowX: "auto" }}>
+                    <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+                      <thead>
+                        <tr style={{ background: "#f9fafb", borderBottom: "1px solid #e5e7eb" }}>
+                          {["Event", "Type", "Event Date", "Signup Date", "Qty", "Location"].map(h => (
+                            <th key={h} style={{ padding: "0.625rem 1rem", textAlign: "left", color: "#6b7280", fontWeight: 600, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.07em", whiteSpace: "nowrap" }}>{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {eventSignups.map((s, i) => (
+                          <tr key={s.signup_id} style={{ borderBottom: i < eventSignups.length - 1 ? "1px solid #f3f4f6" : "none" }}>
+                            <td style={{ padding: "0.625rem 1rem", color: "#374151", fontWeight: 500 }}>{s.event_name}</td>
+                            <td style={{ padding: "0.625rem 1rem", color: "#374151" }}>{s.event_type || "General"}</td>
+                            <td style={{ padding: "0.625rem 1rem", color: "#374151" }}>{fmt(s.event_date)}</td>
+                            <td style={{ padding: "0.625rem 1rem", color: "#374151" }}>{fmt(s.signup_date)}</td>
+                            <td style={{ padding: "0.625rem 1rem", color: "#374151" }}>{s.quantity}</td>
+                            <td style={{ padding: "0.625rem 1rem", color: "#374151" }}>{s.gallery_name || "—"}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                      <tfoot>
+                        <tr style={{ background: "#f9fafb", borderTop: "1px solid #e5e7eb" }}>
+                          <td colSpan={6} style={{ padding: "0.625rem 1rem", fontWeight: 600, fontSize: 12, color: "#374151" }}>
+                            Total Events: {eventSignups.length} &nbsp;·&nbsp; Total Spots: {eventSignups.reduce((s, e) => s + e.quantity, 0)}
+                          </td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
                 )}
               </div>
             )}
@@ -328,10 +380,94 @@ export default function MemberDashboard() {
             {activeTab === "purchases" && (
               <div className="ss-card">
                 <h2 className="ss-section-title">Purchase History</h2>
-                <div className="ss-placeholder">
-                  <div className="ss-placeholder-icon">🛍️</div>
-                  <p>Purchase history will appear here once the ticketing and shop features are completed.</p>
-                </div>
+
+                <h3 style={{ fontSize: 13, fontWeight: 600, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 12 }}>
+                  Tickets
+                </h3>
+                {tickets.length === 0 ? (
+                  <div className="ss-empty" style={{ marginBottom: 24 }}>
+                    No tickets purchased yet.{" "}
+                    <Link to="/tickets" style={{ color: "#c9a84c" }}>Buy tickets</Link>
+                  </div>
+                ) : (
+                  <div style={{ border: "1px solid #e5e7eb", overflowX: "auto", marginBottom: 32 }}>
+                    <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+                      <thead>
+                        <tr style={{ background: "#f9fafb", borderBottom: "1px solid #e5e7eb" }}>
+                          {["Purchase Date","Visit Date","Type","Discount","Price","Payment"].map(h => (
+                            <th key={h} style={{ padding: "0.625rem 1rem", textAlign: h === "Price" ? "right" : "left", color: "#6b7280", fontWeight: 600, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.07em", whiteSpace: "nowrap" }}>{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {tickets.map((t, i) => (
+                          <tr key={t.ticket_id} style={{ borderBottom: i < tickets.length - 1 ? "1px solid #f3f4f6" : "none" }}>
+                            <td style={{ padding: "0.625rem 1rem", color: "#374151" }}>{fmt(t.purchase_date)}</td>
+                            <td style={{ padding: "0.625rem 1rem", color: "#374151" }}>{fmt(t.visit_date)}</td>
+                            <td style={{ padding: "0.625rem 1rem", color: "#374151" }}>{t.ticket_type}</td>
+                            <td style={{ padding: "0.625rem 1rem", color: "#374151" }}>{t.discount_type}</td>
+                            <td style={{ padding: "0.625rem 1rem", color: "#374151", textAlign: "right" }}>
+                              {t.final_price != null ? `$${parseFloat(t.final_price).toFixed(2)}` : "—"}
+                            </td>
+                            <td style={{ padding: "0.625rem 1rem", color: "#374151" }}>{t.payment_method}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                      <tfoot>
+                        <tr style={{ background: "#f9fafb", borderTop: "1px solid #e5e7eb" }}>
+                          <td colSpan={4} style={{ padding: "0.625rem 1rem", fontWeight: 600, fontSize: 12, color: "#374151" }}>
+                            Total Tickets: {tickets.length}
+                          </td>
+                          <td style={{ padding: "0.625rem 1rem", fontWeight: 600, fontSize: 12, color: "#374151", textAlign: "right" }}>
+                            ${tickets.reduce((s, t) => s + parseFloat(t.final_price || 0), 0).toFixed(2)}
+                          </td>
+                          <td />
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+                )}
+
+                <h3 style={{ fontSize: 13, fontWeight: 600, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 12 }}>
+                  Donations
+                </h3>
+                {donations.length === 0 ? (
+                  <div className="ss-empty">
+                    No donations yet.{" "}
+                    <Link to="/donations" style={{ color: "#c9a84c" }}>Make a donation</Link>
+                  </div>
+                ) : (
+                  <div style={{ border: "1px solid #e5e7eb", overflowX: "auto" }}>
+                    <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+                      <thead>
+                        <tr style={{ background: "#f9fafb", borderBottom: "1px solid #e5e7eb" }}>
+                          {["Date","Type","Amount"].map(h => (
+                            <th key={h} style={{ padding: "0.625rem 1rem", textAlign: h === "Amount" ? "right" : "left", color: "#6b7280", fontWeight: 600, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.07em" }}>{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {donations.map((d, i) => (
+                          <tr key={d.donation_id} style={{ borderBottom: i < donations.length - 1 ? "1px solid #f3f4f6" : "none" }}>
+                            <td style={{ padding: "0.625rem 1rem", color: "#374151" }}>{fmt(d.donation_date)}</td>
+                            <td style={{ padding: "0.625rem 1rem", color: "#374151" }}>{d.donation_type}</td>
+                            <td style={{ padding: "0.625rem 1rem", color: "#374151", textAlign: "right" }}>
+                              {d.amount != null ? `$${parseFloat(d.amount).toFixed(2)}` : "—"}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                      <tfoot>
+                        <tr style={{ background: "#f9fafb", borderTop: "1px solid #e5e7eb" }}>
+                          <td colSpan={2} style={{ padding: "0.625rem 1rem", fontWeight: 600, fontSize: 12, color: "#374151" }}>Total Donated</td>
+                          <td style={{ padding: "0.625rem 1rem", fontWeight: 600, fontSize: 12, color: "#374151", textAlign: "right" }}>
+                            ${donations.reduce((s, d) => s + parseFloat(d.amount || 0), 0).toFixed(2)}
+                          </td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+                )}
               </div>
             )}
 

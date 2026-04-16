@@ -99,6 +99,12 @@ export async function deleteProvenance(id) {
   return request(`/provenance/${id}`, { method: "DELETE" }, "Failed to delete provenance");
 }
 
+// ── EVENT SIGNUPS ─────────────────────────────────────────────────────────────
+export async function getMyEventSignups() {
+  const user_id = localStorage.getItem("user_id");
+  return request(`/event-signups?user_id=${user_id}`, {}, "Failed to fetch event signups");
+}
+
 // ── EVENTS ────────────────────────────────────────────────────────────────────
 export async function getEvents() {
   return request("/events", {}, "Failed to fetch events");

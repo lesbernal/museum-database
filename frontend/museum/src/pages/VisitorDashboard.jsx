@@ -5,16 +5,17 @@ import { Link, useNavigate } from "react-router-dom";
 import {
   getMyProfile, updateMyProfile, changeMyPassword,
   getMyVisitorRecord, getMyTickets, getMyDonations,
+  getMyEventSignups,
 } from "../services/api";
 import { PasswordInput, PhoneInput, StateSelect, ZipInput } from "../components/FormUtils";
 import "../styles/Dashboard.css";
 import "../styles/SelfService.css";
 
 const TABS = [
-  { id: "profile",   label: "My Profile",       },
-  { id: "visits",    label: "Visit History",    },
-  { id: "purchases", label: "Purchase History", },
-  { id: "password",  label: "Change Password",  },
+  { id: "profile",   label: "My Profile"       },
+  { id: "visits",    label: "Visit History"    },
+  { id: "purchases", label: "Purchase History" },
+  { id: "password",  label: "Change Password"  },
 ];
 
 const fmt = dateStr => {
@@ -28,17 +29,18 @@ export default function VisitorDashboard() {
   const userEmail   = localStorage.getItem("user_email") || "";
   const displayName = userEmail.split("@")[0];
 
-  const [activeTab,  setActiveTab]  = useState("profile");
-  const [profile,    setProfile]    = useState(null);
-  const [visitorRec, setVisitorRec] = useState(null);
-  const [tickets,    setTickets]    = useState([]);
-  const [donations,  setDonations]  = useState([]);
-  const [loading,    setLoading]    = useState(true);
-  const [saving,     setSaving]     = useState(false);
-  const [feedback,   setFeedback]   = useState(null);
-  const [form,       setForm]       = useState({});
-  const [pwForm,     setPwForm]     = useState({ new_password: "", confirm_password: "" });
-  const [pwErrors,   setPwErrors]   = useState({});
+  const [activeTab,    setActiveTab]    = useState("profile");
+  const [profile,      setProfile]      = useState(null);
+  const [visitorRec,   setVisitorRec]   = useState(null);
+  const [tickets,      setTickets]      = useState([]);
+  const [donations,    setDonations]    = useState([]);
+  const [eventSignups, setEventSignups] = useState([]);
+  const [loading,      setLoading]      = useState(true);
+  const [saving,       setSaving]       = useState(false);
+  const [feedback,     setFeedback]     = useState(null);
+  const [form,         setForm]         = useState({});
+  const [pwForm,       setPwForm]       = useState({ new_password: "", confirm_password: "" });
+  const [pwErrors,     setPwErrors]     = useState({});
 
   const notify = (msg, type = "success") => {
     setFeedback({ msg, type });
@@ -49,13 +51,15 @@ export default function VisitorDashboard() {
     async function load() {
       setLoading(true);
       try {
-        const [prof, vis, tix, don] = await Promise.allSettled([
-          getMyProfile(), getMyVisitorRecord(), getMyTickets(), getMyDonations(),
+        const [prof, vis, tix, don, signups] = await Promise.allSettled([
+          getMyProfile(), getMyVisitorRecord(), getMyTickets(),
+          getMyDonations(), getMyEventSignups(),
         ]);
-        if (prof.status === "fulfilled") { setProfile(prof.value); setForm(prof.value); }
-        if (vis.status  === "fulfilled") setVisitorRec(vis.value);
-        if (tix.status  === "fulfilled") setTickets(Array.isArray(tix.value) ? tix.value : []);
-        if (don.status  === "fulfilled") setDonations(Array.isArray(don.value) ? don.value : []);
+        if (prof.status    === "fulfilled") { setProfile(prof.value); setForm(prof.value); }
+        if (vis.status     === "fulfilled") setVisitorRec(vis.value);
+        if (tix.status     === "fulfilled") setTickets(Array.isArray(tix.value) ? tix.value : []);
+        if (don.status     === "fulfilled") setDonations(Array.isArray(don.value) ? don.value : []);
+        if (signups.status === "fulfilled") setEventSignups(Array.isArray(signups.value) ? signups.value : []);
       } catch (e) { notify(e.message, "error"); }
       finally { setLoading(false); }
     }
@@ -144,7 +148,6 @@ export default function VisitorDashboard() {
                 <h2 className="ss-section-title">My Profile</h2>
                 <form className="ss-form" onSubmit={handleProfileSave}>
                   <div className="ss-form-grid">
-
                     <div className="ss-form-group">
                       <label>First Name</label>
                       <input name="first_name" value={form.first_name || ""} onChange={handleFormChange} />
@@ -159,11 +162,7 @@ export default function VisitorDashboard() {
                     </div>
                     <div className="ss-form-group">
                       <label>Phone Number</label>
-                      <PhoneInput
-                        name="phone_number"
-                        value={form.phone_number || ""}
-                        onChange={handleFormChange}
-                      />
+                      <PhoneInput name="phone_number" value={form.phone_number || ""} onChange={handleFormChange} />
                     </div>
                     <div className="ss-form-group">
                       <label>Date of Birth</label>
@@ -187,7 +186,6 @@ export default function VisitorDashboard() {
                       <label>Zip Code</label>
                       <ZipInput name="zip_code" value={form.zip_code || ""} onChange={handleFormChange} />
                     </div>
-
                   </div>
                   <div className="ss-form-actions">
                     <button type="submit" className="ss-btn ss-btn-primary" disabled={saving}>
@@ -202,8 +200,10 @@ export default function VisitorDashboard() {
             {activeTab === "visits" && (
               <div className="ss-card">
                 <h2 className="ss-section-title">Visit History</h2>
+
+                {/* Visit stats */}
                 {visitorRec ? (
-                  <div className="ss-stat-grid">
+                  <div className="ss-stat-grid" style={{ marginBottom: 32 }}>
                     <div className="ss-stat">
                       <span className="ss-stat-value">{visitorRec.total_visits ?? 0}</span>
                       <span className="ss-stat-label">Total Visits</span>
@@ -214,7 +214,49 @@ export default function VisitorDashboard() {
                     </div>
                   </div>
                 ) : (
-                  <div className="ss-empty">No visit records found.</div>
+                  <div className="ss-empty" style={{ marginBottom: 24 }}>No visit records found.</div>
+                )}
+
+                {/* Event signups */}
+                <h3 style={{ fontSize: 13, fontWeight: 600, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 12 }}>
+                  Events Signed Up For
+                </h3>
+                {eventSignups.length === 0 ? (
+                  <div className="ss-empty">
+                    No events signed up yet.{" "}
+                    <Link to="/events" style={{ color: "#c9a84c" }}>Browse events</Link>
+                  </div>
+                ) : (
+                  <div style={{ border: "1px solid #e5e7eb", overflowX: "auto" }}>
+                    <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+                      <thead>
+                        <tr style={{ background: "#f9fafb", borderBottom: "1px solid #e5e7eb" }}>
+                          {["Event", "Type", "Event Date", "Signup Date", "Qty", "Location"].map(h => (
+                            <th key={h} style={{ padding: "0.625rem 1rem", textAlign: "left", color: "#6b7280", fontWeight: 600, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.07em", whiteSpace: "nowrap" }}>{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {eventSignups.map((s, i) => (
+                          <tr key={s.signup_id} style={{ borderBottom: i < eventSignups.length - 1 ? "1px solid #f3f4f6" : "none" }}>
+                            <td style={{ padding: "0.625rem 1rem", color: "#374151", fontWeight: 500 }}>{s.event_name}</td>
+                            <td style={{ padding: "0.625rem 1rem", color: "#374151" }}>{s.event_type || "General"}</td>
+                            <td style={{ padding: "0.625rem 1rem", color: "#374151" }}>{fmt(s.event_date)}</td>
+                            <td style={{ padding: "0.625rem 1rem", color: "#374151" }}>{fmt(s.signup_date)}</td>
+                            <td style={{ padding: "0.625rem 1rem", color: "#374151" }}>{s.quantity}</td>
+                            <td style={{ padding: "0.625rem 1rem", color: "#374151" }}>{s.gallery_name || "—"}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                      <tfoot>
+                        <tr style={{ background: "#f9fafb", borderTop: "1px solid #e5e7eb" }}>
+                          <td colSpan={6} style={{ padding: "0.625rem 1rem", fontWeight: 600, fontSize: 12, color: "#374151" }}>
+                            Total Events: {eventSignups.length} &nbsp;·&nbsp; Total Spots: {eventSignups.reduce((s, e) => s + e.quantity, 0)}
+                          </td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
                 )}
               </div>
             )}
@@ -325,9 +367,7 @@ export default function VisitorDashboard() {
                       <PasswordInput
                         value={pwForm.new_password}
                         onChange={e => setPwForm(p => ({ ...p, new_password: e.target.value }))}
-                        placeholder="Min. 6 characters"
-                        required
-                      />
+                        placeholder="Min. 6 characters" required />
                       {pwErrors.new_password && <span style={{ fontSize: 11, color: "#dc2626" }}>{pwErrors.new_password}</span>}
                     </div>
                     <div className="ss-form-group">
@@ -335,9 +375,7 @@ export default function VisitorDashboard() {
                       <PasswordInput
                         value={pwForm.confirm_password}
                         onChange={e => setPwForm(p => ({ ...p, confirm_password: e.target.value }))}
-                        placeholder="Repeat new password"
-                        required
-                      />
+                        placeholder="Repeat new password" required />
                       {pwErrors.confirm_password && <span style={{ fontSize: 11, color: "#dc2626" }}>{pwErrors.confirm_password}</span>}
                     </div>
                   </div>
