@@ -5,12 +5,9 @@ const db = require("../db");
 module.exports = (req, res, parsedUrl) => {
   const urlParts = parsedUrl.pathname.split("/").filter(Boolean);
 
-  // ============================ MEMBERSHIP TRANSACTIONS ============================
-
   // GET all — or GET by user_id via query param: /membershiptransactions?user_id=X
   if (req.method === "GET") {
     const userId = parsedUrl.query?.user_id;
-
     if (userId) {
       db.query(
         "SELECT * FROM membershiptransaction WHERE user_id = ? ORDER BY transaction_date DESC",
@@ -32,84 +29,64 @@ module.exports = (req, res, parsedUrl) => {
     return;
   }
 
-  // POST — create a membership transaction AND update member + user tables
+  // POST — create transaction AND update member + user tables
   if (req.method === "POST") {
-    parseBody(req, async data => {
-      const {
-        user_id,
-        membership_level,
-        amount,
-        payment_method,
-        transaction_type,
-      } = data;
+    parseBody(req, data => {
+      const { user_id, membership_level, amount, payment_method, transaction_type } = data;
 
       if (!user_id || !membership_level || !amount || !payment_method) {
         res.writeHead(400, { "Content-Type": "application/json" });
         return res.end(JSON.stringify({ error: "Missing required fields" }));
       }
 
-      const now = new Date().toISOString().slice(0, 19).replace("T", " ");
-      const today = new Date().toISOString().slice(0, 10);
-      const oneYearLater = new Date();
-      oneYearLater.setFullYear(oneYearLater.getFullYear() + 1);
-      const expiry = oneYearLater.toISOString().slice(0, 10);
+      const now    = new Date().toISOString().slice(0, 19).replace("T", " ");
+      const today  = new Date().toISOString().slice(0, 10);
+      const expiry = (() => {
+        const d = new Date();
+        d.setFullYear(d.getFullYear() + 1);
+        return d.toISOString().slice(0, 10);
+      })();
 
-      // 1. Insert the transaction record
+      // 1. Insert transaction record
       const txSql = `
         INSERT INTO membershiptransaction
         (user_id, membership_level, transaction_date, amount, payment_method, transaction_type)
         VALUES (?, ?, ?, ?, ?, ?)
       `;
-
-      db.query(
-        txSql,
+      db.query(txSql,
         [user_id, membership_level, now, amount, payment_method, transaction_type || "New"],
         (err, txResult) => {
           if (err) return sendError(res, err);
 
           // 2. Check if member record already exists
           db.query(
-            "SELECT user_id FROM member WHERE user_id = ?",
+            "SELECT user_id, join_date FROM member WHERE user_id = ?",
             [user_id],
             (err, existing) => {
               if (err) return sendError(res, err);
 
               if (existing.length > 0) {
-                // 3a. Update existing member record (renewal or upgrade)
+                // ── RENEWAL / UPGRADE ─────────────────────────────────────────
+                // CRITICAL: preserve the ORIGINAL join_date, only extend expiration
                 db.query(
                   `UPDATE member SET
                    membership_level = ?,
-                   join_date = ?,
                    expiration_date = ?
                    WHERE user_id = ?`,
-                  [membership_level, today, expiry, user_id],
+                  [membership_level, expiry, user_id],
                   (err) => {
                     if (err) return sendError(res, err);
                     updateUserRole(res, user_id, txResult.insertId, membership_level);
                   }
                 );
               } else {
-                // 3b. Check visitor record exists (FK requirement)
+                // ── NEW MEMBERSHIP ────────────────────────────────────────────
+                // Ensure visitor record exists first (FK requirement)
                 db.query(
                   "SELECT user_id FROM visitor WHERE user_id = ?",
                   [user_id],
                   (err, visitorRows) => {
                     if (err) return sendError(res, err);
-
-                    if (visitorRows.length === 0) {
-                      // Auto-create visitor record so member FK doesn't fail
-                      db.query(
-                        `INSERT INTO visitor (user_id, last_visit_date, total_visits)
-                         VALUES (?, ?, 0)`,
-                        [user_id, today],
-                        (err) => {
-                          if (err) return sendError(res, err);
-                          insertMemberRecord();
-                        }
-                      );
-                    } else {
-                      insertMemberRecord();
-                    }
 
                     function insertMemberRecord() {
                       db.query(
@@ -121,6 +98,20 @@ module.exports = (req, res, parsedUrl) => {
                           updateUserRole(res, user_id, txResult.insertId, membership_level);
                         }
                       );
+                    }
+
+                    if (visitorRows.length === 0) {
+                      db.query(
+                        `INSERT INTO visitor (user_id, last_visit_date, total_visits)
+                         VALUES (?, ?, 0)`,
+                        [user_id, today],
+                        (err) => {
+                          if (err) return sendError(res, err);
+                          insertMemberRecord();
+                        }
+                      );
+                    } else {
+                      insertMemberRecord();
                     }
                   }
                 );
@@ -146,12 +137,10 @@ module.exports = (req, res, parsedUrl) => {
     return;
   }
 
-  // ============================ NOT FOUND ============================
   res.writeHead(404, { "Content-Type": "application/json" });
   res.end(JSON.stringify({ message: "Route not found" }));
 };
 
-// Update user.role to 'member' after successful purchase
 function updateUserRole(res, user_id, transaction_id, membership_level) {
   db.query(
     "UPDATE user SET role = 'member' WHERE user_id = ?",

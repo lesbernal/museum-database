@@ -1,15 +1,12 @@
 // pages/MembershipPage.jsx
-// Public landing page — shows all membership tiers.
-// Logged-in visitors can purchase directly.
-// Logged-in members can renew or upgrade.
-// Donation-based tiers are shown as informational only.
+// Routes membership purchase through the shared CheckoutPage
+// which already has proper 16-digit card, CVV, and expiry validation.
 
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { getUserById, createMembershipTransaction, getMyMemberRecord } from "../services/api";
+import { getUserById, getMyMemberRecord } from "../services/api";
 import "../styles/MembershipPage.css";
 
-// ── Tier definitions ──────────────────────────────────────────────────────────
 const PURCHASABLE_TIERS = [
   {
     level:       "Bronze",
@@ -103,156 +100,13 @@ const DONATION_TIERS = [
   },
 ];
 
-const PAYMENT_METHODS = ["Credit Card", "Debit Card"];
-
-// ── Checkout modal ────────────────────────────────────────────────────────────
-function CheckoutModal({ tier, profile, onClose, onSuccess }) {
-  const [form, setForm] = useState({
-    card_name:   "",
-    card_number: "",
-    card_expiry: "",
-    card_cvv:    "",
-    payment_method: "Credit Card",
-  });
-  const [submitting, setSubmitting] = useState(false);
-  const [error,      setError]      = useState("");
-
-  async function handleSubmit(e) {
-    e.preventDefault();
-    setError("");
-    setSubmitting(true);
-
-    try {
-      const user_id = parseInt(localStorage.getItem("user_id"));
-      const existingMember = await getMyMemberRecord().catch(() => null);
-      const transaction_type = existingMember?.user_id
-        ? (existingMember.membership_level === tier.level ? "Renewal" : "Upgrade")
-        : "New";
-
-      await createMembershipTransaction({
-        user_id,
-        membership_level: tier.level,
-        amount:           tier.price,
-        payment_method:   form.payment_method,
-        transaction_type,
-      });
-
-      // Update localStorage role so next nav reflects member status
-      localStorage.setItem("role", "member");
-      onSuccess(tier);
-    } catch (err) {
-      setError(err.message || "Purchase failed. Please try again.");
-    } finally {
-      setSubmitting(false);
-    }
-  }
-
-  return (
-    <div className="mp-overlay" onClick={onClose}>
-      <div className="mp-modal" onClick={e => e.stopPropagation()}>
-        <div className="mp-modal-header">
-          <div>
-            <h2>Purchase {tier.level} Membership</h2>
-            <p className="mp-modal-price">${tier.price.toLocaleString()} / year</p>
-          </div>
-          <button className="mp-modal-close" onClick={onClose}>×</button>
-        </div>
-
-        <form className="mp-modal-body" onSubmit={handleSubmit}>
-          {/* Contact info (read-only from profile) */}
-          <div className="mp-section-label">Your Information</div>
-          <div className="mp-form-row">
-            <div className="mp-form-group">
-              <label>Name</label>
-              <input readOnly value={`${profile?.first_name || ""} ${profile?.last_name || ""}`.trim()} />
-            </div>
-            <div className="mp-form-group">
-              <label>Email</label>
-              <input readOnly value={profile?.email || ""} />
-            </div>
-          </div>
-
-          {/* Payment */}
-          <div className="mp-section-label">Payment</div>
-          <div className="mp-form-group">
-            <label>Payment Method</label>
-            <select value={form.payment_method}
-              onChange={e => setForm(p => ({ ...p, payment_method: e.target.value }))}>
-              {PAYMENT_METHODS.map(m => <option key={m}>{m}</option>)}
-            </select>
-          </div>
-          <div className="mp-form-group">
-            <label>Name on Card</label>
-            <input placeholder="Jane Doe" required value={form.card_name}
-              onChange={e => setForm(p => ({ ...p, card_name: e.target.value }))} />
-          </div>
-          <div className="mp-form-group">
-            <label>Card Number</label>
-            <input placeholder="•••• •••• •••• ••••" required value={form.card_number}
-              inputMode="numeric" autoComplete="off"
-              onChange={e => setForm(p => ({ ...p, card_number: e.target.value }))} />
-          </div>
-          <div className="mp-form-row">
-            <div className="mp-form-group">
-              <label>Expiry</label>
-              <input placeholder="MM/YY" required value={form.card_expiry}
-                onChange={e => setForm(p => ({ ...p, card_expiry: e.target.value }))} />
-            </div>
-            <div className="mp-form-group">
-              <label>CVV</label>
-              <input placeholder="•••" required value={form.card_cvv}
-                inputMode="numeric" autoComplete="off"
-                onChange={e => setForm(p => ({ ...p, card_cvv: e.target.value }))} />
-            </div>
-          </div>
-
-          {error && <div className="mp-error">{error}</div>}
-
-          <div className="mp-modal-footer">
-            <button type="button" className="mp-btn mp-btn-outline" onClick={onClose}>Cancel</button>
-            <button type="submit" className="mp-btn mp-btn-primary" disabled={submitting}>
-              {submitting ? "Processing…" : `Pay $${tier.price.toLocaleString()}`}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-}
-
-// ── Success modal ─────────────────────────────────────────────────────────────
-function SuccessModal({ tier, onClose }) {
-  const navigate = useNavigate();
-  return (
-    <div className="mp-overlay">
-      <div className="mp-modal mp-success-modal">
-        <div className="mp-success-icon">✓</div>
-        <h2>Welcome, {tier.level} Member!</h2>
-        <p>Your membership is now active for one year. You now have access to all {tier.level} benefits.</p>
-        <div className="mp-success-actions">
-          <button className="mp-btn mp-btn-primary"
-            onClick={() => { onClose(); navigate("/member-dashboard"); }}>
-            Go to My Dashboard
-          </button>
-          <button className="mp-btn mp-btn-outline" onClick={onClose}>
-            Continue Browsing
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ── Main page ─────────────────────────────────────────────────────────────────
 export default function MembershipPage() {
-  const navigate = useNavigate();
-  const [profile,      setProfile]      = useState(null);
-  const [memberRec,    setMemberRec]    = useState(null);
-  const [loading,      setLoading]      = useState(true);
-  const [checkoutTier, setCheckoutTier] = useState(null);
-  const [successTier,  setSuccessTier]  = useState(null);
+  const navigate   = useNavigate();
+  const [profile,   setProfile]   = useState(null);
+  const [memberRec, setMemberRec] = useState(null);
+  const [loading,   setLoading]   = useState(true);
+
   const isLoggedIn = !!localStorage.getItem("token");
-  const role       = localStorage.getItem("role");
 
   useEffect(() => {
     async function load() {
@@ -276,21 +130,37 @@ export default function MembershipPage() {
 
   function handleSelectTier(tier) {
     if (!isLoggedIn) { navigate("/login"); return; }
-    setCheckoutTier(tier);
-  }
 
-  function handleSuccess(tier) {
-    setCheckoutTier(null);
-    setSuccessTier(tier);
-    setMemberRec({ membership_level: tier.level });
+    // Determine transaction type
+    const tiers = PURCHASABLE_TIERS.map(t => t.level);
+    let transaction_type = "New";
+    if (memberRec) {
+      const currentIdx = tiers.indexOf(memberRec.membership_level);
+      const targetIdx  = tiers.indexOf(tier.level);
+      transaction_type = targetIdx > currentIdx ? "Upgrade" : "Renewal";
+    }
+
+    // Route through the shared CheckoutPage with membership order state
+    navigate("/checkout", {
+      state: {
+        type:             "membership",
+        membership_level: tier.level,
+        amount:           tier.price,
+        transaction_type,
+        total:            tier.price,
+        // Summary display fields
+        tierLabel:        `${tier.level} Membership`,
+        tierDescription:  tier.description,
+      }
+    });
   }
 
   function getTierAction(tier) {
     if (!isLoggedIn) return { label: "Sign In to Join", disabled: false };
-    if (!memberRec)  return { label: "Join Now", disabled: false };
+    if (!memberRec)  return { label: "Join Now",        disabled: false };
     if (memberRec.membership_level === tier.level)
       return { label: "Renew", disabled: false };
-    const tiers = PURCHASABLE_TIERS.map(t => t.level);
+    const tiers   = PURCHASABLE_TIERS.map(t => t.level);
     const current = tiers.indexOf(memberRec.membership_level);
     const target  = tiers.indexOf(tier.level);
     if (target < current) return { label: "Current tier is higher", disabled: true };
@@ -331,7 +201,6 @@ export default function MembershipPage() {
           <h2>Membership Tiers</h2>
           <p>Choose the level that fits your connection to the arts.</p>
         </div>
-
         <div className="mp-tiers-grid">
           {PURCHASABLE_TIERS.map(tier => {
             const { label, disabled } = getTierAction(tier);
@@ -375,7 +244,6 @@ export default function MembershipPage() {
           <h2>Philanthropy Tiers</h2>
           <p>Unlock these exclusive tiers through cumulative donations within your membership year.</p>
         </div>
-
         <div className="mp-donation-grid">
           {DONATION_TIERS.map(tier => (
             <div
@@ -395,7 +263,8 @@ export default function MembershipPage() {
                   <li key={p}><span className="mp-check">✓</span>{p}</li>
                 ))}
               </ul>
-              <Link to="/donations" className="mp-btn mp-btn-outline-tier"
+              <Link to="/donations"
+                className="mp-btn mp-btn-outline-tier"
                 style={{ borderColor: tier.color, color: tier.color, textDecoration: "none", display: "block", textAlign: "center" }}>
                 Make a Donation
               </Link>
@@ -404,7 +273,7 @@ export default function MembershipPage() {
         </div>
       </section>
 
-      {/* ── FAQ strip ── */}
+      {/* ── FAQ ── */}
       <section className="mp-faq">
         <div className="mp-faq-item">
           <h4>When does my membership start?</h4>
@@ -412,33 +281,17 @@ export default function MembershipPage() {
         </div>
         <div className="mp-faq-item">
           <h4>Can I upgrade mid-year?</h4>
-          <p>Yes. Upgrading resets your membership start date to today with a new one-year term.</p>
+          <p>Yes. Upgrading extends your expiration date by one year. Your original join date is preserved.</p>
         </div>
         <div className="mp-faq-item">
           <h4>How do donation tiers work?</h4>
-          <p>Cumulative donations within your membership year automatically advance your tier. No action needed — your dashboard will reflect the change.</p>
+          <p>Cumulative donations within your membership year automatically advance your tier. Your dashboard will reflect the change.</p>
         </div>
         <div className="mp-faq-item">
           <h4>Can donations alone grant membership?</h4>
-          <p>Yes. If your cumulative donations reach $75 or more, you'll automatically receive a Bronze membership even without a direct purchase.</p>
+          <p>Yes. If your cumulative donations reach $75 or more, you'll automatically receive a Bronze membership.</p>
         </div>
       </section>
-
-      {/* ── Modals ── */}
-      {checkoutTier && (
-        <CheckoutModal
-          tier={checkoutTier}
-          profile={profile}
-          onClose={() => setCheckoutTier(null)}
-          onSuccess={handleSuccess}
-        />
-      )}
-      {successTier && (
-        <SuccessModal
-          tier={successTier}
-          onClose={() => setSuccessTier(null)}
-        />
-      )}
     </div>
   );
 }
