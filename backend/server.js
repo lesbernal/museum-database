@@ -93,6 +93,9 @@ const server = http.createServer((req, res) => {
   if (parsedUrl.pathname.startsWith("/tickets")) {
     return handleTickets(req, res, parsedUrl);
   }
+  if (parsedUrl.pathname === "/event-signups") {
+    return handleEvents(req, res, parsedUrl);
+  }
   if (parsedUrl.pathname.startsWith("/events")) {
     return handleEvents(req, res, parsedUrl);
   }

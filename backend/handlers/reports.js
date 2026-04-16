@@ -14,28 +14,20 @@ module.exports = (req, res, parsedUrl) => {
     return;
   }
 
-// ==================== REPORT 1: REVENUE REPORT ====================
-// Tables: ticket, donation, cafetransaction, giftshoptransaction
-// Filter: startDate, endDate, type (ticket/donation/cafe/gift)
+  // ==================== REPORT 1: REVENUE REPORT ====================
   if (parsedUrl.pathname === "/reports/revenue-data") {
     let startDate = query.startDate;
     let endDate = query.endDate;
     const type = query.type || "all";
     
-    // If no dates provided, use a wide range (earliest possible to latest possible)
-    if (!startDate || startDate === "") {
-      startDate = "1900-01-01";
-    }
-    if (!endDate || endDate === "") {
-      endDate = "2099-12-31";
-    }
+    if (!startDate || startDate === "") startDate = "1900-01-01";
+    if (!endDate || endDate === "") endDate = "2099-12-31";
     
     console.log("Revenue query - startDate:", startDate, "endDate:", endDate, "type:", type);
     
     let sqlParts = [];
     let params = [];
     
-    // TICKETS
     if (type === "ticket" || type === "all") {
       sqlParts.push(`
         SELECT 
@@ -53,7 +45,6 @@ module.exports = (req, res, parsedUrl) => {
       params.push(startDate, endDate);
     }
     
-    // DONATIONS
     if (type === "donation" || type === "all") {
       if (sqlParts.length > 0) sqlParts.push("UNION ALL");
       sqlParts.push(`
@@ -72,7 +63,6 @@ module.exports = (req, res, parsedUrl) => {
       params.push(startDate, endDate);
     }
     
-    // CAFE
     if (type === "cafe" || type === "all") {
       if (sqlParts.length > 0) sqlParts.push("UNION ALL");
       sqlParts.push(`
@@ -91,7 +81,6 @@ module.exports = (req, res, parsedUrl) => {
       params.push(startDate, endDate);
     }
     
-    // GIFT SHOP
     if (type === "gift" || type === "all") {
       if (sqlParts.length > 0) sqlParts.push("UNION ALL");
       sqlParts.push(`
@@ -112,8 +101,6 @@ module.exports = (req, res, parsedUrl) => {
     
     const finalSql = sqlParts.join(" ") + " ORDER BY date DESC";
     
-    console.log("Revenue query params:", params);
-    
     db.query(finalSql, params, (err, results) => {
       if (err) {
         console.error("Revenue query error:", err);
@@ -130,14 +117,8 @@ module.exports = (req, res, parsedUrl) => {
     let startDate = query.startDate;
     let endDate = query.endDate;
     
-    if (!startDate || startDate === "") {
-      startDate = "1900-01-01";
-    }
-    if (!endDate || endDate === "") {
-      endDate = "2099-12-31";
-    }
-    
-    console.log("Summary query - startDate:", startDate, "endDate:", endDate);
+    if (!startDate || startDate === "") startDate = "1900-01-01";
+    if (!endDate || endDate === "") endDate = "2099-12-31";
     
     const sql = `
       SELECT 
@@ -152,53 +133,46 @@ module.exports = (req, res, parsedUrl) => {
     `;
     
     const params = [
-      startDate, endDate,
-      startDate, endDate,
-      startDate, endDate,
-      startDate, endDate,
-      startDate, endDate,
-      startDate, endDate,
-      startDate, endDate,
-      startDate, endDate
+      startDate, endDate, startDate, endDate,
+      startDate, endDate, startDate, endDate,
+      startDate, endDate, startDate, endDate,
+      startDate, endDate, startDate, endDate
     ];
     
     db.query(sql, params, (err, results) => {
       if (err) return sendError(res, err);
       const summary = results[0];
       
-      const ticketRevenue = Number(summary.ticket_revenue) || 0;
+      const ticketRevenue   = Number(summary.ticket_revenue)   || 0;
       const donationRevenue = Number(summary.donation_revenue) || 0;
-      const cafeRevenue = Number(summary.cafe_revenue) || 0;
-      const giftRevenue = Number(summary.gift_revenue) || 0;
-      const ticketCount = Number(summary.ticket_count) || 0;
-      const donationCount = Number(summary.donation_count) || 0;
-      const cafeCount = Number(summary.cafe_count) || 0;
-      const giftCount = Number(summary.gift_count) || 0;
+      const cafeRevenue     = Number(summary.cafe_revenue)     || 0;
+      const giftRevenue     = Number(summary.gift_revenue)     || 0;
+      const ticketCount     = Number(summary.ticket_count)     || 0;
+      const donationCount   = Number(summary.donation_count)   || 0;
+      const cafeCount       = Number(summary.cafe_count)       || 0;
+      const giftCount       = Number(summary.gift_count)       || 0;
       
-      const totalRevenue = ticketRevenue + donationRevenue + cafeRevenue + giftRevenue;
+      const totalRevenue      = ticketRevenue + donationRevenue + cafeRevenue + giftRevenue;
       const totalTransactions = ticketCount + donationCount + cafeCount + giftCount;
       
       sendJSON(res, {
-        totalRevenue: totalRevenue,
-        totalTransactions: totalTransactions,
-        avgTransaction: totalTransactions > 0 ? totalRevenue / totalTransactions : 0,
-        ticketRevenue: ticketRevenue,
-        donationRevenue: donationRevenue,
-        cafeRevenue: cafeRevenue,
-        giftShopRevenue: giftRevenue
+        totalRevenue,
+        totalTransactions,
+        avgTransaction:   totalTransactions > 0 ? totalRevenue / totalTransactions : 0,
+        ticketRevenue,
+        donationRevenue,
+        cafeRevenue,
+        giftShopRevenue:  giftRevenue
       });
     });
     return;
   }
 
   // ==================== REPORT 3: GIFT SHOP REPORT ====================
-  // Tables: giftshopitem, giftshoptransaction, giftshoptransactionitem
-  // Filter: startDate, endDate, category
-  
   if (parsedUrl.pathname === "/reports/giftshop-data") {
     const startDate = query.startDate || "1900-01-01";
-    const endDate = query.endDate || "2099-12-31";
-    const category = query.category || "";
+    const endDate   = query.endDate   || "2099-12-31";
+    const category  = query.category  || "";
     
     let sql = `
       SELECT 
@@ -230,7 +204,6 @@ module.exports = (req, res, parsedUrl) => {
     db.query(sql, params, (err, results) => {
       if (err) return sendError(res, err);
       
-      // Also get summary statistics
       const statsSql = `
         SELECT 
           (SELECT COUNT(*) FROM giftshoptransaction 
@@ -250,17 +223,13 @@ module.exports = (req, res, parsedUrl) => {
     return;
   }
 
-    // ==================== REPORT: VISITOR ANALYTICS ====================
-  // Tables: user, visitor, member, ticket, event
-  // Filter: startDate, endDate, membershipLevel, ticketType
-  
+  // ==================== REPORT: VISITOR ANALYTICS ====================
   if (parsedUrl.pathname === "/reports/visitor-analytics") {
-    const startDate = query.startDate || "1900-01-01";
-    const endDate = query.endDate || new Date().toISOString().split('T')[0];
+    const startDate       = query.startDate       || "1900-01-01";
+    const endDate         = query.endDate         || new Date().toISOString().split('T')[0];
     const membershipLevel = query.membershipLevel || "";
-    const ticketType = query.ticketType || "";
+    const ticketType      = query.ticketType      || "";
     
-    // 1. Get list of visitors with their details
     const visitorsSql = `
       SELECT 
         u.user_id,
@@ -283,7 +252,6 @@ module.exports = (req, res, parsedUrl) => {
       ORDER BY v.total_visits DESC
     `;
     
-    // 2. Get ticket sales summary
     const ticketsSql = `
       SELECT 
         ticket_type,
@@ -297,7 +265,6 @@ module.exports = (req, res, parsedUrl) => {
       ORDER BY purchase_date DESC
     `;
     
-    // 3. Get daily attendance (visits)
     const attendanceSql = `
       SELECT 
         DATE(t.purchase_date) as date,
@@ -310,7 +277,6 @@ module.exports = (req, res, parsedUrl) => {
       ORDER BY date DESC
     `;
     
-    // 4. Get member statistics
     const memberStatsSql = `
       SELECT 
         membership_level,
@@ -320,7 +286,6 @@ module.exports = (req, res, parsedUrl) => {
       GROUP BY membership_level
     `;
     
-    // 5. Get event attendance
     const eventSql = `
       SELECT 
         e.event_name,
@@ -333,68 +298,43 @@ module.exports = (req, res, parsedUrl) => {
       ORDER BY e.event_date DESC
     `;
     
-    // Execute all queries in parallel
     Promise.all([
       new Promise((resolve, reject) => {
-        db.query(visitorsSql, (err, results) => {
-          if (err) reject(err);
-          else resolve(results);
-        });
+        db.query(visitorsSql, (err, results) => { if (err) reject(err); else resolve(results); });
       }),
       new Promise((resolve, reject) => {
-        db.query(ticketsSql, [startDate, endDate], (err, results) => {
-          if (err) reject(err);
-          else resolve(results);
-        });
+        db.query(ticketsSql, [startDate, endDate], (err, results) => { if (err) reject(err); else resolve(results); });
       }),
       new Promise((resolve, reject) => {
-        db.query(attendanceSql, [startDate, endDate], (err, results) => {
-          if (err) reject(err);
-          else resolve(results);
-        });
+        db.query(attendanceSql, [startDate, endDate], (err, results) => { if (err) reject(err); else resolve(results); });
       }),
       new Promise((resolve, reject) => {
-        db.query(memberStatsSql, (err, results) => {
-          if (err) reject(err);
-          else resolve(results);
-        });
+        db.query(memberStatsSql, (err, results) => { if (err) reject(err); else resolve(results); });
       }),
       new Promise((resolve, reject) => {
-        db.query(eventSql, [startDate, endDate], (err, results) => {
-          if (err) reject(err);
-          else resolve(results);
-        });
+        db.query(eventSql, [startDate, endDate], (err, results) => { if (err) reject(err); else resolve(results); });
       })
     ])
     .then(([visitors, tickets, attendance, memberStats, events]) => {
-      // Calculate summary statistics
       const summary = {
-        total_visitors: visitors.length,
-        total_members: visitors.filter(v => v.is_member === 'Yes').length,
-        total_visits: visitors.reduce((sum, v) => sum + (v.total_visits || 0), 0),
+        total_visitors:       visitors.length,
+        total_members:        visitors.filter(v => v.is_member === 'Yes').length,
+        total_visits:         visitors.reduce((sum, v) => sum + (v.total_visits || 0), 0),
         avg_visits_per_visitor: (visitors.reduce((sum, v) => sum + (v.total_visits || 0), 0) / visitors.length || 0).toFixed(1),
-        total_tickets_sold: tickets.reduce((sum, t) => sum + t.count, 0),
+        total_tickets_sold:   tickets.reduce((sum, t) => sum + t.count, 0),
         total_ticket_revenue: tickets.reduce((sum, t) => sum + t.total_revenue, 0),
-        most_popular_ticket: tickets.reduce((a, b) => a.count > b.count ? a : b, { ticket_type: 'None', count: 0 }).ticket_type,
-        total_events: events.length,
+        most_popular_ticket:  tickets.reduce((a, b) => a.count > b.count ? a : b, { ticket_type: 'None', count: 0 }).ticket_type,
+        total_events:         events.length,
         avg_event_attendance: (events.reduce((sum, e) => sum + e.total_attendees, 0) / events.length || 0).toFixed(1)
       };
       
-      sendJSON(res, {
-        summary,
-        visitors,
-        tickets,
-        attendance,
-        memberStats,
-        events
-      });
+      sendJSON(res, { summary, visitors, tickets, attendance, memberStats, events });
     })
     .catch(err => sendError(res, err));
     return;
   }
 
   // ==================== HELPER: Get filter options ====================
-  
   if (parsedUrl.pathname === "/reports/filter-options") {
     const type = query.type || "";
     
@@ -405,7 +345,6 @@ module.exports = (req, res, parsedUrl) => {
       });
       return;
     }
-    
     if (type === "mediums") {
       db.query("SELECT DISTINCT medium FROM artwork WHERE medium IS NOT NULL AND medium != '' ORDER BY medium", (err, results) => {
         if (err) return sendError(res, err);
@@ -413,16 +352,28 @@ module.exports = (req, res, parsedUrl) => {
       });
       return;
     }
-    
     if (type === "statuses") {
       sendJSON(res, ["On Display", "In Storage", "On Loan", "Under Restoration"]);
       return;
     }
-    
     if (type === "categories") {
       db.query("SELECT DISTINCT category FROM giftshopitem ORDER BY category", (err, results) => {
         if (err) return sendError(res, err);
         sendJSON(res, results.map(r => r.category));
+      });
+      return;
+    }
+    if (type === "ticket-types") {
+      db.query("SELECT DISTINCT ticket_type FROM ticket ORDER BY ticket_type", (err, results) => {
+        if (err) return sendError(res, err);
+        sendJSON(res, results.map(r => r.ticket_type));
+      });
+      return;
+    }
+    if (type === "membership-levels") {
+      db.query("SELECT DISTINCT membership_level FROM member ORDER BY membership_level", (err, results) => {
+        if (err) return sendError(res, err);
+        sendJSON(res, results.map(r => r.membership_level));
       });
       return;
     }
@@ -431,24 +382,109 @@ module.exports = (req, res, parsedUrl) => {
     return;
   }
 
-    // Helper: Get ticket types
-  if (parsedUrl.pathname === "/reports/filter-options" && query.type === "ticket-types") {
-    db.query("SELECT DISTINCT ticket_type FROM ticket ORDER BY ticket_type", (err, results) => {
+  // ==================== REPORT: TOP EVENT ATTENDEES ====================
+  // Tables: event_signup, user, event
+  if (parsedUrl.pathname === "/reports/top-event-attendees") {
+    const limit = parseInt(query.limit) || 10;
+
+    const sql = `
+      SELECT 
+        u.user_id,
+        CONCAT(u.first_name, ' ', u.last_name) as full_name,
+        u.email,
+        u.role,
+        COUNT(DISTINCT es.event_id) as total_events,
+        SUM(es.quantity) as total_spots,
+        MAX(es.signup_date) as last_signup_date,
+        GROUP_CONCAT(DISTINCT e.event_type ORDER BY e.event_type SEPARATOR ', ') as event_types_attended
+      FROM event_signup es
+      JOIN user u ON es.user_id = u.user_id
+      JOIN event e ON es.event_id = e.event_id
+      GROUP BY u.user_id, u.first_name, u.last_name, u.email, u.role
+      ORDER BY total_events DESC, total_spots DESC
+      LIMIT ?
+    `;
+
+    db.query(sql, [limit], (err, results) => {
       if (err) return sendError(res, err);
-      sendJSON(res, results.map(r => r.ticket_type));
+
+      const summarySql = `
+        SELECT
+          COUNT(DISTINCT user_id) as total_users_signed_up,
+          COUNT(DISTINCT event_id) as total_events_with_signups,
+          SUM(quantity) as total_spots_reserved,
+          ROUND(AVG(quantity), 1) as avg_spots_per_signup,
+          MAX(signup_date) as most_recent_signup
+        FROM event_signup
+      `;
+
+      db.query(summarySql, (err, stats) => {
+        if (err) return sendError(res, err);
+        sendJSON(res, { data: results, summary: stats[0] });
+      });
     });
     return;
   }
-  
-  // Helper: Get membership levels
-  if (parsedUrl.pathname === "/reports/filter-options" && query.type === "membership-levels") {
-    db.query("SELECT DISTINCT membership_level FROM member ORDER BY membership_level", (err, results) => {
+
+  // ==================== REPORT: EVENT PARTICIPATION VS TICKET PURCHASES ====================
+  // Tables: event_signup, ticket, user
+  if (parsedUrl.pathname === "/reports/event-vs-tickets") {
+
+    const sql = `
+      SELECT
+        u.user_id,
+        CONCAT(u.first_name, ' ', u.last_name) as full_name,
+        u.email,
+        u.role,
+        COUNT(DISTINCT es.event_id) as events_signed_up,
+        COUNT(DISTINCT t.ticket_id) as tickets_purchased,
+        CASE
+          WHEN COUNT(DISTINCT es.event_id) > 0 AND COUNT(DISTINCT t.ticket_id) > 0 THEN 'Both'
+          WHEN COUNT(DISTINCT es.event_id) > 0 AND COUNT(DISTINCT t.ticket_id) = 0 THEN 'Events Only'
+          WHEN COUNT(DISTINCT es.event_id) = 0 AND COUNT(DISTINCT t.ticket_id) > 0 THEN 'Tickets Only'
+          ELSE 'Neither'
+        END as engagement_type,
+        ROUND(SUM(t.final_price), 2) as total_ticket_spend
+      FROM user u
+      LEFT JOIN event_signup es ON u.user_id = es.user_id
+      LEFT JOIN ticket t ON u.user_id = t.user_id
+      WHERE u.role IN ('visitor', 'member')
+      GROUP BY u.user_id, u.first_name, u.last_name, u.email, u.role
+      ORDER BY events_signed_up DESC, tickets_purchased DESC
+    `;
+
+    db.query(sql, (err, results) => {
       if (err) return sendError(res, err);
-      sendJSON(res, results.map(r => r.membership_level));
+
+      const both        = results.filter(r => r.engagement_type === 'Both').length;
+      const eventsOnly  = results.filter(r => r.engagement_type === 'Events Only').length;
+      const ticketsOnly = results.filter(r => r.engagement_type === 'Tickets Only').length;
+      const neither     = results.filter(r => r.engagement_type === 'Neither').length;
+      const totalUsers  = results.length;
+
+      const engagementBreakdown = [
+        { type: "Both",         count: both,        percentage: totalUsers > 0 ? ((both / totalUsers) * 100).toFixed(1) : 0 },
+        { type: "Events Only",  count: eventsOnly,  percentage: totalUsers > 0 ? ((eventsOnly / totalUsers) * 100).toFixed(1) : 0 },
+        { type: "Tickets Only", count: ticketsOnly, percentage: totalUsers > 0 ? ((ticketsOnly / totalUsers) * 100).toFixed(1) : 0 },
+        { type: "Neither",      count: neither,     percentage: totalUsers > 0 ? ((neither / totalUsers) * 100).toFixed(1) : 0 },
+      ];
+
+      sendJSON(res, {
+        data: results,
+        summary: {
+          total_users:   totalUsers,
+          both,
+          events_only:   eventsOnly,
+          tickets_only:  ticketsOnly,
+          neither,
+          most_engaged:  results[0]?.full_name || "—",
+        },
+        engagementBreakdown,
+      });
     });
     return;
   }
-  
+
   // 404 for unmatched routes
   res.writeHead(404, { "Content-Type": "application/json" });
   res.end(JSON.stringify({ message: "Report endpoint not found" }));
