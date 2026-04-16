@@ -197,13 +197,6 @@ export default function RevenueReport() {
             </select>
           </div>
           <div className="filter-group">
-            <label>Payment Method</label>
-            <select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)}>
-              <option value="">All Methods</option>
-              {paymentMethodsList.map(method => <option key={method} value={method}>{method}</option>)}
-            </select>
-          </div>
-          <div className="filter-group">
             <button className="generate-btn" onClick={handleGenerate} disabled={loading}>
               {loading ? "Loading..." : "Generate Report"}
             </button>
@@ -347,7 +340,6 @@ export default function RevenueReport() {
                       <td>{row.customer_name || "—"}</td>
                       <td>{typeValue}</td>
                       <td className="amount-cell">{formatCurrency(row.amount)}</td>
-                      <td>{row.payment_method || "—"}</td>
                     </tr>
                   );
                 })}
