@@ -576,6 +576,65 @@ module.exports = (req, res, parsedUrl) => {
     return;
   }
 
+// ==================== REPORT: MEMBER EVENT PARTICIPATION ====================
+// Tables: event_signup, member, event
+if (parsedUrl.pathname === "/reports/member-event-participation") {
+  const sql = `
+    SELECT m.user_id, CONCAT(u.first_name, ' ', u.last_name) as full_name,
+      u.email, m.membership_level, m.join_date, m.expiration_date,
+      COUNT(DISTINCT es.event_id) as total_events_attended,
+      SUM(es.quantity) as total_spots_reserved,
+      MAX(es.signup_date) as last_event_signup,
+      GROUP_CONCAT(DISTINCT e.event_type ORDER BY e.event_type SEPARATOR ', ') as event_types_attended
+    FROM member m
+    JOIN user u ON m.user_id = u.user_id
+    LEFT JOIN event_signup es ON m.user_id = es.user_id
+    LEFT JOIN event e ON es.event_id = e.event_id
+    GROUP BY m.user_id, u.first_name, u.last_name, u.email, m.membership_level, m.join_date, m.expiration_date
+    ORDER BY total_events_attended DESC, m.membership_level
+  `;
+  db.query(sql, (err, results) => {
+    if (err) return sendError(res, err);
+    const byLevelSql = `
+      SELECT m.membership_level,
+        COUNT(DISTINCT m.user_id) as total_members,
+        COUNT(DISTINCT es.signup_id) as total_signups,
+        SUM(es.quantity) as total_spots,
+        ROUND(AVG(sub.event_count), 1) as avg_events_per_member
+      FROM member m
+      LEFT JOIN event_signup es ON m.user_id = es.user_id
+      LEFT JOIN (
+        SELECT user_id, COUNT(DISTINCT event_id) as event_count
+        FROM event_signup GROUP BY user_id
+      ) sub ON m.user_id = sub.user_id
+      GROUP BY m.membership_level
+      ORDER BY total_signups DESC
+    `;
+    db.query(byLevelSql, (err, byLevel) => {
+      if (err) return sendError(res, err);
+      const summarySql = `
+        SELECT COUNT(DISTINCT m.user_id) as total_members,
+          COUNT(DISTINCT es.user_id) as members_who_attended,
+          COUNT(DISTINCT es.event_id) as unique_events_attended,
+          SUM(es.quantity) as total_spots_reserved,
+          ROUND(AVG(sub.event_count), 1) as avg_events_per_active_member
+        FROM member m
+        LEFT JOIN event_signup es ON m.user_id = es.user_id
+        LEFT JOIN (
+          SELECT user_id, COUNT(DISTINCT event_id) as event_count
+          FROM event_signup GROUP BY user_id
+        ) sub ON m.user_id = sub.user_id
+        WHERE es.user_id IS NOT NULL
+      `;
+      db.query(summarySql, (err, stats) => {
+        if (err) return sendError(res, err);
+        sendJSON(res, { data: results, summary: stats[0], byLevel: byLevel });
+      });
+    });
+  });
+  return;
+}
+
   // 404 for unmatched routes
   res.writeHead(404, { "Content-Type": "application/json" });
   res.end(JSON.stringify({ message: "Report endpoint not found" }));

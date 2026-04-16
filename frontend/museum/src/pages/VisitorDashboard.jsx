@@ -339,7 +339,7 @@ export default function VisitorDashboard() {
                     <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
                       <thead>
                         <tr style={{ background: "#f9fafb", borderBottom: "1px solid #e5e7eb" }}>
-                          {["Visit Date","Tickets","Types","Total","Payment"].map(h => (
+                          {["Purchase Date","Visit Date","Tickets","Types","Total","Payment"].map(h => (
                             <th key={h} style={{ padding: "0.625rem 1rem", textAlign: h === "Total" ? "right" : "left", color: "#6b7280", fontWeight: 600, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.07em" }}>{h}</th>
                           ))}
                         </tr>
@@ -351,6 +351,7 @@ export default function VisitorDashboard() {
                           const types = [...new Set(group.map(t => t.ticket_type))].join(", ");
                           return (
                             <tr key={date} style={{ borderBottom: i < sortedVisitDates.length - 1 ? "1px solid #f3f4f6" : "none" }}>
+                              <td style={{ padding: "0.625rem 1rem", color: "#374151" }}>{fmt(group[0]?.purchase_date)}</td>
                               <td style={{ padding: "0.625rem 1rem", color: "#374151" }}>{fmt(date)}</td>
                               <td style={{ padding: "0.625rem 1rem", color: "#374151" }}>{group.length}</td>
                               <td style={{ padding: "0.625rem 1rem", color: "#374151" }}>{types}</td>
@@ -362,7 +363,7 @@ export default function VisitorDashboard() {
                       </tbody>
                       <tfoot>
                         <tr style={{ background: "#f9fafb", borderTop: "1px solid #e5e7eb" }}>
-                          <td colSpan={3} style={{ padding: "0.625rem 1rem", fontWeight: 600, fontSize: 12, color: "#374151" }}>
+                          <td colSpan={4} style={{ padding: "0.625rem 1rem", fontWeight: 600, fontSize: 12, color: "#374151" }}>
                             {tickets.length} ticket{tickets.length !== 1 ? "s" : ""} across {sortedVisitDates.length} visit{sortedVisitDates.length !== 1 ? "s" : ""}
                           </td>
                           <td style={{ padding: "0.625rem 1rem", fontWeight: 600, fontSize: 12, color: "#374151", textAlign: "right" }}>${ticketTotal.toFixed(2)}</td>
