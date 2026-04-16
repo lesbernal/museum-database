@@ -20,7 +20,7 @@ const SuccessToast = ({ show, editingExhibition, onClose }) => {
 // Form Modal Component
 const ExhibitionFormModal = ({
   isOpen, editingExhibition, formData, exhibitionArtworks, galleries, artworks,
-  errors, isSubmitting, selectedArtworkIds, onSubmit, onCancel,
+  errors, isSubmitting, selectedArtworkIds, allExhibitionArtworkIds, onSubmit, onCancel,
   onChange, onAddArtworkRow, onRemoveArtworkRow, onArtworkRowChange
 }) => {
   if (!isOpen) return null;
@@ -141,14 +141,20 @@ const ExhibitionFormModal = ({
                               const isSelectedElsewhere =
                                 selectedArtworkIds.includes(String(artwork.artwork_id)) &&
                                 String(artwork.artwork_id) !== String(row.artwork_id);
+
+                              const isInAnotherExhibition =
+                                allExhibitionArtworkIds.includes(String(artwork.artwork_id)) &&
+                                !selectedArtworkIds.includes(String(artwork.artwork_id));
+
                               return (
                                 <option
                                   key={artwork.artwork_id}
                                   value={artwork.artwork_id}
-                                  disabled={isSelectedElsewhere}
+                                  disabled={isSelectedElsewhere || isInAnotherExhibition}
                                 >
                                   {artwork.title}
                                   {isSelectedElsewhere ? " (already added)" : ""}
+                                  {isInAnotherExhibition ? " (in another exhibition)" : ""}
                                 </option>
                               );
                             })}
@@ -223,6 +229,7 @@ export default function ExhibitionManager({
   const [searchTerm, setSearchTerm] = useState("");
   const [showSuccessToast, setShowSuccessToast] = useState(false);
   const [exhibitionArtworks, setExhibitionArtworks] = useState([]);
+  const [allExhibitionArtworkIds, setAllExhibitionArtworkIds] = useState([]);
   const [formData, setFormData] = useState({
     gallery_id: "",
     exhibition_name: "",
@@ -405,17 +412,26 @@ export default function ExhibitionManager({
     }
   };
 
-  const handleAddClick = () => {
+  const handleAddClick = async () => {
     setEditingExhibition(null);
-    setFormData({
-      gallery_id: "",
-      exhibition_name: "",
-      start_date: "",
-      end_date: "",
-      exhibition_type: "",
-    });
+    setFormData({ gallery_id: "", exhibition_name: "", start_date: "", end_date: "", exhibition_type: "" });
     setExhibitionArtworks([]);
     setErrors({});
+
+    // Fetch all used artwork IDs across all exhibitions
+    try {
+      const results = await Promise.all(
+        externalExhibitions.map(e =>
+          fetch(`${import.meta.env.VITE_API_URL}/exhibitionartwork/${e.exhibition_id}`)
+            .then(r => r.json())
+        )
+      );
+      const usedIds = results.flat().map(a => String(a.artwork_id));
+      setAllExhibitionArtworkIds(usedIds);
+    } catch (err) {
+      console.error("Failed to load exhibition artworks:", err);
+    }
+
     setIsFormOpen(true);
   };
 
@@ -424,6 +440,19 @@ export default function ExhibitionManager({
       const res = await fetch(`${import.meta.env.VITE_API_URL}/exhibitionartwork/${exhibition.exhibition_id}`);
       const artworks = await res.json();
       setEditingExhibition({ ...exhibition, artworks });
+
+      // Fetch all used artwork IDs EXCEPT from this exhibition
+      const otherExhibitions = externalExhibitions.filter(
+        e => e.exhibition_id !== exhibition.exhibition_id
+      );
+      const results = await Promise.all(
+        otherExhibitions.map(e =>
+          fetch(`${import.meta.env.VITE_API_URL}/exhibitionartwork/${e.exhibition_id}`)
+            .then(r => r.json())
+        )
+      );
+      const usedIds = results.flat().map(a => String(a.artwork_id));
+      setAllExhibitionArtworkIds(usedIds);
     } catch (err) {
       console.error("Failed to load exhibition artworks:", err);
       setEditingExhibition(exhibition);
@@ -561,6 +590,7 @@ export default function ExhibitionManager({
         errors={errors}
         isSubmitting={isSubmitting}
         selectedArtworkIds={selectedArtworkIds}
+        allExhibitionArtworkIds={allExhibitionArtworkIds}
         onSubmit={handleSubmit}
         onCancel={handleCancel}
         onChange={handleChange}
