@@ -233,13 +233,21 @@ export default function CheckoutPage() {
     const nextItemId =
       transactionItems.reduce((max, row) => Math.max(max, Number(row.shop_item_id)), 0) + 1;
 
+    // Build shipping address if needed
+    const shippingAddress = shopDetails.fulfillment_type === "shipping" 
+      ? `${shopDetails.street_address}, ${shopDetails.city}, ${shopDetails.state} ${shopDetails.zip_code}`
+      : null;
+
     await createGiftShopTransaction({
       transaction_id: nextTransactionId,
       user_id: Number(userId),
       transaction_datetime: nowSqlDateTime(),
       total_amount: Number(order.total.toFixed(2)),
       payment_method: "Card",
+      fulfillment_type: shopDetails.fulfillment_type,  // Add this
+      shipping_address: shippingAddress,               // Add this
     });
+    
     for (const [index, item] of order.items.entries()) {
       await createGiftShopTransactionItem({
         shop_item_id: nextItemId + index,
