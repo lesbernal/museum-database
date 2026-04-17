@@ -4,12 +4,11 @@ import "../styles/Visit.css";
 
 export default function Visit() {
   const ticketPrices = [
-    { type: "Adult", price: 19, description: "Ages 19 and above" },
-    { type: "Senior", price: 16, description: "Ages 65 and above" },
+    { type: "Adult", price: 20, description: "Ages 19 and above" },
+    { type: "Senior", price: 15, description: "Ages 65 and above" },
     { type: "Youth", price: 12, description: "Ages 13-18" },
     { type: "Child", price: 0, description: "Ages 12 and under" },
     { type: "Member", price: 0, description: "Members only", isMembershipLink: true },
-    { type: "Student", price: 12, description: "Valid student ID required" }
   ];
 
   const hours = [
