@@ -487,3 +487,62 @@
     flex: 1;
   }
 }
+
+
+.bulk-message {
+  display: flex;
+  gap: 1rem;
+  padding: 1rem;
+  background: #fef3c7;
+  border-left: 4px solid #f59e0b;
+  border-radius: 8px;
+  margin: 1rem 0;
+}
+
+.bulk-icon {
+  font-size: 1.25rem;
+}
+
+.bulk-text {
+  flex: 1;
+}
+
+.bulk-text strong {
+  color: #92400e;
+  display: block;
+  margin-bottom: 0.25rem;
+}
+
+.bulk-text p {
+  color: #6b7280;
+  font-size: 0.8rem;
+  margin: 0;
+}
+
+.bulk-text p strong {
+  display: inline;
+  color: #92400e;
+}
+
+.ticket-limit-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  color: #6b7280;
+}
+
+.ticket-limit-info .remaining {
+  color: #c5a028;
+  font-weight: 500;
+}
+
+.ticket-limit-info .limit-reached {
+  color: #dc2626;
+  font-weight: 500;
+}
