@@ -289,46 +289,45 @@
   margin-bottom: 1rem;
 }
 
-/* ── Extras Section ── */
+/* ── Extras Section --- */
 .extras-section {
   position: relative;
   padding: 5rem 2rem;
-  background: linear-gradient(rgba(0,0,0,0.65), rgba(0,0,0,0.65));
-  background-attachment: fixed;
+  background: #f5f3f0;  
+  overflow: hidden;
 }
 
 .extras-section .section-header h2,
 .extras-section .section-header p {
-  color: #fff;
-  position: relative;
-  z-index: 2;
+  color: #000;
 }
 
 .extras-grid {
   max-width: 1200px;
   margin: 0 auto;
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 2rem;
   position: relative;
   z-index: 2;
 }
 
 .extras-card {
-  background: rgba(255,255,255,0.95);
-  padding: 2.5rem;
+  background: transparent;
+  padding: 2rem;
   text-decoration: none;
-  text-align: center;
+  text-align: left;  
   transition: all 0.3s ease;
-  border: 1px solid rgba(229,229,229,0.3);
-  backdrop-filter: blur(5px);
+  border: none;
+  position: relative;
+  border-left: 3px solid #c5a028;
 }
 
+/* Add subtle shadow on hover instead of border */
 .extras-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 8px 20px rgba(0,0,0,0.2);
-  border-color: #c5a028;
-  background: #fff;
+  transform: translateX(8px);
+  background: rgba(255,255,255,0.8);
+  box-shadow: -10px 10px 20px rgba(0,0,0,0.05);
 }
 
 .extras-card h3 {
@@ -343,8 +342,8 @@
 .extras-card p {
   color: #666;
   font-size: 0.875rem;
-  line-height: 1.5;
-  margin-bottom: 1rem;
+  line-height: 1.6;
+  margin-bottom: 1.25rem;
 }
 
 .extras-link {
@@ -354,12 +353,20 @@
   font-weight: 500;
   letter-spacing: 0.05em;
   text-transform: uppercase;
-  border-bottom: 1px solid #c5a028;
-  padding-bottom: 2px;
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.2s ease;
 }
 
-.extras-link:hover { color: #d4af37; }
+
+.extras-link:hover::after {
+  transform: translateX(4px);
+}
+
+.extras-link:hover {
+  color: #d4af37;
+}
 
 /* ── Footer ── */
 .home-footer {
