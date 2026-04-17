@@ -45,13 +45,17 @@
   text-transform: uppercase;
   transition: all 0.2s ease;
   cursor: pointer;
-  border: none;
-  background: none;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   text-align: center;
-  min-width: 100px;
+  width: 120px;           /* Use fixed width instead of min-width */
+  height: 40px;           /* Add fixed height */
+  box-sizing: border-box; /* Ensure consistent box model */
+  font-family: inherit;   /* Inherit font from parent */
+  background: none;
+  border: none;
+  border-radius: 0;
 }
 
 .dashboard-btn {
@@ -80,7 +84,6 @@
   border: 1px solid #e5e5e5;
   color: #666666;
   background: transparent;
-  border-radius: 0;
 }
 
 .logout-btn:hover {
@@ -142,24 +145,9 @@
 }
 
 /* Different hover effects per button */
-.category-link:nth-child(1):hover {
-  background: #c5a028;
-  color: #000000;
-  box-shadow: 0 -4px 15px rgba(197, 160, 40, 0.4);
-}
-
-.category-link:nth-child(2):hover {
-  background: #c5a028;
-  color: #000000;
-  box-shadow: 0 -4px 15px rgba(197, 160, 40, 0.4);
-}
-
-.category-link:nth-child(3):hover {
-  background: #c5a028;
-  color: #000000;
-  box-shadow: 0 -4px 15px rgba(197, 160, 40, 0.4);
-}
-
+.category-link:nth-child(1):hover,
+.category-link:nth-child(2):hover,
+.category-link:nth-child(3):hover,
 .category-link:nth-child(4):hover {
   background: #c5a028;
   color: #000000;
@@ -172,13 +160,12 @@
   z-index: 1;
 }
 
-/* Responsive */
-
 .category-link.active {
   background: #c5a028;
   color: #000000;
 }
 
+/* Responsive */
 @media (max-width: 768px) {
   .main-navbar {
     flex-direction: column;
@@ -191,7 +178,8 @@
   }
 
   .nav-btn {
-    min-width: 80px;
+    width: 100px;
+    height: 36px;
     padding: 0.5rem 1rem;
   }
 
@@ -202,10 +190,5 @@
   .category-link {
     padding: 1.25rem;
     font-size: 1rem;
-  }
-
-  .category-link.active {
-    background: var(--color-gold);
-    color: var(--color-black);
   }
 }
