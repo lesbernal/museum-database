@@ -1,6 +1,5 @@
 // pages/MembershipPage.jsx
 // Routes membership purchase through the shared CheckoutPage
-// which already has proper 16-digit card, CVV, and expiry validation.
 
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
@@ -42,8 +41,7 @@ const PURCHASABLE_TIERS = [
     color:       "#9a7d0a",
     bg:          "#fef9e7",
     border:      "#f4d03f",
-    featured:    true,
-    description: "Our most popular tier for dedicated supporters.",
+    description: "For dedicated supporters who want premium access.",
     perks: [
       "Everything in Silver",
       "Guest passes (4 per year)",
@@ -140,7 +138,6 @@ export default function MembershipPage() {
       transaction_type = targetIdx > currentIdx ? "Upgrade" : "Renewal";
     }
 
-    // Route through the shared CheckoutPage with membership order state
     navigate("/checkout", {
       state: {
         type:             "membership",
@@ -148,7 +145,6 @@ export default function MembershipPage() {
         amount:           tier.price,
         transaction_type,
         total:            tier.price,
-        // Summary display fields
         tierLabel:        `${tier.level} Membership`,
         tierDescription:  tier.description,
       }
@@ -169,33 +165,30 @@ export default function MembershipPage() {
 
   return (
     <div className="mp-page">
-      {/* ── Hero ── */}
-      <section className="mp-hero">
+      {/* Hero Section */}
+      <div className="mp-hero">
         <div className="mp-hero-overlay" />
         <div className="mp-hero-content">
-          <p className="mp-kicker">Membership</p>
-          <h1>Become Part of the Museum</h1>
-          <p>Support world-class art and enjoy exclusive benefits year-round.</p>
+          <p className="mp-eyebrow">Museum of Fine Arts, Houston</p>
+          <h1 className="mp-title">Membership</h1>
+          <p className="mp-subtitle">
+            Support world-class art and enjoy exclusive benefits year-round.
+          </p>
           {isLoggedIn && memberRec && (
             <div className="mp-current-badge">
               Your current tier: <strong>{memberRec.membership_level}</strong>
             </div>
           )}
-          {!isLoggedIn && (
-            <div className="mp-hero-actions">
+          <div className="mp-hero-actions">
+            {!isLoggedIn && (
               <Link to="/login" className="mp-btn mp-btn-primary">Sign In to Join</Link>
-              <Link to="/"      className="mp-btn mp-btn-ghost">Back to Home</Link>
-            </div>
-          )}
-          {isLoggedIn && (
-            <div className="mp-hero-actions">
-              <Link to="/" className="mp-btn mp-btn-ghost">Back to Home</Link>
-            </div>
-          )}
+            )}
+            <Link to="/" className="mp-btn mp-btn-outline">Back to Home</Link>
+          </div>
         </div>
-      </section>
+      </div>
 
-      {/* ── Purchasable tiers ── */}
+      {/* Purchasable Tiers */}
       <section className="mp-section">
         <div className="mp-section-header">
           <h2>Membership Tiers</h2>
@@ -207,10 +200,9 @@ export default function MembershipPage() {
             return (
               <div
                 key={tier.level}
-                className={`mp-tier-card${tier.featured ? " mp-tier-featured" : ""}`}
+                className="mp-tier-card"
                 style={{ "--tier-color": tier.color, "--tier-bg": tier.bg, "--tier-border": tier.border }}
               >
-                {tier.featured && <div className="mp-featured-badge">Most Popular</div>}
                 <div className="mp-tier-header">
                   <h3>{tier.level}</h3>
                   <div className="mp-tier-price">
@@ -221,14 +213,16 @@ export default function MembershipPage() {
                 </div>
                 <ul className="mp-perks">
                   {tier.perks.map(p => (
-                    <li key={p}><span className="mp-check">✓</span>{p}</li>
+                    <li key={p}>
+                      <span className="mp-check">✓</span>
+                      <span>{p}</span>
+                    </li>
                   ))}
                 </ul>
                 <button
-                  className={`mp-btn mp-tier-btn${tier.featured ? " mp-btn-primary" : " mp-btn-outline-tier"}`}
+                  className="mp-tier-btn"
                   disabled={disabled || loading}
                   onClick={() => !disabled && handleSelectTier(tier)}
-                  style={!tier.featured ? { borderColor: tier.color, color: tier.color } : {}}
                 >
                   {loading ? "Loading…" : label}
                 </button>
@@ -238,7 +232,7 @@ export default function MembershipPage() {
         </div>
       </section>
 
-      {/* ── Donation-based tiers ── */}
+      {/* Donation-based Tiers */}
       <section className="mp-section mp-section-donation">
         <div className="mp-section-header">
           <h2>Philanthropy Tiers</h2>
@@ -260,12 +254,13 @@ export default function MembershipPage() {
               </div>
               <ul className="mp-perks">
                 {tier.perks.map(p => (
-                  <li key={p}><span className="mp-check">✓</span>{p}</li>
+                  <li key={p}>
+                    <span className="mp-check">✓</span>
+                    <span>{p}</span>
+                  </li>
                 ))}
               </ul>
-              <Link to="/donations"
-                className="mp-btn mp-btn-outline-tier"
-                style={{ borderColor: tier.color, color: tier.color, textDecoration: "none", display: "block", textAlign: "center" }}>
+              <Link to="/donations" className="mp-donation-btn">
                 Make a Donation
               </Link>
             </div>
@@ -273,23 +268,29 @@ export default function MembershipPage() {
         </div>
       </section>
 
-      {/* ── FAQ ── */}
-      <section className="mp-faq">
-        <div className="mp-faq-item">
-          <h4>When does my membership start?</h4>
-          <p>Immediately upon purchase. Your expiration date is exactly one year from today.</p>
+      {/* FAQ Section - Made more visible */}
+      <section className="mp-faq-section">
+        <div className="mp-faq-header">
+          <h2>Frequently Asked Questions</h2>
+          <p>Everything you need to know about museum membership</p>
         </div>
-        <div className="mp-faq-item">
-          <h4>Can I upgrade mid-year?</h4>
-          <p>Yes. Upgrading extends your expiration date by one year. Your original join date is preserved.</p>
-        </div>
-        <div className="mp-faq-item">
-          <h4>How do donation tiers work?</h4>
-          <p>Cumulative donations within your membership year automatically advance your tier. Your dashboard will reflect the change.</p>
-        </div>
-        <div className="mp-faq-item">
-          <h4>Can donations alone grant membership?</h4>
-          <p>Yes. If your cumulative donations reach $75 or more, you'll automatically receive a Bronze membership.</p>
+        <div className="mp-faq-grid">
+          <div className="mp-faq-item">
+            <h4>When does my membership start?</h4>
+            <p>Immediately upon purchase. Your expiration date is exactly one year from today.</p>
+          </div>
+          <div className="mp-faq-item">
+            <h4>Can I upgrade mid-year?</h4>
+            <p>Yes. Upgrading extends your expiration date by one year. Your original join date is preserved.</p>
+          </div>
+          <div className="mp-faq-item">
+            <h4>How do donation tiers work?</h4>
+            <p>Cumulative donations within your membership year automatically advance your tier. Your dashboard will reflect the change.</p>
+          </div>
+          <div className="mp-faq-item">
+            <h4>Can donations alone grant membership?</h4>
+            <p>Yes. If your cumulative donations reach $75 or more, you'll automatically receive a Bronze membership.</p>
+          </div>
         </div>
       </section>
     </div>

@@ -14,30 +14,26 @@ function getMembershipEarned(amount) {
   return null;
 }
 
-function getTierClass(tier) {
-  if (tier === "Leadership Circle") return "leadership";
-  if (tier === "Benefactor") return "benefactor";
-  return "";
-}
-
-function getTierIcon(tier) {
-  return "";
-}
-
 export default function Donations() {
   const navigate = useNavigate();
 
   const [amount,       setAmount]       = useState("");
   const [donationType, setDonationType] = useState("General");
+  const [isCustom,     setIsCustom]     = useState(false);
   const [feedback,     setFeedback]     = useState(null);
 
   const userId       = localStorage.getItem("user_id");
   const parsedAmount = parseFloat(amount) || 0;
   const tierEarned   = getMembershipEarned(amount);
-  const tierClass    = getTierClass(tierEarned);
 
   function handleQuickAmount(val) {
     setAmount(String(val));
+    setIsCustom(false);
+  }
+
+  function handleCustomAmount(e) {
+    setAmount(e.target.value);
+    setIsCustom(true);
   }
 
   function handleDonate(e) {
@@ -59,14 +55,18 @@ export default function Donations() {
   return (
     <div className="donations-page">
 
-      {/* Hero */}
+      {/* Hero Section */}
       <div className="donations-hero">
-        <p className="donations-eyebrow">Museum of Fine Arts, Houston</p>
-        <h1 className="donations-title">Support the Museum</h1>
-        <p className="donations-subtitle">Your generosity helps preserve art and culture for future generations</p>
+        <div className="donations-hero-content">
+          <p className="donations-eyebrow">Museum of Fine Arts, Houston</p>
+          <h1 className="donations-title">Support the Museum</h1>
+          <p className="donations-subtitle">
+            Your generosity helps preserve art and culture for future generations.
+          </p>
+        </div>
       </div>
 
-      <form onSubmit={handleDonate}>
+      <form onSubmit={handleDonate} className="donations-form">
 
         {/* Quick amounts */}
         <p className="donations-section-label">Select an Amount</p>
@@ -75,32 +75,42 @@ export default function Donations() {
             <button
               key={val}
               type="button"
-              className={`quick-amount-btn ${String(val) === amount ? "active" : ""}`}
+              className={`quick-amount-btn ${String(val) === amount && !isCustom ? "active" : ""}`}
               onClick={() => handleQuickAmount(val)}
             >
               ${val.toLocaleString()}
             </button>
           ))}
+          <button
+            type="button"
+            className={`quick-amount-btn custom ${isCustom ? "active" : ""}`}
+            onClick={() => setIsCustom(true)}
+          >
+            Other
+          </button>
         </div>
 
         {/* Custom amount */}
-        <div className="donations-form-row-single donations-field">
-          <label>Custom Amount</label>
-          <input
-            type="number"
-            min="1"
-            value={amount}
-            onChange={e => setAmount(e.target.value)}
-            placeholder="Enter amount"
-            className="amount-input"
-          />
-        </div>
+        {isCustom && (
+          <div className="donations-custom-field">
+            <label>Custom Amount ($)</label>
+            <input
+              type="number"
+              min="1"
+              value={amount}
+              onChange={handleCustomAmount}
+              placeholder="Enter any amount"
+              className="custom-amount-input"
+              autoFocus
+            />
+          </div>
+        )}
 
         {/* Tier preview */}
         {parsedAmount >= 1500 && (
-          <div className={`donations-tier-preview ${tierClass}`}>
-            <span className="tier-preview-icon">{getTierIcon(tierEarned)}</span>
-            <span className={`tier-preview-text ${tierClass}`}>
+          <div className={`donations-tier-preview ${tierEarned === "Leadership Circle" ? "leadership" : "benefactor"}`}>
+            <span className="tier-icon">🏆</span>
+            <span className="tier-text">
               This donation qualifies you for <strong>{tierEarned}</strong> membership!
             </span>
           </div>
@@ -108,14 +118,16 @@ export default function Donations() {
 
         {/* Donation details */}
         <p className="donations-section-label">Donation Details</p>
-        <div className="donations-form-row-single donations-field">
-          <label>Donation Type</label>
-          <select value={donationType} onChange={e => setDonationType(e.target.value)}>
-            <option>General</option>
-            <option>Scholarship</option>
-            <option>Exhibition</option>
-            <option>Conservation</option>
-          </select>
+        <div className="donations-details-grid">
+          <div className="donations-field">
+            <label>Designation</label>
+            <select value={donationType} onChange={e => setDonationType(e.target.value)}>
+              <option value="General">General Support</option>
+              <option value="Scholarship">Education & Scholarships</option>
+              <option value="Exhibition">Exhibitions Fund</option>
+              <option value="Conservation">Art Conservation</option>
+            </select>
+          </div>
         </div>
 
         {/* Summary */}
@@ -126,9 +138,12 @@ export default function Donations() {
               <span>{donationType}</span>
             </div>
             <div className="donations-summary-total">
-              <span>Total</span>
+              <span>Your Gift</span>
               <span>${parsedAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
             </div>
+            <p className="donations-tax-note">
+              The Museum of Fine Arts, Houston is a 501(c)(3) nonprofit organization. Your donation is tax-deductible to the full extent of the law.
+            </p>
           </div>
         )}
 
@@ -145,9 +160,13 @@ export default function Donations() {
           disabled={parsedAmount <= 0}
         >
           {parsedAmount > 0
-            ? `Proceed to Checkout — $${parsedAmount.toLocaleString()}`
-            : "Enter an Amount to Continue"}
+            ? `Donate $${parsedAmount.toLocaleString()}`
+            : "Select an Amount to Continue"}
         </button>
+
+        <p className="donations-footer-note">
+          Questions? Contact our development office at <strong>development@mfah.org</strong> or <strong>(713) 639-7300</strong>.
+        </p>
 
       </form>
     </div>

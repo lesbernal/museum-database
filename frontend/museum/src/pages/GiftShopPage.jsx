@@ -13,10 +13,10 @@ function SignInPrompt({ onClose }) {
           <button className="close-btn" onClick={onClose}>&times;</button>
         </div>
         <div className="shop-auth-body">
-          <p>Please sign in or sign up before adding museum shop items to your cart.</p>
+          <p>Please sign in to add items to your cart and complete your purchase.</p>
           <div className="shop-auth-actions">
-            <Link to="/login" className="btn btn-primary">Sign In</Link>
-            <button type="button" className="btn btn-outline">Sign Up</button>
+            <Link to="/login" className="auth-btn auth-btn-primary">Sign In</Link>
+            <Link to="/login" className="auth-btn auth-btn-secondary">Create Account</Link>
           </div>
         </div>
       </div>
@@ -30,6 +30,9 @@ export default function GiftShopPage() {
   const [error, setError] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
+  const [priceRange, setPriceRange] = useState({ min: "", max: "" });
+  const [sortBy, setSortBy] = useState("name");
+  const [showInStockOnly, setShowInStockOnly] = useState(false);
   const [cartCount, setCartCount] = useState(() =>
     readGiftShopCart().reduce((sum, item) => sum + item.quantity, 0)
   );
@@ -53,14 +56,8 @@ export default function GiftShopPage() {
   }, []);
 
   useEffect(() => {
-    if (!cartToast) {
-      return undefined;
-    }
-
-    const timeoutId = window.setTimeout(() => {
-      setCartToast("");
-    }, 2200);
-
+    if (!cartToast) return;
+    const timeoutId = window.setTimeout(() => setCartToast(""), 2200);
     return () => window.clearTimeout(timeoutId);
   }, [cartToast]);
 
@@ -69,15 +66,35 @@ export default function GiftShopPage() {
     [items]
   );
 
-  const filteredItems = useMemo(() => {
-    return items.filter((item) => {
+  const filteredAndSortedItems = useMemo(() => {
+    let filtered = items.filter((item) => {
       const matchesSearch =
         item.item_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         item.category?.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesCategory = !selectedCategory || item.category === selectedCategory;
-      return matchesSearch && matchesCategory;
+      const matchesPriceMin = !priceRange.min || Number(item.price) >= Number(priceRange.min);
+      const matchesPriceMax = !priceRange.max || Number(item.price) <= Number(priceRange.max);
+      const matchesStock = !showInStockOnly || Number(item.stock_quantity) > 0;
+      return matchesSearch && matchesCategory && matchesPriceMin && matchesPriceMax && matchesStock;
     });
-  }, [items, searchTerm, selectedCategory]);
+
+    filtered.sort((a, b) => {
+      switch (sortBy) {
+        case "name":
+          return a.item_name.localeCompare(b.item_name);
+        case "name_desc":
+          return b.item_name.localeCompare(a.item_name);
+        case "price_asc":
+          return Number(a.price) - Number(b.price);
+        case "price_desc":
+          return Number(b.price) - Number(a.price);
+        default:
+          return 0;
+      }
+    });
+
+    return filtered;
+  }, [items, searchTerm, selectedCategory, priceRange, sortBy, showInStockOnly]);
 
   function handleAddToCart(item) {
     const token = localStorage.getItem("token");
@@ -118,22 +135,26 @@ export default function GiftShopPage() {
     setCartToast(`${item.item_name} added to cart`);
   }
 
+  const clearFilters = () => {
+    setSearchTerm("");
+    setSelectedCategory("");
+    setPriceRange({ min: "", max: "" });
+    setSortBy("name");
+    setShowInStockOnly(false);
+  };
+
+  const hasActiveFilters = searchTerm || selectedCategory || priceRange.min || priceRange.max || sortBy !== "name" || showInStockOnly;
+
   return (
     <div className="giftshop-page">
       <section className="giftshop-hero">
         <div className="giftshop-hero-copy">
-          <p className="giftshop-kicker">The MFA Shop</p>
-          <h1>Artful Gifts, Prints, Jewelry, Books, and More</h1>
+          <h1>The MFA Gift Shop</h1>
+          <h2 className="giftshop-subtitle">Artful Gifts, Prints, Books, & More</h2>
+          <h1></h1>
           <p>
-            Inspired by the Museum of Fine Arts, Houston shop experience, this page
-            now supports a pickup cart and checkout flow tied to your gift shop
-            inventory data.
+            Find the perfect keepsake for yourself or a loved one. Our curated selection features exclusive museum merchandise, art-inspired gifts, and treasures you won't find anywhere else.
           </p>
-          <div className="giftshop-badges">
-            <span>Free to Visit</span>
-            <span>Pick Up In Store</span>
-            <span>Museum Exclusives</span>
-          </div>
         </div>
 
         <div className="giftshop-info-card">
@@ -141,42 +162,102 @@ export default function GiftShopPage() {
           <p><strong>Hours:</strong> During regular museum hours</p>
           <p><strong>Location:</strong> Beck Building street level</p>
           <p><strong>Phone:</strong> 713.639.7360</p>
-          <p><strong>Member Benefit:</strong> Discounts available in store</p>
+          <p><strong>Member Benefit:</strong> Discounts available in-store</p>
           <Link to="/gift-shop/cart" className="btn btn-primary giftshop-cart-link">
             View Cart ({cartCount})
           </Link>
         </div>
       </section>
 
-      <section className="giftshop-toolbar">
-        <input
-          type="text"
-          placeholder="Search gifts, books, prints, and more..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
-        <select
-          value={selectedCategory}
-          onChange={(e) => setSelectedCategory(e.target.value)}
-        >
-          <option value="">All Categories</option>
-          {categories.map((category) => (
-            <option key={category} value={category}>
-              {category}
-            </option>
-          ))}
-        </select>
-      </section>
+      {/* Search and Filters */}
+      <div className="giftshop-filters-section">
+        <div className="giftshop-search-bar">
+          <input
+            type="text"
+            placeholder="Search gifts, books, prints, and more..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="giftshop-search-input"
+          />
+        </div>
 
+        <div className="giftshop-filters-grid">
+          <div className="filter-group">
+            <label>Category</label>
+            <select value={selectedCategory} onChange={(e) => setSelectedCategory(e.target.value)}>
+              <option value="">All Categories</option>
+              {categories.map((category) => (
+                <option key={category} value={category}>{category}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="filter-group">
+            <label>Sort By</label>
+            <select value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
+              <option value="name">Name A-Z</option>
+              <option value="name_desc">Name Z-A</option>
+              <option value="price_asc">Price: Low to High</option>
+              <option value="price_desc">Price: High to Low</option>
+            </select>
+          </div>
+
+          <div className="filter-group price-range">
+            <label>Price Range</label>
+            <div className="price-inputs">
+              <input
+                type="number"
+                placeholder="Min $"
+                value={priceRange.min}
+                onChange={(e) => setPriceRange({ ...priceRange, min: e.target.value })}
+              />
+              <span>—</span>
+              <input
+                type="number"
+                placeholder="Max $"
+                value={priceRange.max}
+                onChange={(e) => setPriceRange({ ...priceRange, max: e.target.value })}
+              />
+            </div>
+          </div>
+
+          <div className="filter-group stock-filter">
+            <label className="checkbox-label">
+              <input
+                type="checkbox"
+                checked={showInStockOnly}
+                onChange={(e) => setShowInStockOnly(e.target.checked)}
+              />
+              <span>Show in-stock only</span>
+            </label>
+          </div>
+
+          {hasActiveFilters && (
+            <button className="clear-filters-btn" onClick={clearFilters}>
+              Clear All
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Results Count */}
+      <div className="giftshop-results-count">
+        {filteredAndSortedItems.length} product{filteredAndSortedItems.length !== 1 ? "s" : ""} found
+      </div>
+
+      {/* Loading/Error/Empty States */}
       {loading ? (
-        <div className="loading-spinner">Loading gift shop items...</div>
+        <div className="giftshop-loading">Loading gift shop items...</div>
       ) : error ? (
         <div className="giftshop-message error">{error}</div>
-      ) : filteredItems.length === 0 ? (
-        <div className="giftshop-message">No products match your filters right now.</div>
+      ) : filteredAndSortedItems.length === 0 ? (
+        <div className="giftshop-empty">
+          <p>No products match your filters.</p>
+          <button className="reset-btn" onClick={clearFilters}>Reset Filters</button>
+        </div>
       ) : (
-        <section className="giftshop-grid">
-          {filteredItems.map((item) => (
+        <div className="giftshop-grid">
+          {filteredAndSortedItems.map((item) => (
             <article className="giftshop-card" key={item.item_id}>
               <div className="giftshop-card-art">
                 {item.image_url ? (
@@ -191,7 +272,7 @@ export default function GiftShopPage() {
               </div>
               <div className="giftshop-card-body">
                 <p className="giftshop-category">{item.category}</p>
-                <h2>{item.item_name}</h2>
+                <h3>{item.item_name}</h3>
                 <p className="giftshop-price">${Number(item.price).toFixed(2)}</p>
                 <p className="giftshop-stock">
                   {Number(item.stock_quantity) > 0
@@ -211,11 +292,11 @@ export default function GiftShopPage() {
               </div>
             </article>
           ))}
-        </section>
+        </div>
       )}
 
       {showAuthPrompt && <SignInPrompt onClose={() => setShowAuthPrompt(false)} />}
-      {cartToast && <div className="shop-cart-toast">{cartToast}</div>}
+      {cartToast && <div className="giftshop-toast">{cartToast}</div>}
     </div>
   );
 }

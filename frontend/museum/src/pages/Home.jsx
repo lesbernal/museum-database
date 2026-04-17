@@ -33,12 +33,12 @@ export default function Home() {
       .catch(() => setLoading(false));
   }, []);
 
-  // Auto-scroll every 5 seconds
+  // Auto-scroll every 8 seconds (slower)
   useEffect(() => {
     if (events.length === 0) return;
     const interval = setInterval(() => {
       setCurrentIndex((prev) => (prev + 1) % events.length);
-    }, 5000);
+    }, 8000);  // Changed from 5000 to 8000
     return () => clearInterval(interval);
   }, [events.length]);
 

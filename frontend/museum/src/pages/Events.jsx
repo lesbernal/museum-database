@@ -6,7 +6,7 @@ import { getEvents } from "../services/api";
 
 const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
-const EVENT_TYPES = ["All", "General", "Lecture", "Tour", "Activity", "Workshop", "Exhibition", "Member Only"];
+const EVENT_TYPES = ["All", "General", "Lecture", "Tour", "Activity", "Workshop", "Member Only"];
 
 const TYPE_COLORS = {
   "General":     { bg: "#f3f4f6", color: "#374151" },
@@ -28,8 +28,6 @@ export default function Events() {
 
   // Filters
   const [typeFilter,      setTypeFilter]      = useState("All");
-  const [dateFrom,        setDateFrom]        = useState("");
-  const [dateTo,          setDateTo]          = useState("");
   const [sortOrder,       setSortOrder]       = useState("asc");
   const [availableOnly,   setAvailableOnly]   = useState(false);
 
@@ -65,8 +63,6 @@ export default function Events() {
   const filteredEvents = events
     .filter(e => {
       if (typeFilter !== "All" && e.event_type !== typeFilter) return false;
-      if (dateFrom && e.event_date < dateFrom) return false;
-      if (dateTo && e.event_date > dateTo) return false;
       if (availableOnly && (e.capacity - e.total_attendees) <= 0) return false;
       return true;
     })
@@ -115,26 +111,26 @@ export default function Events() {
     }
   }
 
-  if (loading) return <p style={{ padding: "var(--spacing-3xl)" }}>Loading events...</p>;
+  if (loading) return (
+    <div className="events-loading">
+      <div className="loading-spinner"></div>
+      <p>Loading events...</p>
+    </div>
+  );
 
   return (
-    <div style={{ padding: "var(--spacing-3xl)" }}>
-
-      {/* Header */}
-      <div style={{ marginBottom: "var(--spacing-xl)" }}>
-        <p style={{ fontSize: "0.72rem", textTransform: "uppercase", letterSpacing: "0.12em", color: "var(--color-gray-light)", marginBottom: "0.5rem" }}>
-          Museum of Fine Arts, Houston
-        </p>
-        <h1 style={{ fontSize: "2.5rem", fontWeight: 300, letterSpacing: "-0.02em", marginBottom: "0.5rem" }}>
-          Upcoming Events
-        </h1>
-        <p style={{ color: "var(--color-gray)", fontSize: "0.95rem" }}>
-          Explore exhibitions, lectures, tours and special programs
+    <div className="events-page">
+      {/* Hero Section */}
+      <div className="events-hero">
+        <p className="events-eyebrow">Museum of Fine Arts, Houston</p>
+        <h1 className="events-title">Upcoming Events</h1>
+        <p className="events-subtitle">
+          Explore lectures, tours and special programs
         </p>
       </div>
 
-      {/* Filters */}
-      <div className="events-filter-bar">
+      {/* Filters Section */}
+      <div className="events-filters">
         {/* Type filter pills */}
         <div className="events-type-filters">
           {EVENT_TYPES.map(t => (
@@ -148,60 +144,54 @@ export default function Events() {
           ))}
         </div>
 
-        {/* Date range + sort + available */}
+        {/* Additional filters */}
         <div className="events-filter-controls">
-          <div className="events-filter-group">
-            <label>From</label>
-            <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} />
-          </div>
-          <div className="events-filter-group">
-            <label>To</label>
-            <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} />
-          </div>
-          <div className="events-filter-group">
-            <label>Sort</label>
-            <select value={sortOrder} onChange={e => setSortOrder(e.target.value)}>
-              <option value="asc">Date (Earliest)</option>
-              <option value="desc">Date (Latest)</option>
-            </select>
-          </div>
-          <label className="events-available-check">
-            <input
-              type="checkbox"
-              checked={availableOnly}
-              onChange={e => setAvailableOnly(e.target.checked)}
-            />
-            Available only
-          </label>
-          {(typeFilter !== "All" || dateFrom || dateTo || availableOnly || sortOrder !== "asc") && (
-            <button
-              className="events-clear-btn"
-              onClick={() => {
-                setTypeFilter("All");
-                setDateFrom("");
-                setDateTo("");
-                setSortOrder("asc");
-                setAvailableOnly(false);
-              }}
-            >
-              Clear Filters
-            </button>
-          )}
+        <div className="events-filter-group">
+          <label>Sort By</label>
+          <select value={sortOrder} onChange={e => setSortOrder(e.target.value)}>
+            <option value="asc">Earliest First</option>
+            <option value="desc">Latest First</option>
+          </select>
         </div>
+        <label className="events-available-check">
+          <input
+            type="checkbox"
+            checked={availableOnly}
+            onChange={e => setAvailableOnly(e.target.checked)}
+          />
+          <span>Show available only</span>
+        </label>
+        {(typeFilter !== "All" || availableOnly || sortOrder !== "asc") && (
+          <button className="events-clear-btn" onClick={() => {
+            setTypeFilter("All");
+            setSortOrder("asc");
+            setAvailableOnly(false);
+          }}>
+            Clear Filters
+          </button>
+        )}
+      </div>
       </div>
 
       {/* Results count */}
-      <p style={{ fontSize: "0.82rem", color: "var(--color-gray-light)", marginBottom: "var(--spacing-lg)" }}>
-        {filteredEvents.length} event{filteredEvents.length !== 1 ? "s" : ""}
-      </p>
+      <div className="events-count">
+        {filteredEvents.length} event{filteredEvents.length !== 1 ? "s" : ""} found
+      </div>
 
       {/* Events grid */}
       {filteredEvents.length === 0 ? (
-        <p style={{ color: "var(--color-gray-light)", textAlign: "center", padding: "3rem 0" }}>
-          No events match your filters.
-        </p>
+        <div className="events-empty">
+          <p>No events match your filters.</p>
+          <button className="events-reset-btn" onClick={() => {
+            setTypeFilter("All");
+            setDateFrom("");
+            setDateTo("");
+            setSortOrder("asc");
+            setAvailableOnly(false);
+          }}>Reset all filters</button>
+        </div>
       ) : (
-        <div style={{ display: "grid", gap: "var(--spacing-lg)" }}>
+        <div className="events-grid">
           {filteredEvents.map(e => {
             const spotsLeft  = e.capacity - e.total_attendees;
             const isFull     = spotsLeft <= 0;
@@ -210,100 +200,88 @@ export default function Events() {
             const msg        = messages[e.event_id];
             const quantity   = quantities[e.event_id] || 1;
             const typeStyle  = TYPE_COLORS[e.event_type] || TYPE_COLORS["General"];
+            const isLowStock = spotsLeft <= 5 && spotsLeft > 0;
 
             return (
-              <div key={e.event_id} className="card" style={{ padding: "var(--spacing-lg)" }}>
-                <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: "0.5rem", marginBottom: "0.5rem" }}>
-                  <h3 style={{ margin: 0 }}>{e.event_name}</h3>
-                  <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+              <div key={e.event_id} className="event-card">
+                <div className="event-card-header">
+                  <h3 className="event-title">{e.event_name}</h3>
+                  <div className="event-badges">
                     {e.event_type && (
-                      <span style={{
-                        padding: "0.2rem 0.65rem",
-                        borderRadius: "999px",
-                        fontSize: "0.72rem",
-                        fontWeight: 600,
+                      <span className="event-type-badge" style={{
                         background: typeStyle.bg,
                         color: typeStyle.color,
                       }}>
                         {e.event_type}
                       </span>
                     )}
-                    {isMemberOnly && (
-                      <span style={{
-                        padding: "0.2rem 0.65rem",
-                        borderRadius: "999px",
-                        fontSize: "0.72rem",
-                        fontWeight: 600,
-                        background: "#fef9c3",
-                        color: "#854d0e",
-                      }}>
-                        ⭐ Members Only
-                      </span>
-                    )}
                   </div>
                 </div>
 
-                <p style={{ fontSize: "0.82rem", color: "var(--color-gold)", marginBottom: "0.5rem", fontWeight: 500 }}>
-                  {e.event_date?.split("T")[0] ?? e.event_date}
+                <p className="event-date">
+                  {new Date(e.event_date).toLocaleDateString("en-US", { 
+                    weekday: 'long', 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric' 
+                  })}
                 </p>
 
                 {e.description && (
-                  <p style={{ fontSize: "0.875rem", color: "var(--color-gray)", marginBottom: "0.75rem" }}>
-                    {e.description}
-                  </p>
+                  <p className="event-description">{e.description}</p>
                 )}
 
-                <p style={{ fontSize: "0.82rem", marginBottom: "0.75rem" }}>
-                  {isFull ? (
-                    <span style={{ color: "red" }}>⛔ Fully Booked</span>
-                  ) : (
-                    <span style={{ color: spotsLeft <= 5 ? "orange" : "green" }}>
-                      ✅ {spotsLeft} spot{spotsLeft !== 1 ? "s" : ""} available
-                    </span>
+                <div className="event-footer">
+                  <div className="event-availability">
+                    {isFull ? (
+                      <span className="availability-full">Fully Booked</span>
+                    ) : (
+                      <span className={`availability-available ${isLowStock ? 'low-stock' : ''}`}>
+                        {spotsLeft} {spotsLeft === 1 ? 'spot' : 'spots'} available
+                      </span>
+                    )}
+                  </div>
+
+                  {!isFull && !isLocked && (
+                    <div className="event-quantity">
+                      <label>Attendees</label>
+                      <input
+                        type="number"
+                        min="1"
+                        max={spotsLeft}
+                        value={quantity}
+                        onChange={(ev) =>
+                          setQuantities(prev => ({
+                            ...prev,
+                            [e.event_id]: Math.min(Number(ev.target.value), spotsLeft)
+                          }))
+                        }
+                      />
+                    </div>
                   )}
-                </p>
+                </div>
 
                 {isLocked && (
-                  <p style={{ color: "#9a7d0a", fontSize: "0.9rem", marginBottom: "0.75rem" }}>
-                    🔒 This event is for members only.{" "}
-                    <a href="/membership" style={{ color: "#9a7d0a" }}>Purchase a membership</a> to sign up.
-                  </p>
-                )}
-
-                {!isFull && !isLocked && (
-                  <div style={{ marginBottom: "0.75rem" }}>
-                    <label style={{ fontSize: "0.75rem", marginRight: "0.5rem" }}>Number of Attendees</label>
-                    <input
-                      type="number"
-                      min="1"
-                      max={spotsLeft}
-                      value={quantity}
-                      onChange={(ev) =>
-                        setQuantities(prev => ({
-                          ...prev,
-                          [e.event_id]: Math.min(Number(ev.target.value), spotsLeft)
-                        }))
-                      }
-                      style={{ width: "80px" }}
-                    />
+                  <div className="event-member-message">
+                    This event is for members only. <a href="/membership">Purchase a membership</a> to sign up.
                   </div>
                 )}
 
                 {msg && (
-                  <p className={msg.type === "error" ? "error-message" : "success-message"}>
+                  <div className={`event-message ${msg.type}`}>
                     {msg.text}
-                  </p>
+                  </div>
                 )}
 
                 <button
-                  className="btn btn-primary"
+                  className={`event-signup-btn ${(isFull || isLocked) ? 'disabled' : ''}`}
                   disabled={isFull || isLocked || signingUp === e.event_id}
                   onClick={() => handleSignup(e.event_id, isMemberOnly)}
                 >
-                  {signingUp === e.event_id ? "Signing up..."
-                    : isLocked ? "🔒 Members Only"
-                    : isFull ? "Fully Booked"
-                    : "Sign Up"}
+                  {signingUp === e.event_id ? "Processing..." :
+                    isLocked ? "Members Only" :
+                    isFull ? "Fully Booked" :
+                    "Sign Up"}
                 </button>
               </div>
             );
