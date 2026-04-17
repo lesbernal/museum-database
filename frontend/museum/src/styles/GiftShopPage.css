@@ -455,3 +455,234 @@
   border-color: #c5a028;
   color: #c5a028;
 }
+
+/* ── Gift Shop Cart Page Styles ── */
+
+.giftshop-subpage-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.giftshop-subpage-header h1 {
+  font-size: 1.75rem;
+  font-weight: 400;
+  color: #111827;
+  margin: 0;
+}
+
+.giftshop-subpage-header p {
+  color: #6b7280;
+  margin: 0.5rem 0 0;
+}
+
+.giftshop-subpage-header .btn-outline {
+  padding: 0.625rem 1.5rem;
+  background: transparent;
+  border: 1px solid #e5e7eb;
+  color: #6b7280;
+  text-decoration: none;
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  transition: all 0.2s ease;
+}
+
+.giftshop-subpage-header .btn-outline:hover {
+  border-color: #c5a028;
+  color: #c5a028;
+}
+
+/* Cart Layout */
+.cart-page-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(320px, 1fr);
+  gap: 1.5rem;
+}
+
+.cart-page-items {
+  display: grid;
+  gap: 1rem;
+}
+
+.cart-page-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.25rem;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  transition: all 0.2s ease;
+}
+
+.cart-page-card:hover {
+  border-color: #c5a028;
+}
+
+.cart-page-card h2 {
+  font-size: 1rem;
+  font-weight: 500;
+  color: #111827;
+  margin: 0 0 0.25rem;
+}
+
+.cart-page-card .giftshop-category {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #9ca3af;
+  margin: 0 0 0.25rem;
+}
+
+.cart-page-card .giftshop-price {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #c5a028;
+  margin: 0;
+}
+
+.cart-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.cart-controls button {
+  width: 32px;
+  height: 32px;
+  border: 1px solid #e5e7eb;
+  background: transparent;
+  cursor: pointer;
+  font-size: 1rem;
+  color: #4b5563;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.cart-controls button:hover {
+  border-color: #c5a028;
+  color: #c5a028;
+}
+
+.cart-controls span {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #111827;
+  min-width: 30px;
+  text-align: center;
+}
+
+.cart-controls .remove-link {
+  background: transparent !important;
+  border: 1px solid #dc2626 !important;
+  color: #dc2626 !important;
+  width: auto !important;
+  padding: 0 12px !important;
+  font-size: 0.7rem !important;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.cart-controls .remove-link:hover {
+  background: #dc2626 !important;
+  color: #fff !important;
+}
+
+/* Summary Card */
+.giftshop-cart {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  padding: 1.5rem;
+  align-self: start;
+  position: sticky;
+  top: 2rem;
+}
+
+.giftshop-cart h2 {
+  font-size: 1.1rem;
+  font-weight: 500;
+  color: #111827;
+  margin: 0 0 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.cart-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 1rem;
+  margin-top: 0.5rem;
+  border-top: 1px solid #e5e7eb;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.giftshop-cart .btn-primary {
+  width: 100%;
+  margin-top: 1rem;
+  padding: 0.75rem;
+  background: #c5a028;
+  color: #000;
+  border: none;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.giftshop-cart .btn-primary:hover {
+  background: #d4af37;
+  transform: translateY(-1px);
+}
+
+/* Gift Shop Message (empty cart) */
+.giftshop-message {
+  text-align: center;
+  padding: 4rem;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  color: #6b7280;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .cart-page-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .cart-page-card {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .cart-controls {
+    justify-content: center;
+  }
+
+  .giftshop-cart {
+    position: static;
+  }
+
+  .giftshop-subpage-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .giftshop-subpage-header .btn-outline {
+    width: 100%;
+    text-align: center;
+  }
+}

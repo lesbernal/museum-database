@@ -19,8 +19,10 @@ const TABS = [
 
 const fmt = dateStr => {
   if (!dateStr) return "—";
-  return new Date(String(dateStr).slice(0, 10))
-    .toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
+  const datePart = String(dateStr).slice(0, 10);
+  const [year, month, day] = datePart.split("-");
+  const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  return `${monthNames[parseInt(month) - 1]} ${parseInt(day)}, ${year}`;
 };
 
 function validateProfile(form) {
