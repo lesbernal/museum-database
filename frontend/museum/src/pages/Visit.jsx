@@ -8,18 +8,18 @@ export default function Visit() {
     { type: "Senior", price: 16, description: "Ages 65 and above" },
     { type: "Youth", price: 12, description: "Ages 13-18" },
     { type: "Child", price: 0, description: "Ages 12 and under" },
-    { type: "Member", price: 0, description: "Members only" },
+    { type: "Member", price: 0, description: "Members only", isMembershipLink: true },
     { type: "Student", price: 12, description: "Valid student ID required" }
   ];
 
   const hours = [
-    { day: "Tuesday", hours: "10:00 AM - 6:00 PM", note: "" },
-    { day: "Wednesday", hours: "10:00 AM - 6:00 PM", note: "" },
+    { day: "Tuesday", hours: "10:00 AM - 6:00 PM" },
+    { day: "Wednesday", hours: "10:00 AM - 6:00 PM" },
     { day: "Thursday", hours: "10:00 AM - 9:00 PM", note: "Late night" },
-    { day: "Friday", hours: "10:00 AM - 6:00 PM", note: "" },
-    { day: "Saturday", hours: "10:00 AM - 6:00 PM", note: "" },
-    { day: "Sunday", hours: "12:30 PM - 6:00 PM", note: "" },
-    { day: "Monday", hours: "Closed", note: "Museum closed" }
+    { day: "Friday", hours: "10:00 AM - 6:00 PM" },
+    { day: "Saturday", hours: "10:00 AM - 6:00 PM" },
+    { day: "Sunday", hours: "12:30 PM - 6:00 PM" },
+    { day: "Monday", hours: "Closed" }
   ];
 
   const handlePurchaseTickets = () => {
@@ -46,8 +46,17 @@ export default function Visit() {
             
             <div className="directions-info">
               <p><strong>Museum of Fine Arts, Houston</strong></p>
-              <p>1001 Bissonnet Street</p>
-              <p>Houston, Texas 77005</p>
+              
+              {/* Single link for the entire address */}
+              <a 
+                href="https://maps.google.com/?q=1001+Bissonnet+St+Houston+TX+77005" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="address-link"
+              >
+                1001 Bissonnet Street<br />
+                Houston, Texas 77005
+              </a>
               
               <div className="directions-divider"></div>
               
@@ -95,33 +104,42 @@ export default function Visit() {
                     <tr key={index}>
                       <td>{ticket.type}</td>
                       <td className="price">{ticket.price === 0 ? "FREE" : `$${ticket.price}`}</td>
-                      <td className="details">{ticket.description}</td>
+                      <td className="details">
+                        {ticket.isMembershipLink ? (
+                          <Link to="/membership" className="membership-link">
+                            {ticket.description} →
+                          </Link>
+                        ) : (
+                          ticket.description
+                        )}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
           </div>
-          
-          <div className="ticket-action">
-            <button className="purchase-btn" onClick={handlePurchaseTickets}>
-              Purchase Tickets
-            </button>
-            <p className="member-note">Members: Log in to access your free tickets</p>
-          </div>
+        </div>
+        
+        {/* Purchase Tickets Button - Moved below the table */}
+        <div className="ticket-action-wrapper">
+          <button className="purchase-btn" onClick={handlePurchaseTickets}>
+            Purchase Tickets
+          </button>
+          <p className="member-note">Members: Log in to access your free tickets</p>
         </div>
       </div>
 
-      {/* Section 3: Hours */}
+      {/* Section 3: Hours - Reformatted */}
       <div className="visit-section hours-section">
         <div className="section-container">
           <div className="section-content full-width">
             <h2>Hours</h2>
             <p className="section-subtitle">Plan your visit around our operating hours</p>
             
-            <div className="hours-grid">
+            <div className="hours-list">
               {hours.map((hour, index) => (
-                <div key={index} className={`hour-card ${hour.hours === "Closed" ? "closed" : ""}`}>
+                <div key={index} className={`hour-row ${hour.hours === "Closed" ? "closed" : ""}`}>
                   <span className="day">{hour.day}</span>
                   <span className="hours">{hour.hours}</span>
                   {hour.note && <span className="note">{hour.note}</span>}
