@@ -36,13 +36,19 @@ const DONATION_TIERS = ["Benefactor", "Leadership Circle"];
 
 const fmt = dateStr => {
   if (!dateStr) return "—";
-  return new Date(String(dateStr).slice(0, 10))
-    .toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+  // Format YYYY-MM-DD to "Month Day, Year"
+  const date = String(dateStr).slice(0, 10);
+  const [year, month, day] = date.split("-");
+  const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+  return `${monthNames[parseInt(month) - 1]} ${parseInt(day)}, ${year}`;
 };
+
 const fmtShort = dateStr => {
   if (!dateStr) return "—";
-  return new Date(String(dateStr).slice(0, 10))
-    .toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" });
+  const date = String(dateStr).slice(0, 10);
+  const [year, month, day] = date.split("-");
+  const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  return `${monthNames[parseInt(month) - 1]} ${parseInt(day)}, ${year}`;
 };
 
 function validateProfile(form) {
@@ -216,9 +222,14 @@ export default function MemberDashboard() {
     setExpandedDates(prev => ({ ...prev, [date]: !prev[date] }));
   }
 
-  const daysUntilExpiry = memberRec?.expiration_date
-    ? Math.ceil((new Date(memberRec.expiration_date) - new Date()) / (1000 * 60 * 60 * 24))
-    : null;
+  function parseLocalDate(dateStr) {
+  const [year, month, day] = String(dateStr).slice(0, 10).split("-");
+  return new Date(year, month - 1, day);
+}
+
+const daysUntilExpiry = memberRec?.expiration_date
+  ? Math.ceil((parseLocalDate(memberRec.expiration_date) - parseLocalDate(new Date().toISOString().slice(0, 10))) / (1000 * 60 * 60 * 24))
+  : null;
   const levelStyle     = LEVEL_COLORS[memberRec?.membership_level] || DEFAULT_STYLE;
   const isDonationTier = DONATION_TIERS.includes(memberRec?.membership_level);
   const showExpiryWarn = daysUntilExpiry !== null && daysUntilExpiry <= 30 && daysUntilExpiry > 0;
