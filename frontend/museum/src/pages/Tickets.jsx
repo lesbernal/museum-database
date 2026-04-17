@@ -12,6 +12,8 @@ const TICKET_TYPES = [
   { type: "Child 12 & Under", label: "Child",  desc: "Ages 12 & under", basePrice: 0  },
 ];
 
+const MAX_TOTAL_TICKETS = 30;
+
 const MONTHS = [
   "January", "February", "March", "April", "May", "June",
   "July", "August", "September", "October", "November", "December"
@@ -20,7 +22,6 @@ const MONTHS = [
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 function getFinalPrice(basePrice, isMember) {
-  // Members get FREE tickets
   if (isMember) return 0;
   return basePrice;
 }
@@ -36,7 +37,6 @@ export default function Tickets() {
   const [errorMsg,   setErrorMsg]   = useState("");
   const [step,       setStep]       = useState("calendar");
   
-  // Calendar state
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
   const [currentYear,  setCurrentYear]  = useState(new Date().getFullYear());
   const [selectedDate, setSelectedDate]  = useState(null);
@@ -145,35 +145,47 @@ export default function Tickets() {
   };
 
   function adjust(type, delta) {
+    const currentTotal = Object.values(quantities).reduce((a, b) => a + b, 0);
+    const newQuantity = (quantities[type] || 0) + delta;
+    const newTotal = currentTotal + delta;
+
+    if (newTotal > MAX_TOTAL_TICKETS || newQuantity < 0) return;
+
     setQuantities(prev => ({
       ...prev,
-      [type]: Math.max(0, (prev[type] || 0) + delta)
+      [type]: newQuantity
     }));
   }
 
   function handleQuantityInput(type, value) {
     const cleanValue = value.replace(/^0+/, '');
-    const numValue = parseInt(cleanValue) || 0;
+    let numValue = parseInt(cleanValue) || 0;
+    const currentTotalWithoutThis = Object.values(quantities).reduce((a, b) => a + b, 0) - (quantities[type] || 0);
+    
+    const maxAllowed = MAX_TOTAL_TICKETS - currentTotalWithoutThis;
+    numValue = Math.max(0, Math.min(maxAllowed, numValue));
+    
     setQuantities(prev => ({
       ...prev,
-      [type]: Math.max(0, numValue)
+      [type]: numValue
     }));
   }
 
   const summaryLines = TICKET_TYPES.filter(t => quantities[t.type] > 0).map(t => ({
-    label:      `${quantities[t.type]}x ${t.label}`,
-    price:      getFinalPrice(t.basePrice, isMember) * quantities[t.type],
+    label: `${quantities[t.type]}x ${t.label}`,
+    price: getFinalPrice(t.basePrice, isMember) * quantities[t.type],
   }));
 
-  const total        = summaryLines.reduce((sum, l) => sum + l.price, 0);
+  const total = summaryLines.reduce((sum, l) => sum + l.price, 0);
   const totalTickets = Object.values(quantities).reduce((a, b) => a + b, 0);
+  const remainingTickets = MAX_TOTAL_TICKETS - totalTickets;
 
   function handleSubmit(e) {
     e.preventDefault();
     setErrorMsg("");
 
-    if (!userId)           return setErrorMsg("Please log in first.");
-    if (!visitDate)        return setErrorMsg("Select a visit date.");
+    if (!userId) return setErrorMsg("Please log in first.");
+    if (!visitDate) return setErrorMsg("Select a visit date.");
     const selectedDay = new Date(visitDate + "T00:00:00").getDay();
     if (selectedDay === 1) return setErrorMsg("The museum is closed on Mondays. Please select a different date.");
     if (totalTickets === 0) return setErrorMsg("Please select at least one ticket.");
@@ -181,10 +193,10 @@ export default function Tickets() {
     const tickets = TICKET_TYPES
       .filter(t => quantities[t.type] > 0)
       .map(t => ({
-        type:       t.type,
-        label:      t.label,
-        quantity:   quantities[t.type],
-        basePrice:  t.basePrice,
+        type: t.type,
+        label: t.label,
+        quantity: quantities[t.type],
+        basePrice: t.basePrice,
         finalPrice: getFinalPrice(t.basePrice, isMember),
       }));
 
@@ -193,12 +205,12 @@ export default function Tickets() {
 
     navigate("/checkout", {
       state: {
-        type:         "tickets",
+        type: "tickets",
         tickets,
         visitDate,
         discount: isMember ? "Member" : "None",
         totalTickets: orderCount,
-        total:        orderTotal,
+        total: orderTotal,
       }
     });
   }
@@ -240,22 +252,10 @@ export default function Tickets() {
         </div>
         
         <div className="calendar-legend">
-          <div className="legend-item">
-            <div className="legend-color available"></div>
-            <span>Available</span>
-          </div>
-          <div className="legend-item">
-            <div className="legend-color selected"></div>
-            <span>Selected</span>
-          </div>
-          <div className="legend-item">
-            <div className="legend-color closed"></div>
-            <span>Museum Closed</span>
-          </div>
-          <div className="legend-item">
-            <div className="legend-color past"></div>
-            <span>Past Date</span>
-          </div>
+          <div className="legend-item"><div className="legend-color available"></div><span>Available</span></div>
+          <div className="legend-item"><div className="legend-color selected"></div><span>Selected</span></div>
+          <div className="legend-item"><div className="legend-color closed"></div><span>Museum Closed</span></div>
+          <div className="legend-item"><div className="legend-color past"></div><span>Past Date</span></div>
         </div>
       </div>
 
@@ -280,17 +280,29 @@ export default function Tickets() {
       {step === "tickets" && selectedDate && (
         <div className="tickets-selection-section">
           <form onSubmit={handleSubmit}>
-            {/* Member discount banner */}
             {isMember && (
               <div className="member-discount-banner">
                 ✓ Members receive FREE admission! Tickets are complimentary.
               </div>
             )}
 
+            {/* Ticket Limit Info - Option 2 */}
+            <div className="ticket-limit-info">
+              <span>You can select up to <strong>{MAX_TOTAL_TICKETS}</strong> total tickets.</span>
+              {remainingTickets > 0 && (
+                <span className="remaining">{remainingTickets} ticket{remainingTickets !== 1 ? "s" : ""} remaining</span>
+              )}
+              {remainingTickets === 0 && (
+                <span className="limit-reached">Maximum reached. Remove some tickets to add more.</span>
+              )}
+            </div>
+
             <p className="tickets-section-label">Select Tickets</p>
             <div className="ticket-rows">
               {TICKET_TYPES.map(t => {
                 const finalPrice = getFinalPrice(t.basePrice, isMember);
+                const currentTotal = Object.values(quantities).reduce((a, b) => a + b, 0);
+                const isMaxReached = currentTotal >= MAX_TOTAL_TICKETS;
                 
                 return (
                   <div className="ticket-row" key={t.type}>
@@ -299,11 +311,7 @@ export default function Tickets() {
                       <div className="ticket-row-desc">{t.desc}</div>
                     </div>
                     <div className="ticket-row-price">
-                      {isMember ? (
-                        "FREE"
-                      ) : (
-                        t.basePrice === 0 ? "FREE" : `$${finalPrice.toFixed(2)}`
-                      )}
+                      {isMember ? "FREE" : (t.basePrice === 0 ? "FREE" : `$${finalPrice.toFixed(2)}`)}
                     </div>
                     <div className="ticket-counter">
                       <button
@@ -322,6 +330,7 @@ export default function Tickets() {
                         type="button"
                         className="counter-btn"
                         onClick={() => adjust(t.type, 1)}
+                        disabled={isMaxReached && quantities[t.type] === 0}
                       >+</button>
                     </div>
                   </div>
@@ -348,20 +357,25 @@ export default function Tickets() {
               )}
             </div>
 
-            {errorMsg && (
-              <div className="tickets-feedback error">{errorMsg}</div>
-            )}
+            {errorMsg && <div className="tickets-feedback error">{errorMsg}</div>}
 
-            <button
-              className="tickets-purchase-btn"
-              type="submit"
-              disabled={totalTickets === 0}
-            >
+            <button className="tickets-purchase-btn" type="submit" disabled={totalTickets === 0}>
               {totalTickets > 0
                 ? `Proceed to Checkout — ${isMember ? "FREE" : `$${total.toFixed(2)}`}`
                 : "Select Tickets to Continue"}
             </button>
           </form>
+        </div>
+      )}
+
+      {/* Bulk Message */}
+      {totalTickets >= MAX_TOTAL_TICKETS && (
+        <div className="bulk-message">
+          <span className="bulk-icon">ℹ️</span>
+          <div className="bulk-text">
+            <strong>Need more than {MAX_TOTAL_TICKETS} tickets?</strong>
+            <p>For group visits of 30+ people, please contact our group sales team at <strong>groups@mfah.org</strong> or <strong>(713) 639-7300</strong> for special rates and arrangements.</p>
+          </div>
         </div>
       )}
     </div>
