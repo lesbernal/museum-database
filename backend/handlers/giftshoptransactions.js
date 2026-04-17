@@ -30,8 +30,8 @@ module.exports = (req, res, parsedUrl) => {
 
       const sql = `
         INSERT INTO giftshoptransaction
-        (transaction_id, user_id, transaction_datetime, total_amount, payment_method)
-        VALUES (?, ?, ?, ?, ?)
+        (transaction_id, user_id, transaction_datetime, total_amount, payment_method, fulfillment_type, shipping_address)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
       `;
 
       db.query(
@@ -41,10 +41,13 @@ module.exports = (req, res, parsedUrl) => {
           data.user_id,
           data.transaction_datetime,
           data.total_amount,
-          data.payment_method
+          data.payment_method,
+          data.fulfillment_type || 'pickup',  // Default to 'pickup' if not provided
+          data.shipping_address || null       // Can be null
         ],
         (err, result) => {
           if (err) {
+            console.error("Database error:", err);
             res.writeHead(500, { "Content-Type": "application/json" });
             return res.end(JSON.stringify(err));
           }
@@ -59,44 +62,47 @@ module.exports = (req, res, parsedUrl) => {
     });
   }
 
-else if (req.method === "PUT" && parsedUrl.pathname.split("/")[2]) {
-  const id = parsedUrl.pathname.split("/")[2];
-  let body = "";
+  else if (req.method === "PUT" && parsedUrl.pathname.split("/")[2]) {
+    const id = parsedUrl.pathname.split("/")[2];
+    let body = "";
 
-  req.on("data", chunk => {
-    body += chunk.toString();
-  });
+    req.on("data", chunk => {
+      body += chunk.toString();
+    });
 
-  req.on("end", () => {
-    const data = JSON.parse(body);
+    req.on("end", () => {
+      const data = JSON.parse(body);
 
-    const sql = `
-      UPDATE giftshoptransaction
-      SET user_id = ?, transaction_datetime = ?, total_amount = ?, payment_method = ?
-      WHERE transaction_id = ?
-    `;
+      const sql = `
+        UPDATE giftshoptransaction
+        SET user_id = ?, transaction_datetime = ?, total_amount = ?, payment_method = ?,
+            fulfillment_type = ?, shipping_address = ?
+        WHERE transaction_id = ?
+      `;
 
-    db.query(
-      sql,
-      [
-        data.user_id,
-        data.transaction_datetime,
-        data.total_amount,
-        data.payment_method,
-        id
-      ],
-      (err) => {
-        if (err) {
-          res.writeHead(500, { "Content-Type": "application/json" });
-          return res.end(JSON.stringify(err));
+      db.query(
+        sql,
+        [
+          data.user_id,
+          data.transaction_datetime,
+          data.total_amount,
+          data.payment_method,
+          data.fulfillment_type || 'pickup',
+          data.shipping_address || null,
+          id
+        ],
+        (err) => {
+          if (err) {
+            res.writeHead(500, { "Content-Type": "application/json" });
+            return res.end(JSON.stringify(err));
+          }
+
+          res.writeHead(200, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ message: "Gift shop transaction updated" }));
         }
-
-        res.writeHead(200, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ message: "Gift shop transaction updated" }));
-      }
-    );
-  });
-}
+      );
+    });
+  }
 
 else if (req.method === "DELETE") {
   const id = parsedUrl.pathname.split("/")[2];
