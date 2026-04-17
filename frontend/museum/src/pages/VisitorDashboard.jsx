@@ -957,7 +957,9 @@ export default function VisitorDashboard() {
         <div className="header-content">
           <div className="header-text">
             <h1>My Museum</h1>
-            <p>Welcome back, {profile?.first_name || displayName}</p>
+            <div className="header-badge">
+              <span className="role-badge visitor-badge">Visitor Account</span>
+            </div>
           </div>
         </div>
       </div>
