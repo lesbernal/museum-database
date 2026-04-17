@@ -400,17 +400,15 @@ export async function updateMyProfile(data) {
   const user_id = localStorage.getItem("user_id");
   return authRequest(`/users/${user_id}`, { method: "PUT", body: JSON.stringify(data) }, "Failed to update profile");
 }
-export async function changeMyPassword(newPassword, currentProfile = {}) {
+
+export async function changeMyPassword(newPassword) {
   const user_id = localStorage.getItem("user_id");
   return authRequest(`/users/${user_id}`, {
     method: "PUT",
-    body: JSON.stringify({
-      ...currentProfile,
-      date_of_birth: currentProfile.date_of_birth?.slice(0, 10) || null,
-      password: newPassword
-    })
+    body: JSON.stringify({ password: newPassword })
   }, "Failed to change password");
 }
+
 export async function getMyVisitorRecord() {
   const user_id = localStorage.getItem("user_id");
   return authRequest(`/visitors/${user_id}`, {}, "Failed to fetch visitor record");
