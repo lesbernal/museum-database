@@ -80,15 +80,16 @@
   color: #000000;
 }
 
-.logout-btn {
+.nav-btn.logout-btn {
   border: 1px solid #e5e5e5;
-  color: #666666;
+  color: #000000 !important;
   background: transparent;
 }
 
-.logout-btn:hover {
+.nav-btn.logout-btn:hover {
   border-color: #c5a028;
-  color: #c5a028;
+  color: #c5a028 !important;
+  background: transparent;
 }
 
 /* Secondary Navbar - Large Category Buttons */
