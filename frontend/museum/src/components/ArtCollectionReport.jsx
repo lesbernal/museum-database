@@ -1,8 +1,8 @@
 // components/ArtCollectionReport.jsx
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, Cell
+  ResponsiveContainer, Cell, PieChart, Pie, LineChart, Line
 } from "recharts";
 import "../styles/ArtCollectionReport.css";
 
@@ -28,32 +28,121 @@ export default function ArtCollectionReport() {
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(25);
 
-  // Filters
-  const [artistFilter, setArtistFilter] = useState("");
-  const [startYear, setStartYear] = useState("");
-  const [endYear, setEndYear] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
-  const [mediumFilter, setMediumFilter] = useState("");
-  const [minValue, setMinValue] = useState("");
-  const [maxValue, setMaxValue] = useState("");
-
-  // Applied filters
-  const [appliedArtistFilter, setAppliedArtistFilter] = useState("");
-  const [appliedStartYear, setAppliedStartYear] = useState("");
-  const [appliedEndYear, setAppliedEndYear] = useState("");
-  const [appliedStatusFilter, setAppliedStatusFilter] = useState("");
-  const [appliedMediumFilter, setAppliedMediumFilter] = useState("");
-  const [appliedMinValue, setAppliedMinValue] = useState("");
-  const [appliedMaxValue, setAppliedMaxValue] = useState("");
+  // Filters - simplified (single source of truth)
+  const [filters, setFilters] = useState({
+    artistId: "",
+    startYear: "",
+    endYear: "",
+    status: "",
+    medium: "",
+    minValue: "",
+    maxValue: "",
+    galleryId: ""
+  });
 
   // Dropdown options
   const [artists, setArtists] = useState([]);
   const [mediums, setMediums] = useState([]);
+  const [galleries, setGalleries] = useState([]);
   const [statuses] = useState(["On Display", "In Storage", "On Loan", "Under Restoration", "Deaccessioned"]);
+
+  // Derived insights (calculated from data)
+  const insights = useMemo(() => {
+    if (!reportData.length) return null;
+
+    // Most valuable artists (top 5 by total insurance value)
+    const artistValue = {};
+    reportData.forEach(artwork => {
+      if (artwork.artist_name) {
+        artistValue[artwork.artist_name] = (artistValue[artwork.artist_name] || 0) + (parseFloat(artwork.insurance_value) || 0);
+      }
+    });
+    const topArtists = Object.entries(artistValue)
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 5);
+
+    // Most prolific artists (most artworks)
+    const artistCount = {};
+    reportData.forEach(artwork => {
+      if (artwork.artist_name) {
+        artistCount[artwork.artist_name] = (artistCount[artwork.artist_name] || 0) + 1;
+      }
+    });
+    const topProlificArtists = Object.entries(artistCount)
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5);
+
+    // Value distribution by century
+    const centuryValue = {};
+    reportData.forEach(artwork => {
+      const year = artwork.creation_year;
+      if (year && year > 0) {
+        const century = Math.floor(year / 100) + 1;
+        const centuryLabel = `${century}th Century`;
+        centuryValue[centuryLabel] = (centuryValue[centuryLabel] || 0) + (parseFloat(artwork.insurance_value) || 0);
+      }
+    });
+    const centuryData = Object.entries(centuryValue)
+      .map(([century, value]) => ({ century, value }))
+      .sort((a, b) => {
+        const aNum = parseInt(a.century);
+        const bNum = parseInt(b.century);
+        return aNum - bNum;
+      });
+
+    // Gallery value distribution
+    const galleryValue = {};
+    reportData.forEach(artwork => {
+      if (artwork.gallery_name && artwork.gallery_name !== "Not Assigned") {
+        galleryValue[artwork.gallery_name] = (galleryValue[artwork.gallery_name] || 0) + (parseFloat(artwork.insurance_value) || 0);
+      }
+    });
+    const topGalleries = Object.entries(galleryValue)
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 5);
+
+    // At-risk value (art on loan or in storage - insurance risk)
+    const atRiskValue = reportData
+      .filter(artwork => artwork.current_display_status === "On Loan" || artwork.current_display_status === "In Storage")
+      .reduce((sum, artwork) => sum + (parseFloat(artwork.insurance_value) || 0), 0);
+
+    // Restoration needed value
+    const restorationValue = reportData
+      .filter(artwork => artwork.current_display_status === "Under Restoration")
+      .reduce((sum, artwork) => sum + (parseFloat(artwork.insurance_value) || 0), 0);
+
+    // Oldest and newest acquisitions (if acquisition_date exists)
+    const datedArtworks = reportData.filter(a => a.acquisition_date);
+    const oldestAcquisition = datedArtworks.length > 0 
+      ? datedArtworks.reduce((oldest, current) => new Date(current.acquisition_date) < new Date(oldest.acquisition_date) ? current : oldest)
+      : null;
+    const newestAcquisition = datedArtworks.length > 0
+      ? datedArtworks.reduce((newest, current) => new Date(current.acquisition_date) > new Date(newest.acquisition_date) ? current : newest)
+      : null;
+
+    return {
+      topArtists,
+      topProlificArtists,
+      centuryData,
+      topGalleries,
+      atRiskValue,
+      restorationValue,
+      oldestAcquisition,
+      newestAcquisition,
+      uniqueArtists: Object.keys(artistValue).length,
+      uniqueGalleries: Object.keys(galleryValue).length,
+      percentOnLoan: ((reportData.filter(a => a.current_display_status === "On Loan").length / reportData.length) * 100).toFixed(1),
+      percentInStorage: ((reportData.filter(a => a.current_display_status === "In Storage").length / reportData.length) * 100).toFixed(1)
+    };
+  }, [reportData]);
 
   useEffect(() => {
     loadArtists();
     loadMediums();
+    loadGalleries();
   }, []);
 
   const loadArtists = async () => {
@@ -70,21 +159,29 @@ export default function ArtCollectionReport() {
     } catch (err) { console.error("Failed to load mediums:", err); }
   };
 
+  const loadGalleries = async () => {
+    try {
+      const res = await fetch(`${BASE_URL}/galleries`);
+      setGalleries(await res.json());
+    } catch (err) { console.error("Failed to load galleries:", err); }
+  };
+
   useEffect(() => {
     if (hasGenerated) loadReportData();
-  }, [appliedArtistFilter, appliedStartYear, appliedEndYear, appliedStatusFilter, appliedMediumFilter, appliedMinValue, appliedMaxValue, hasGenerated]);
+  }, [filters, hasGenerated]);
 
   const loadReportData = async () => {
     setLoading(true);
     try {
       let url = `${BASE_URL}/reports/art-collection-data?`;
-      if (appliedArtistFilter)  url += `artistId=${appliedArtistFilter}&`;
-      if (appliedStartYear)     url += `startYear=${appliedStartYear}&`;
-      if (appliedEndYear)       url += `endYear=${appliedEndYear}&`;
-      if (appliedStatusFilter)  url += `status=${appliedStatusFilter}&`;
-      if (appliedMediumFilter)  url += `medium=${appliedMediumFilter}&`;
-      if (appliedMinValue)      url += `minValue=${appliedMinValue}&`;
-      if (appliedMaxValue)      url += `maxValue=${appliedMaxValue}&`;
+      if (filters.artistId)   url += `artistId=${filters.artistId}&`;
+      if (filters.startYear)  url += `startYear=${filters.startYear}&`;
+      if (filters.endYear)    url += `endYear=${filters.endYear}&`;
+      if (filters.status)     url += `status=${filters.status}&`;
+      if (filters.medium)     url += `medium=${filters.medium}&`;
+      if (filters.minValue)   url += `minValue=${filters.minValue}&`;
+      if (filters.maxValue)   url += `maxValue=${filters.maxValue}&`;
+      if (filters.galleryId)  url += `galleryId=${filters.galleryId}&`;
 
       const response = await fetch(url);
       const data = await response.json();
@@ -98,39 +195,42 @@ export default function ArtCollectionReport() {
     }
   };
 
+  const updateFilter = (key, value) => {
+    setFilters(prev => ({ ...prev, [key]: value }));
+  };
+
   const handleGenerate = () => {
-    setAppliedArtistFilter(artistFilter);
-    setAppliedStartYear(startYear);
-    setAppliedEndYear(endYear);
-    setAppliedStatusFilter(statusFilter);
-    setAppliedMediumFilter(mediumFilter);
-    setAppliedMinValue(minValue);
-    setAppliedMaxValue(maxValue);
     setHasGenerated(true);
     setCurrentPage(1);
   };
 
   const resetFilters = () => {
-    setArtistFilter(""); setStartYear(""); setEndYear("");
-    setStatusFilter(""); setMediumFilter(""); setMinValue(""); setMaxValue("");
-    setAppliedArtistFilter(""); setAppliedStartYear(""); setAppliedEndYear("");
-    setAppliedStatusFilter(""); setAppliedMediumFilter(""); setAppliedMinValue(""); setAppliedMaxValue("");
+    setFilters({
+      artistId: "", startYear: "", endYear: "",
+      status: "", medium: "", minValue: "", maxValue: "", galleryId: ""
+    });
     setHasGenerated(false);
-    setReportData([]); setSummary(null);
+    setReportData([]);
+    setSummary(null);
     setCurrentPage(1);
   };
 
   // Pagination
-  const indexOfLastRow  = currentPage * rowsPerPage;
+  const indexOfLastRow = currentPage * rowsPerPage;
   const indexOfFirstRow = indexOfLastRow - rowsPerPage;
-  const currentRows     = reportData.slice(indexOfFirstRow, indexOfLastRow);
-  const totalPages      = Math.ceil(reportData.length / rowsPerPage) || 1;
+  const currentRows = reportData.slice(indexOfFirstRow, indexOfLastRow);
+  const totalPages = Math.ceil(reportData.length / rowsPerPage) || 1;
 
   const formatCurrency = (value) => {
     if (!value) return "$0";
     const num = typeof value === 'string' ? parseFloat(value) : value;
     if (isNaN(num)) return "$0";
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(num);
+    return new Intl.NumberFormat('en-US', { 
+      style: 'currency', 
+      currency: 'USD', 
+      minimumFractionDigits: 0, 
+      maximumFractionDigits: 0 
+    }).format(num);
   };
 
   const getStatusBadgeClass = (status) => {
@@ -144,9 +244,9 @@ export default function ArtCollectionReport() {
     }
   };
 
-  // Chart data derived from reportData
+  // Chart data
   const statusChartData = statuses.map(s => ({
-    name:  s,
+    name: s,
     count: reportData.filter(a => a.current_display_status === s).length,
   })).filter(d => d.count > 0);
 
@@ -162,8 +262,8 @@ export default function ArtCollectionReport() {
   return (
     <div className="art-collection-report">
       <div className="report-header">
-        <h2>Art Collection Report</h2>
-        <p>Browse and filter the museum's art collection</p>
+        <h2>🏛️ Art Collection Report</h2>
+        <p>Comprehensive analysis of the museum's art collection including valuations, artist insights, and risk assessment</p>
       </div>
 
       {/* Filters */}
@@ -171,7 +271,7 @@ export default function ArtCollectionReport() {
         <div className="filter-row">
           <div className="filter-group">
             <label>Artist</label>
-            <select value={artistFilter} onChange={(e) => setArtistFilter(e.target.value)}>
+            <select value={filters.artistId} onChange={(e) => updateFilter('artistId', e.target.value)}>
               <option value="">All Artists</option>
               {artists.map(artist => (
                 <option key={artist.artist_id} value={artist.artist_id}>
@@ -182,35 +282,46 @@ export default function ArtCollectionReport() {
           </div>
           <div className="filter-group">
             <label>Medium</label>
-            <select value={mediumFilter} onChange={(e) => setMediumFilter(e.target.value)}>
+            <select value={filters.medium} onChange={(e) => updateFilter('medium', e.target.value)}>
               <option value="">All Mediums</option>
               {mediums.map(medium => <option key={medium} value={medium}>{medium}</option>)}
             </select>
           </div>
           <div className="filter-group">
             <label>Status</label>
-            <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+            <select value={filters.status} onChange={(e) => updateFilter('status', e.target.value)}>
               <option value="">All Statuses</option>
               {statuses.map(status => <option key={status} value={status}>{status}</option>)}
+            </select>
+          </div>
+          <div className="filter-group">
+            <label>Gallery</label>
+            <select value={filters.galleryId} onChange={(e) => updateFilter('galleryId', e.target.value)}>
+              <option value="">All Galleries</option>
+              {galleries.map(gallery => (
+                <option key={gallery.gallery_id} value={gallery.gallery_id}>
+                  {gallery.name}
+                </option>
+              ))}
             </select>
           </div>
         </div>
         <div className="filter-row">
           <div className="filter-group">
             <label>Year Range (From)</label>
-            <input type="number" placeholder="e.g., 1900" value={startYear} onChange={(e) => setStartYear(e.target.value)} />
+            <input type="number" placeholder="e.g., 1900" value={filters.startYear} onChange={(e) => updateFilter('startYear', e.target.value)} />
           </div>
           <div className="filter-group">
             <label>Year Range (To)</label>
-            <input type="number" placeholder="e.g., 2026" value={endYear} onChange={(e) => setEndYear(e.target.value)} />
+            <input type="number" placeholder="e.g., 2026" value={filters.endYear} onChange={(e) => updateFilter('endYear', e.target.value)} />
           </div>
           <div className="filter-group">
             <label>Value Range (From)</label>
-            <input type="number" placeholder="Min $" value={minValue} onChange={(e) => setMinValue(e.target.value)} />
+            <input type="number" placeholder="Min $" value={filters.minValue} onChange={(e) => updateFilter('minValue', e.target.value)} />
           </div>
           <div className="filter-group">
             <label>Value Range (To)</label>
-            <input type="number" placeholder="Max $" value={maxValue} onChange={(e) => setMaxValue(e.target.value)} />
+            <input type="number" placeholder="Max $" value={filters.maxValue} onChange={(e) => updateFilter('maxValue', e.target.value)} />
           </div>
         </div>
         <div className="filter-row">
@@ -227,12 +338,12 @@ export default function ArtCollectionReport() {
       {hasGenerated && summary && (
         <div className="summary-section">
           <div className="summary-grid">
-            <div className="summary-card">
+            <div className="summary-card primary">
               <div className="summary-label">Total Artworks</div>
               <div className="summary-value">{summary.total_artworks?.toLocaleString() || 0}</div>
             </div>
             <div className="summary-card">
-              <div className="summary-label">Total Value</div>
+              <div className="summary-label">Total Collection Value</div>
               <div className="summary-value">{formatCurrency(summary.total_value)}</div>
             </div>
             <div className="summary-card">
@@ -240,27 +351,110 @@ export default function ArtCollectionReport() {
               <div className="summary-value">{formatCurrency(summary.avg_value)}</div>
             </div>
             <div className="summary-card">
-              <div className="summary-label">Artists</div>
-              <div className="summary-value">{summary.total_artists?.toLocaleString() || 0}</div>
+              <div className="summary-label">Unique Artists</div>
+              <div className="summary-value">{insights?.uniqueArtists || 0}</div>
             </div>
           </div>
 
-          {/* ── CHARTS ── */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem", marginTop: "1.5rem" }}>
+          {/* NEW: Risk & Insurance Insights */}
+          {insights && (
+            <div className="insights-section">
+              <h3>📊 Collection Insights & Risk Assessment</h3>
+              <div className="summary-grid">
+                <div className="summary-card risk-card">
+                  <div className="summary-label">⚠️ At-Risk Value (On Loan/Storage)</div>
+                  <div className="summary-value">{formatCurrency(insights.atRiskValue)}</div>
+                  <div className="insight-subtext">{insights.percentOnLoan}% on loan, {insights.percentInStorage}% in storage</div>
+                </div>
+                <div className="summary-card restoration-card">
+                  <div className="summary-label">🔧 Under Restoration Value</div>
+                  <div className="summary-value">{formatCurrency(insights.restorationValue)}</div>
+                  <div className="insight-subtext">Artworks needing conservation</div>
+                </div>
+                <div className="summary-card">
+                  <div className="summary-label">🏛️ Active Galleries</div>
+                  <div className="summary-value">{insights.uniqueGalleries}</div>
+                </div>
+              </div>
+            </div>
+          )}
 
+          {/* Top Artists & Galleries Section */}
+          {insights && (insights.topArtists.length > 0 || insights.topGalleries.length > 0) && (
+            <div className="charts-grid">
+              {insights.topArtists.length > 0 && (
+                <div className="chart-container">
+                  <h4>💰 Most Valuable Artists</h4>
+                  <table className="insights-table">
+                    <tbody>
+                      {insights.topArtists.map((artist, i) => (
+                        <tr key={i}>
+                          <td>
+                            <span className={`rank-badge ${i === 0 ? 'top-1' : i === 1 ? 'top-2' : i === 2 ? 'top-3' : ''}`}>
+                              {i + 1}
+                            </span>
+                            {artist.name}
+                          </td>
+                          <td>{formatCurrency(artist.value)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              {insights.topGalleries.length > 0 && (
+                <div className="chart-container">
+                  <h4>🏛️ Gallery Value Distribution</h4>
+                  <table className="insights-table">
+                    <tbody>
+                      {insights.topGalleries.map((gallery, i) => (
+                        <tr key={i}>
+                          <td>
+                            <span className={`rank-badge ${i === 0 ? 'top-1' : i === 1 ? 'top-2' : i === 2 ? 'top-3' : ''}`}>
+                              {i + 1}
+                            </span>
+                            {gallery.name}
+                          </td>
+                          <td>{formatCurrency(gallery.value)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Value by Century Chart - NEW */}
+          {insights?.centuryData.length > 0 && (
+            <div className="chart-container" style={{ marginTop: "1.5rem" }}>
+              <h4>📅 Collection Value by Century</h4>
+              <ResponsiveContainer width="100%" height={250}>
+                <BarChart data={insights.centuryData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="century" />
+                  <YAxis tickFormatter={(v) => `$${(v / 1000000).toFixed(1)}M`} />
+                  <Tooltip formatter={(v) => formatCurrency(v)} />
+                  <Bar dataKey="value" fill="#c5a028" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+
+          {/* Status & Medium Charts */}
+          <div className="charts-grid">
             {/* Status Bar Chart */}
-            <div style={{ background: "var(--color-white)", border: "1px solid var(--color-border)", padding: "1.25rem", borderRadius: 4 }}>
-              <h4 style={{ margin: "0 0 1rem", fontSize: 13, fontWeight: 600, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.07em" }}>
-                Artworks by Display Status
-              </h4>
+            <div className="chart-container">
+              <h4>Artworks by Display Status</h4>
               {statusChartData.length > 0 ? (
                 <ResponsiveContainer width="100%" height={220}>
-                  <BarChart data={statusChartData} margin={{ top: 5, right: 10, left: 0, bottom: 40 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e5e5" />
-                    <XAxis dataKey="name" tick={{ fontSize: 10 }} angle={-25} textAnchor="end" interval={0} />
-                    <YAxis tick={{ fontSize: 11 }} />
+                  <BarChart data={statusChartData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="name" tick={{ fontSize: 11 }} angle={-25} textAnchor="end" interval={0} />
+                    <YAxis />
                     <Tooltip />
-                    <Bar dataKey="count" name="Artworks" radius={[2, 2, 0, 0]}>
+                    <Bar dataKey="count" radius={[4, 4, 0, 0]}>
                       {statusChartData.map((entry) => (
                         <Cell key={entry.name} fill={STATUS_COLORS[entry.name] || "#c5a028"} />
                       ))}
@@ -268,25 +462,21 @@ export default function ArtCollectionReport() {
                   </BarChart>
                 </ResponsiveContainer>
               ) : (
-                <div style={{ height: 220, display: "flex", alignItems: "center", justifyContent: "center", color: "#9ca3af", fontSize: 13 }}>
-                  No data to display
-                </div>
+                <div className="no-data">No data to display</div>
               )}
             </div>
 
             {/* Medium Bar Chart */}
-            <div style={{ background: "var(--color-white)", border: "1px solid var(--color-border)", padding: "1.25rem", borderRadius: 4 }}>
-              <h4 style={{ margin: "0 0 1rem", fontSize: 13, fontWeight: 600, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.07em" }}>
-                Artworks by Medium (Top 8)
-              </h4>
+            <div className="chart-container">
+              <h4>Artworks by Medium (Top 8)</h4>
               {mediumChartData.length > 0 ? (
                 <ResponsiveContainer width="100%" height={220}>
-                  <BarChart data={mediumChartData} margin={{ top: 5, right: 10, left: 0, bottom: 50 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e5e5" />
-                    <XAxis dataKey="name" tick={{ fontSize: 10 }} angle={-30} textAnchor="end" interval={0} />
-                    <YAxis tick={{ fontSize: 11 }} />
+                  <BarChart data={mediumChartData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="name" tick={{ fontSize: 11 }} angle={-30} textAnchor="end" interval={0} />
+                    <YAxis />
                     <Tooltip />
-                    <Bar dataKey="count" name="Artworks" radius={[2, 2, 0, 0]}>
+                    <Bar dataKey="count" radius={[4, 4, 0, 0]}>
                       {mediumChartData.map((_, i) => (
                         <Cell key={i} fill={MEDIUM_COLORS[i % MEDIUM_COLORS.length]} />
                       ))}
@@ -294,12 +484,29 @@ export default function ArtCollectionReport() {
                   </BarChart>
                 </ResponsiveContainer>
               ) : (
-                <div style={{ height: 220, display: "flex", alignItems: "center", justifyContent: "center", color: "#9ca3af", fontSize: 13 }}>
-                  No data to display
-                </div>
+                <div className="no-data">No data to display</div>
               )}
             </div>
           </div>
+
+          {/* NEW: Acquisition Insights */}
+          {insights?.oldestAcquisition && (
+            <div className="insights-section">
+              <h3>📅 Acquisition Insights</h3>
+              <div className="summary-grid">
+                <div className="summary-card">
+                  <div className="summary-label">Oldest Acquisition</div>
+                  <div className="summary-value">{insights.oldestAcquisition.title}</div>
+                  <div className="insight-subtext">{new Date(insights.oldestAcquisition.acquisition_date).toLocaleDateString()}</div>
+                </div>
+                <div className="summary-card">
+                  <div className="summary-label">Newest Acquisition</div>
+                  <div className="summary-value">{insights.newestAcquisition.title}</div>
+                  <div className="insight-subtext">{new Date(insights.newestAcquisition.acquisition_date).toLocaleDateString()}</div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -325,7 +532,7 @@ export default function ArtCollectionReport() {
                   <th>Artist</th>
                   <th>Year</th>
                   <th>Medium</th>
-                  <th>Display Status</th>
+                  <th>Status</th>
                   <th>Insurance Value</th>
                   <th>Gallery</th>
                   <th>Gallery Status</th>
@@ -353,11 +560,11 @@ export default function ArtCollectionReport() {
           </div>
           <div className="pagination-container">
             <div className="pagination-controls">
-              <button onClick={() => setCurrentPage(1)} disabled={currentPage === 1} style={{ color: "#1f2937" }}>⏮ First</button>
-              <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} style={{ color: "#1f2937" }}>◀ Prev</button>
-              <span style={{ color: "#1f2937" }}>Page {currentPage} of {totalPages}</span>
-              <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} style={{ color: "#1f2937" }}>Next ▶</button>
-              <button onClick={() => setCurrentPage(totalPages)} disabled={currentPage === totalPages} style={{ color: "#1f2937" }}>Last ⏭</button>
+              <button onClick={() => setCurrentPage(1)} disabled={currentPage === 1} className="pagination-btn">⏮ First</button>
+              <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="pagination-btn">◀ Prev</button>
+              <span className="page-info">Page {currentPage} of {totalPages}</span>
+              <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="pagination-btn">Next ▶</button>
+              <button onClick={() => setCurrentPage(totalPages)} disabled={currentPage === totalPages} className="pagination-btn">Last ⏭</button>
             </div>
           </div>
         </div>
