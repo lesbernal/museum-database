@@ -6,25 +6,27 @@ module.exports = (req, res, parsedUrl) => {
 
   // GET /exhibitionartwork/:exhibition_id
   // Returns all artworks for a given exhibition with artwork + artist details
-  if(req.method === "GET" && urlParts.length >= 2 && urlParts[1]) {
+  if (req.method === "GET" && urlParts.length >= 2 && urlParts[1]) {
     const sql = `
-      SELECT
-        ea.exhibition_id,
-        ea.artwork_id,
-        ea.display_start_date,
-        ea.display_end_date,
-        a.title,
-        a.image_url,
-        a.description,
-        a.medium,
-        a.creation_year,
-        CONCAT(ar.first_name, ' ', ar.last_name) AS artist_name
-      FROM exhibitionartwork ea
-      JOIN artwork a  ON ea.artwork_id  = a.artwork_id
-      LEFT JOIN artist ar ON a.artist_id = ar.artist_id
-      WHERE ea.exhibition_id = ?
-      ORDER BY a.title
+    SELECT
+    ea.exhibition_id,
+    ea.artwork_id,
+    ea.display_start_date,
+    ea.display_end_date,
+    a.title,
+    a.image_url,
+    a.description,
+    a.medium,
+    a.creation_year,
+    CONCAT(ar.first_name, ' ', ar.last_name) AS artist_name
+    FROM exhibitionartwork ea
+    JOIN artwork a ON ea.artwork_id = a.artwork_id
+    LEFT JOIN artist ar ON a.artist_id = ar.artist_id
+    WHERE ea.exhibition_id = ?
+       AND (a.is_active = 1 OR a.is_active IS NULL)
+    ORDER BY a.title
     `;
+
     db.query(sql, [urlParts[1]], (err, results) => {
       if (err) return sendError(res, err);
       sendJSON(res, results);
@@ -32,9 +34,9 @@ module.exports = (req, res, parsedUrl) => {
   }
 
   else {
-      res.writeHead(404, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({ message: "Route not found" }));
-    }
+    res.writeHead(404, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ message: "Route not found" }));
+  }
 };
 
 function sendJSON(res, data, status = 200) {

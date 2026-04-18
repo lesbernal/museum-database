@@ -1,6 +1,5 @@
-// artist, artwork, provenance
-// NOTE: Run this migration first:
-//   ALTER TABLE artwork ADD COLUMN is_active TINYINT(1) NOT NULL DEFAULT 1;
+// handlers/artists_artwork_provenance.js
+// ALTER TABLE artwork ADD COLUMN archive_reason VARCHAR(500) NULL;
 
 const db = require("../db");
 const { verifyToken } = require("./authHelpers");
@@ -75,7 +74,7 @@ module.exports = (req, res, parsedUrl) => {
   // ============================ ARTWORK ============================
   else if (urlParts[0] === "artwork") {
 
-    // GET all artworks for ADMIN (show everything, including deaccessioned)
+    // GET all active artworks
     if (req.method === "GET" && urlParts.length === 1) {
       const sql = `
         SELECT a.*,
@@ -94,7 +93,7 @@ module.exports = (req, res, parsedUrl) => {
       return;
     }
 
-    // GET all ARCHIVED artworks
+    // GET archived artworks
     else if (req.method === "GET" && urlParts.length === 2 && urlParts[1] === "archived") {
       const sql = `
         SELECT a.*,
@@ -190,19 +189,25 @@ module.exports = (req, res, parsedUrl) => {
       return;
     }
 
-    // PATCH /artwork/:id/deactivate — soft delete
+    // PATCH /artwork/:id/deactivate — archive with optional reason
     else if (req.method === "PATCH" && urlParts.length === 3 && urlParts[2] === "deactivate") {
-      db.query("UPDATE artwork SET is_active = 0 WHERE artwork_id = ?", [urlParts[1]], err => {
-        if (err) return sendError(res, err);
-        sendJSON(res, { message: "Artwork archived" });
+      parseBody(req, (data) => {
+        db.query(
+          "UPDATE artwork SET is_active = 0, archive_reason = ? WHERE artwork_id = ?",
+          [data.reason || null, urlParts[1]],
+          err => {
+            if (err) return sendError(res, err);
+            sendJSON(res, { message: "Artwork archived" });
+          }
+        );
       });
       return;
     }
 
-    // PATCH /artwork/:id/reactivate — restore from archive
+    // PATCH /artwork/:id/reactivate — restore
     else if (req.method === "PATCH" && urlParts.length === 3 && urlParts[2] === "reactivate") {
       db.query(
-        "UPDATE artwork SET is_active = 1 WHERE artwork_id = ?",
+        "UPDATE artwork SET is_active = 1, archive_reason = NULL WHERE artwork_id = ?",
         [urlParts[1]],
         err => {
           if (err) return sendError(res, err);
@@ -212,7 +217,7 @@ module.exports = (req, res, parsedUrl) => {
       return;
     }
 
-    // PATCH /artwork/:id/deaccession - Mark as Deaccessioned
+    // PATCH /artwork/:id/deaccession
     else if (req.method === "PATCH" && urlParts.length === 3 && urlParts[2] === "deaccession") {
       db.query(
         "UPDATE artwork SET current_display_status = 'Deaccessioned' WHERE artwork_id = ?",

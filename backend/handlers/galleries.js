@@ -1,6 +1,6 @@
 // handlers/galleries.js
-// NOTE: Run this migration first:
-//   ALTER TABLE gallery ADD COLUMN is_active TINYINT(1) NOT NULL DEFAULT 1;
+// ALTER TABLE gallery ADD COLUMN is_active TINYINT(1) NOT NULL DEFAULT 1;
+// ALTER TABLE gallery ADD COLUMN archive_reason VARCHAR(500) NULL;
 
 const db = require("../db");
 
@@ -95,22 +95,24 @@ module.exports = (req, res, parsedUrl) => {
     });
   }
 
-  // PATCH /galleries/:id/deactivate — soft delete
+  // PATCH /galleries/:id/deactivate — archive with optional reason
   else if (req.method === "PATCH" && urlParts.length === 3 && urlParts[2] === "deactivate") {
-    db.query(
-      "UPDATE gallery SET is_active = 0 WHERE gallery_id = ?",
-      [urlParts[1]],
-      (err) => {
-        if (err) return sendError(res, err);
-        sendJSON(res, { message: "Gallery archived" });
-      }
-    );
+    parseBody(req, (data) => {
+      db.query(
+        "UPDATE gallery SET is_active = 0, archive_reason = ? WHERE gallery_id = ?",
+        [data.reason || null, urlParts[1]],
+        (err) => {
+          if (err) return sendError(res, err);
+          sendJSON(res, { message: "Gallery archived" });
+        }
+      );
+    });
   }
 
   // PATCH /galleries/:id/reactivate — restore
   else if (req.method === "PATCH" && urlParts.length === 3 && urlParts[2] === "reactivate") {
     db.query(
-      "UPDATE gallery SET is_active = 1 WHERE gallery_id = ?",
+      "UPDATE gallery SET is_active = 1, archive_reason = NULL WHERE gallery_id = ?",
       [urlParts[1]],
       (err) => {
         if (err) return sendError(res, err);
