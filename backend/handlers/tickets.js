@@ -53,9 +53,6 @@ module.exports = (req, res, parsedUrl) => {
       const userId = data.user_id || authValue;
 
       // ── Map discount label to the enum values the DB accepts ──────────────
-      // DB enum: 'None','Student','Military','Member'
-      // Frontend sends strings like "Member - Gold (1 free admission)" or "None"
-      // ── Map discount label to the enum values the DB accepts ──────────────
       let discountType = "None";
       const rawDiscount = String(data.discount_type || "").toLowerCase();
       console.log("Raw discount_type:", data.discount_type, "Lowercase:", rawDiscount);
@@ -72,8 +69,8 @@ module.exports = (req, res, parsedUrl) => {
 
       const sql = `
         INSERT INTO ticket
-        (user_id, purchase_date, visit_date, ticket_type, base_price, discount_type, final_price, payment_method)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        (user_id, purchase_date, visit_date, ticket_type, base_price, discount_type, final_price, payment_method, transaction_id)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
       `;
 
       db.query(sql, [
@@ -85,6 +82,7 @@ module.exports = (req, res, parsedUrl) => {
         discountType,
         data.final_price,
         data.payment_method || "Credit Card",
+        data.transaction_id,  // Add the transaction_id
       ], (err) => {
         if (err) {
           console.error("SQL Error:", err);
@@ -92,9 +90,6 @@ module.exports = (req, res, parsedUrl) => {
           return res.end(JSON.stringify({ error: err.sqlMessage || err.message }));
         }
 
-        // ── Update visitor's total_visits and last_visit_date ─────────────
-        // The visitor table tracks visits. We count distinct visit_dates from tickets
-        // where visit_date <= today to get an accurate count.
         // ── Update visitor's total_visits and last_visit_date ─────────────
         const today = new Date().toISOString().slice(0, 10);
         db.query(
@@ -104,7 +99,6 @@ module.exports = (req, res, parsedUrl) => {
           [userId, today],
           (err2, countRows) => {
             if (err2 || !countRows?.length) {
-              // Non-fatal: ticket was saved, just couldn't update visitor stats
               res.writeHead(201, { "Content-Type": "application/json" });
               return res.end(JSON.stringify({ message: "Ticket added" }));
             }
@@ -112,32 +106,16 @@ module.exports = (req, res, parsedUrl) => {
             const totalVisits = countRows[0].cnt || 0;
             const lastVisit   = countRows[0].last_visit || today;
 
-            // Check if visitor record exists first
             db.query(
-              `SELECT user_id FROM visitor WHERE user_id = ?`,
-              [userId],
-              (err3, visitorRows) => {
-                if (visitorRows && visitorRows.length > 0) {
-                  // Update existing visitor record
-                  db.query(
-                    `UPDATE visitor SET total_visits = ?, last_visit_date = ? WHERE user_id = ?`,
-                    [totalVisits, lastVisit, userId],
-                    (err4) => {
-                      res.writeHead(201, { "Content-Type": "application/json" });
-                      res.end(JSON.stringify({ message: "Ticket added" }));
-                    }
-                  );
-                } else {
-                  // Insert new visitor record
-                  db.query(
-                    `INSERT INTO visitor (user_id, total_visits, last_visit_date) VALUES (?, ?, ?)`,
-                    [userId, totalVisits, lastVisit],
-                    (err4) => {
-                      res.writeHead(201, { "Content-Type": "application/json" });
-                      res.end(JSON.stringify({ message: "Ticket added" }));
-                    }
-                  );
-                }
+              `INSERT INTO visitor (user_id, total_visits, last_visit_date) 
+               VALUES (?, ?, ?) 
+               ON DUPLICATE KEY UPDATE 
+               total_visits = VALUES(total_visits), 
+               last_visit_date = VALUES(last_visit_date)`,
+              [userId, totalVisits, lastVisit],
+              (err4) => {
+                res.writeHead(201, { "Content-Type": "application/json" });
+                res.end(JSON.stringify({ message: "Ticket added" }));
               }
             );
           }

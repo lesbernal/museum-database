@@ -137,14 +137,24 @@ export async function deleteEvent(id) {
 
 // ── TICKETS ───────────────────────────────────────────────────────────────────
 export async function postTicket(ticket) {
-  const userId = localStorage.getItem("user_id"); // ← change token to user_id
+  const userId = localStorage.getItem("user_id");
   const res = await fetch(`${BASE_URL}/tickets`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "Authorization": `Bearer ${userId}` // ← use userId
+      "Authorization": `Bearer ${userId}`
     },
-    body: JSON.stringify(ticket),
+    body: JSON.stringify({
+      user_id: ticket.user_id,
+      purchase_date: ticket.purchase_date,
+      visit_date: ticket.visit_date,
+      ticket_type: ticket.ticket_type,
+      base_price: ticket.base_price,
+      discount_type: ticket.discount_type,
+      final_price: ticket.final_price,
+      payment_method: ticket.payment_method,
+      transaction_id: ticket.transaction_id,  // Add this
+    }),
   });
   if (!res.ok) throw new Error("Failed to post ticket");
   return res.json();

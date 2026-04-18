@@ -28,7 +28,6 @@ function buildInitialForm(fields, record = null) {
       if (field.type === "date") {
         value = String(value).slice(0, 10);
       } else if (field.type === "datetime") {
-        // Keep the raw value for the form input (will be converted on display only)
         value = String(value).replace("T", " ").slice(0, 19);
       } else {
         value = String(value);
@@ -130,7 +129,7 @@ function RecordFormModal({ resource, record, onClose, onSubmit }) {
   );
 }
 
-export default function OperationsManagement({ title, description, resources }) {
+export default function OperationsManagement({ title, description, resources, isLowStock }) {
   const [activeResourceId, setActiveResourceId] = useState(resources[0].id);
   const [data, setData] = useState({});
   const [loading, setLoading] = useState(true);
@@ -215,6 +214,15 @@ export default function OperationsManagement({ title, description, resources }) 
     }
   }
 
+  // Check if a record is low stock (for cafe/gift shop items)
+  const isLowStockRecord = (record) => {
+    if (activeResourceId !== "cafe-items" && activeResourceId !== "giftshop-items") {
+      return false;
+    }
+    // Check using the database flag or calculate from stock_quantity
+    return record.low_stock_alert === 1 || Number(record.stock_quantity) <= 20;
+  };
+
   return (
     <div className="operations-management">
       <header className="operations-header">
@@ -278,34 +286,43 @@ export default function OperationsManagement({ title, description, resources }) 
                 </tr>
               </thead>
               <tbody>
-                {filteredRecords.map((record) => (
-                  <tr key={record[activeResource.idKey]}>
-                    {activeResource.columns.map((column) => (
-                      <td key={column.key} title={record[column.key] ?? ""}>
-                        {formatValue(record[column.key], column)}
-                      </td>
-                    ))}
-                    <td className="actions">
-                      <button
-                        className="edit-btn"
-                        onClick={() => {
-                          setEditingRecord(record);
-                          setShowModal(true);
-                        }}
-                        title="Edit"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        className="delete-btn"
-                        onClick={() => handleDelete(record[activeResource.idKey])}
-                        title="Delete"
-                      >
-                        Delete
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                {filteredRecords.map((record) => {
+                  const isLowStockItem = isLowStockRecord(record);
+                  return (
+                    <tr 
+                      key={record[activeResource.idKey]} 
+                      className={isLowStockItem ? "low-stock-row" : ""}
+                    >
+                      {activeResource.columns.map((column) => (
+                        <td key={column.key} title={record[column.key] ?? ""}>
+                          {formatValue(record[column.key], column)}
+                          {isLowStockItem && column.key === "stock_quantity" && (
+                            <span className="low-stock-badge">Low Stock!</span>
+                          )}
+                        </td>
+                      ))}
+                      <td className="actions">
+                        <button
+                          className="edit-btn"
+                          onClick={() => {
+                            setEditingRecord(record);
+                            setShowModal(true);
+                          }}
+                          title="Edit"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          className="delete-btn"
+                          onClick={() => handleDelete(record[activeResource.idKey])}
+                          title="Delete"
+                        >
+                          Delete
+                        </button>
+                       </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

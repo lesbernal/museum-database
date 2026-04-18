@@ -797,8 +797,8 @@ export default function VisitorDashboard() {
   );
 
   // Group tickets by purchase_date
-  const groupedByPurchase = tickets.reduce((acc, ticket) => {
-    const key = ticket.purchase_date;
+  const groupedByTransaction = tickets.reduce((acc, ticket) => {
+    const key = ticket.transaction_id || `single_${ticket.ticket_id}`;
     if (!acc[key]) acc[key] = [];
     acc[key].push(ticket);
     return acc;
@@ -816,18 +816,21 @@ export default function VisitorDashboard() {
             </div>
           ) : (
             <div className="purchase-list">
-              {Object.entries(groupedByPurchase).map(([purchaseDate, purchaseTickets]) => {
-                const total = purchaseTickets.reduce((sum, t) => sum + parseFloat(t.final_price || 0), 0);
-                const ticketTypes = purchaseTickets.map(t => t.ticket_type).join(", ");
+              {Object.entries(groupedByTransaction).map(([transactionId, transactionTickets]) => {
+                const total = transactionTickets.reduce((sum, t) => sum + parseFloat(t.final_price || 0), 0);
+                const purchaseDate = transactionTickets[0]?.purchase_date;
+                const ticketTypes = [...new Set(transactionTickets.map(t => t.ticket_type))].join(", ");
                 return (
-                  <div key={purchaseDate} className="purchase-item">
+                  <div key={transactionId} className="purchase-item">
                     <div className="purchase-date">{fmt(purchaseDate)}</div>
-                    <div className="purchase-info">                      <span className="purchase-qty">{purchaseTickets.length} tickets</span>
+                    <div className="purchase-info">
+                      <span className="purchase-type">{ticketTypes}</span>
+                      <span className="purchase-qty">{transactionTickets.length} tickets</span>
                     </div>
                     <div className="purchase-amount">${total.toFixed(2)}</div>
                     <button 
                       className="view-ticket-btn"
-                      onClick={() => setSelectedPurchaseTickets(purchaseTickets)}
+                      onClick={() => setSelectedPurchaseTickets(transactionTickets)}
                     >
                       View Tickets
                     </button>

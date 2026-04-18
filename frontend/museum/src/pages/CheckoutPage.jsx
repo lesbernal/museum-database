@@ -153,9 +153,11 @@ export default function CheckoutPage() {
     const today = new Date();
     const localDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
     
+    // Generate a unique transaction_id for this entire purchase
+    const transactionId = Date.now();
+    
     for (const ticket of order.tickets) {
       for (let i = 0; i < ticket.quantity; i++) {
-        // Determine the correct discount_type for the database enum
         let discountType = 'None';
         if (order.isThursday) {
           discountType = 'None';
@@ -165,7 +167,7 @@ export default function CheckoutPage() {
           discountType = 'Member';
         }
 
-        console.log("Ticket data being sent:", {
+        await postTicket({
           user_id: Number(userId),
           purchase_date: localDate,
           visit_date: order.visitDate,
@@ -174,17 +176,7 @@ export default function CheckoutPage() {
           discount_type: discountType,
           final_price: ticket.finalPrice,
           payment_method: "Credit Card",
-        });
-        
-        await postTicket({
-          user_id: Number(userId),
-          purchase_date: localDate,
-          visit_date: order.visitDate,
-          ticket_type: ticket.type,
-          base_price: ticket.basePrice,
-          discount_type: discountType,  // This will be either 'None' or 'Member'
-          final_price: ticket.finalPrice,
-          payment_method: "Credit Card",
+          transaction_id: transactionId,  // Add the same transaction_id to all tickets in this purchase
         });
       }
     }
@@ -347,8 +339,14 @@ export default function CheckoutPage() {
     }
 
     if (order.type === "tickets") {
+      // Check if it's Thursday - if so, everything is FREE
+      const isThursday = order.isThursday || (order.visitDate && new Date(order.visitDate).getDay() === 4);
+      
       // Calculate actual total from tickets
-      const calculatedTotal = order.tickets.reduce((sum, ticket) => sum + (ticket.finalPrice * ticket.quantity), 0);
+      let calculatedTotal = 0;
+      if (!isThursday) {
+        calculatedTotal = order.tickets.reduce((sum, ticket) => sum + (ticket.finalPrice * ticket.quantity), 0);
+      }
       
       return (
         <>
@@ -358,19 +356,19 @@ export default function CheckoutPage() {
           </div>
           <div className="summary-section">
             <p className="summary-label">Discount</p>
-            <p className="summary-value">{order.discount}</p>
+            <p className="summary-value">{order.discount || (isThursday ? "Thursday Special" : "None")}</p>
           </div>
           <div className="summary-items">
             {order.tickets.map(ticket => (
               <div className="summary-item" key={ticket.type}>
                 <span>{ticket.quantity}x {ticket.label}</span>
-                <span>{formatCurrency(ticket.finalPrice * ticket.quantity)}</span>
+                <span>{isThursday ? "FREE" : formatCurrency(ticket.finalPrice * ticket.quantity)}</span>
               </div>
             ))}
           </div>
           <div className="summary-total">
             <span>Total</span>
-            <span>{formatCurrency(calculatedTotal)}</span>
+            <span>{isThursday ? "FREE" : formatCurrency(calculatedTotal)}</span>
           </div>
         </>
       );
@@ -520,6 +518,9 @@ export default function CheckoutPage() {
   function getSubmitLabel() {
     if (loading) return "Processing...";
     
+    // Check if it's Thursday
+    const isThursday = order.isThursday || (order.visitDate && new Date(order.visitDate).getDay() === 4);
+    
     switch (order.type) {
       case "membership":
         return `Pay ${formatCurrency(order.amount)}`;
@@ -530,6 +531,9 @@ export default function CheckoutPage() {
       case "giftshop":
         return `Place Order ${formatCurrency(order.total)}`;
       case "tickets": {
+        if (isThursday) {
+          return `Confirm FREE Tickets`;
+        }
         const calculatedTotal = order.tickets.reduce((sum, ticket) => sum + (ticket.finalPrice * ticket.quantity), 0);
         return `Pay ${formatCurrency(calculatedTotal)}`;
       }
