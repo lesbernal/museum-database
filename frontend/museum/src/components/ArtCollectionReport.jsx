@@ -353,11 +353,11 @@ export default function ArtCollectionReport() {
           </div>
           <div className="pagination-container">
             <div className="pagination-controls">
-              <button onClick={() => setCurrentPage(1)} disabled={currentPage === 1}>⏮ First</button>
-              <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}>◀ Prev</button>
-              <span>Page {currentPage} of {totalPages}</span>
-              <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages}>Next ▶</button>
-              <button onClick={() => setCurrentPage(totalPages)} disabled={currentPage === totalPages}>Last ⏭</button>
+              <button onClick={() => setCurrentPage(1)} disabled={currentPage === 1} style={{ color: "#1f2937" }}>⏮ First</button>
+              <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} style={{ color: "#1f2937" }}>◀ Prev</button>
+              <span style={{ color: "#1f2937" }}>Page {currentPage} of {totalPages}</span>
+              <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} style={{ color: "#1f2937" }}>Next ▶</button>
+              <button onClick={() => setCurrentPage(totalPages)} disabled={currentPage === totalPages} style={{ color: "#1f2937" }}>Last ⏭</button>
             </div>
           </div>
         </div>

@@ -35,6 +35,42 @@ const LEVEL_COLORS = {
 
 const EVENT_TYPES = ["General", "Tour", "Workshop", "Exhibition", "Lecture", "Activity", "Member Only"];
 
+// Reusable pagination component
+function Pagination({ currentPage, totalPages, onPageChange, rowsPerPage, onRowsChange }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "0.5rem", padding: "1rem 0", flexWrap: "wrap", borderTop: "1px solid #e5e5e5", marginTop: "0.5rem" }}>
+      <button onClick={() => onPageChange(1)} disabled={currentPage === 1}
+        style={{ padding: "0.375rem 0.75rem", background: "#ffffff", border: "1px solid #e5e5e5", cursor: currentPage === 1 ? "not-allowed" : "pointer", opacity: currentPage === 1 ? 0.5 : 1, fontSize: "0.75rem", color: "#1f2937" }}>
+        ⏮ First
+      </button>
+      <button onClick={() => onPageChange(currentPage - 1)} disabled={currentPage === 1}
+        style={{ padding: "0.375rem 0.75rem", background: "#ffffff", border: "1px solid #e5e5e5", cursor: currentPage === 1 ? "not-allowed" : "pointer", opacity: currentPage === 1 ? 0.5 : 1, fontSize: "0.75rem", color: "#1f2937" }}>
+        ◀ Prev
+      </button>
+      <span style={{ fontSize: "0.75rem", color: "#1f2937", padding: "0 0.5rem" }}>
+        Page {currentPage} of {totalPages}
+      </span>
+      <button onClick={() => onPageChange(currentPage + 1)} disabled={currentPage === totalPages}
+        style={{ padding: "0.375rem 0.75rem", background: "#ffffff", border: "1px solid #e5e5e5", cursor: currentPage === totalPages ? "not-allowed" : "pointer", opacity: currentPage === totalPages ? 0.5 : 1, fontSize: "0.75rem", color: "#1f2937" }}>
+        Next ▶
+      </button>
+      <button onClick={() => onPageChange(totalPages)} disabled={currentPage === totalPages}
+        style={{ padding: "0.375rem 0.75rem", background: "#ffffff", border: "1px solid #e5e5e5", cursor: currentPage === totalPages ? "not-allowed" : "pointer", opacity: currentPage === totalPages ? 0.5 : 1, fontSize: "0.75rem", color: "#1f2937" }}>
+        Last ⏭
+      </button>
+      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginLeft: "0.5rem" }}>
+        <span style={{ fontSize: "0.75rem", color: "#1f2937" }}>Show:</span>
+        <select value={rowsPerPage} onChange={e => { onRowsChange(Number(e.target.value)); onPageChange(1); }}
+          style={{ padding: "0.25rem 0.5rem", border: "1px solid #e5e5e5", background: "#ffffff", fontSize: "0.75rem", color: "#1f2937" }}>
+          <option value={25}>25 rows</option>
+          <option value={50}>50 rows</option>
+          <option value={100}>100 rows</option>
+        </select>
+      </div>
+    </div>
+  );
+}
+
 export default function VisitorAnalyticsReport() {
   const [hasGenerated, setHasGenerated] = useState(false);
   const [loading,      setLoading]      = useState(false);
@@ -61,44 +97,68 @@ export default function VisitorAnalyticsReport() {
   const [revenueImpactData,    setRevenueImpactData]    = useState([]);
   const [revenueImpactSummary, setRevenueImpactSummary] = useState(null);
 
+  // Pagination state — one per table
+  const [eventsPage,         setEventsPage]         = useState(1);
+  const [eventsRows,         setEventsRows]         = useState(25);
+  const [archivedPage,       setArchivedPage]       = useState(1);
+  const [archivedRows,       setArchivedRows]       = useState(25);
+  const [revImpactPage,      setRevImpactPage]      = useState(1);
+  const [revImpactRows,      setRevImpactRows]      = useState(25);
+
   async function handleGenerate() {
     setLoading(true);
     setHasGenerated(false);
+    // Reset pages
+    setEventsPage(1);
+    setArchivedPage(1);
+    setRevImpactPage(1);
     try {
       let eventsUrl = `${BASE_URL}/reports/visitor-analytics?`;
       if (startDate) eventsUrl += `startDate=${startDate}&`;
       if (endDate)   eventsUrl += `endDate=${endDate}&`;
 
       const [evtVsTixRes, memberRes, analyticsRes, archivedRes, revenueImpactRes] = await Promise.all([
-        fetch(`${BASE_URL}/reports/event-vs-tickets`),
-        fetch(`${BASE_URL}/reports/member-event-participation`),
-        fetch(eventsUrl),
-        fetch(`${BASE_URL}/reports/archived-events`),
-        fetch(`${BASE_URL}/reports/event-revenue-impact`),
+        fetch(`${BASE_URL}/reports/event-vs-tickets`).catch(() => null),
+        fetch(`${BASE_URL}/reports/member-event-participation`).catch(() => null),
+        fetch(eventsUrl).catch(() => null),
+        fetch(`${BASE_URL}/reports/archived-events`).catch(() => null),
+        fetch(`${BASE_URL}/reports/event-revenue-impact`).catch(() => null),
       ]);
 
-      const evtVsTixJson      = await evtVsTixRes.json();
-      const memberJson        = await memberRes.json();
-      const analyticsJson     = await analyticsRes.json();
-      const archivedJson      = await archivedRes.json();
-      const revenueImpactJson = await revenueImpactRes.json();
+      if (evtVsTixRes && evtVsTixRes.ok) {
+        const evtVsTixJson = await evtVsTixRes.json();
+        setEvtVsTixSummary(evtVsTixJson.summary || null);
+        setEngagementBreakdown(Array.isArray(evtVsTixJson.engagementBreakdown) ? evtVsTixJson.engagementBreakdown : []);
+      }
 
-      setEvtVsTixSummary(evtVsTixJson.summary || null);
-      setEngagementBreakdown(Array.isArray(evtVsTixJson.engagementBreakdown) ? evtVsTixJson.engagementBreakdown : []);
-      setMemberEventSummary(memberJson.summary || null);
-      setMemberEventByLevel(Array.isArray(memberJson.byLevel) ? memberJson.byLevel : []);
+      if (memberRes && memberRes.ok) {
+        const memberJson = await memberRes.json();
+        setMemberEventSummary(memberJson.summary || null);
+        setMemberEventByLevel(Array.isArray(memberJson.byLevel) ? memberJson.byLevel : []);
+      }
 
-      let events = Array.isArray(analyticsJson.events) ? analyticsJson.events : [];
-      if (eventType) events = events.filter(e => e.event_type === eventType);
-      setEventsData(events);
+      if (analyticsRes && analyticsRes.ok) {
+        const analyticsJson = await analyticsRes.json();
+        let events = Array.isArray(analyticsJson.events) ? analyticsJson.events : [];
+        if (eventType) events = events.filter(e => e.event_type === eventType);
+        setEventsData(events);
+      }
 
-      setArchivedEventsData(Array.isArray(archivedJson) ? archivedJson : []);
-      setRevenueImpactData(Array.isArray(revenueImpactJson.data) ? revenueImpactJson.data : []);
-      setRevenueImpactSummary(revenueImpactJson.summary || null);
+      if (archivedRes && archivedRes.ok) {
+        const archivedJson = await archivedRes.json();
+        setArchivedEventsData(Array.isArray(archivedJson) ? archivedJson : []);
+      }
+
+      if (revenueImpactRes && revenueImpactRes.ok) {
+        const revenueImpactJson = await revenueImpactRes.json();
+        setRevenueImpactData(Array.isArray(revenueImpactJson.data) ? revenueImpactJson.data : []);
+        setRevenueImpactSummary(revenueImpactJson.summary || null);
+      }
 
       setHasGenerated(true);
     } catch (err) {
       console.error("Failed to load visitor analytics:", err);
+      setHasGenerated(true);
     } finally {
       setLoading(false);
     }
@@ -118,6 +178,9 @@ export default function VisitorAnalyticsReport() {
     setArchivedEventsData([]);
     setRevenueImpactData([]);
     setRevenueImpactSummary(null);
+    setEventsPage(1);
+    setArchivedPage(1);
+    setRevImpactPage(1);
   }
 
   const sortedEventsData = [...eventsData].sort((a, b) => {
@@ -132,14 +195,14 @@ export default function VisitorAnalyticsReport() {
     }
   });
 
-  // Chart data for revenue impact
-  const revenueImpactChartData = revenueImpactData.slice(0, 10).map(r => ({
-    name: r.event_name.length > 15 ? r.event_name.slice(0, 15) + "..." : r.event_name,
-    Tickets:   parseFloat(r.ticket_revenue)   || 0,
-    Cafe:      parseFloat(r.cafe_revenue)     || 0,
-    GiftShop:  parseFloat(r.giftshop_revenue) || 0,
-    Donations: parseFloat(r.donation_revenue) || 0,
-  }));
+  // Paginated slices
+  const eventsTotalPages    = Math.ceil(sortedEventsData.length / eventsRows)    || 1;
+  const archivedTotalPages  = Math.ceil(archivedEventsData.length / archivedRows) || 1;
+  const revImpactTotalPages = Math.ceil(revenueImpactData.length / revImpactRows) || 1;
+
+  const pagedEvents    = sortedEventsData.slice((eventsPage - 1) * eventsRows, eventsPage * eventsRows);
+  const pagedArchived  = archivedEventsData.slice((archivedPage - 1) * archivedRows, archivedPage * archivedRows);
+  const pagedRevImpact = revenueImpactData.slice((revImpactPage - 1) * revImpactRows, revImpactPage * revImpactRows);
 
   return (
     <div className="visitor-analytics-report">
@@ -196,47 +259,56 @@ export default function VisitorAnalyticsReport() {
               <h3>Events {eventType ? `— ${eventType}` : ""}</h3>
             </div>
             {sortedEventsData.length > 0 ? (
-              <div className="table-container">
-                <table className="data-table">
-                  <thead>
-                    <tr>
-                      <th>Event Name</th><th>Type</th><th>Date</th>
-                      <th>Capacity</th><th>Attendees</th><th>Fill Rate</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {sortedEventsData.map((e, i) => {
-                      const fillRate  = e.capacity > 0 ? ((e.total_attendees / e.capacity) * 100).toFixed(1) : 0;
-                      const fillColor = fillRate >= 80 ? "#065f46" : fillRate >= 50 ? "#92400e" : "#374151";
-                      return (
-                        <tr key={i}>
-                          <td style={{ fontWeight: 500 }}>{e.event_name}</td>
-                          <td><span style={{ padding: "0.2rem 0.6rem", borderRadius: "999px", fontSize: "0.72rem", fontWeight: 600, background: "#f3f4f6", color: "#374151" }}>{e.event_type || "General"}</span></td>
-                          <td>{formatDate(e.event_date)}</td>
-                          <td style={{ textAlign: "center" }}>{e.capacity}</td>
-                          <td style={{ textAlign: "center" }}>{e.total_attendees}</td>
-                          <td>
-                            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                              <div style={{ flex: 1, height: 8, background: "#e5e7eb", borderRadius: 4, overflow: "hidden" }}>
-                                <div style={{ height: "100%", width: `${Math.min(fillRate, 100)}%`, background: fillColor, borderRadius: 4, transition: "width 0.3s" }} />
+              <>
+                <div className="table-container">
+                  <table className="data-table">
+                    <thead>
+                      <tr>
+                        <th>Event Name</th><th>Type</th><th>Date</th>
+                        <th>Capacity</th><th>Attendees</th><th>Fill Rate</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {pagedEvents.map((e, i) => {
+                        const fillRate  = e.capacity > 0 ? ((e.total_attendees / e.capacity) * 100).toFixed(1) : 0;
+                        const fillColor = fillRate >= 80 ? "#065f46" : fillRate >= 50 ? "#92400e" : "#374151";
+                        return (
+                          <tr key={i}>
+                            <td style={{ fontWeight: 500 }}>{e.event_name}</td>
+                            <td><span style={{ padding: "0.2rem 0.6rem", borderRadius: "999px", fontSize: "0.72rem", fontWeight: 600, background: "#f3f4f6", color: "#374151" }}>{e.event_type || "General"}</span></td>
+                            <td>{formatDate(e.event_date)}</td>
+                            <td style={{ textAlign: "center" }}>{e.capacity}</td>
+                            <td style={{ textAlign: "center" }}>{e.total_attendees}</td>
+                            <td>
+                              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                                <div style={{ flex: 1, height: 8, background: "#e5e7eb", borderRadius: 4, overflow: "hidden" }}>
+                                  <div style={{ height: "100%", width: `${Math.min(fillRate, 100)}%`, background: fillColor, borderRadius: 4, transition: "width 0.3s" }} />
+                                </div>
+                                <span style={{ fontSize: 12, fontWeight: 600, color: fillColor, minWidth: 36 }}>{fillRate}%</span>
                               </div>
-                              <span style={{ fontSize: 12, fontWeight: 600, color: fillColor, minWidth: 36 }}>{fillRate}%</span>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                  <tfoot>
-                    <tr style={{ background: "#f9fafb", borderTop: "1px solid #e5e7eb" }}>
-                      <td colSpan={3} style={{ padding: "0.625rem 1rem", fontWeight: 600, fontSize: 12, color: "#374151" }}>Total Events: {sortedEventsData.length}</td>
-                      <td style={{ padding: "0.625rem 1rem", fontWeight: 600, fontSize: 12, color: "#374151", textAlign: "center" }}>{sortedEventsData.reduce((s, e) => s + (e.capacity || 0), 0)}</td>
-                      <td style={{ padding: "0.625rem 1rem", fontWeight: 600, fontSize: 12, color: "#374151", textAlign: "center" }}>{sortedEventsData.reduce((s, e) => s + (e.total_attendees || 0), 0)}</td>
-                      <td />
-                    </tr>
-                  </tfoot>
-                </table>
-              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                    <tfoot>
+                      <tr style={{ background: "#f9fafb", borderTop: "1px solid #e5e7eb" }}>
+                        <td colSpan={3} style={{ padding: "0.625rem 1rem", fontWeight: 600, fontSize: 12, color: "#374151" }}>Total Events: {sortedEventsData.length}</td>
+                        <td style={{ padding: "0.625rem 1rem", fontWeight: 600, fontSize: 12, color: "#374151", textAlign: "center" }}>{sortedEventsData.reduce((s, e) => s + (e.capacity || 0), 0)}</td>
+                        <td style={{ padding: "0.625rem 1rem", fontWeight: 600, fontSize: 12, color: "#374151", textAlign: "center" }}>{sortedEventsData.reduce((s, e) => s + (e.total_attendees || 0), 0)}</td>
+                        <td />
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+                <Pagination
+                  currentPage={eventsPage}
+                  totalPages={eventsTotalPages}
+                  onPageChange={setEventsPage}
+                  rowsPerPage={eventsRows}
+                  onRowsChange={setEventsRows}
+                />
+              </>
             ) : (
               <div className="no-results">No events found for the selected filters.</div>
             )}
@@ -246,46 +318,55 @@ export default function VisitorAnalyticsReport() {
           <div className="data-section" style={{ marginBottom: "2rem" }}>
             <div className="data-header"><h3>Archived Events</h3></div>
             {archivedEventsData.length > 0 ? (
-              <div className="table-container">
-                <table className="data-table">
-                  <thead>
-                    <tr>
-                      <th>Event Name</th><th>Type</th><th>Date</th>
-                      <th>Capacity</th><th>Attendees</th><th>Fill Rate</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {archivedEventsData.map((e, i) => {
-                      const fillRate  = e.capacity > 0 ? ((e.total_attendees / e.capacity) * 100).toFixed(1) : 0;
-                      return (
-                        <tr key={i}>
-                          <td style={{ fontWeight: 500, color: "#9ca3af" }}>{e.event_name}</td>
-                          <td><span style={{ padding: "0.2rem 0.6rem", borderRadius: "999px", fontSize: "0.72rem", fontWeight: 600, background: "#f3f4f6", color: "#9ca3af" }}>{e.event_type || "General"}</span></td>
-                          <td style={{ color: "#9ca3af" }}>{formatDate(e.event_date)}</td>
-                          <td style={{ textAlign: "center", color: "#9ca3af" }}>{e.capacity}</td>
-                          <td style={{ textAlign: "center", color: "#9ca3af" }}>{e.total_attendees}</td>
-                          <td>
-                            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                              <div style={{ flex: 1, height: 8, background: "#e5e7eb", borderRadius: 4, overflow: "hidden" }}>
-                                <div style={{ height: "100%", width: `${Math.min(fillRate, 100)}%`, background: "#d1d5db", borderRadius: 4 }} />
+              <>
+                <div className="table-container">
+                  <table className="data-table">
+                    <thead>
+                      <tr>
+                        <th>Event Name</th><th>Type</th><th>Date</th>
+                        <th>Capacity</th><th>Attendees</th><th>Fill Rate</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {pagedArchived.map((e, i) => {
+                        const fillRate = e.capacity > 0 ? ((e.total_attendees / e.capacity) * 100).toFixed(1) : 0;
+                        return (
+                          <tr key={i}>
+                            <td style={{ fontWeight: 500, color: "#9ca3af" }}>{e.event_name}</td>
+                            <td><span style={{ padding: "0.2rem 0.6rem", borderRadius: "999px", fontSize: "0.72rem", fontWeight: 600, background: "#f3f4f6", color: "#9ca3af" }}>{e.event_type || "General"}</span></td>
+                            <td style={{ color: "#9ca3af" }}>{formatDate(e.event_date)}</td>
+                            <td style={{ textAlign: "center", color: "#9ca3af" }}>{e.capacity}</td>
+                            <td style={{ textAlign: "center", color: "#9ca3af" }}>{e.total_attendees}</td>
+                            <td>
+                              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                                <div style={{ flex: 1, height: 8, background: "#e5e7eb", borderRadius: 4, overflow: "hidden" }}>
+                                  <div style={{ height: "100%", width: `${Math.min(fillRate, 100)}%`, background: "#d1d5db", borderRadius: 4 }} />
+                                </div>
+                                <span style={{ fontSize: 12, fontWeight: 600, color: "#9ca3af", minWidth: 36 }}>{fillRate}%</span>
                               </div>
-                              <span style={{ fontSize: 12, fontWeight: 600, color: "#9ca3af", minWidth: 36 }}>{fillRate}%</span>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                  <tfoot>
-                    <tr style={{ background: "#f9fafb", borderTop: "1px solid #e5e7eb" }}>
-                      <td colSpan={3} style={{ padding: "0.625rem 1rem", fontWeight: 600, fontSize: 12, color: "#374151" }}>Total Archived: {archivedEventsData.length}</td>
-                      <td style={{ padding: "0.625rem 1rem", fontWeight: 600, fontSize: 12, color: "#374151", textAlign: "center" }}>{archivedEventsData.reduce((s, e) => s + (e.capacity || 0), 0)}</td>
-                      <td style={{ padding: "0.625rem 1rem", fontWeight: 600, fontSize: 12, color: "#374151", textAlign: "center" }}>{archivedEventsData.reduce((s, e) => s + (e.total_attendees || 0), 0)}</td>
-                      <td />
-                    </tr>
-                  </tfoot>
-                </table>
-              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                    <tfoot>
+                      <tr style={{ background: "#f9fafb", borderTop: "1px solid #e5e7eb" }}>
+                        <td colSpan={3} style={{ padding: "0.625rem 1rem", fontWeight: 600, fontSize: 12, color: "#374151" }}>Total Archived: {archivedEventsData.length}</td>
+                        <td style={{ padding: "0.625rem 1rem", fontWeight: 600, fontSize: 12, color: "#374151", textAlign: "center" }}>{archivedEventsData.reduce((s, e) => s + (e.capacity || 0), 0)}</td>
+                        <td style={{ padding: "0.625rem 1rem", fontWeight: 600, fontSize: 12, color: "#374151", textAlign: "center" }}>{archivedEventsData.reduce((s, e) => s + (e.total_attendees || 0), 0)}</td>
+                        <td />
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+                <Pagination
+                  currentPage={archivedPage}
+                  totalPages={archivedTotalPages}
+                  onPageChange={setArchivedPage}
+                  rowsPerPage={archivedRows}
+                  onRowsChange={setArchivedRows}
+                />
+              </>
             ) : (
               <div className="no-results">No archived events found.</div>
             )}
@@ -293,90 +374,98 @@ export default function VisitorAnalyticsReport() {
 
           {/* ── SECTION 4: EVENT REVENUE IMPACT ── */}
           <div className="data-section" style={{ marginBottom: "2rem" }}>
-            <div className="data-header">
-              <h3>Event Revenue Impact</h3>
-            </div>
+            <div className="data-header"><h3>Event Revenue Impact</h3></div>
             <p style={{ fontSize: 13, color: "#6b7280", marginBottom: "1.5rem" }}>
               Shows total revenue generated across all sources on each event day — tickets, cafe, gift shop, and donations.
             </p>
 
-            {/* Summary cards */}
             {revenueImpactSummary && (
               <div className="va-summary-grid" style={{ marginBottom: "1.5rem" }}>
                 <div className="va-summary-card primary">
                   <div className="va-summary-label">Total Revenue on Event Days</div>
                   <div className="va-summary-value">{formatCurrency(revenueImpactSummary.total_revenue)}</div>
                 </div>
+                <div className="va-summary-card primary">
+                  <div className="va-summary-label">Total Events</div>
+                  <div className="va-summary-value">{formatNumber(revenueImpactSummary.total_events)}</div>
+                </div>
               </div>
             )}
 
-            {/* Highest revenue event banner */}
             {revenueImpactSummary?.highest_revenue_event && revenueImpactSummary.highest_revenue_event !== "—" && (
               <div style={{ padding: "0.75rem 1rem", background: "#fef9c3", border: "1px solid #f4d03f", fontSize: 13, color: "#854d0e", marginBottom: "1.5rem", borderRadius: 4 }}>
                 Highest revenue event day: <strong>{revenueImpactSummary.highest_revenue_event}</strong> — {formatCurrency(Math.max(...revenueImpactData.map(r => r.total_revenue)))}
               </div>
             )}
 
-            {/* Table */}
             {revenueImpactData.length > 0 ? (
-              <div className="table-container">
-                <table className="data-table">
-                  <thead>
-                    <tr>
-                      <th>Event Name</th><th>Type</th><th>Date</th><th>Attendees</th>
-                      <th style={{ textAlign: "right" }}>Tickets</th>
-                      <th style={{ textAlign: "right" }}>Cafe</th>
-                      <th style={{ textAlign: "right" }}>Gift Shop</th>
-                      <th style={{ textAlign: "right" }}>Donations</th>
-                      <th style={{ textAlign: "right" }}>Total</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {revenueImpactData.map((r, i) => (
-                      <tr key={i} style={{ opacity: r.is_active === 0 ? 0.5 : 1 }}>
-                        <td style={{ fontWeight: 500 }}>
-                          {r.event_name}
-                          {r.is_active === 0 && (
-                            <span style={{ marginLeft: "0.5rem", fontSize: "0.68rem", background: "#f3f4f6", color: "#9ca3af", padding: "0.1rem 0.4rem", borderRadius: 999, fontWeight: 600 }}>
-                              Archived
-                            </span>
-                          )}
-                        </td>
-                        <td><span style={{ padding: "0.2rem 0.6rem", borderRadius: "999px", fontSize: "0.72rem", fontWeight: 600, background: "#f3f4f6", color: "#374151" }}>{r.event_type || "General"}</span></td>
-                        <td>{formatDate(r.event_date)}</td>
-                        <td style={{ textAlign: "center" }}>{r.total_attendees}</td>
-                        <td style={{ textAlign: "right", color: "#c5a028", fontWeight: 500 }}>{formatCurrency(r.ticket_revenue)}</td>
-                        <td style={{ textAlign: "right", color: "#1d4ed8", fontWeight: 500 }}>{formatCurrency(r.cafe_revenue)}</td>
-                        <td style={{ textAlign: "right", color: "#065f46", fontWeight: 500 }}>{formatCurrency(r.giftshop_revenue)}</td>
-                        <td style={{ textAlign: "right", color: "#92400e", fontWeight: 500 }}>{formatCurrency(r.donation_revenue)}</td>
-                        <td style={{ textAlign: "right", fontWeight: 700, color: "#1a1a2e" }}>{formatCurrency(r.total_revenue)}</td>
+              <>
+                <div className="table-container">
+                  <table className="data-table">
+                    <thead>
+                      <tr>
+                        <th>Event Name</th><th>Type</th><th>Date</th><th>Attendees</th>
+                        <th style={{ textAlign: "right" }}>Tickets</th>
+                        <th style={{ textAlign: "right" }}>Cafe</th>
+                        <th style={{ textAlign: "right" }}>Gift Shop</th>
+                        <th style={{ textAlign: "right" }}>Donations</th>
+                        <th style={{ textAlign: "right" }}>Total</th>
                       </tr>
-                    ))}
-                  </tbody>
-                  <tfoot>
-                    <tr style={{ background: "#f9fafb", borderTop: "1px solid #e5e7eb" }}>
-                      <td colSpan={4} style={{ padding: "0.625rem 1rem", fontWeight: 600, fontSize: 12, color: "#374151" }}>
-                        Total across {revenueImpactData.length} events
-                      </td>
-                      <td style={{ padding: "0.625rem 1rem", fontWeight: 600, fontSize: 12, color: "#c5a028", textAlign: "right" }}>
-                        {formatCurrency(revenueImpactData.reduce((s, r) => s + parseFloat(r.ticket_revenue), 0))}
-                      </td>
-                      <td style={{ padding: "0.625rem 1rem", fontWeight: 600, fontSize: 12, color: "#1d4ed8", textAlign: "right" }}>
-                        {formatCurrency(revenueImpactData.reduce((s, r) => s + parseFloat(r.cafe_revenue), 0))}
-                      </td>
-                      <td style={{ padding: "0.625rem 1rem", fontWeight: 600, fontSize: 12, color: "#065f46", textAlign: "right" }}>
-                        {formatCurrency(revenueImpactData.reduce((s, r) => s + parseFloat(r.giftshop_revenue), 0))}
-                      </td>
-                      <td style={{ padding: "0.625rem 1rem", fontWeight: 600, fontSize: 12, color: "#92400e", textAlign: "right" }}>
-                        {formatCurrency(revenueImpactData.reduce((s, r) => s + parseFloat(r.donation_revenue), 0))}
-                      </td>
-                      <td style={{ padding: "0.625rem 1rem", fontWeight: 700, fontSize: 12, color: "#1a1a2e", textAlign: "right" }}>
-                        {formatCurrency(revenueImpactData.reduce((s, r) => s + r.total_revenue, 0))}
-                      </td>
-                    </tr>
-                  </tfoot>
-                </table>
-              </div>
+                    </thead>
+                    <tbody>
+                      {pagedRevImpact.map((r, i) => (
+                        <tr key={i} style={{ opacity: r.is_active === 0 ? 0.5 : 1 }}>
+                          <td style={{ fontWeight: 500 }}>
+                            {r.event_name}
+                            {r.is_active === 0 && (
+                              <span style={{ marginLeft: "0.5rem", fontSize: "0.68rem", background: "#f3f4f6", color: "#9ca3af", padding: "0.1rem 0.4rem", borderRadius: 999, fontWeight: 600 }}>
+                                Archived
+                              </span>
+                            )}
+                          </td>
+                          <td><span style={{ padding: "0.2rem 0.6rem", borderRadius: "999px", fontSize: "0.72rem", fontWeight: 600, background: "#f3f4f6", color: "#374151" }}>{r.event_type || "General"}</span></td>
+                          <td>{formatDate(r.event_date)}</td>
+                          <td style={{ textAlign: "center" }}>{r.total_attendees}</td>
+                          <td style={{ textAlign: "right", color: "#c5a028", fontWeight: 500 }}>{formatCurrency(r.ticket_revenue)}</td>
+                          <td style={{ textAlign: "right", color: "#1d4ed8", fontWeight: 500 }}>{formatCurrency(r.cafe_revenue)}</td>
+                          <td style={{ textAlign: "right", color: "#065f46", fontWeight: 500 }}>{formatCurrency(r.giftshop_revenue)}</td>
+                          <td style={{ textAlign: "right", color: "#92400e", fontWeight: 500 }}>{formatCurrency(r.donation_revenue)}</td>
+                          <td style={{ textAlign: "right", fontWeight: 700, color: "#1a1a2e" }}>{formatCurrency(r.total_revenue)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                    <tfoot>
+                      <tr style={{ background: "#f9fafb", borderTop: "1px solid #e5e7eb" }}>
+                        <td colSpan={4} style={{ padding: "0.625rem 1rem", fontWeight: 600, fontSize: 12, color: "#374151" }}>
+                          Total across {revenueImpactData.length} events
+                        </td>
+                        <td style={{ padding: "0.625rem 1rem", fontWeight: 600, fontSize: 12, color: "#c5a028", textAlign: "right" }}>
+                          {formatCurrency(revenueImpactData.reduce((s, r) => s + parseFloat(r.ticket_revenue), 0))}
+                        </td>
+                        <td style={{ padding: "0.625rem 1rem", fontWeight: 600, fontSize: 12, color: "#1d4ed8", textAlign: "right" }}>
+                          {formatCurrency(revenueImpactData.reduce((s, r) => s + parseFloat(r.cafe_revenue), 0))}
+                        </td>
+                        <td style={{ padding: "0.625rem 1rem", fontWeight: 600, fontSize: 12, color: "#065f46", textAlign: "right" }}>
+                          {formatCurrency(revenueImpactData.reduce((s, r) => s + parseFloat(r.giftshop_revenue), 0))}
+                        </td>
+                        <td style={{ padding: "0.625rem 1rem", fontWeight: 600, fontSize: 12, color: "#92400e", textAlign: "right" }}>
+                          {formatCurrency(revenueImpactData.reduce((s, r) => s + parseFloat(r.donation_revenue), 0))}
+                        </td>
+                        <td style={{ padding: "0.625rem 1rem", fontWeight: 700, fontSize: 12, color: "#1a1a2e", textAlign: "right" }}>
+                          {formatCurrency(revenueImpactData.reduce((s, r) => s + r.total_revenue, 0))}
+                        </td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+                <Pagination
+                  currentPage={revImpactPage}
+                  totalPages={revImpactTotalPages}
+                  onPageChange={setRevImpactPage}
+                  rowsPerPage={revImpactRows}
+                  onRowsChange={setRevImpactRows}
+                />
+              </>
             ) : (
               <div className="no-results">No revenue impact data found.</div>
             )}
