@@ -55,11 +55,20 @@ module.exports = (req, res, parsedUrl) => {
       // ── Map discount label to the enum values the DB accepts ──────────────
       // DB enum: 'None','Student','Military','Member'
       // Frontend sends strings like "Member - Gold (1 free admission)" or "None"
+      // ── Map discount label to the enum values the DB accepts ──────────────
       let discountType = "None";
-      const rawDiscount = (data.discount_type || "").toLowerCase();
-      if (rawDiscount.includes("member")) discountType = "Member";
-      else if (rawDiscount.includes("student")) discountType = "Student";
-      else if (rawDiscount.includes("military")) discountType = "Military";
+      const rawDiscount = String(data.discount_type || "").toLowerCase();
+      console.log("Raw discount_type:", data.discount_type, "Lowercase:", rawDiscount);
+
+      if (rawDiscount === "member") {
+        discountType = "Member";
+      } else if (rawDiscount.includes("member")) {
+        discountType = "Member";
+      } else if (rawDiscount.includes("student")) {
+        discountType = "Student";
+      } else if (rawDiscount.includes("military")) {
+        discountType = "Military";
+      }
 
       const sql = `
         INSERT INTO ticket
@@ -78,6 +87,7 @@ module.exports = (req, res, parsedUrl) => {
         data.payment_method || "Credit Card",
       ], (err) => {
         if (err) {
+          console.error("SQL Error:", err);
           res.writeHead(400, { "Content-Type": "application/json" });
           return res.end(JSON.stringify({ error: err.sqlMessage || err.message }));
         }
@@ -85,11 +95,12 @@ module.exports = (req, res, parsedUrl) => {
         // ── Update visitor's total_visits and last_visit_date ─────────────
         // The visitor table tracks visits. We count distinct visit_dates from tickets
         // where visit_date <= today to get an accurate count.
+        // ── Update visitor's total_visits and last_visit_date ─────────────
         const today = new Date().toISOString().slice(0, 10);
         db.query(
           `SELECT COUNT(DISTINCT visit_date) AS cnt, MAX(visit_date) AS last_visit
-           FROM ticket
-           WHERE user_id = ? AND visit_date <= ?`,
+          FROM ticket
+          WHERE user_id = ? AND visit_date <= ?`,
           [userId, today],
           (err2, countRows) => {
             if (err2 || !countRows?.length) {
@@ -101,13 +112,32 @@ module.exports = (req, res, parsedUrl) => {
             const totalVisits = countRows[0].cnt || 0;
             const lastVisit   = countRows[0].last_visit || today;
 
+            // Check if visitor record exists first
             db.query(
-              `UPDATE visitor SET total_visits = ?, last_visit_date = ? WHERE user_id = ?`,
-              [totalVisits, lastVisit, userId],
-              (err3) => {
-                // Non-fatal
-                res.writeHead(201, { "Content-Type": "application/json" });
-                res.end(JSON.stringify({ message: "Ticket added" }));
+              `SELECT user_id FROM visitor WHERE user_id = ?`,
+              [userId],
+              (err3, visitorRows) => {
+                if (visitorRows && visitorRows.length > 0) {
+                  // Update existing visitor record
+                  db.query(
+                    `UPDATE visitor SET total_visits = ?, last_visit_date = ? WHERE user_id = ?`,
+                    [totalVisits, lastVisit, userId],
+                    (err4) => {
+                      res.writeHead(201, { "Content-Type": "application/json" });
+                      res.end(JSON.stringify({ message: "Ticket added" }));
+                    }
+                  );
+                } else {
+                  // Insert new visitor record
+                  db.query(
+                    `INSERT INTO visitor (user_id, total_visits, last_visit_date) VALUES (?, ?, ?)`,
+                    [userId, totalVisits, lastVisit],
+                    (err4) => {
+                      res.writeHead(201, { "Content-Type": "application/json" });
+                      res.end(JSON.stringify({ message: "Ticket added" }));
+                    }
+                  );
+                }
               }
             );
           }

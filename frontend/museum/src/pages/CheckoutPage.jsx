@@ -155,13 +155,34 @@ export default function CheckoutPage() {
     
     for (const ticket of order.tickets) {
       for (let i = 0; i < ticket.quantity; i++) {
-        await postTicket({
+        // Determine the correct discount_type for the database enum
+        let discountType = 'None';
+        if (order.isThursday) {
+          discountType = 'None';
+        } else if (order.discount === 'Member' || ticket.discount_type === 'Member') {
+          discountType = 'Member';
+        } else if (typeof order.discount === 'string' && order.discount.toLowerCase().includes('member')) {
+          discountType = 'Member';
+        }
+
+        console.log("Ticket data being sent:", {
           user_id: Number(userId),
-          purchase_date: localDate,  // ← Changed from UTC to local
+          purchase_date: localDate,
           visit_date: order.visitDate,
           ticket_type: ticket.type,
           base_price: ticket.basePrice,
-          discount_type: order.discount,
+          discount_type: discountType,
+          final_price: ticket.finalPrice,
+          payment_method: "Credit Card",
+        });
+        
+        await postTicket({
+          user_id: Number(userId),
+          purchase_date: localDate,
+          visit_date: order.visitDate,
+          ticket_type: ticket.type,
+          base_price: ticket.basePrice,
+          discount_type: discountType,  // This will be either 'None' or 'Member'
           final_price: ticket.finalPrice,
           payment_method: "Credit Card",
         });
@@ -300,6 +321,7 @@ export default function CheckoutPage() {
     }
   }
 
+
   function renderSummary() {
     if (order.type === "membership") {
       return (
@@ -325,6 +347,9 @@ export default function CheckoutPage() {
     }
 
     if (order.type === "tickets") {
+      // Calculate actual total from tickets
+      const calculatedTotal = order.tickets.reduce((sum, ticket) => sum + (ticket.finalPrice * ticket.quantity), 0);
+      
       return (
         <>
           <div className="summary-section">
@@ -345,7 +370,7 @@ export default function CheckoutPage() {
           </div>
           <div className="summary-total">
             <span>Total</span>
-            <span>{formatCurrency(order.total)}</span>
+            <span>{formatCurrency(calculatedTotal)}</span>
           </div>
         </>
       );
@@ -399,6 +424,7 @@ export default function CheckoutPage() {
       </>
     );
   }
+
 
   function renderMembershipFields() {
     return (
@@ -493,11 +519,23 @@ export default function CheckoutPage() {
 
   function getSubmitLabel() {
     if (loading) return "Processing...";
-    if (order.type === "membership") return `Pay ${formatCurrency(order.amount)}`;
-    if (order.type === "donation")   return `Donate ${formatCurrency(order.amount)}`;
-    if (order.type === "cafe")       return `Place Order ${formatCurrency(order.total)}`;
-    if (order.type === "giftshop")   return `Place Order ${formatCurrency(order.total)}`;
-    return `Pay ${formatCurrency(order.total)}`;
+    
+    switch (order.type) {
+      case "membership":
+        return `Pay ${formatCurrency(order.amount)}`;
+      case "donation":
+        return `Donate ${formatCurrency(order.amount)}`;
+      case "cafe":
+        return `Place Order ${formatCurrency(order.total)}`;
+      case "giftshop":
+        return `Place Order ${formatCurrency(order.total)}`;
+      case "tickets": {
+        const calculatedTotal = order.tickets.reduce((sum, ticket) => sum + (ticket.finalPrice * ticket.quantity), 0);
+        return `Pay ${formatCurrency(calculatedTotal)}`;
+      }
+      default:
+        return `Pay ${formatCurrency(order.total)}`;
+    }
   }
 
   if (!order) return null;
