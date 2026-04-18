@@ -266,6 +266,8 @@ export default function Tickets() {
         totalTickets: tickets.length,
         total: 0,  // Placeholder - trigger will set actual
         isThursday,
+        isMember,
+        memberLevel,
       },
     });
   }
