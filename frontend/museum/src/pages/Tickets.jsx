@@ -21,7 +21,7 @@ const MONTHS = [
 
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-function getFinalPrice(basePrice, isMember) {
+function getFinalPrice(basePrice, isMember, isThursday) {
   if (isMember) return 0;
   if (isThursday) return 0;
   return basePrice;
@@ -35,13 +35,13 @@ export default function Tickets() {
     "Adult 19+": 0, "Senior 65+": 0, "Youth 13-18": 0, "Child 12 & Under": 0
   });
   const [isMember,   setIsMember]   = useState(false);
-  const [isThursday, setIsThursday] = useState(false);
   const [errorMsg,   setErrorMsg]   = useState("");
   const [step,       setStep]       = useState("calendar");
   
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
   const [currentYear,  setCurrentYear]  = useState(new Date().getFullYear());
   const [selectedDate, setSelectedDate]  = useState(null);
+  const [isThursday, setIsThursday] = useState(false);
 
   const userId = localStorage.getItem("user_id");
   const today = new Date();
@@ -86,7 +86,7 @@ export default function Tickets() {
     if (isDateDisabled(year, month, day)) return;
     
     setSelectedDate(date);
-    setIsThursday(date.getDay() === 4);
+    setIsThursday(date.getDay() === 4); // 4 = Thursday
     const formattedDate = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
     setVisitDate(formattedDate);
     
@@ -191,7 +191,6 @@ export default function Tickets() {
     if (!visitDate) return setErrorMsg("Select a visit date.");
     const selectedDay = new Date(visitDate + "T00:00:00").getDay();
     if (selectedDay === 1) return setErrorMsg("The museum is closed on Mondays. Please select a different date.");
-    const isThursday = selectedDay === 4;
     if (totalTickets === 0) return setErrorMsg("Please select at least one ticket.");
 
     const tickets = TICKET_TYPES
@@ -212,7 +211,7 @@ export default function Tickets() {
         type: "tickets",
         tickets,
         visitDate,
-        discount: isMember ? "Member" : "None",
+        discount: isMember ? "Member" : (isThursday ? "Thursday Special" : "None"),
         totalTickets: orderCount,
         total: orderTotal,
       }
@@ -291,12 +290,12 @@ export default function Tickets() {
             )}
 
             {isThursday && !isMember && (
-              <div className="member-discount-banner" style={{ background: "#d1fae5", borderColor: "#6ee7b7", color: "#065f46" }}>
-                Thursday Special — all tickets are free today!
+              <div className="thursday-discount-banner">
+                 Admission is FREE on Thursdays!
               </div>
             )}
 
-            {/* Ticket Limit Info - Option 2 */}
+            {/* Ticket Limit Info */}
             <div className="ticket-limit-info">
               <span>You can select up to <strong>{MAX_TOTAL_TICKETS}</strong> total tickets.</span>
               {remainingTickets > 0 && (
@@ -321,7 +320,7 @@ export default function Tickets() {
                       <div className="ticket-row-desc">{t.desc}</div>
                     </div>
                     <div className="ticket-row-price">
-                      {isMember ? "FREE" : (t.basePrice === 0 ? "FREE" : `$${finalPrice.toFixed(2)}`)}
+                      {isMember || isThursday ? "FREE" : (t.basePrice === 0 ? "FREE" : `$${finalPrice.toFixed(2)}`)}
                     </div>
                     <div className="ticket-counter">
                       <button
@@ -356,12 +355,12 @@ export default function Tickets() {
                   {summaryLines.map(l => (
                     <div className="summary-line" key={l.label}>
                       <span>{l.label}</span>
-                      <span>{isMember ? "FREE" : `$${l.price.toFixed(2)}`}</span>
+                      <span>{isMember || isThursday ? "FREE" : `$${l.price.toFixed(2)}`}</span>
                     </div>
                   ))}
                   <div className="summary-total">
                     <span>Total</span>
-                    <span>{isMember ? "FREE" : `$${total.toFixed(2)}`}</span>
+                    <span>{isMember || isThursday ? "FREE" : `$${total.toFixed(2)}`}</span>
                   </div>
                 </>
               )}
@@ -371,7 +370,7 @@ export default function Tickets() {
 
             <button className="tickets-purchase-btn" type="submit" disabled={totalTickets === 0}>
               {totalTickets > 0
-                ? `Proceed to Checkout — ${isMember ? "FREE" : `$${total.toFixed(2)}`}`
+                ? `Proceed to Checkout — ${isMember || isThursday ? "FREE" : `$${total.toFixed(2)}`}`
                 : "Select Tickets to Continue"}
             </button>
           </form>
