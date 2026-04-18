@@ -557,3 +557,9 @@
   text-align: center;
   border-radius: 8px;
 }
+/* Member banner when free ticket already used for this date */
+.member-discount-banner--used {
+  background: #fef2f2 !important;
+  border-color: #fca5a5 !important;
+  color: #991b1b !important;
+}
