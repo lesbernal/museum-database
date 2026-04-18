@@ -191,11 +191,11 @@ export default function AdminDashboard() {
       const [cafeItems, giftShopItems] = await Promise.all([getCafeItems(), getGiftShopItems()]);
 
       const cafeAlerts = cafeItems
-        .filter((item) => Number(item.stock_quantity) <= 20)
+        .filter((item) => Number(item.low_stock_alert) === 1)
         .map((item) => ({ source: "Cafe", name: item.item_name, stock: Number(item.stock_quantity) }));
 
       const giftShopAlerts = giftShopItems
-        .filter((item) => Number(item.stock_quantity) <= 20)
+        .filter((item) => Number(item.low_stock_alert) === 1)
         .map((item) => ({ source: "Gift Shop", name: item.item_name, stock: Number(item.stock_quantity) }));
 
       const alerts = [...cafeAlerts, ...giftShopAlerts].sort((a, b) => a.stock - b.stock);
