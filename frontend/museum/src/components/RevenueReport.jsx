@@ -347,11 +347,11 @@ export default function RevenueReport() {
           </div>
           <div className="pagination-container">
             <div className="pagination-controls">
-              <button onClick={() => handlePageChange(1)} disabled={currentPage === 1} className="pagination-btn">⏮ First</button>
-              <button onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage === 1} className="pagination-btn">◀ Prev</button>
-              <span className="page-info">Page {currentPage} of {totalPages}</span>
-              <button onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage === totalPages} className="pagination-btn">Next ▶</button>
-              <button onClick={() => handlePageChange(totalPages)} disabled={currentPage === totalPages} className="pagination-btn">Last ⏭</button>
+              <button onClick={() => handlePageChange(1)} disabled={currentPage === 1} className="pagination-btn" style={{ color: "#1f2937" }}>⏮ First</button>
+              <button onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage === 1} className="pagination-btn" style={{ color: "#1f2937" }}>◀ Prev</button>
+              <span className="page-info" style={{ color: "#1f2937" }}>Page {currentPage} of {totalPages}</span>
+              <button onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage === totalPages} className="pagination-btn" style={{ color: "#1f2937" }}>Next ▶</button>
+              <button onClick={() => handlePageChange(totalPages)} disabled={currentPage === totalPages} className="pagination-btn" style={{ color: "#1f2937" }}>Last ⏭</button>
               <div className="rows-per-page">
                 <span>Show:</span>
                 <select value={rowsPerPage} onChange={(e) => { setRowsPerPage(Number(e.target.value)); setCurrentPage(1); }}>
