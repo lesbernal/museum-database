@@ -3,7 +3,6 @@ import { formatToCST } from "../utils/dateUtils";
 import { useEffect, useState } from "react";
 import "../styles/ExhibitionArchive.css";
 
-// Configuration for each archive type
 const ARCHIVE_CONFIGS = {
   artwork: {
     title: "Archived Artworks",
@@ -13,17 +12,18 @@ const ARCHIVE_CONFIGS = {
     getRowData: (item) => ({
       id: item.artwork_id,
       columns: [
-        { label: "Title", value: item.title, className: "archived-title" },
-        { label: "Artist", value: item.artist_name || "—" },
-        { label: "Year", value: item.creation_year || "—" },
-        { label: "Medium", value: item.medium || "—" },
-        { 
-          label: "Status", 
+        { label: "Title",   value: item.title,                     className: "archived-title" },
+        { label: "Artist",  value: item.artist_name || "—" },
+        { label: "Year",    value: item.creation_year || "—" },
+        { label: "Medium",  value: item.medium || "—" },
+        {
+          label: "Status",
           value: item.current_display_status || "—",
-          badge: item.current_display_status === 'Deaccessioned' ? 'badge-deaccessioned' : null
-        }
-      ]
-    })
+          badge: item.current_display_status === "Deaccessioned" ? "badge-deaccessioned" : null,
+        },
+        { label: "Archive Reason", value: item.archive_reason || "—" },
+      ],
+    }),
   },
   events: {
     title: "Archived Events",
@@ -32,18 +32,19 @@ const ARCHIVE_CONFIGS = {
     getId: (item) => item.event_id,
     formatData: (item) => ({
       ...item,
-      formatted_date: item.event_date ? formatToCST(item.event_date) : "—"
+      formatted_date: item.event_date ? formatToCST(item.event_date) : "—",
     }),
     getRowData: (item) => ({
       id: item.event_id,
       columns: [
-        { label: "Event Name", value: item.event_name, className: "archived-title" },
-        { label: "Date", value: item.formatted_date || "—" },
-        { label: "Capacity", value: item.capacity || "—" },
-        { label: "Attendees", value: item.total_attendees || "—" },
-        { label: "Members Only", value: item.member_only ? "Yes" : "No" }
-      ]
-    })
+        { label: "Event Name",     value: item.event_name,              className: "archived-title" },
+        { label: "Date",           value: item.formatted_date || "—" },
+        { label: "Capacity",       value: item.capacity || "—" },
+        { label: "Attendees",      value: item.total_attendees || "—" },
+        { label: "Members Only",   value: item.member_only ? "Yes" : "No" },
+        { label: "Archive Reason", value: item.archive_reason || "—" },
+      ],
+    }),
   },
   exhibitions: {
     title: "Archived Exhibitions",
@@ -53,18 +54,19 @@ const ARCHIVE_CONFIGS = {
     formatData: (item) => ({
       ...item,
       formatted_start: item.start_date ? formatToCST(item.start_date) : "—",
-      formatted_end: item.end_date ? formatToCST(item.end_date) : "—"
+      formatted_end:   item.end_date   ? formatToCST(item.end_date)   : "—",
     }),
     getRowData: (item) => ({
       id: item.exhibition_id,
       columns: [
-        { label: "Title", value: item.exhibition_name, className: "archived-title" },
-        { label: "Gallery", value: item.gallery_name || "—" },
-        { label: "Type", value: item.exhibition_type || "—" },
-        { label: "Start", value: item.formatted_start || "—" },
-        { label: "End", value: item.formatted_end || "—" }
-      ]
-    })
+        { label: "Title",          value: item.exhibition_name,          className: "archived-title" },
+        { label: "Gallery",        value: item.gallery_name || "—" },
+        { label: "Type",           value: item.exhibition_type || "—" },
+        { label: "Start",          value: item.formatted_start || "—" },
+        { label: "End",            value: item.formatted_end || "—" },
+        { label: "Archive Reason", value: item.archive_reason || "—" },
+      ],
+    }),
   },
   galleries: {
     title: "Archived Galleries",
@@ -75,38 +77,36 @@ const ARCHIVE_CONFIGS = {
       ...item,
       formatted_floor: (() => {
         const n = parseInt(item.floor_number);
-        if (isNaN(n) || n === null) return "—";
+        if (isNaN(n)) return "—";
         if (n === 0) return "Ground";
         if (n < 0) return `Basement ${Math.abs(n)}`;
         const suffix = ["th", "st", "nd", "rd"];
         const v = n % 100;
         return n + (suffix[(v - 20) % 10] || suffix[v] || suffix[0]);
-      })()
+      })(),
     }),
     getRowData: (item) => ({
       id: item.gallery_id,
       columns: [
-        { label: "Gallery Name", value: item.gallery_name, className: "archived-title" },
-        { label: "Building", value: item.building_name || "—" },
-        { label: "Floor", value: item.formatted_floor || "—" },
-        { label: "Climate Controlled", value: item.climate_controlled ? "Yes" : "No" }
-      ]
-    })
-  }
+        { label: "Gallery Name",       value: item.gallery_name,           className: "archived-title" },
+        { label: "Building",           value: item.building_name || "—" },
+        { label: "Floor",              value: item.formatted_floor || "—" },
+        { label: "Climate Controlled", value: item.climate_controlled ? "Yes" : "No" },
+        { label: "Archive Reason",     value: item.archive_reason || "—" },
+      ],
+    }),
+  },
 };
 
 export default function Archive({ type, onRestored, reloadTrigger }) {
   const [archived, setArchived] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [loading,  setLoading]  = useState(true);
+  const [error,    setError]    = useState("");
 
   const config = ARCHIVE_CONFIGS[type];
-  
-  if (!config) {
-    return <div className="archived-state-msg">Invalid archive type: {type}</div>;
-  }
+  if (!config) return <div className="archived-state-msg">Invalid archive type: {type}</div>;
 
-  const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5000";
+  const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5001";
 
   const load = async () => {
     setLoading(true);
@@ -115,12 +115,7 @@ export default function Archive({ type, onRestored, reloadTrigger }) {
       const res = await fetch(`${API_BASE}${config.endpoint}`);
       if (!res.ok) throw new Error(`Failed to fetch archived ${type}`);
       let data = await res.json();
-      
-      // Apply any formatting if needed
-      if (config.formatData) {
-        data = data.map(config.formatData);
-      }
-      
+      if (config.formatData) data = data.map(config.formatData);
       setArchived(data);
     } catch (err) {
       setError(err.message);
@@ -129,9 +124,7 @@ export default function Archive({ type, onRestored, reloadTrigger }) {
     }
   };
 
-  useEffect(() => {
-    load();
-  }, [type, reloadTrigger]);
+  useEffect(() => { load(); }, [type, reloadTrigger]);
 
   const handleRestore = async (id) => {
     const itemName = type.slice(0, -1);
@@ -146,8 +139,7 @@ export default function Archive({ type, onRestored, reloadTrigger }) {
     }
   };
 
-  // Get column headers from the first item
-  const firstItem = archived[0];
+  const firstItem    = archived[0];
   const columnConfig = firstItem ? config.getRowData(firstItem).columns : [];
 
   return (
@@ -158,7 +150,7 @@ export default function Archive({ type, onRestored, reloadTrigger }) {
       </div>
 
       {loading && <p className="archived-state-msg">Loading…</p>}
-      {error && <p className="archived-state-msg archived-error">{error}</p>}
+      {error   && <p className="archived-state-msg archived-error">{error}</p>}
 
       {!loading && !error && archived.length === 0 && (
         <p className="archived-state-msg">No archived {type}.</p>
@@ -170,9 +162,7 @@ export default function Archive({ type, onRestored, reloadTrigger }) {
             <thead>
               <tr>
                 <th>ID</th>
-                {columnConfig.map((col, idx) => (
-                  <th key={idx}>{col.label}</th>
-                ))}
+                {columnConfig.map((col, idx) => <th key={idx}>{col.label}</th>)}
                 <th>Restore</th>
               </tr>
             </thead>
@@ -184,11 +174,9 @@ export default function Archive({ type, onRestored, reloadTrigger }) {
                     <td>{rowData.id}</td>
                     {rowData.columns.map((col, idx) => (
                       <td key={idx} className={col.className || ""}>
-                        {col.badge ? (
-                          <span className={`status-badge ${col.badge}`}>{col.value}</span>
-                        ) : (
-                          col.value
-                        )}
+                        {col.badge
+                          ? <span className={`status-badge ${col.badge}`}>{col.value}</span>
+                          : col.value}
                       </td>
                     ))}
                     <td>
