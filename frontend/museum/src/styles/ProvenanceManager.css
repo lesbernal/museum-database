@@ -15,6 +15,7 @@
 
 .provenance-manager-header .search-bar {
   flex: 1;
+  min-width: 200px;
   max-width: 400px;
 }
 
@@ -42,6 +43,7 @@
   text-transform: uppercase;
   letter-spacing: 0.03em;
   transition: all 0.2s ease;
+  white-space: nowrap;
 }
 
 .provenance-manager-header .add-btn:hover {
@@ -53,6 +55,7 @@
   background: #ffffff;
   border: 1px solid #e5e5e5;
   min-height: 400px;
+  overflow-x: auto;
 }
 
 .loading-spinner {
@@ -72,13 +75,27 @@
 /* Table Styles */
 .provenance-table-container {
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
   background: white;
 }
 
 .provenance-table {
+  min-width: 700px;
   width: 100%;
   border-collapse: collapse;
   font-size: 0.875rem;
+}
+
+@media (max-width: 768px) {
+  .provenance-table {
+    min-width: 600px;
+  }
+}
+
+@media (max-width: 480px) {
+  .provenance-table {
+    min-width: 500px;
+  }
 }
 
 .provenance-table thead {
@@ -91,6 +108,7 @@
   padding: 1rem;
   font-weight: 600;
   color: #374151;
+  white-space: nowrap;
 }
 
 .provenance-table td {
@@ -117,6 +135,7 @@
   border-radius: 20px;
   font-size: 0.75rem;
   font-weight: 500;
+  white-space: nowrap;
 }
 
 .method-purchase {
@@ -152,6 +171,7 @@
 .actions {
   display: flex;
   gap: 0.5rem;
+  white-space: nowrap;
 }
 
 .edit-btn, .delete-btn {
@@ -200,6 +220,7 @@
   align-items: center;
   justify-content: center;
   z-index: 1000;
+  padding: 1rem;
 }
 
 .modal-content {
@@ -217,6 +238,10 @@
   align-items: center;
   padding: 1.5rem;
   border-bottom: 1px solid #e5e5e5;
+  position: sticky;
+  top: 0;
+  background: #ffffff;
+  z-index: 10;
 }
 
 .modal-header h2 {
@@ -233,6 +258,8 @@
   cursor: pointer;
   color: #888888;
   transition: color 0.2s ease;
+  padding: 0.25rem;
+  line-height: 1;
 }
 
 .close-btn:hover {
@@ -283,6 +310,7 @@
   width: 100%;
   background: #ffffff;
   color: #1f2937;
+  border-radius: 0;
 }
 
 .form-group input:focus,
@@ -371,6 +399,7 @@
   
   .provenance-manager-header .search-bar {
     max-width: 100%;
+    min-width: auto;
   }
   
   .provenance-manager-header .add-btn {
@@ -394,6 +423,10 @@
     padding: 1rem;
   }
   
+  .modal-header h2 {
+    font-size: 1rem;
+  }
+  
   .form-actions {
     flex-direction: column-reverse;
   }
@@ -404,12 +437,51 @@
   }
   
   .actions {
-    flex-direction: column;
+    flex-direction: row;
     gap: 0.25rem;
   }
   
   .edit-btn,
   .delete-btn {
+    flex: 1;
+    text-align: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .modal-content {
+    width: 95%;
+    max-height: 95vh;
+  }
+  
+  .provenance-table th,
+  .provenance-table td {
+    padding: 0.5rem;
+    font-size: 0.75rem;
+  }
+  
+  .artwork-cell {
+    max-width: 120px;
+  }
+  
+  .method-badge {
+    font-size: 0.65rem;
+    padding: 0.15rem 0.5rem;
+  }
+  
+  .actions {
+    flex-direction: column;
+  }
+  
+  .edit-btn,
+  .delete-btn {
     width: 100%;
+  }
+  
+  .toast {
+    bottom: 1rem;
+    right: 1rem;
+    left: 1rem;
+    text-align: center;
   }
 }
