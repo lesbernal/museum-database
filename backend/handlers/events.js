@@ -89,14 +89,14 @@ module.exports = (req, res, parsedUrl) => {
 
       const sql = `
         INSERT INTO event
-        (gallery_id, event_name, description, event_date, capacity, member_only, total_attendees, event_type)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        (gallery_id, event_name, description, event_date, capacity, member_only, total_attendees, event_type, image_url)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
       `;
 
       return db.query(sql,
         [data.gallery_id, data.event_name, data.description, data.event_date,
          data.capacity, data.member_only, data.total_attendees || 0,
-         data.event_type || "General"],
+         data.event_type || "General", data.image_url || null],
         (err) => {
           if (err) {
             res.writeHead(400, { "Content-Type": "application/json" });
@@ -124,13 +124,14 @@ module.exports = (req, res, parsedUrl) => {
       const sql = `
         UPDATE event
         SET gallery_id = ?, event_name = ?, description = ?, event_date = ?,
-            capacity = ?, member_only = ?, event_type = ?
+            capacity = ?, member_only = ?, event_type = ?, image_url = ?
         WHERE event_id = ?
       `;
 
       db.query(sql,
         [data.gallery_id, data.event_name, data.description, data.event_date,
-         data.capacity, data.member_only, data.event_type || "General", eventId],
+         data.capacity, data.member_only, data.event_type || "General",
+         data.image_url || null, eventId],
         (err) => {
           if (err) {
             res.writeHead(400, { "Content-Type": "application/json" });
@@ -211,7 +212,6 @@ module.exports = (req, res, parsedUrl) => {
           }));
         }
 
-        // Check if user already signed up
         db.query("SELECT signup_id FROM event_signup WHERE user_id = ? AND event_id = ?", [userId, eventId], (err, existing) => {
           if (err) {
             res.writeHead(500, { "Content-Type": "application/json" });
@@ -223,7 +223,6 @@ module.exports = (req, res, parsedUrl) => {
             return res.end(JSON.stringify({ error: "You have already signed up for this event." }));
           }
 
-          // Update total_attendees
           db.query(
             "UPDATE event SET total_attendees = total_attendees + ? WHERE event_id = ?",
             [quantity, eventId],
@@ -233,7 +232,6 @@ module.exports = (req, res, parsedUrl) => {
                 return res.end(JSON.stringify({ error: err.sqlMessage }));
               }
 
-              // Insert into event_signup
               db.query(
                 "INSERT INTO event_signup (user_id, event_id, quantity, signup_date) VALUES (?, ?, ?, CURDATE())",
                 [userId, eventId, quantity],
