@@ -28,6 +28,44 @@ import "../styles/UserManagement.css";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
+function ArchiveReasonModal({ type, onConfirm, onCancel }) {
+  const [reason, setReason] = useState("");
+  return (
+    <div className="um-overlay" onClick={onCancel}>
+      <div className="um-modal" style={{ maxWidth: 420 }} onClick={e => e.stopPropagation()}>
+        <div className="um-modal-header">
+          <h3>Archive {{ exhibitions: "Exhibition", galleries: "Gallery", artwork: "Artwork", events: "Event" }[type]}</h3>
+          <button className="um-modal-close" onClick={onCancel}>×</button>
+        </div>
+        <div className="um-modal-body">
+          <p style={{ fontSize: 13, color: "#6b7280", marginBottom: 12, lineHeight: 1.6 }}>
+            This item will be hidden from public view but can be restored later.
+          </p>
+          <div className="um-form-group full">
+            <label>Reason for archiving <span style={{ color: "#9ca3af" }}>(optional)</span></label>
+            <textarea
+              value={reason}
+              onChange={e => setReason(e.target.value)}
+              rows={3}
+              placeholder="e.g. On loan to another museum, under restoration, traveling exhibition..."
+              style={{
+                width: "100%", padding: "0.5rem 0.75rem",
+                fontSize: 13, border: "1px solid #e5e7eb",
+                resize: "vertical", fontFamily: "inherit",
+                borderRadius: 4,
+              }}
+            />
+          </div>
+        </div>
+        <div className="um-modal-footer">
+          <button className="um-cancel-btn" onClick={onCancel}>Cancel</button>
+          <button className="um-save-btn" onClick={() => onConfirm(reason)}>Archive</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState("artists");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -38,6 +76,7 @@ export default function AdminDashboard() {
   const [endedEvents, setEndedEvents] = useState([]);
   const [showEndedExhibitions, setShowEndedExhibitions] = useState(true);
   const [showEndedEvents, setShowEndedEvents] = useState(true);
+  const [archiveModal, setArchiveModal] = useState(null);
 
   // Admin profile states
   const [adminProfile, setAdminProfile] = useState(null);
@@ -166,7 +205,6 @@ export default function AdminDashboard() {
       const data = await getExhibitions();
       setExhibitions(data);
       setExhibitionsError("");
-
       const now = new Date();
       const ended = data.filter(e => e.is_active && new Date(e.end_date) < now);
       setEndedExhibitions(ended);
@@ -189,15 +227,12 @@ export default function AdminDashboard() {
   const loadStockAlerts = async () => {
     try {
       const [cafeItems, giftShopItems] = await Promise.all([getCafeItems(), getGiftShopItems()]);
-
       const cafeAlerts = cafeItems
         .filter((item) => Number(item.low_stock_alert) === 1)
         .map((item) => ({ source: "Cafe", name: item.item_name, stock: Number(item.stock_quantity) }));
-
       const giftShopAlerts = giftShopItems
         .filter((item) => Number(item.low_stock_alert) === 1)
         .map((item) => ({ source: "Gift Shop", name: item.item_name, stock: Number(item.stock_quantity) }));
-
       const alerts = [...cafeAlerts, ...giftShopAlerts].sort((a, b) => a.stock - b.stock);
       setStockAlerts(alerts);
     } catch (err) {
@@ -205,49 +240,46 @@ export default function AdminDashboard() {
     }
   };
 
-  const handleExhibitionArchive = async (id) => {
-    if (!window.confirm("Archive this exhibition? It can be restored later.")) return;
+  const handleArchiveWithReason = async (type, id, reason) => {
+    const endpoints = {
+      exhibitions: `/exhibitions/${id}/deactivate`,
+      galleries: `/galleries/${id}/deactivate`,
+      artwork: `/artwork/${id}/deactivate`,
+      events: `/events/${id}/deactivate`,
+    };
+    const reloaders = {
+      exhibitions: loadExhibitions,
+      galleries: loadGalleries,
+      artwork: loadArtworks,
+      events: loadEvents,
+    };
     try {
-      await fetch(`${API_BASE}/exhibitions/${id}/deactivate`, { method: "PATCH" });
-      await loadExhibitions();
-    } catch (err) { console.error(err); alert("Failed to archive exhibition"); }
+      await fetch(`${API_BASE}${endpoints[type]}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reason }),
+      });
+      await reloaders[type]();
+    } catch (err) {
+      console.error(err);
+      alert(`Failed to archive ${type.slice(0, -1)}`);
+    }
   };
 
-  const handleGalleryArchive = async (id) => {
-    if (!window.confirm("Archive this gallery? It can be restored later.")) return;
-    try {
-      await fetch(`${API_BASE}/galleries/${id}/deactivate`, { method: "PATCH" });
-      await loadGalleries();
-    } catch (err) { console.error(err); alert("Failed to archive gallery"); }
-  };
-
-  const handleArtworkArchive = async (id) => {
-    if (!window.confirm("Archive this artwork? It can be restored later.")) return;
-    try {
-      await fetch(`${API_BASE}/artwork/${id}/deactivate`, { method: "PATCH" });
-      await loadArtworks();
-    } catch (err) { alert("Failed to archive artwork"); }
-  };
-
-  const handleEventArchive = async (id) => {
-    if (!window.confirm("Archive this event? It can be restored later.")) return;
-    try {
-      await fetch(`${API_BASE}/events/${id}/deactivate`, { method: "PATCH" });
-      await loadEvents();
-    } catch (err) { alert("Failed to archive event"); }
-  };
+  const handleExhibitionArchive = (id) => setArchiveModal({ type: "exhibitions", id });
+  const handleGalleryArchive = (id) => setArchiveModal({ type: "galleries", id });
+  const handleArtworkArchive = (id) => setArchiveModal({ type: "artwork", id });
+  const handleEventArchive = (id) => setArchiveModal({ type: "events", id });
 
   // Artist handlers
   const handleAddArtist = async (artistData) => {
     await createArtist(artistData);
     await loadArtists();
   };
-
   const handleUpdateArtist = async (id, artistData) => {
     await updateArtist(id, artistData);
     await loadArtists();
   };
-
   const handleDeleteArtist = async (id) => {
     if (window.confirm("Delete this artist?")) {
       await deleteArtist(id);
@@ -260,7 +292,6 @@ export default function AdminDashboard() {
     await createArtwork(artworkData);
     await loadArtworks();
   };
-
   const handleUpdateArtwork = async (id, artworkData) => {
     await updateArtwork(id, artworkData);
     await loadArtworks();
@@ -590,32 +621,32 @@ export default function AdminDashboard() {
           </div>
 
           {adminProfile && (
-          <div className="admin-profile-mini">
-            <div className="admin-avatar">
-              {adminProfile.first_name?.charAt(0)}{adminProfile.last_name?.charAt(0)}
+            <div className="admin-profile-mini">
+              <div className="admin-avatar">
+                {adminProfile.first_name?.charAt(0)}{adminProfile.last_name?.charAt(0)}
+              </div>
+              <div className="admin-info">
+                <div className="admin-name">{adminProfile.first_name} {adminProfile.last_name}</div>
+                <div className="admin-role">System Administrator</div>
+              </div>
+              <div className="admin-actions">
+                <button
+                  className="admin-profile-btn"
+                  onClick={() => setShowProfileModal(true)}
+                  title="Edit Profile"
+                >
+                  ⚙️
+                </button>
+                <button
+                  className="admin-password-btn"
+                  onClick={() => setShowPasswordModal(true)}
+                  title="Change Password"
+                >
+                  🔑
+                </button>
+              </div>
             </div>
-            <div className="admin-info">
-              <div className="admin-name">{adminProfile.first_name} {adminProfile.last_name}</div>
-              <div className="admin-role">System Administrator</div>
-            </div>
-            <div className="admin-actions">
-              <button 
-                className="admin-profile-btn"
-                onClick={() => setShowProfileModal(true)}
-                title="Edit Profile"
-              >
-                ⚙️
-              </button>
-              <button 
-                className="admin-password-btn"
-                onClick={() => setShowPasswordModal(true)}
-                title="Change Password"
-              >
-                🔑
-              </button>
-            </div>
-          </div>
-        )}
+          )}
 
           <nav className="sidebar-nav">
             {tabs.map((tab) => (
@@ -843,7 +874,6 @@ export default function AdminDashboard() {
           )}
 
           <div className="content-area">
-            {/* Artists */}
             {activeTab === "artists" && (
               <ArtistManager
                 artists={artists}
@@ -855,11 +885,10 @@ export default function AdminDashboard() {
               />
             )}
 
-            {/* Artwork */}
             {activeTab === "artwork" && (
               <>
                 {showArtworkArchive && (
-                  <Archive type="artwork" onRestored={() => loadArtworks()} />
+                  <Archive type="artwork" onRestored={() => loadArtworks()} reloadTrigger={artworks.length}/>
                 )}
                 <ArtworkManager
                   artworks={filteredArtworks}
@@ -873,7 +902,6 @@ export default function AdminDashboard() {
               </>
             )}
 
-            {/* Provenance */}
             {activeTab === "provenance" && (
               <ProvenanceManager
                 provenance={filteredProvenance}
@@ -885,11 +913,10 @@ export default function AdminDashboard() {
               />
             )}
 
-            {/* Exhibitions */}
             {activeTab === "exhibitions" && (
               <>
                 {showExhibitionArchive && (
-                  <Archive type="exhibitions" onRestored={() => loadExhibitions()} />
+                  <Archive type="exhibitions" onRestored={() => loadExhibitions()} reloadTrigger={exhibitions.length}/>
                 )}
                 <ExhibitionManager
                   exhibitions={filteredExhibitions}
@@ -903,11 +930,10 @@ export default function AdminDashboard() {
               </>
             )}
 
-            {/* Galleries */}
             {activeTab === "galleries" && (
               <>
                 {showGalleryArchive && (
-                  <Archive type="galleries" onRestored={() => loadGalleries()} />
+                  <Archive type="galleries" onRestored={() => loadGalleries()} reloadTrigger={galleries.length}/>
                 )}
                 <GalleryManager
                   galleries={filteredGalleries}
@@ -921,11 +947,10 @@ export default function AdminDashboard() {
               </>
             )}
 
-            {/* Events */}
             {activeTab === "events" && (
               <>
                 {showEventArchive && (
-                  <Archive type="events" onRestored={() => loadEvents()} />
+                  <Archive type="events" onRestored={() => loadEvents()} reloadTrigger={events.length}/>
                 )}
                 <EventManager
                   events={filteredEvents}
@@ -946,6 +971,7 @@ export default function AdminDashboard() {
             {activeTab === "departments" && <DepartmentManagement ref={deptMgmtRef} searchTerm={searchTerm} />}
           </div>
         </main>
+
         {/* Admin Profile Edit Modal */}
         {showProfileModal && (
           <div className="um-overlay" onClick={() => setShowProfileModal(false)}>
@@ -1020,6 +1046,18 @@ export default function AdminDashboard() {
           </div>
         )}
       </div>
+
+      {/* Archive Reason Modal */}
+      {archiveModal && (
+        <ArchiveReasonModal
+          type={archiveModal.type}
+          onConfirm={(reason) => {
+            handleArchiveWithReason(archiveModal.type, archiveModal.id, reason);
+            setArchiveModal(null);
+          }}
+          onCancel={() => setArchiveModal(null)}
+        />
+      )}
     </>
   );
 }

@@ -2,6 +2,7 @@
 // NOTE: Run this migration first:
 //   ALTER TABLE exhibition ADD COLUMN is_active TINYINT(1) NOT NULL DEFAULT 1;
 //   ALTER TABLE gallery    ADD COLUMN is_active TINYINT(1) NOT NULL DEFAULT 1;
+//   ALTER TABLE exhibition ADD COLUMN archive_reason VARCHAR(500) NULL;
 
 const db = require("../db");
 
@@ -25,6 +26,7 @@ module.exports = (req, res, parsedUrl) => {
     JOIN artwork a ON ea.artwork_id = a.artwork_id
     LEFT JOIN artist ar ON a.artist_id = ar.artist_id
     WHERE ea.exhibition_id = ?
+      AND (a.is_active = 1 OR a.is_active IS NULL)
     ORDER BY a.title
   `;
     db.query(sql, [urlParts[1]], (err, results) => {
@@ -35,11 +37,9 @@ module.exports = (req, res, parsedUrl) => {
   }
 
   // GET all ACTIVE exhibitions with gallery name
-  // e.g. GET /exhibitions
   if (req.method === "GET" && urlParts.length === 1) {
     const sql = `
-      SELECT e.*,
-             g.gallery_name
+      SELECT e.*, g.gallery_name
       FROM exhibition e
       LEFT JOIN gallery g ON e.gallery_id = g.gallery_id
       WHERE e.is_active = 1
@@ -51,12 +51,10 @@ module.exports = (req, res, parsedUrl) => {
     });
   }
 
-  // GET all ARCHIVED (soft-deleted) exhibitions
-  // e.g. GET /exhibitions/archived
+  // GET all ARCHIVED exhibitions
   else if (req.method === "GET" && urlParts.length === 2 && urlParts[1] === "archived") {
     const sql = `
-      SELECT e.*,
-             g.gallery_name
+      SELECT e.*, g.gallery_name
       FROM exhibition e
       LEFT JOIN gallery g ON e.gallery_id = g.gallery_id
       WHERE e.is_active = 0
@@ -69,11 +67,9 @@ module.exports = (req, res, parsedUrl) => {
   }
 
   // GET exhibition by id
-  // e.g. GET /exhibitions/5
   else if (req.method === "GET" && urlParts.length === 2) {
     const sql = `
-      SELECT e.*,
-             g.gallery_name
+      SELECT e.*, g.gallery_name
       FROM exhibition e
       LEFT JOIN gallery g ON e.gallery_id = g.gallery_id
       WHERE e.exhibition_id = ?
@@ -104,12 +100,10 @@ module.exports = (req, res, parsedUrl) => {
         const exhibitionId = result.insertId;
         const artworks = data.artworks || [];
 
-        // If no artworks, return early
         if (artworks.length === 0) {
           return sendJSON(res, { message: "Exhibition added", exhibition_id: exhibitionId }, 201);
         }
 
-        // Insert all artwork rows
         const values = artworks.map(a => [
           exhibitionId,
           a.artwork_id,
@@ -129,8 +123,7 @@ module.exports = (req, res, parsedUrl) => {
     });
   }
 
-  // PUT exhibition (full update)
-  // e.g. PUT /exhibitions/5
+  // PUT exhibition
   else if (req.method === "PUT" && urlParts.length === 2) {
     parseBody(req, (data) => {
       const sql = `
@@ -151,7 +144,6 @@ module.exports = (req, res, parsedUrl) => {
 
         const artworks = data.artworks || [];
 
-        // Delete existing artwork links then re-insert
         db.query("DELETE FROM exhibitionartwork WHERE exhibition_id=?", [urlParts[1]], (err) => {
           if (err) return sendError(res, err);
 
@@ -178,34 +170,39 @@ module.exports = (req, res, parsedUrl) => {
       });
     });
   }
-  // PATCH /exhibitions/5/deactivate  → soft delete (is_active = 0)
+
+  // PATCH /exhibitions/:id/deactivate → soft delete with optional reason
   else if (req.method === "PATCH" && urlParts.length === 3 && urlParts[2] === "deactivate") {
-    db.query(
-      "UPDATE exhibition SET is_active = 0 WHERE exhibition_id = ?",
-      [urlParts[1]],
-      (err) => {
-        if (err) return sendError(res, err);
-        sendJSON(res, { message: "Exhibition deactivated" });
-      }
-    );
+    parseBody(req, (data) => {
+      db.query(
+        "UPDATE exhibition SET is_active = 0, archive_reason = ? WHERE exhibition_id = ?",
+        [data.reason || null, urlParts[1]],
+        (err) => {
+          if (err) return sendError(res, err);
+          sendJSON(res, { message: "Exhibition deactivated" });
+        }
+      );
+    });
   }
 
-  // PATCH /exhibitions/5/archive  → alias for deactivate
+  // PATCH /exhibitions/:id/archive → alias for deactivate with optional reason
   else if (req.method === "PATCH" && urlParts.length === 3 && urlParts[2] === "archive") {
-    db.query(
-      "UPDATE exhibition SET is_active = 0 WHERE exhibition_id = ?",
-      [urlParts[1]],
-      (err) => {
-        if (err) return sendError(res, err);
-        sendJSON(res, { message: "Exhibition archived" });
-      }
-    );
+    parseBody(req, (data) => {
+      db.query(
+        "UPDATE exhibition SET is_active = 0, archive_reason = ? WHERE exhibition_id = ?",
+        [data.reason || null, urlParts[1]],
+        (err) => {
+          if (err) return sendError(res, err);
+          sendJSON(res, { message: "Exhibition archived" });
+        }
+      );
+    });
   }
 
-  // PATCH /exhibitions/5/reactivate  → restore (is_active = 1)
+  // PATCH /exhibitions/:id/reactivate → restore
   else if (req.method === "PATCH" && urlParts.length === 3 && urlParts[2] === "reactivate") {
     db.query(
-      "UPDATE exhibition SET is_active = 1 WHERE exhibition_id = ?",
+      "UPDATE exhibition SET is_active = 1, archive_reason = NULL WHERE exhibition_id = ?",
       [urlParts[1]],
       (err) => {
         if (err) return sendError(res, err);
@@ -214,10 +211,10 @@ module.exports = (req, res, parsedUrl) => {
     );
   }
 
-  // PATCH /exhibitions/5/archive  → alias for deactivate
+  // PATCH /exhibitions/:id/unarchive → alias for reactivate
   else if (req.method === "PATCH" && urlParts.length === 3 && urlParts[2] === "unarchive") {
     db.query(
-      "UPDATE exhibition SET is_active = 1 WHERE exhibition_id = ?", // change 0 to 1
+      "UPDATE exhibition SET is_active = 1, archive_reason = NULL WHERE exhibition_id = ?",
       [urlParts[1]],
       (err) => {
         if (err) return sendError(res, err);
@@ -226,8 +223,7 @@ module.exports = (req, res, parsedUrl) => {
     );
   }
 
-  // Hard DELETE (admin only, use sparingly)
-  // e.g. DELETE /exhibitions/5
+  // Hard DELETE
   else if (req.method === "DELETE" && urlParts.length === 2) {
     db.query("DELETE FROM exhibitionartwork WHERE exhibition_id=?", [urlParts[1]], (err) => {
       if (err) return sendError(res, err);
