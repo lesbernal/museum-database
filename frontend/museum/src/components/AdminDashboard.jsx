@@ -77,6 +77,10 @@ export default function AdminDashboard() {
   const [showEndedExhibitions, setShowEndedExhibitions] = useState(true);
   const [showEndedEvents, setShowEndedEvents] = useState(true);
   const [archiveModal, setArchiveModal] = useState(null);
+  const [activeToast, setActiveToast] = useState(null);
+  const [dismissedAlerts, setDismissedAlerts] = useState({});
+  const [cafeAlerts, setCafeAlerts] = useState([]);
+  const [giftShopAlerts, setGiftShopAlerts] = useState([]);
 
   // Admin profile states
   const [adminProfile, setAdminProfile] = useState(null);
@@ -227,14 +231,21 @@ export default function AdminDashboard() {
   const loadStockAlerts = async () => {
     try {
       const [cafeItems, giftShopItems] = await Promise.all([getCafeItems(), getGiftShopItems()]);
-      const cafeAlerts = cafeItems
+      
+      const cafeAlertsData = cafeItems
         .filter((item) => Number(item.low_stock_alert) === 1)
         .map((item) => ({ source: "Cafe", name: item.item_name, stock: Number(item.stock_quantity) }));
-      const giftShopAlerts = giftShopItems
+      
+      const giftShopAlertsData = giftShopItems
         .filter((item) => Number(item.low_stock_alert) === 1)
         .map((item) => ({ source: "Gift Shop", name: item.item_name, stock: Number(item.stock_quantity) }));
-      const alerts = [...cafeAlerts, ...giftShopAlerts].sort((a, b) => a.stock - b.stock);
-      setStockAlerts(alerts);
+      
+      setCafeAlerts(cafeAlertsData);
+      setGiftShopAlerts(giftShopAlertsData);
+      
+      const allAlerts = [...cafeAlertsData, ...giftShopAlertsData];
+      setStockAlerts(allAlerts);
+      setShowStockToast(allAlerts.length > 0);
     } catch (err) {
       console.error("Stock alert load error:", err);
     }
@@ -554,51 +565,148 @@ export default function AdminDashboard() {
   return (
     <>
       <div className="dashboard-toasts-stack">
-        {showStockToast && stockAlerts.length > 0 && (
-          <div className="dashboard-stock-toast">
-            <div className="dashboard-stock-toast-content">
-              <div className="dashboard-stock-toast-title">Inventory Alerts</div>
-              <div className="dashboard-stock-toast-list">
-                {stockAlerts.map((alert) => (
-                  <div key={`${alert.source}-${alert.name}`} className="dashboard-stock-toast-item">
-                    <strong>{alert.name}</strong> in <strong>{alert.source}</strong> is at <strong>{alert.stock}</strong>.
-                  </div>
-                ))}
+        {/* Cafe Low Stock Toast */}
+        {cafeAlerts.length > 0 && !dismissedAlerts.cafe && (
+          <div className="dashboard-toast cafe-toast">
+            <div className="dashboard-toast-content">
+              <div className="dashboard-toast-header">
+                <span className="toast-icon">☕</span>
+                <span className="toast-title">Cafe Inventory Alert</span>
+                <button className="toast-close" onClick={() => setDismissedAlerts(prev => ({ ...prev, cafe: true }))}>×</button>
+              </div>
+              <div className="dashboard-toast-body">
+                <p>{cafeAlerts.length} item{cafeAlerts.length !== 1 ? "s are" : " is"} running low on stock.</p>
+                <div className="toast-items-list">
+                  {cafeAlerts.slice(0, 3).map((alert) => (
+                    <div key={alert.name} className="toast-item">
+                      <span className="toast-item-name">{alert.name}</span>
+                      <span className="toast-item-stock low">{alert.stock} left</span>
+                    </div>
+                  ))}
+                  {cafeAlerts.length > 3 && (
+                    <div className="toast-item-more">+{cafeAlerts.length - 3} more items</div>
+                  )}
+                </div>
+              </div>
+              <div className="dashboard-toast-footer">
+                <button 
+                  className="toast-resolve-btn"
+                  onClick={() => {
+                    setActiveTab("cafe");
+                    setShowStockToast(false);
+                    setDismissedAlerts(prev => ({ ...prev, cafe: true }));
+                    // Scroll to the inventory section
+                    setTimeout(() => {
+                      const inventorySection = document.querySelector('.cafe-inventory-section');
+                      if (inventorySection) inventorySection.scrollIntoView({ behavior: 'smooth' });
+                    }, 100);
+                  }}
+                >
+                  Go to Cafe Inventory →
+                </button>
+                <button 
+                  className="toast-dismiss-btn"
+                  onClick={() => setDismissedAlerts(prev => ({ ...prev, cafe: true }))}
+                >
+                  Dismiss
+                </button>
               </div>
             </div>
-            <button type="button" onClick={() => setShowStockToast(false)}>Dismiss</button>
           </div>
         )}
 
-        {showEndedExhibitions && endedExhibitions.length > 0 && (
-          <div className="dashboard-stock-toast">
-            <div className="dashboard-stock-toast-content">
-              <div className="dashboard-stock-toast-title">Exhibitions Have Ended</div>
-              <div className="dashboard-stock-toast-list">
-                {endedExhibitions.map(e => (
-                  <div key={e.exhibition_id} className="dashboard-stock-toast-item">
-                    <strong>{e.exhibition_name}</strong> ended on <strong>{new Date(e.end_date).toLocaleDateString()}</strong> — consider archiving it.
-                  </div>
-                ))}
+        {/* Gift Shop Low Stock Toast */}
+        {giftShopAlerts.length > 0 && !dismissedAlerts.gift && (
+          <div className="dashboard-toast gift-toast">
+            <div className="dashboard-toast-content">
+              <div className="dashboard-toast-header">
+                <span className="toast-icon">🛍️</span>
+                <span className="toast-title">Gift Shop Inventory Alert</span>
+                <button className="toast-close" onClick={() => setDismissedAlerts(prev => ({ ...prev, gift: true }))}>×</button>
+              </div>
+              <div className="dashboard-toast-body">
+                <p>{giftShopAlerts.length} item{giftShopAlerts.length !== 1 ? "s are" : " is"} running low on stock.</p>
+                <div className="toast-items-list">
+                  {giftShopAlerts.slice(0, 3).map((alert) => (
+                    <div key={alert.name} className="toast-item">
+                      <span className="toast-item-name">{alert.name}</span>
+                      <span className="toast-item-stock low">{alert.stock} left</span>
+                    </div>
+                  ))}
+                  {giftShopAlerts.length > 3 && (
+                    <div className="toast-item-more">+{giftShopAlerts.length - 3} more items</div>
+                  )}
+                </div>
+              </div>
+              <div className="dashboard-toast-footer">
+                <button 
+                  className="toast-resolve-btn"
+                  onClick={() => {
+                    setActiveTab("giftshop");
+                    setShowStockToast(false);
+                    setDismissedAlerts(prev => ({ ...prev, gift: true }));
+                    // Scroll to the inventory section
+                    setTimeout(() => {
+                      const inventorySection = document.querySelector('.giftshop-inventory-section');
+                      if (inventorySection) inventorySection.scrollIntoView({ behavior: 'smooth' });
+                    }, 100);
+                  }}
+                >
+                  Go to Gift Shop Inventory →
+                </button>
+                <button 
+                  className="toast-dismiss-btn"
+                  onClick={() => setDismissedAlerts(prev => ({ ...prev, gift: true }))}
+                >
+                  Dismiss
+                </button>
               </div>
             </div>
-            <button onClick={() => setShowEndedExhibitions(false)}>Dismiss</button>
           </div>
         )}
 
-        {showEndedEvents && endedEvents.length > 0 && (
-          <div className="dashboard-stock-toast">
-            <div className="dashboard-stock-toast-content">
-              <div className="dashboard-stock-toast-title">Past Events</div>
-              <div className="dashboard-stock-toast-list">
-                {endedEvents.map(e => (
-                  <div key={e.event_id} className="dashboard-stock-toast-item">
-                    <strong>{e.event_name}</strong> occurred on <strong>{new Date(e.event_date).toLocaleDateString()}</strong> — consider archiving it.
-                  </div>
-                ))}
+        {/* Exhibitions Ended Toast */}
+        {showEndedExhibitions && endedExhibitions.length > 0 && !dismissedAlerts.exhibitions && (
+          <div className="dashboard-toast exhibitions-toast">
+            <div className="dashboard-toast-content">
+              <div className="dashboard-toast-header">
+                <span className="toast-icon">🏛️</span>
+                <span className="toast-title">Exhibitions Have Ended</span>
+                <button className="toast-close" onClick={() => setDismissedAlerts(prev => ({ ...prev, exhibitions: true }))}>×</button>
+              </div>
+              <div className="dashboard-toast-body">
+                <p>{endedExhibitions.length} exhibition{endedExhibitions.length !== 1 ? "s have" : " has"} ended and need attention.</p>
+                <div className="toast-items-list">
+                  {endedExhibitions.slice(0, 3).map(exhibition => (
+                    <div key={exhibition.exhibition_id} className="toast-item">
+                      <span className="toast-item-name">{exhibition.exhibition_name}</span>
+                      <span className="toast-item-stock">ended {new Date(exhibition.end_date).toLocaleDateString()}</span>
+                    </div>
+                  ))}
+                  {endedExhibitions.length > 3 && (
+                    <div className="toast-item-more">+{endedExhibitions.length - 3} more exhibitions</div>
+                  )}
+                </div>
+              </div>
+              <div className="dashboard-toast-footer">
+                <button 
+                  className="toast-resolve-btn"
+                  onClick={() => {
+                    setActiveTab("exhibitions");
+                    setShowEndedExhibitions(false);
+                    setDismissedAlerts(prev => ({ ...prev, exhibitions: true }));
+                  }}
+                >
+                  Go to Exhibitions →
+                </button>
+                <button 
+                  className="toast-dismiss-btn"
+                  onClick={() => setDismissedAlerts(prev => ({ ...prev, exhibitions: true }))}
+                >
+                  Dismiss
+                </button>
               </div>
             </div>
-            <button onClick={() => setShowEndedEvents(false)}>Dismiss</button>
           </div>
         )}
       </div>
