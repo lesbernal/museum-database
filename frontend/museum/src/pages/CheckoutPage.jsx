@@ -20,7 +20,14 @@ import { clearGiftShopCart } from "../utils/giftShopCart";
 import "../styles/CheckoutPage.css";
 
 function nowSqlDateTime() {
-  return new Date().toISOString().slice(0, 19).replace("T", " ");
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  const hours = String(now.getHours()).padStart(2, '0');
+  const minutes = String(now.getMinutes()).padStart(2, '0');
+  const seconds = String(now.getSeconds()).padStart(2, '0');
+  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
 }
 
 function formatCurrency(amount) {
@@ -143,11 +150,14 @@ export default function CheckoutPage() {
   }
 
   async function submitTickets() {
+    const today = new Date();
+    const localDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    
     for (const ticket of order.tickets) {
       for (let i = 0; i < ticket.quantity; i++) {
         await postTicket({
           user_id: Number(userId),
-          purchase_date: new Date().toISOString().split("T")[0],
+          purchase_date: localDate,  // ← Changed from UTC to local
           visit_date: order.visitDate,
           ticket_type: ticket.type,
           base_price: ticket.basePrice,
@@ -160,8 +170,11 @@ export default function CheckoutPage() {
   }
 
   async function submitDonation() {
+    const today = new Date();
+    const localDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    
     await postDonation({
-      donation_date: new Date().toISOString().split("T")[0],
+      donation_date: localDate,  // ← Changed from UTC to local
       amount: order.amount,
       donation_type: order.donationType,
       payment_method: "Credit Card",
@@ -169,14 +182,17 @@ export default function CheckoutPage() {
   }
 
   async function submitMembership() {
+    const today = new Date();
+    const localDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    
     await createMembershipTransaction({
       user_id:          Number(userId),
       membership_level: order.membership_level,
       amount:           order.amount,
       payment_method:   "Credit Card",
       transaction_type: order.transaction_type || "New",
+      transaction_date: localDate,  // Send just the date
     });
-    // Update localStorage role
     localStorage.setItem("role", "member");
   }
 
@@ -217,13 +233,21 @@ export default function CheckoutPage() {
     const nextItemId =
       transactionItems.reduce((max, row) => Math.max(max, Number(row.shop_item_id)), 0) + 1;
 
+    // Build shipping address if needed
+    const shippingAddress = shopDetails.fulfillment_type === "shipping" 
+      ? `${shopDetails.street_address}, ${shopDetails.city}, ${shopDetails.state} ${shopDetails.zip_code}`
+      : null;
+
     await createGiftShopTransaction({
       transaction_id: nextTransactionId,
       user_id: Number(userId),
       transaction_datetime: nowSqlDateTime(),
       total_amount: Number(order.total.toFixed(2)),
       payment_method: "Card",
+      fulfillment_type: shopDetails.fulfillment_type,  // Add this
+      shipping_address: shippingAddress,               // Add this
     });
+    
     for (const [index, item] of order.items.entries()) {
       await createGiftShopTransactionItem({
         shop_item_id: nextItemId + index,

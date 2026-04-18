@@ -91,6 +91,20 @@
   color: #111827;
 }
 
+.directions-link {
+  display: inline-block;
+  margin: 0.75rem 0;
+  color: #c5a028;
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.2s;
+}
+
+.directions-link:hover {
+  color: #d4af37;
+  text-decoration: underline;
+}
+
 .directions-divider {
   height: 1px;
   background: #e5e7eb;
@@ -127,7 +141,7 @@
 }
 
 .ticket-prices {
-  margin-bottom: 1.5rem;
+  margin-bottom: 2rem;
   overflow-x: auto;
 }
 
@@ -167,36 +181,34 @@
   color: #9ca3af;
 }
 
-.ticket-notes {
-  margin: 1rem 0;
-  padding: 1rem;
-  background: #f9fafb;
-  border: 1px solid #e5e7eb;
-  border-radius: 4px;
+/* Membership link in ticket table */
+.membership-link {
+  color: #c5a028;
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.2s;
 }
 
-.ticket-notes p {
-  margin: 0.5rem 0;
-  color: #6b7280;
-  font-size: 0.85rem;
+.membership-link:hover {
+  color: #d4af37;
+  text-decoration: underline;
 }
 
-.ticket-action {
-  flex: 0 0 280px;
+/* Purchase button - now centered below table */
+.ticket-action-wrapper {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  margin-top: 1rem;
+  padding: 1.5rem;
   background: #f9fafb;
   border: 1px solid #e5e7eb;
-  border-radius: 4px;
-  padding: 2rem;
-  text-align: center;
+  border-radius: 8px;
 }
 
 .purchase-btn {
-  width: 100%;
-  padding: 0.875rem 2rem;
+  padding: 0.875rem 3rem;
   background: #c5a028;
   color: #000000;
   border: none;
@@ -206,7 +218,7 @@
   letter-spacing: 0.05em;
   cursor: pointer;
   transition: all 0.2s ease;
-  margin-bottom: 1rem;
+  border-radius: 4px;
 }
 
 .purchase-btn:hover {
@@ -215,49 +227,58 @@
 }
 
 .member-note {
+  margin-top: 0.75rem;
   font-size: 0.75rem;
   color: #9ca3af;
 }
 
-/* ── Hours Section ── */
-.hours-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 1rem;
+/* ── Hours Section - Reformatted as list ── */
+.hours-list {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  overflow: hidden;
   margin-bottom: 2rem;
 }
 
-.hour-card {
+.hour-row {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: 1rem;
-  background: #f9fafb;
-  border: 1px solid #e5e7eb;
-  border-radius: 4px;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid #f3f4f6;
+  background: #ffffff;
 }
 
-.hour-card .day {
-  font-weight: 500;
+.hour-row:last-child {
+  border-bottom: none;
+}
+
+.hour-row .day {
+  flex: 0 0 120px;
+  font-weight: 600;
   color: #111827;
 }
 
-.hour-card .hours {
-  color: #6b7280;
+.hour-row .hours {
+  flex: 1;
+  color: #4b5563;
 }
 
-.hour-card .note {
+.hour-row .note {
+  flex: 0 0 auto;
   font-size: 0.7rem;
   color: #c5a028;
-  margin-left: 0.5rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
-.hour-card.closed {
+.hour-row.closed {
   background: #fef2f2;
-  border-color: #fecaca;
 }
 
-.hour-card.closed .hours {
+.hour-row.closed .hours {
   color: #dc2626;
   font-weight: 500;
 }
@@ -266,7 +287,7 @@
   padding: 1rem;
   background: #f9fafb;
   border: 1px solid #e5e7eb;
-  border-radius: 4px;
+  border-radius: 8px;
   text-align: center;
 }
 
@@ -276,97 +297,7 @@
   font-size: 0.85rem;
 }
 
-/* ── Explore More Section ── */
-.explore-header {
-  text-align: center;
-  margin-bottom: 2.5rem;
-  width: 100%;
-}
-
-.explore-header h2 {
-  font-size: 1.5rem;
-  font-weight: 400;
-  letter-spacing: -0.02em;
-  color: #111827;
-  margin: 0 0 0.5rem;
-}
-
-.explore-subtitle {
-  font-size: 0.85rem;
-  color: #9ca3af;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin: 0;
-}
-
-.explore-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 2rem;
-  width: 100%;
-}
-
-.explore-card {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  background: #ffffff;
-  padding: 2rem 1.5rem;
-  text-decoration: none;
-  transition: all 0.3s ease;
-  border: 1px solid #e5e7eb;
-  border-radius: 4px;
-}
-
-.explore-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
-  border-color: #c5a028;
-}
-
-.explore-icon {
-  font-size: 2.5rem;
-  margin-bottom: 1rem;
-}
-
-.explore-info h3 {
-  font-size: 1.1rem;
-  font-weight: 500;
-  margin-bottom: 0.75rem;
-  color: #111827;
-}
-
-.explore-info p {
-  color: #6b7280;
-  font-size: 0.85rem;
-  line-height: 1.5;
-  margin-bottom: 1rem;
-}
-
-.explore-link {
-  color: #c5a028;
-  text-decoration: none;
-  font-weight: 500;
-  font-size: 0.75rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  display: inline-block;
-  border-bottom: 1px solid #c5a028;
-  padding-bottom: 2px;
-}
-
-.explore-link:hover {
-  color: #d4af37;
-}
-
 /* ── Responsive ── */
-@media (max-width: 1024px) {
-  .ticket-action {
-    flex: 0 0 240px;
-  }
-}
-
 @media (max-width: 768px) {
   .visit-page {
     padding: 1rem 1rem 3rem;
@@ -386,23 +317,18 @@
     gap: 1.5rem;
   }
 
-  .ticket-action {
-    flex: auto;
-    width: 100%;
-  }
-
-  .explore-grid {
-    grid-template-columns: 1fr;
-    gap: 1rem;
-  }
-
-  .hours-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .hour-card {
+  .hour-row {
     flex-wrap: wrap;
     gap: 0.5rem;
+    padding: 0.875rem 1rem;
+  }
+
+  .hour-row .day {
+    flex: 0 0 100px;
+  }
+
+  .hour-row .note {
+    margin-left: auto;
   }
 
   .map-placeholder {
@@ -413,4 +339,25 @@
     padding: 1rem 0;
     margin-bottom: 2rem;
   }
+
+  .purchase-btn {
+    width: 100%;
+    padding: 0.875rem 1rem;
+  }
+}
+
+/* Address link styling */
+.address-link {
+  display: inline-block;
+  color: #4b5563;
+  text-decoration: none;
+  line-height: 1.6;
+  margin: 0.5rem 0;
+  transition: all 0.2s;
+}
+
+.address-link:hover {
+  color: #c5a028;
+  text-decoration: underline;
+  cursor: pointer;
 }

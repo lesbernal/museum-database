@@ -5,7 +5,7 @@ const db = require("../db");
 module.exports = (req, res, parsedUrl) => {
   const urlParts = parsedUrl.pathname.split("/").filter(Boolean);
 
-  // GET all — or GET by user_id via query param: /membershiptransactions?user_id=X
+  // ── GET ──────────────────────────────────────────────────────────────────────
   if (req.method === "GET") {
     const userId = parsedUrl.query?.user_id;
     if (userId) {
@@ -29,7 +29,35 @@ module.exports = (req, res, parsedUrl) => {
     return;
   }
 
-  // POST — create transaction AND update member + user tables
+  // ── PATCH /membershiptransactions/pending — set pending_level ─────────────
+  // Body: { user_id, pending_level }
+  // pending_level can be a tier name (downgrade/upgrade) or 'cancelled'
+  if (req.method === "PATCH" && urlParts[1] === "pending") {
+    parseBody(req, data => {
+      const { user_id, pending_level } = data;
+      if (!user_id) {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        return res.end(JSON.stringify({ error: "user_id required" }));
+      }
+      db.query(
+        "UPDATE member SET pending_level = ? WHERE user_id = ?",
+        [pending_level || null, user_id],
+        (err) => {
+          if (err) return sendError(res, err);
+          sendJSON(res, {
+            message: pending_level === "cancelled"
+              ? "Membership cancellation scheduled. Your membership remains active until expiry."
+              : pending_level
+              ? `Tier change to ${pending_level} scheduled for next renewal.`
+              : "Pending change cleared."
+          });
+        }
+      );
+    });
+    return;
+  }
+
+  // ── POST — create transaction AND update member + user tables ─────────────
   if (req.method === "POST") {
     parseBody(req, data => {
       const { user_id, membership_level, amount, payment_method, transaction_type } = data;
@@ -66,12 +94,14 @@ module.exports = (req, res, parsedUrl) => {
               if (err) return sendError(res, err);
 
               if (existing.length > 0) {
-                // ── RENEWAL / UPGRADE ─────────────────────────────────────────
-                // CRITICAL: preserve the ORIGINAL join_date, only extend expiration
+                // ── RENEWAL / UPGRADE / DOWNGRADE ─────────────────────────
+                // Preserve original join_date, only extend expiration
+                // Also clear any pending_level since they just renewed
                 db.query(
                   `UPDATE member SET
                    membership_level = ?,
-                   expiration_date = ?
+                   expiration_date  = ?,
+                   pending_level    = NULL
                    WHERE user_id = ?`,
                   [membership_level, expiry, user_id],
                   (err) => {
@@ -80,8 +110,7 @@ module.exports = (req, res, parsedUrl) => {
                   }
                 );
               } else {
-                // ── NEW MEMBERSHIP ────────────────────────────────────────────
-                // Ensure visitor record exists first (FK requirement)
+                // ── NEW MEMBERSHIP ────────────────────────────────────────
                 db.query(
                   "SELECT user_id FROM visitor WHERE user_id = ?",
                   [user_id],
@@ -90,8 +119,9 @@ module.exports = (req, res, parsedUrl) => {
 
                     function insertMemberRecord() {
                       db.query(
-                        `INSERT INTO member (user_id, membership_level, join_date, expiration_date)
-                         VALUES (?, ?, ?, ?)`,
+                        `INSERT INTO member
+                         (user_id, membership_level, join_date, expiration_date, pending_level)
+                         VALUES (?, ?, ?, ?, NULL)`,
                         [user_id, membership_level, today, expiry],
                         (err) => {
                           if (err) return sendError(res, err);
@@ -124,7 +154,7 @@ module.exports = (req, res, parsedUrl) => {
     return;
   }
 
-  // DELETE — admin use only
+  // ── DELETE — admin use only ───────────────────────────────────────────────
   if (req.method === "DELETE" && urlParts.length === 2) {
     db.query(
       "DELETE FROM membershiptransaction WHERE transaction_id = ?",

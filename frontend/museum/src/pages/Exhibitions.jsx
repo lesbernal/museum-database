@@ -28,9 +28,7 @@ function ExhibitionCalendar({ exhibition, onClose }) {
   const end   = new Date(exhibition.end_date);
   const isOngoing = end.getFullYear() >= 2099;
 
-  const [viewYear,   setViewYear]   = useState(start.getFullYear());
-  const [viewMonth,  setViewMonth]  = useState(start.getMonth());
-  const [paintings,  setPaintings]  = useState([]);
+  const [paintings, setPaintings] = useState([]);
   const [loadingArt, setLoadingArt] = useState(true);
 
   useEffect(() => {
@@ -40,37 +38,20 @@ function ExhibitionCalendar({ exhibition, onClose }) {
       .finally(() => setLoadingArt(false));
   }, [exhibition.exhibition_id]);
 
-  const prevMonth = () => {
-    if (viewMonth === 0) { setViewMonth(11); setViewYear(y => y - 1); }
-    else setViewMonth(m => m - 1);
-  };
-  const nextMonth = () => {
-    if (viewMonth === 11) { setViewMonth(0); setViewYear(y => y + 1); }
-    else setViewMonth(m => m + 1);
-  };
-
-  const firstDay    = new Date(viewYear, viewMonth, 1).getDay();
-  const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
-  const cells = [];
-  for (let i = 0; i < firstDay; i++) cells.push(null);
-  for (let d = 1; d <= daysInMonth; d++) cells.push(d);
-
-  const classForDay = (day) => {
-    if (!day) return "";
-    const date    = new Date(viewYear, viewMonth, day);
-    const isStart = date.toDateString() === start.toDateString();
-    const isEnd   = !isOngoing && date.toDateString() === end.toDateString();
-    const inRange = date >= start && (isOngoing || date <= end);
-    const isToday = date.toDateString() === new Date().toDateString();
-    if (isStart) return "cal-day start-day";
-    if (isEnd)   return "cal-day end-day";
-    if (inRange) return "cal-day in-range";
-    if (isToday) return "cal-day today";
-    return "cal-day";
-  };
-
   const formatDate = (d) =>
     d.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+
+  // Calculate days remaining until end
+  const getDaysRemaining = () => {
+    if (isOngoing) return null;
+    const today = new Date();
+    if (today > end) return 0;
+    const diffTime = end - today;
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays;
+  };
+
+  const daysRemaining = getDaysRemaining();
 
   return (
     <div className="cal-overlay" onClick={onClose}>
@@ -82,71 +63,62 @@ function ExhibitionCalendar({ exhibition, onClose }) {
           {exhibition.gallery_name && (
             <p className="cal-gallery">📍 {exhibition.gallery_name}</p>
           )}
-          <div className="cal-date-range">
-            <span className="cal-start-label">Start</span>
-            <span className="cal-date-val">{formatDate(start)}</span>
-            <span className="cal-arrow">→</span>
-            <span className="cal-end-label">End</span>
-            <span className="cal-date-val">{isOngoing ? "Ongoing" : formatDate(end)}</span>
+          
+          {/* Improved Date Info with Countdown */}
+          <div className="cal-date-info">
+            <div className="cal-date-card">
+              <span className="cal-date-label">Opens</span>
+              <span className="cal-date-value">{formatDate(start)}</span>
+            </div>
+            <div className="cal-date-arrow">→</div>
+            <div className="cal-date-card">
+              <span className="cal-date-label">Closes</span>
+              <span className="cal-date-value">{isOngoing ? "Ongoing" : formatDate(end)}</span>
+            </div>
           </div>
+
+          {/* Countdown Timer */}
+          {!isOngoing && daysRemaining !== null && daysRemaining > 0 && (
+            <div className="cal-countdown">
+              <span className="cal-countdown-number">{daysRemaining}</span>
+              <span className="cal-countdown-label">days remaining</span>
+            </div>
+          )}
+          {!isOngoing && daysRemaining === 0 && (
+            <div className="cal-countdown expired">
+              <span>This exhibition has ended</span>
+            </div>
+          )}
         </div>
 
         <div className="cal-body">
-          <div className="cal-nav">
-            <button className="cal-nav-btn" onClick={prevMonth}>‹</button>
-            <span className="cal-month-label">{MONTHS[viewMonth]} {viewYear}</span>
-            <button className="cal-nav-btn" onClick={nextMonth}>›</button>
-          </div>
-
-          <div className="cal-grid">
-            {DAYS.map(d => (
-              <div key={d} className="cal-day-header">{d}</div>
-            ))}
-            {cells.map((day, idx) => (
-              <div key={idx} className={day ? classForDay(day) : "cal-empty"}>
-                {day || ""}
-              </div>
-            ))}
-          </div>
-
-          <div className="cal-legend">
-            <span className="legend-dot start-dot" /> Start date
-            <span className="legend-dot end-dot" /> End date
-            <span className="legend-dot range-dot" /> Exhibition period
-            <span className="legend-dot today-dot" /> Today
-          </div>
-        </div>
-
-        <div className="cal-paintings-section">
-          <h3 className="cal-paintings-heading">Works in this Exhibition</h3>
-          {loadingArt ? (
-            <p className="cal-paintings-loading">Loading artworks…</p>
-          ) : paintings.length === 0 ? (
-            <p className="cal-paintings-empty">No artworks listed for this exhibition.</p>
-          ) : (
-            <div className="cal-paintings-grid">
-              {paintings.map((p) => (
-                <div key={p.artwork_id} className="cal-painting-card">
-                  {p.image_url ? (
-                    <img src={p.image_url} alt={p.title} className="cal-painting-img" />
-                  ) : (
-                    <div className="cal-painting-placeholder" />
-                  )}
-                  <div className="cal-painting-info">
-                    <p className="cal-painting-title">{p.title}</p>
-                    {p.artist_name && (
-                      <p className="cal-painting-artist">{p.artist_name}</p>
+          {/* Paintings Section - Made prominent */}
+          <div className="cal-paintings-section">
+            <h3 className="cal-paintings-heading">🎨 Works in this Exhibition</h3>
+            {loadingArt ? (
+              <p className="cal-paintings-loading">Loading artworks…</p>
+            ) : paintings.length === 0 ? (
+              <p className="cal-paintings-empty">No artworks listed for this exhibition.</p>
+            ) : (
+              <div className="cal-paintings-grid">
+                {paintings.map((p) => (
+                  <div key={p.artwork_id} className="cal-painting-card">
+                    {p.image_url ? (
+                      <img src={p.image_url} alt={p.title} className="cal-painting-img" />
+                    ) : (
+                      <div className="cal-painting-placeholder">🖼️</div>
                     )}
-                    {p.description && (
-                      <p className="cal-painting-desc">
-                        {p.description.split(/[.!?]/)[0].trim()}.
-                      </p>
-                    )}
+                    <div className="cal-painting-info">
+                      <p className="cal-painting-title">{p.title}</p>
+                      {p.artist_name && (
+                        <p className="cal-painting-artist">{p.artist_name}</p>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          )}
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
@@ -241,7 +213,7 @@ export default function Exhibitions() {
   // Unique filter options derived from data
   const galleryOptions = [...new Set(exhibitions.map(e => e.gallery_name).filter(Boolean))].sort();
   const typeOptions    = ["Permanent", "Temporary", "Traveling"];
-  const statusOptions  = ["Now On", "Upcoming", "Ended"];
+  const statusOptions  = ["Now On", "Upcoming"];
 
   const toggleType    = t => setSelectedTypes(p    => p.includes(t) ? p.filter(x => x !== t) : [...p, t]);
   const toggleGallery = g => setSelectedGalleries(p => p.includes(g) ? p.filter(x => x !== g) : [...p, g]);
@@ -258,6 +230,12 @@ export default function Exhibitions() {
   // Apply all filters + search + sort
   let filtered = [...exhibitions];
 
+  // FILTER OUT ENDED EXHIBITIONS - Only show "Now On" and "Upcoming"
+  filtered = filtered.filter(e => {
+    const status = getDateStatus(e.start_date, e.end_date);
+    return status !== "Ended";  // Exclude ended exhibitions
+  });
+
   if (searchTerm)
     filtered = filtered.filter(e =>
       e.exhibition_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -272,7 +250,6 @@ export default function Exhibitions() {
 
   if (selectedStatuses.length > 0)
     filtered = filtered.filter(e => selectedStatuses.includes(getDateStatus(e.start_date, e.end_date)));
-
   filtered.sort((a, b) => {
     switch (sortBy) {
       case "name":       return (a.exhibition_name || "").localeCompare(b.exhibition_name || "");

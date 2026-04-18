@@ -564,27 +564,34 @@
 
 .cal-paintings-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
-  padding: 0 16px 16px;
-  justify-items: center;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 1rem;
 }
 
 .cal-painting-card {
-  background: #1a1a1a;
+  background: #fff;
+  border: 1px solid #e5e7eb;
   border-radius: 8px;
   overflow: hidden;
+  transition: transform 0.2s;
+  display: flex;
+  flex-direction: column;
 }
 
 .cal-painting-img {
-  height: 160px;
+  width: 100%;
+  height: 140px;
   object-fit: contain;
   background: #f5f5f5;
 }
 
 .cal-painting-placeholder {
-  height: 160px;
-  background: #f5f5f5;
+  height: 140px;
+  background: #f3f4f6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
 }
 
 .cal-painting-info { padding: 8px 10px 10px; }
@@ -773,4 +780,187 @@
 .filter-tag:hover {
   border-color: #c5a028;
   color: #c5a028;
+}
+
+/* New styles for improved calendar modal */
+
+/* Date Info Cards */
+.cal-date-info {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+  margin: 1rem 0;
+  flex-wrap: wrap;
+}
+
+.cal-date-card {
+  background: #f9fafb;
+  padding: 0.75rem 1.25rem;
+  border-radius: 8px;
+  text-align: center;
+  min-width: 140px;
+  border: 1px solid #e5e7eb;
+}
+
+.cal-date-label {
+  display: block;
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #9ca3af;
+  margin-bottom: 0.25rem;
+}
+
+.cal-date-value {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.cal-date-arrow {
+  font-size: 1.2rem;
+  color: #c5a028;
+}
+
+/* Countdown Timer */
+.cal-countdown {
+  text-align: center;
+  padding: 0.75rem;
+  background: #fef3c7;
+  border-radius: 8px;
+  margin-top: 0.75rem;
+}
+
+.cal-countdown-number {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #92400e;
+  margin-right: 0.5rem;
+}
+
+.cal-countdown-label {
+  font-size: 0.8rem;
+  color: #92400e;
+}
+
+.cal-countdown.expired {
+  background: #fee2e2;
+}
+
+.cal-countdown.expired span {
+  color: #991b1b;
+}
+
+/* Timeline */
+.cal-timeline {
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+.cal-timeline-heading {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #6b7280;
+  margin-bottom: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.timeline-bar {
+  height: 6px;
+  background: #e5e7eb;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.timeline-progress {
+  height: 100%;
+  background: #c5a028;
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+.timeline-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 0.5rem;
+  font-size: 0.7rem;
+  color: #9ca3af;
+}
+
+/* Updated Paintings Section */
+.cal-paintings-section {
+  background: #faf9f8;
+  padding: 1rem;
+  border-radius: 8px;
+}
+
+.cal-paintings-heading {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 1rem;
+}
+
+.cal-paintings-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 1rem;
+}
+
+.cal-painting-card {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  overflow: hidden;
+  transition: transform 0.2s;
+  display: flex;
+  flex-direction: column;
+}
+
+
+.cal-painting-card:hover {
+  transform: translateY(-2px);
+}
+
+.cal-painting-img {
+  width: 100%;
+  height: 120px;
+  object-fit: cover;
+}
+
+.cal-painting-placeholder {
+  height: 120px;
+  background: #f3f4f6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+}
+
+.cal-painting-info {
+  padding: 0.5rem;
+  flex-shrink: 0;
+}
+
+.cal-painting-title {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 0 0 0.2rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cal-painting-artist {
+  font-size: 0.65rem;
+  color: #6b7280;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
