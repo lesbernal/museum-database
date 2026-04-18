@@ -316,7 +316,6 @@ export default function RevenueReport() {
                   <th>Customer</th>
                   <th>Type/Item</th>
                   <th>Amount</th>
-                  <th>Payment Method</th>
                 </tr>
               </thead>
               <tbody>

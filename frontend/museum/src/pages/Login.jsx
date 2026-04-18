@@ -16,7 +16,7 @@ const ROLE_ROUTES = {
 
 function FieldError({ msg }) {
   if (!msg) return null;
-  return <span style={{ fontSize: 11, color: "#dc2626", marginTop: 2, display: "block" }}>{msg}</span>;
+  return <span className="field-error-msg">{msg}</span>;
 }
 
 export default function Login() {
@@ -43,7 +43,7 @@ export default function Login() {
     setError("");
     setLoading(true);
     try {
-      const res  = await fetch(`${API_URL}/login`, {
+      const res = await fetch(`${API_URL}/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
@@ -56,8 +56,7 @@ export default function Login() {
       localStorage.setItem("user_id",    data.user_id);
       localStorage.setItem("user_email", email);
       navigate(ROLE_ROUTES[userRole] || "/");
-    } catch (err) {
-      console.error(err);
+    } catch {
       setError("Server error. Try again later.");
       setLoading(false);
     }
@@ -72,19 +71,44 @@ export default function Login() {
 
   function validateSignup() {
     const errs = {};
+
+    // Name — letters only, required
     if (!signupData.first_name.trim()) errs.first_name = "Required";
-    if (!signupData.last_name.trim())  errs.last_name  = "Required";
-    if (!signupData.email.trim())      errs.email      = "Required";
-    if (!signupData.password)          errs.password   = "Required";
+    else if (!/^[a-zA-Z\s\-']+$/.test(signupData.first_name.trim()))
+      errs.first_name = "Letters only";
+
+    if (!signupData.last_name.trim()) errs.last_name = "Required";
+    else if (!/^[a-zA-Z\s\-']+$/.test(signupData.last_name.trim()))
+      errs.last_name = "Letters only";
+
+    // Required text fields
+    if (!signupData.email.trim())          errs.email          = "Required";
+    if (!signupData.date_of_birth)         errs.date_of_birth  = "Required";
+    if (!signupData.street_address.trim()) errs.street_address = "Required";
+    if (!signupData.city.trim())           errs.city           = "Required";
+    if (!signupData.state)                 errs.state          = "Required";
+
+    // Password
+    if (!signupData.password) errs.password = "Required";
     else if (signupData.password.length < 6) errs.password = "Min. 6 characters";
     if (signupData.password !== signupData.confirm_password)
       errs.confirm_password = "Passwords do not match";
-    if (signupData.phone_number) {
+
+    // Phone — required, 10 digits
+    if (!signupData.phone_number) {
+      errs.phone_number = "Required";
+    } else {
       const digits = signupData.phone_number.replace(/\D/g, "");
       if (digits.length !== 10) errs.phone_number = "Must be 10 digits";
     }
-    if (signupData.zip_code && signupData.zip_code.length !== 5)
+
+    // Zip — required, 5 digits
+    if (!signupData.zip_code) {
+      errs.zip_code = "Required";
+    } else if (signupData.zip_code.length !== 5) {
       errs.zip_code = "Must be 5 digits";
+    }
+
     return errs;
   }
 
@@ -99,17 +123,17 @@ export default function Login() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          first_name:     signupData.first_name,
-          last_name:      signupData.last_name,
-          email:          signupData.email,
+          first_name:     signupData.first_name.trim(),
+          last_name:      signupData.last_name.trim(),
+          email:          signupData.email.trim(),
           password:       signupData.password,
           role:           "visitor",
           phone_number:   signupData.phone_number,
-          street_address: signupData.street_address,
-          city:           signupData.city,
+          street_address: signupData.street_address.trim(),
+          city:           signupData.city.trim(),
           state:          signupData.state,
           zip_code:       signupData.zip_code,
-          date_of_birth:  signupData.date_of_birth || null,
+          date_of_birth:  signupData.date_of_birth,
         }),
       });
       const data = await res.json();
@@ -117,8 +141,7 @@ export default function Login() {
       setSuccess("Account created! You can now sign in.");
       setMode("login");
       setEmail(signupData.email);
-    } catch (err) {
-      console.error(err);
+    } catch {
       setError("Server error. Try again later.");
     } finally {
       setLoading(false);
@@ -128,7 +151,7 @@ export default function Login() {
   return (
     <div className="login-page">
       <div className="login-hero">
-        <div className="login-hero-overlay"></div>
+        <div className="login-hero-overlay" />
         <div className="login-hero-content">
           <h1>{mode === "login" ? "Welcome Back" : "Join the Museum"}</h1>
           <p>{mode === "login"
@@ -138,11 +161,11 @@ export default function Login() {
       </div>
 
       <div className="login-container">
-        <div className="login-card">
+        <div className={`login-card ${mode === "signup" ? "login-card-wide" : ""}`}>
 
           <div className="login-tabs">
-            <button className={`login-tab ${mode === "login"  ? "active" : ""}`}
-              onClick={() => { setMode("login");  setError(""); setSuccess(""); setFieldErrors({}); }}>
+            <button className={`login-tab ${mode === "login" ? "active" : ""}`}
+              onClick={() => { setMode("login"); setError(""); setSuccess(""); setFieldErrors({}); }}>
               Sign In
             </button>
             <button className={`login-tab ${mode === "signup" ? "active" : ""}`}
@@ -167,12 +190,9 @@ export default function Login() {
                 </div>
                 <div className="form-group">
                   <label>Password</label>
-                  <PasswordInput
-                    value={password}
+                  <PasswordInput value={password}
                     onChange={e => setPassword(e.target.value)}
-                    placeholder="Enter your password"
-                    required
-                  />
+                    placeholder="Enter your password" required />
                 </div>
                 {success && <div className="success-message">{success}</div>}
                 {error   && <div className="error-message">{error}</div>}
@@ -195,98 +215,99 @@ export default function Login() {
             <>
               <div className="login-header">
                 <h2>CREATE ACCOUNT</h2>
-                <p>Fill in your details to register</p>
+                <p>All fields marked * are required</p>
               </div>
               <form className="login-form signup-form" onSubmit={handleSignup}>
-                <div className="signup-grid">
 
+                {/* Row 1: Name */}
+                <div className="signup-row">
                   <div className="form-group">
                     <label>First Name *</label>
                     <input name="first_name" value={signupData.first_name}
-                      onChange={handleSignupChange} placeholder="Jane" />
+                      onChange={handleSignupChange} placeholder="Jane" maxLength={50} />
                     <FieldError msg={fieldErrors.first_name} />
                   </div>
-
                   <div className="form-group">
                     <label>Last Name *</label>
                     <input name="last_name" value={signupData.last_name}
-                      onChange={handleSignupChange} placeholder="Doe" />
+                      onChange={handleSignupChange} placeholder="Doe" maxLength={50} />
                     <FieldError msg={fieldErrors.last_name} />
                   </div>
+                </div>
 
-                  <div className="form-group full">
-                    <label>Email Address *</label>
-                    <input name="email" type="email" value={signupData.email}
-                      onChange={handleSignupChange} placeholder="jane@email.com" />
-                    <FieldError msg={fieldErrors.email} />
-                  </div>
+                {/* Row 2: Email */}
+                <div className="form-group">
+                  <label>Email Address *</label>
+                  <input name="email" type="email" value={signupData.email}
+                    onChange={handleSignupChange} placeholder="jane@email.com" />
+                  <FieldError msg={fieldErrors.email} />
+                </div>
 
+                {/* Row 3: Password pair */}
+                <div className="signup-row">
                   <div className="form-group">
-                    <label>Password * <span style={{ fontSize: 10, color: "#9ca3af", fontWeight: 400 }}>(min. 6 characters)</span></label>
-                    <PasswordInput
-                      name="password"
-                      value={signupData.password}
-                      onChange={handleSignupChange}
-                      placeholder="Min. 6 characters"
-                    />
+                    <label>Password * <span className="label-hint">(min. 6 chars)</span></label>
+                    <PasswordInput name="password" value={signupData.password}
+                      onChange={handleSignupChange} placeholder="Min. 6 characters" />
                     <FieldError msg={fieldErrors.password} />
                   </div>
-
                   <div className="form-group">
                     <label>Confirm Password *</label>
-                    <PasswordInput
-                      name="confirm_password"
-                      value={signupData.confirm_password}
-                      onChange={handleSignupChange}
-                      placeholder="Repeat password"
-                    />
+                    <PasswordInput name="confirm_password" value={signupData.confirm_password}
+                      onChange={handleSignupChange} placeholder="Repeat password" />
                     <FieldError msg={fieldErrors.confirm_password} />
                   </div>
+                </div>
 
+                {/* Row 4: Phone + DOB — both required */}
+                <div className="signup-row">
                   <div className="form-group">
-                    <label>Phone Number <span style={{ fontSize: 10, color: "#9ca3af", fontWeight: 400 }}>(10 digits)</span></label>
-                    <PhoneInput
-                      name="phone_number"
-                      value={signupData.phone_number}
-                      onChange={handleSignupChange}
-                    />
+                    <label>Phone Number * <span className="label-hint">(10 digits)</span></label>
+                    <PhoneInput name="phone_number" value={signupData.phone_number}
+                      onChange={handleSignupChange} />
                     <FieldError msg={fieldErrors.phone_number} />
                   </div>
-
                   <div className="form-group">
-                    <label>Date of Birth</label>
+                    <label>Date of Birth *</label>
                     <input name="date_of_birth" type="date"
                       value={signupData.date_of_birth}
                       max={new Date().toISOString().split("T")[0]}
                       onChange={handleSignupChange} />
+                    <FieldError msg={fieldErrors.date_of_birth} />
                   </div>
+                </div>
 
-                  <div className="form-group full">
-                    <label>Street Address</label>
-                    <input name="street_address" value={signupData.street_address}
-                      onChange={handleSignupChange} placeholder="123 Main St" />
-                  </div>
+                {/* Row 5: Street address */}
+                <div className="form-group">
+                  <label>Street Address * <span className="label-hint">(max 50 chars)</span></label>
+                  <input name="street_address" value={signupData.street_address}
+                    onChange={handleSignupChange} placeholder="123 Main St" maxLength={50} />
+                  <FieldError msg={fieldErrors.street_address} />
+                </div>
 
+                {/* Row 6: City + State + Zip */}
+                <div className="signup-row signup-row-3">
                   <div className="form-group">
-                    <label>City</label>
+                    <label>City * <span className="label-hint">(max 30)</span></label>
                     <input name="city" value={signupData.city}
-                      onChange={handleSignupChange} placeholder="Houston" />
+                      onChange={handleSignupChange} placeholder="Houston" maxLength={30} />
+                    <FieldError msg={fieldErrors.city} />
                   </div>
-
                   <div className="form-group">
-                    <label>State</label>
+                    <label>State *</label>
                     <StateSelect name="state" value={signupData.state} onChange={handleSignupChange} />
+                    <FieldError msg={fieldErrors.state} />
                   </div>
-
                   <div className="form-group">
-                    <label>Zip Code <span style={{ fontSize: 10, color: "#9ca3af", fontWeight: 400 }}>(5 digits)</span></label>
+                    <label>Zip Code *</label>
                     <ZipInput name="zip_code" value={signupData.zip_code} onChange={handleSignupChange} />
                     <FieldError msg={fieldErrors.zip_code} />
                   </div>
-
                 </div>
+
                 {error   && <div className="error-message">{error}</div>}
                 {success && <div className="success-message">{success}</div>}
+
                 <button type="submit" className="login-btn" disabled={loading}>
                   {loading ? "Creating account..." : "Create Account"}
                 </button>

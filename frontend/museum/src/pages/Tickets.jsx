@@ -23,6 +23,7 @@ const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 function getFinalPrice(basePrice, isMember) {
   if (isMember) return 0;
+  if (isThursday) return 0;
   return basePrice;
 }
 
@@ -34,6 +35,7 @@ export default function Tickets() {
     "Adult 19+": 0, "Senior 65+": 0, "Youth 13-18": 0, "Child 12 & Under": 0
   });
   const [isMember,   setIsMember]   = useState(false);
+  const [isThursday, setIsThursday] = useState(false);
   const [errorMsg,   setErrorMsg]   = useState("");
   const [step,       setStep]       = useState("calendar");
   
@@ -84,6 +86,7 @@ export default function Tickets() {
     if (isDateDisabled(year, month, day)) return;
     
     setSelectedDate(date);
+    setIsThursday(date.getDay() === 4);
     const formattedDate = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
     setVisitDate(formattedDate);
     
@@ -173,7 +176,7 @@ export default function Tickets() {
 
   const summaryLines = TICKET_TYPES.filter(t => quantities[t.type] > 0).map(t => ({
     label: `${quantities[t.type]}x ${t.label}`,
-    price: getFinalPrice(t.basePrice, isMember) * quantities[t.type],
+    price: getFinalPrice(t.basePrice, isMember, isThursday) * quantities[t.type],
   }));
 
   const total = summaryLines.reduce((sum, l) => sum + l.price, 0);
@@ -188,6 +191,7 @@ export default function Tickets() {
     if (!visitDate) return setErrorMsg("Select a visit date.");
     const selectedDay = new Date(visitDate + "T00:00:00").getDay();
     if (selectedDay === 1) return setErrorMsg("The museum is closed on Mondays. Please select a different date.");
+    const isThursday = selectedDay === 4;
     if (totalTickets === 0) return setErrorMsg("Please select at least one ticket.");
 
     const tickets = TICKET_TYPES
@@ -197,7 +201,7 @@ export default function Tickets() {
         label: t.label,
         quantity: quantities[t.type],
         basePrice: t.basePrice,
-        finalPrice: getFinalPrice(t.basePrice, isMember),
+        finalPrice: getFinalPrice(t.basePrice, isMember, isThursday),
       }));
 
     const orderTotal = tickets.reduce((sum, t) => sum + t.finalPrice * t.quantity, 0);
@@ -286,6 +290,12 @@ export default function Tickets() {
               </div>
             )}
 
+            {isThursday && !isMember && (
+              <div className="member-discount-banner" style={{ background: "#d1fae5", borderColor: "#6ee7b7", color: "#065f46" }}>
+                Thursday Special — all tickets are free today!
+              </div>
+            )}
+
             {/* Ticket Limit Info - Option 2 */}
             <div className="ticket-limit-info">
               <span>You can select up to <strong>{MAX_TOTAL_TICKETS}</strong> total tickets.</span>
@@ -300,7 +310,7 @@ export default function Tickets() {
             <p className="tickets-section-label">Select Tickets</p>
             <div className="ticket-rows">
               {TICKET_TYPES.map(t => {
-                const finalPrice = getFinalPrice(t.basePrice, isMember);
+                const finalPrice = getFinalPrice(t.basePrice, isMember, isThursday);
                 const currentTotal = Object.values(quantities).reduce((a, b) => a + b, 0);
                 const isMaxReached = currentTotal >= MAX_TOTAL_TICKETS;
                 
