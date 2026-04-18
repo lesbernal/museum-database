@@ -250,10 +250,6 @@ module.exports = (req, res, parsedUrl) => {
                 res.writeHead(500, { "Content-Type": "application/json" });
                 return res.end(JSON.stringify({ error: err.sqlMessage }));
               }
-<<<<<<< HEAD
-=======
-
->>>>>>> 6fdd3d7f4b68f5d59840091a729f70937f6e3dcd
               db.query(
                 "INSERT INTO event_signup (user_id, event_id, quantity, signup_date) VALUES (?, ?, ?, CURDATE())",
                 [userId, eventId, quantity],

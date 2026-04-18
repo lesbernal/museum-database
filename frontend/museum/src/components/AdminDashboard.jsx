@@ -34,7 +34,7 @@ function ArchiveReasonModal({ type, onConfirm, onCancel }) {
     <div className="um-overlay" onClick={onCancel}>
       <div className="um-modal" style={{ maxWidth: 420 }} onClick={e => e.stopPropagation()}>
         <div className="um-modal-header">
-          <h3>Archive {type.slice(0, -1)}</h3>
+          <h3>Archive {{ exhibitions: "Exhibition", galleries: "Gallery", artwork: "Artwork", events: "Event" }[type]}</h3>
           <button className="um-modal-close" onClick={onCancel}>×</button>
         </div>
         <div className="um-modal-body">
@@ -243,15 +243,15 @@ export default function AdminDashboard() {
   const handleArchiveWithReason = async (type, id, reason) => {
     const endpoints = {
       exhibitions: `/exhibitions/${id}/deactivate`,
-      galleries:   `/galleries/${id}/deactivate`,
-      artwork:     `/artwork/${id}/deactivate`,
-      events:      `/events/${id}/deactivate`,
+      galleries: `/galleries/${id}/deactivate`,
+      artwork: `/artwork/${id}/deactivate`,
+      events: `/events/${id}/deactivate`,
     };
     const reloaders = {
       exhibitions: loadExhibitions,
-      galleries:   loadGalleries,
-      artwork:     loadArtworks,
-      events:      loadEvents,
+      galleries: loadGalleries,
+      artwork: loadArtworks,
+      events: loadEvents,
     };
     try {
       await fetch(`${API_BASE}${endpoints[type]}`, {
@@ -267,9 +267,9 @@ export default function AdminDashboard() {
   };
 
   const handleExhibitionArchive = (id) => setArchiveModal({ type: "exhibitions", id });
-  const handleGalleryArchive    = (id) => setArchiveModal({ type: "galleries",   id });
-  const handleArtworkArchive    = (id) => setArchiveModal({ type: "artwork",     id });
-  const handleEventArchive      = (id) => setArchiveModal({ type: "events",      id });
+  const handleGalleryArchive = (id) => setArchiveModal({ type: "galleries", id });
+  const handleArtworkArchive = (id) => setArchiveModal({ type: "artwork", id });
+  const handleEventArchive = (id) => setArchiveModal({ type: "events", id });
 
   // Artist handlers
   const handleAddArtist = async (artistData) => {
@@ -621,32 +621,32 @@ export default function AdminDashboard() {
           </div>
 
           {adminProfile && (
-          <div className="admin-profile-mini">
-            <div className="admin-avatar">
-              {adminProfile.first_name?.charAt(0)}{adminProfile.last_name?.charAt(0)}
+            <div className="admin-profile-mini">
+              <div className="admin-avatar">
+                {adminProfile.first_name?.charAt(0)}{adminProfile.last_name?.charAt(0)}
+              </div>
+              <div className="admin-info">
+                <div className="admin-name">{adminProfile.first_name} {adminProfile.last_name}</div>
+                <div className="admin-role">System Administrator</div>
+              </div>
+              <div className="admin-actions">
+                <button
+                  className="admin-profile-btn"
+                  onClick={() => setShowProfileModal(true)}
+                  title="Edit Profile"
+                >
+                  ⚙️
+                </button>
+                <button
+                  className="admin-password-btn"
+                  onClick={() => setShowPasswordModal(true)}
+                  title="Change Password"
+                >
+                  🔑
+                </button>
+              </div>
             </div>
-            <div className="admin-info">
-              <div className="admin-name">{adminProfile.first_name} {adminProfile.last_name}</div>
-              <div className="admin-role">System Administrator</div>
-            </div>
-            <div className="admin-actions">
-              <button
-                className="admin-profile-btn"
-                onClick={() => setShowProfileModal(true)}
-                title="Edit Profile"
-              >
-                ⚙️
-              </button>
-              <button
-                className="admin-password-btn"
-                onClick={() => setShowPasswordModal(true)}
-                title="Change Password"
-              >
-                🔑
-              </button>
-            </div>
-          </div>
-        )}
+          )}
 
           <nav className="sidebar-nav">
             {tabs.map((tab) => (
@@ -888,7 +888,7 @@ export default function AdminDashboard() {
             {activeTab === "artwork" && (
               <>
                 {showArtworkArchive && (
-                  <Archive type="artwork" onRestored={() => loadArtworks()} />
+                  <Archive type="artwork" onRestored={() => loadArtworks()} reloadTrigger={artworks.length}/>
                 )}
                 <ArtworkManager
                   artworks={filteredArtworks}
@@ -916,7 +916,7 @@ export default function AdminDashboard() {
             {activeTab === "exhibitions" && (
               <>
                 {showExhibitionArchive && (
-                  <Archive type="exhibitions" onRestored={() => loadExhibitions()} />
+                  <Archive type="exhibitions" onRestored={() => loadExhibitions()} reloadTrigger={exhibitions.length}/>
                 )}
                 <ExhibitionManager
                   exhibitions={filteredExhibitions}
@@ -933,7 +933,7 @@ export default function AdminDashboard() {
             {activeTab === "galleries" && (
               <>
                 {showGalleryArchive && (
-                  <Archive type="galleries" onRestored={() => loadGalleries()} />
+                  <Archive type="galleries" onRestored={() => loadGalleries()} reloadTrigger={galleries.length}/>
                 )}
                 <GalleryManager
                   galleries={filteredGalleries}
@@ -950,7 +950,7 @@ export default function AdminDashboard() {
             {activeTab === "events" && (
               <>
                 {showEventArchive && (
-                  <Archive type="events" onRestored={() => loadEvents()} />
+                  <Archive type="events" onRestored={() => loadEvents()} reloadTrigger={events.length}/>
                 )}
                 <EventManager
                   events={filteredEvents}
