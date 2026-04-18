@@ -12,6 +12,11 @@ function formatValue(value, field) {
     return formatDateTimeToCST(value);
   }
 
+  // Handle currency
+  if (field?.type === "currency") {
+    return `$${Number(value).toFixed(2)}`;
+  }
+
   const formatted = String(value);
 
   if (field?.maxLength && formatted.length > field.maxLength) {
@@ -129,7 +134,156 @@ function RecordFormModal({ resource, record, onClose, onSubmit }) {
   );
 }
 
-export default function OperationsManagement({ title, description, resources, isLowStock }) {
+// New component for transaction items expandable view
+function TransactionItemsTable({ transactionId, getTransactionItems, itemsData }) {
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    async function loadItems() {
+      if (!transactionId) return;
+      
+      // If itemsData is provided (pre-loaded), use it
+      if (itemsData && itemsData[transactionId]) {
+        setItems(itemsData[transactionId]);
+        return;
+      }
+      
+      setLoading(true);
+      try {
+        const allItems = await getTransactionItems();
+        const filteredItems = allItems.filter(item => item.transaction_id == transactionId);
+        setItems(filteredItems);
+      } catch (err) {
+        console.error("Failed to load transaction items:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    
+    loadItems();
+  }, [transactionId, getTransactionItems, itemsData]);
+
+  if (loading) {
+    return <div className="expanded-loading">Loading items...</div>;
+  }
+
+  if (items.length === 0) {
+    return <div className="expanded-empty">No items in this transaction</div>;
+  }
+
+  return (
+    <div className="transaction-items-table-container">
+      <table className="transaction-items-table">
+        <thead>
+          <tr>
+            <th>Item ID</th>
+            <th>Item Name</th>
+            <th>Quantity</th>
+            <th>Unit Price</th>
+            <th>Subtotal</th>
+          </tr>
+        </thead>
+        <tbody>
+          {items.map((item, idx) => (
+            <tr key={idx}>
+              <td>{item.item_id}</td>
+              <td>{item.item_name || `Item #${item.item_id}`}</td>
+              <td>{item.quantity}</td>
+              <td>${(item.subtotal / item.quantity).toFixed(2)}</td>
+              <td>${Number(item.subtotal).toFixed(2)}</td>
+            </tr>
+          ))}
+          <tr className="items-total-row">
+            <td colSpan="4" className="items-total-label">Total:</td>
+            <td className="items-total-amount">
+              ${items.reduce((sum, item) => sum + Number(item.subtotal), 0).toFixed(2)}
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+// New component for filters
+function FilterBar({ filters, onFilterChange, activeFilters }) {
+  if (!filters || filters.length === 0) return null;
+
+  return (
+    <div className="filter-bar">
+      {filters.map((filter) => (
+        <div className="filter-group" key={filter.field}>
+          <label>{filter.label}:</label>
+          
+          {filter.type === "select" && (
+            <select
+              value={activeFilters[filter.field] || ""}
+              onChange={(e) => onFilterChange(filter.field, e.target.value)}
+            >
+              {filter.options.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          )}
+          
+          {filter.type === "range" && (
+            <div className="range-filter">
+              <input
+                type="number"
+                placeholder={`Min ${filter.unit || ""}`}
+                value={activeFilters[`${filter.field}_min`] || ""}
+                onChange={(e) => onFilterChange(`${filter.field}_min`, e.target.value)}
+              />
+              <span>-</span>
+              <input
+                type="number"
+                placeholder={`Max ${filter.unit || ""}`}
+                value={activeFilters[`${filter.field}_max`] || ""}
+                onChange={(e) => onFilterChange(`${filter.field}_max`, e.target.value)}
+              />
+            </div>
+          )}
+          
+          {filter.type === "dateRange" && (
+            <div className="date-range-filter">
+              <input
+                type="date"
+                placeholder="From"
+                value={activeFilters[`${filter.field}_from`] || ""}
+                onChange={(e) => onFilterChange(`${filter.field}_from`, e.target.value)}
+              />
+              <span>to</span>
+              <input
+                type="date"
+                placeholder="To"
+                value={activeFilters[`${filter.field}_to`] || ""}
+                onChange={(e) => onFilterChange(`${filter.field}_to`, e.target.value)}
+              />
+            </div>
+          )}
+        </div>
+      ))}
+      
+      <button 
+        className="clear-filters-btn"
+        onClick={() => onFilterChange("clear", null)}
+      >
+        Clear Filters
+      </button>
+    </div>
+  );
+}
+
+export default function OperationsManagement({ 
+  title, 
+  description, 
+  resources, 
+  getTransactionItems, // New prop for fetching transaction items
+  isLowStock 
+}) {
   const [activeResourceId, setActiveResourceId] = useState(resources[0].id);
   const [data, setData] = useState({});
   const [loading, setLoading] = useState(true);
@@ -137,6 +291,9 @@ export default function OperationsManagement({ title, description, resources, is
   const [searchTerm, setSearchTerm] = useState("");
   const [editingRecord, setEditingRecord] = useState(null);
   const [showModal, setShowModal] = useState(false);
+  const [expandedRows, setExpandedRows] = useState({});
+  const [activeFilters, setActiveFilters] = useState({});
+  const [transactionItemsCache, setTransactionItemsCache] = useState({});
 
   const activeResource = resources.find((resource) => resource.id === activeResourceId);
 
@@ -166,6 +323,19 @@ export default function OperationsManagement({ title, description, resources, is
 
       setData(nextData);
       setError(errors.join(" | "));
+      
+      // Pre-load transaction items if this is the transactions resource and we have the fetcher
+      if (activeResourceId === "giftshop-transactions" && getTransactionItems) {
+        const allItems = await getTransactionItems();
+        const itemsByTransaction = {};
+        allItems.forEach(item => {
+          if (!itemsByTransaction[item.transaction_id]) {
+            itemsByTransaction[item.transaction_id] = [];
+          }
+          itemsByTransaction[item.transaction_id].push(item);
+        });
+        setTransactionItemsCache(itemsByTransaction);
+      }
     } finally {
       setLoading(false);
     }
@@ -175,19 +345,109 @@ export default function OperationsManagement({ title, description, resources, is
     loadAllResources();
   }, []);
 
+  // Reload transaction items cache when switching to transactions tab
+  useEffect(() => {
+    async function reloadTransactionItems() {
+      if (activeResourceId === "giftshop-transactions" && getTransactionItems) {
+        const allItems = await getTransactionItems();
+        const itemsByTransaction = {};
+        allItems.forEach(item => {
+          if (!itemsByTransaction[item.transaction_id]) {
+            itemsByTransaction[item.transaction_id] = [];
+          }
+          itemsByTransaction[item.transaction_id].push(item);
+        });
+        setTransactionItemsCache(itemsByTransaction);
+      }
+    }
+    
+    reloadTransactionItems();
+  }, [activeResourceId]);
+
+  const toggleExpand = (rowId) => {
+    setExpandedRows(prev => ({
+      ...prev,
+      [rowId]: !prev[rowId]
+    }));
+  };
+
+  const applyFilters = (records) => {
+    if (!activeResource.filters) return records;
+    
+    return records.filter(record => {
+      for (const [key, value] of Object.entries(activeFilters)) {
+        if (!value || value === "") continue;
+        
+        // Handle range filters
+        if (key.endsWith("_min")) {
+          const field = key.replace("_min", "");
+          const min = parseFloat(value);
+          if (!isNaN(min) && (record[field] === undefined || parseFloat(record[field]) < min)) {
+            return false;
+          }
+        } else if (key.endsWith("_max")) {
+          const field = key.replace("_max", "");
+          const max = parseFloat(value);
+          if (!isNaN(max) && (record[field] === undefined || parseFloat(record[field]) > max)) {
+            return false;
+          }
+        } else if (key.endsWith("_from")) {
+          const field = key.replace("_from", "");
+          if (record[field] && new Date(record[field]) < new Date(value)) {
+            return false;
+          }
+        } else if (key.endsWith("_to")) {
+          const field = key.replace("_to", "");
+          if (record[field] && new Date(record[field]) > new Date(value)) {
+            return false;
+          }
+        } else if (key === "stock_status") {
+          const stock = record.stock_quantity;
+          if (value === "low" && (stock > 20 || stock === 0)) return false;
+          if (value === "out" && stock > 0) return false;
+          if (value === "in" && (stock <= 20 || stock === 0)) return false;
+        } else {
+          // Direct field match
+          if (record[key] != value && String(record[key] || "").toLowerCase() !== String(value).toLowerCase()) {
+            return false;
+          }
+        }
+      }
+      return true;
+    });
+  };
+
+  const handleFilterChange = (filterKey, value) => {
+    if (filterKey === "clear") {
+      setActiveFilters({});
+      return;
+    }
+    
+    setActiveFilters(prev => ({
+      ...prev,
+      [filterKey]: value || undefined
+    }));
+  };
+
   const filteredRecords = useMemo(() => {
     const records = data[activeResourceId] || [];
-    if (!searchTerm.trim()) {
-      return records;
+    let filtered = records;
+    
+    // Apply search
+    if (searchTerm.trim()) {
+      const lowerSearch = searchTerm.toLowerCase();
+      filtered = filtered.filter((record) =>
+        activeResource.searchKeys.some((key) =>
+          String(record[key] ?? "").toLowerCase().includes(lowerSearch)
+        )
+      );
     }
-
-    const lowerSearch = searchTerm.toLowerCase();
-    return records.filter((record) =>
-      activeResource.searchKeys.some((key) =>
-        String(record[key] ?? "").toLowerCase().includes(lowerSearch)
-      )
-    );
-  }, [activeResource, activeResourceId, data, searchTerm]);
+    
+    // Apply filters
+    filtered = applyFilters(filtered);
+    
+    return filtered;
+  }, [activeResource, activeResourceId, data, searchTerm, activeFilters]);
 
   async function handleSave(form) {
     if (editingRecord) {
@@ -223,6 +483,9 @@ export default function OperationsManagement({ title, description, resources, is
     return record.low_stock_alert === 1 || Number(record.stock_quantity) <= 20;
   };
 
+  // Check if this resource supports expandable rows (transactions)
+  const supportsExpandable = getTransactionItems && activeResource?.isTransactionResource === true;
+    
   return (
     <div className="operations-management">
       <header className="operations-header">
@@ -240,6 +503,8 @@ export default function OperationsManagement({ title, description, resources, is
             onClick={() => {
               setActiveResourceId(resource.id);
               setSearchTerm("");
+              setActiveFilters({});
+              setExpandedRows({});
               setEditingRecord(null);
               setShowModal(false);
             }}
@@ -267,6 +532,15 @@ export default function OperationsManagement({ title, description, resources, is
         </button>
       </div>
 
+      {/* Filter Bar */}
+      {activeResource.filters && (
+        <FilterBar 
+          filters={activeResource.filters}
+          onFilterChange={handleFilterChange}
+          activeFilters={activeFilters}
+        />
+      )}
+
       {error && <div className="error-message dashboard-error">{error}</div>}
 
       <div className="content-area">
@@ -279,6 +553,7 @@ export default function OperationsManagement({ title, description, resources, is
             <table className="operations-table">
               <thead>
                 <tr>
+                  {supportsExpandable && <th style={{ width: "40px" }}></th>}
                   {activeResource.columns.map((column) => (
                     <th key={column.key}>{column.label}</th>
                   ))}
@@ -288,39 +563,67 @@ export default function OperationsManagement({ title, description, resources, is
               <tbody>
                 {filteredRecords.map((record) => {
                   const isLowStockItem = isLowStockRecord(record);
+                  const isExpanded = expandedRows[record[activeResource.idKey]];
+                  
                   return (
-                    <tr 
-                      key={record[activeResource.idKey]} 
-                      className={isLowStockItem ? "low-stock-row" : ""}
-                    >
-                      {activeResource.columns.map((column) => (
-                        <td key={column.key} title={record[column.key] ?? ""}>
-                          {formatValue(record[column.key], column)}
-                          {isLowStockItem && column.key === "stock_quantity" && (
-                            <span className="low-stock-badge">Low Stock!</span>
-                          )}
-                        </td>
-                      ))}
-                      <td className="actions">
-                        <button
-                          className="edit-btn"
-                          onClick={() => {
-                            setEditingRecord(record);
-                            setShowModal(true);
-                          }}
-                          title="Edit"
-                        >
-                          Edit
-                        </button>
-                        <button
-                          className="delete-btn"
-                          onClick={() => handleDelete(record[activeResource.idKey])}
-                          title="Delete"
-                        >
-                          Delete
-                        </button>
-                       </td>
-                    </tr>
+                    <>
+                      <tr 
+                        key={record[activeResource.idKey]} 
+                        className={`${isLowStockItem ? "low-stock-row" : ""} ${supportsExpandable ? "expandable-row" : ""}`}
+                      >
+                        {supportsExpandable && (
+                          <td className="expand-cell">
+                            <button
+                              className="expand-btn"
+                              onClick={() => toggleExpand(record[activeResource.idKey])}
+                            >
+                              {isExpanded ? "▼" : "▶"}
+                            </button>
+                          </td>
+                        )}
+                        {activeResource.columns.map((column) => (
+                          <td key={column.key} title={record[column.key] ?? ""}>
+                            {formatValue(record[column.key], column)}
+                            {isLowStockItem && column.key === "stock_quantity" && (
+                              <span className="low-stock-badge">Low Stock!</span>
+                            )}
+                          </td>
+                        ))}
+                        <td className="actions">
+                          <button
+                            className="edit-btn"
+                            onClick={() => {
+                              setEditingRecord(record);
+                              setShowModal(true);
+                            }}
+                            title="Edit"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            className="delete-btn"
+                            onClick={() => handleDelete(record[activeResource.idKey])}
+                            title="Delete"
+                          >
+                            Delete
+                          </button>
+                         </td>
+                      </tr>
+                      {supportsExpandable && isExpanded && (
+                        <tr className="expanded-details-row">
+                          <td colSpan={activeResource.columns.length + 2}>
+                            <div className="expanded-content">
+                              <h4>Transaction Items</h4>
+                              <TransactionItemsTable
+                                transactionId={record[activeResource.idKey]}
+                                getTransactionItems={getTransactionItems}
+                                itemsData={transactionItemsCache}
+                              />
+                            </div>
+                           </td>
+                        </tr>
+                      )}
+                    </>
                   );
                 })}
               </tbody>

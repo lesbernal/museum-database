@@ -18,6 +18,7 @@
 
 .artwork-manager-header .search-bar {
   flex: 1;
+  min-width: 200px;
   max-width: 400px;
 }
 
@@ -45,6 +46,7 @@
   text-transform: uppercase;
   letter-spacing: 0.03em;
   transition: all 0.2s ease;
+  white-space: nowrap;
 }
 
 .artwork-manager-header .add-btn:hover {
@@ -56,6 +58,7 @@
   background: #ffffff;
   border: 1px solid #e5e5e5;
   min-height: 400px;
+  overflow-x: auto;
 }
 
 .loading-spinner {
@@ -77,18 +80,25 @@
    ============================================ */
 .artwork-table-container {
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
   width: 100%;
 }
 
 .artwork-table {
-  min-width: 700px;
+  min-width: 800px;
   width: 100%;
   border-collapse: collapse;
 }
 
 @media (max-width: 768px) {
   .artwork-table {
-    min-width: 600px;
+    min-width: 650px;
+  }
+}
+
+@media (max-width: 480px) {
+  .artwork-table {
+    min-width: 550px;
   }
 }
 
@@ -102,6 +112,7 @@
   padding: 1rem;
   font-weight: 600;
   color: #374151;
+  white-space: nowrap;
 }
 
 .artwork-table td {
@@ -117,6 +128,10 @@
 .title-cell {
   font-weight: 500;
   color: #1f2937;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* Image column styles */
@@ -154,6 +169,7 @@
   border-radius: 20px;
   font-size: 0.75rem;
   font-weight: 500;
+  white-space: nowrap;
 }
 
 .badge-display {
@@ -186,6 +202,7 @@
   display: flex;
   gap: 0.5rem;
   flex-wrap: wrap;
+  white-space: nowrap;
 }
 
 .edit-btn, .delete-btn, .archive-btn, .deaccession-btn {
@@ -258,6 +275,7 @@
   align-items: center;
   justify-content: center;
   z-index: 1000;
+  padding: 1rem;
 }
 
 .modal-content {
@@ -275,6 +293,10 @@
   align-items: center;
   padding: 1.5rem;
   border-bottom: 1px solid #e5e5e5;
+  position: sticky;
+  top: 0;
+  background: #ffffff;
+  z-index: 10;
 }
 
 .modal-header h2 {
@@ -290,6 +312,8 @@
   cursor: pointer;
   color: #888888;
   transition: color 0.2s;
+  padding: 0.25rem;
+  line-height: 1;
 }
 
 .close-btn:hover {
@@ -308,6 +332,7 @@
   padding: 1.5rem;
   background: #f9fafb;
   border: 1px solid #e5e7eb;
+  flex-wrap: wrap;
 }
 
 .image-preview {
@@ -564,6 +589,7 @@
   
   .artwork-manager-header .search-bar {
     max-width: 100%;
+    min-width: auto;
   }
   
   .artwork-manager-header .add-btn {
@@ -614,11 +640,71 @@
   }
   
   .actions {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+  }
+  
+  .edit-btn, .delete-btn, .archive-btn, .deaccession-btn {
+    flex: 1;
+    min-width: 60px;
+    text-align: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .modal-content {
+    width: 95%;
+    max-height: 95vh;
+  }
+  
+  .modal-header {
+    padding: 1rem;
+  }
+  
+  .modal-header h2 {
+    font-size: 1rem;
+  }
+  
+  .image-preview {
+    width: 100px;
+    height: 100px;
+  }
+  
+  .image-placeholder span {
+    font-size: 2rem;
+  }
+  
+  .artwork-table th,
+  .artwork-table td {
+    padding: 0.5rem;
+    font-size: 0.75rem;
+  }
+  
+  .title-cell {
+    max-width: 120px;
+  }
+  
+  .status-badge {
+    font-size: 0.65rem;
+    padding: 0.15rem 0.5rem;
+  }
+  
+  .actions {
     flex-direction: column;
-    gap: 0.25rem;
   }
   
   .edit-btn, .delete-btn, .archive-btn, .deaccession-btn {
     width: 100%;
+  }
+}
+
+@media (max-width: 380px) {
+  .artwork-table {
+    min-width: 480px;
+  }
+  
+  .title-cell {
+    max-width: 80px;
   }
 }
