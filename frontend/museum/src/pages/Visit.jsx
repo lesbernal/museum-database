@@ -14,7 +14,7 @@ export default function Visit() {
   const hours = [
     { day: "Tuesday", hours: "10:00 AM - 6:00 PM" },
     { day: "Wednesday", hours: "10:00 AM - 6:00 PM" },
-    { day: "Thursday", hours: "10:00 AM - 9:00 PM", note: "Late night" },
+    { day: "Thursday", hours: "10:00 AM - 9:00 PM", note: "Free Admission" },
     { day: "Friday", hours: "10:00 AM - 6:00 PM" },
     { day: "Saturday", hours: "10:00 AM - 6:00 PM" },
     { day: "Sunday", hours: "12:30 PM - 6:00 PM" },
@@ -125,7 +125,6 @@ export default function Visit() {
           <button className="purchase-btn" onClick={handlePurchaseTickets}>
             Purchase Tickets
           </button>
-          <p className="member-note">Members: Log in to access your free tickets</p>
         </div>
       </div>
 
