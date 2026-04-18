@@ -29,12 +29,6 @@ export default function ReportsPanel() {
         >
           Visitor Analytics
         </button>
-        <button
-          className={activeReport === "giftShop" ? "active" : ""}
-          onClick={() => setActiveReport("giftShop")}
-        >
-          Gift Shop
-        </button>
       </div>
 
       {activeReport === "revenue"          && <RevenueReport />}
