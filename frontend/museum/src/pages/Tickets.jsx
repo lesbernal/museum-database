@@ -14,27 +14,21 @@ const TICKET_TYPES = [
 
 const MAX_TOTAL_TICKETS = 30;
 
+// Tier discount percentages (for display purposes only - trigger does actual calculation)
+const TIER_DISCOUNT = {
+  "Bronze": 10,
+  "Silver": 15,
+  "Gold": 20,
+  "Platinum": 25,
+  "Benefactor": 100,  // Free admission
+  "Leadership Circle": 100,  // Free admission
+};
+
 const MONTHS = [
   "January","February","March","April","May","June",
   "July","August","September","October","November","December",
 ];
 const DAYS = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
-
-// Tier → discount % on additional tickets (after the 1 free one is used)
-const TIER_DISCOUNT = {
-  Bronze:              0,
-  Silver:              15,
-  Gold:                20,
-  Platinum:            25,
-  Benefactor:          25,
-  "Leadership Circle": 25,
-};
-
-function getAdditionalPrice(basePrice, memberLevel) {
-  const pct = TIER_DISCOUNT[memberLevel] ?? 0;
-  if (pct === 0) return basePrice;
-  return parseFloat((basePrice * (1 - pct / 100)).toFixed(2));
-}
 
 export default function Tickets() {
   const navigate = useNavigate();
@@ -43,61 +37,49 @@ export default function Tickets() {
   const [quantities,   setQuantities]   = useState({
     "Adult 19+": 0, "Senior 65+": 0, "Youth 13-18": 0, "Child 12 & Under": 0,
   });
-  const [isMember,              setIsMember]              = useState(false);
-  const [memberLevel,           setMemberLevel]           = useState(null);
-  const [freeTicketUsedToday,   setFreeTicketUsedToday]   = useState(false);
-  const [checkingFreeTicket,    setCheckingFreeTicket]    = useState(false);
-  const [isThursday,            setIsThursday]            = useState(false);
-  const [errorMsg,              setErrorMsg]              = useState("");
-  const [step,                  setStep]                  = useState("calendar");
-  const [currentMonth,          setCurrentMonth]          = useState(new Date().getMonth());
-  const [currentYear,           setCurrentYear]           = useState(new Date().getFullYear());
-  const [selectedDate,          setSelectedDate]          = useState(null);
+  const [isMember,      setIsMember]      = useState(false);
+  const [memberLevel,   setMemberLevel]   = useState(null);
+  const [errorMsg,      setErrorMsg]      = useState("");
+  const [step,          setStep]          = useState("calendar");
+  const [currentMonth,  setCurrentMonth]  = useState(new Date().getMonth());
+  const [currentYear,   setCurrentYear]   = useState(new Date().getFullYear());
+  const [selectedDate,  setSelectedDate]  = useState(null);
+  const [isThursday,    setIsThursday]    = useState(false);
 
   const userId = localStorage.getItem("user_id");
 
-  // ── Check membership ────────────────────────────────────────────────────────
+  // ── Check membership ──
   useEffect(() => {
     if (!userId) return;
     const token = localStorage.getItem("token") || userId;
     fetch(`${BASE_URL}/members/${userId}`, {
       headers: { Authorization: `Bearer ${token}` },
     })
-      .then(res => { if (!res.ok) throw new Error("not a member"); return res.json(); })
+      .then(res => res.ok ? res.json() : null)
       .then(data => {
         if (data?.membership_level && data?.expiration_date) {
-          const s = String(data.expiration_date).slice(0, 10);
-          const [y, m, d] = s.split("-").map(Number);
-          const exp = new Date(y, m - 1, d);
+          const exp = new Date(String(data.expiration_date).slice(0, 10));
           const now = new Date(); now.setHours(0, 0, 0, 0);
-          if (exp >= now) { setIsMember(true); setMemberLevel(data.membership_level); }
+          if (exp >= now) {
+            setIsMember(true);
+            setMemberLevel(data.membership_level);
+          } else {
+            setIsMember(false);
+            setMemberLevel(null);
+          }
+        } else {
+          setIsMember(false);
+          setMemberLevel(null);
         }
       })
-      .catch(() => { setIsMember(false); setMemberLevel(null); });
+      .catch(() => {
+        setIsMember(false);
+        setMemberLevel(null);
+      });
   }, [userId]);
 
-  // ── Check if free ticket already used for selected visit date ───────────────
-  useEffect(() => {
-    if (!isMember || !visitDate || !userId) { setFreeTicketUsedToday(false); return; }
-    const token = localStorage.getItem("token") || userId;
-    setCheckingFreeTicket(true);
-    fetch(`${BASE_URL}/tickets?user_id=${userId}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then(res => res.ok ? res.json() : [])
-      .then(tickets => {
-        const alreadyUsed = Array.isArray(tickets) && tickets.some(t =>
-          String(t.visit_date).slice(0, 10) === visitDate &&
-          t.discount_type === "Member"
-        );
-        setFreeTicketUsedToday(alreadyUsed);
-      })
-      .catch(() => setFreeTicketUsedToday(false))
-      .finally(() => setCheckingFreeTicket(false));
-  }, [isMember, visitDate, userId]);
-
   // ── Calendar ────────────────────────────────────────────────────────────────
-  const getDaysInMonth     = (y, m) => new Date(y, m + 1, 0).getDate();
+  const getDaysInMonth = (y, m) => new Date(y, m + 1, 0).getDate();
   const getFirstDayOfMonth = (y, m) => new Date(y, m, 1).getDay();
 
   const isDateDisabled = (year, month, day) => {
@@ -136,7 +118,7 @@ export default function Tickets() {
 
   const renderCalendar = () => {
     const daysInMonth = getDaysInMonth(currentYear, currentMonth);
-    const firstDay    = getFirstDayOfMonth(currentYear, currentMonth);
+    const firstDay = getFirstDayOfMonth(currentYear, currentMonth);
     const cells = [];
     for (let i = 0; i < firstDay; i++)
       cells.push(<div key={`e-${i}`} className="calendar-day empty" />);
@@ -159,7 +141,7 @@ export default function Tickets() {
   // ── Quantity controls ───────────────────────────────────────────────────────
   function adjust(type, delta) {
     const total = Object.values(quantities).reduce((a, b) => a + b, 0);
-    const next  = (quantities[type] || 0) + delta;
+    const next = (quantities[type] || 0) + delta;
     if (total + delta > MAX_TOTAL_TICKETS || next < 0) return;
     setQuantities(prev => ({ ...prev, [type]: next }));
   }
@@ -171,123 +153,119 @@ export default function Tickets() {
     setQuantities(prev => ({ ...prev, [type]: num }));
   }
 
-  // ── Pricing ─────────────────────────────────────────────────────────────────
-  // memberFreeAvailable: member hasn't used their free ticket on this visit date yet
-  const memberFreeAvailable = isMember && !freeTicketUsedToday && !isThursday;
-  const discountPct = TIER_DISCOUNT[memberLevel] ?? 0;
-
-  // Build the ordered list of tickets for pricing purposes.
-  // Free slot goes to the FIRST paid ticket in quantity order.
-  const computeTickets = () => {
-    let freeSlotRemaining = memberFreeAvailable ? 1 : 0;
-
-    return TICKET_TYPES
-      .filter(t => quantities[t.type] > 0)
-      .map(t => {
-        const qty = quantities[t.type];
-
-        // Thursday: all free
-        if (isThursday) {
-          return { type: t.type, label: t.label, quantity: qty, basePrice: t.basePrice, finalPrice: 0, discountType: "None", isFreeSlot: false };
-        }
-
-        // Child tickets (basePrice=0): always free, never consume free slot
-        if (t.basePrice === 0) {
-          return { type: t.type, label: t.label, quantity: qty, basePrice: 0, finalPrice: 0, discountType: "None", isFreeSlot: false };
-        }
-
-        // First paid ticket — use the free member slot if available
-        if (freeSlotRemaining > 0) {
-          freeSlotRemaining--;
-          return { type: t.type, label: t.label, quantity: qty, basePrice: t.basePrice, finalPrice: 0, discountType: "Member", isFreeSlot: true };
-        }
-
-        // Additional paid tickets — apply tier discount
-        const additionalPrice = isMember
-          ? getAdditionalPrice(t.basePrice, memberLevel)
-          : t.basePrice;
-
-        return {
-          type:         t.type,
-          label:        t.label,
-          quantity:     qty,
-          basePrice:    t.basePrice,
-          finalPrice:   additionalPrice,
-          discountType: isMember ? "Member" : "None",
-          isFreeSlot:   false,
-        };
-      });
-  };
-
-  const computedTickets  = computeTickets();
-  const totalTickets     = Object.values(quantities).reduce((a, b) => a + b, 0);
-  const orderTotal       = computedTickets.reduce((s, t) => s + t.finalPrice * t.quantity, 0);
+  const totalTickets = Object.values(quantities).reduce((a, b) => a + b, 0);
   const remainingTickets = MAX_TOTAL_TICKETS - totalTickets;
 
-  // ── Row price display (for the ticket selector UI) ──────────────────────────
-  const getRowDisplayPrice = (ticketType) => {
-    if (isThursday) return "FREE";
-    const t = TICKET_TYPES.find(tt => tt.type === ticketType);
-    if (!t || t.basePrice === 0) return "FREE";
-
-    // Is this the type that will receive the free slot?
-    const firstPaidWithQty = TICKET_TYPES.find(tt => tt.basePrice > 0 && quantities[tt.type] > 0);
-    if (memberFreeAvailable && firstPaidWithQty?.type === ticketType) {
-      return (
-        <span>
-          <span style={{ textDecoration: "line-through", color: "#9ca3af", marginRight: 6, fontSize: "0.8em" }}>
-            ${t.basePrice.toFixed(2)}
-          </span>
-          FREE
-        </span>
-      );
+  // ── Calculate display price for a ticket (based on member tier) ──
+  const getDisplayPrice = (ticketType) => {
+    const ticket = TICKET_TYPES.find(t => t.type === ticketType);
+    if (!ticket || ticket.basePrice === 0) return { display: "FREE", value: 0, original: null };
+    
+    // Thursday = FREE for everyone
+    if (isThursday) return { display: "FREE", value: 0, original: null };
+    
+    // Benefactor/Leadership Circle = FREE
+    if (memberLevel === 'Benefactor' || memberLevel === 'Leadership Circle') {
+      return { display: "FREE", value: 0, original: null };
     }
-
-    if (isMember && discountPct > 0) {
-      const discounted = getAdditionalPrice(t.basePrice, memberLevel);
-      return (
-        <span>
-          <span style={{ textDecoration: "line-through", color: "#9ca3af", marginRight: 6, fontSize: "0.8em" }}>
-            ${t.basePrice.toFixed(2)}
-          </span>
-          ${discounted.toFixed(2)}
-        </span>
-      );
+    
+    // Member discount
+    if (isMember) {
+      const discountPct = TIER_DISCOUNT[memberLevel] || 0;
+      if (discountPct > 0 && discountPct < 100) {
+        const discountedPrice = ticket.basePrice * (1 - discountPct / 100);
+        return { 
+          display: `$${discountedPrice.toFixed(2)}`, 
+          value: discountedPrice,
+          original: `$${ticket.basePrice.toFixed(2)}`
+        };
+      }
     }
-
-    return `$${t.basePrice.toFixed(2)}`;
+    
+    // Regular price (non-member or Bronze with 0% discount)
+    return { display: `$${ticket.basePrice.toFixed(2)}`, value: ticket.basePrice, original: null };
   };
 
-  // ── Submit ──────────────────────────────────────────────────────────────────
+  // Build ticket list with display info
+  const getTicketsWithDisplay = () => {
+    const tickets = [];
+    
+    for (const ticketType of TICKET_TYPES.map(t => t.type)) {
+      const qty = quantities[ticketType];
+      if (qty === 0) continue;
+      
+      const ticket = TICKET_TYPES.find(t => t.type === ticketType);
+      const priceInfo = getDisplayPrice(ticketType);
+      
+      tickets.push({
+        type: ticketType,
+        label: ticket.label,
+        quantity: qty,
+        basePrice: ticket.basePrice,
+        priceInfo,
+      });
+    }
+    
+    return tickets;
+  };
+
+  const displayTickets = getTicketsWithDisplay();
+  const displayTotal = displayTickets.reduce((sum, t) => sum + (t.priceInfo.value * t.quantity), 0);
+
+  // ── Get member benefit message ──
+  const getMemberBenefitMessage = () => {
+    if (isThursday) return null;
+    if (memberLevel === 'Benefactor' || memberLevel === 'Leadership Circle') {
+      return `✨ As a ${memberLevel} member, all your tickets are FREE! ✨`;
+    }
+    const discountPct = TIER_DISCOUNT[memberLevel] || 0;
+    if (discountPct > 0) {
+      return `✨ ${memberLevel} Member: ${discountPct}% off all tickets! ✨`;
+    }
+    return `✨ ${memberLevel} Member benefits applied at checkout. ✨`;
+  };
+
+  // ── Submit - Let the TRIGGER handle final pricing! ──
   function handleSubmit(e) {
     e.preventDefault();
     setErrorMsg("");
-    if (!userId)    return setErrorMsg("Please log in first.");
+    if (!userId) return setErrorMsg("Please log in first.");
     if (!visitDate) return setErrorMsg("Select a visit date.");
     if (new Date(visitDate + "T00:00:00").getDay() === 1)
       return setErrorMsg("The museum is closed on Mondays.");
     if (totalTickets === 0) return setErrorMsg("Please select at least one ticket.");
 
-    const orderCount   = computedTickets.reduce((s, t) => s + t.quantity, 0);
-    const discountLabel = isThursday
-      ? "Thursday Special"
-      : memberFreeAvailable
-      ? `Member - ${memberLevel}${discountPct > 0 ? ` (1 free + ${discountPct}% off extras)` : " (1 free admission)"}`
-      : isMember
-      ? `Member - ${memberLevel}${discountPct > 0 ? ` (${discountPct}% off)` : ""}`
-      : "None";
+    // Build tickets - trigger will calculate final prices
+    const tickets = [];
+    
+    for (const ticketType of TICKET_TYPES.map(t => t.type)) {
+      const qty = quantities[ticketType];
+      if (qty === 0) continue;
+      
+      const ticket = TICKET_TYPES.find(t => t.type === ticketType);
+      
+      for (let i = 0; i < qty; i++) {
+        tickets.push({
+          type: ticket.type,
+          label: ticket.label,
+          quantity: 1,
+          basePrice: ticket.basePrice,
+          finalPrice: ticket.basePrice,  // Placeholder - trigger will override
+          discount_type: isMember ? "Member" : "None",
+          visit_date: visitDate,
+        });
+      }
+    }
 
     navigate("/checkout", {
       state: {
-        type:              "tickets",
-        tickets:           computedTickets,
+        type: "tickets",
+        tickets,
         visitDate,
-        discount:          discountLabel,
-        totalTickets:      orderCount,
-        total:             orderTotal,
-        isMember,
-        memberLevel,
-        memberFreeAvailable,
+        discount: isThursday ? "Thursday Special" : (isMember ? `Member (${TIER_DISCOUNT[memberLevel]}% off)` : "None"),
+        totalTickets: tickets.length,
+        total: 0,  // Placeholder - trigger will set actual
+        isThursday,
       },
     });
   }
@@ -296,19 +274,6 @@ export default function Tickets() {
     selectedDate?.toLocaleDateString("en-US", {
       weekday: "long", year: "numeric", month: "long", day: "numeric",
     }) ?? "";
-
-  // ── Benefit description for banner ─────────────────────────────────────────
-  const memberBenefitText = () => {
-    if (!memberLevel) return "";
-    const pct = TIER_DISCOUNT[memberLevel] ?? 0;
-    if (freeTicketUsedToday)
-      return pct > 0
-        ? `Your free ticket for this date is already used. Additional tickets are ${pct}% off.`
-        : "Your free ticket for this date has already been used. Additional tickets are at regular price.";
-    return pct > 0
-      ? `${memberLevel} Member: first ticket FREE, additional tickets ${pct}% off.`
-      : `${memberLevel} Member: first ticket FREE, additional tickets at regular price.`;
-  };
 
   return (
     <div className="tickets-page">
@@ -354,20 +319,17 @@ export default function Tickets() {
         <div className="tickets-selection-section">
           <form onSubmit={handleSubmit}>
 
-            {/* Benefit banners */}
+            {/* Thursday banner */}
             {isThursday && (
               <div className="thursday-discount-banner">
-                Admission is FREE on Thursdays!
+                🎉 Admission is FREE every Thursday! 🎉
               </div>
             )}
-            {isMember && !isThursday && !checkingFreeTicket && (
-              <div className={`member-discount-banner ${freeTicketUsedToday ? "member-discount-banner--used" : ""}`}>
-                ✓ {memberBenefitText()}
-              </div>
-            )}
-            {checkingFreeTicket && (
-              <div className="member-discount-banner" style={{ background: "#f9fafb", borderColor: "#e5e7eb", color: "#6b7280" }}>
-                Checking your membership benefits…
+
+            {/* Member benefit banner */}
+            {isMember && !isThursday && (
+              <div className="member-discount-banner">
+                {getMemberBenefitMessage()}
               </div>
             )}
 
@@ -382,6 +344,8 @@ export default function Tickets() {
             <div className="ticket-rows">
               {TICKET_TYPES.map(t => {
                 const isMaxReached = totalTickets >= MAX_TOTAL_TICKETS;
+                const priceInfo = getDisplayPrice(t.type);
+                
                 return (
                   <div className="ticket-row" key={t.type}>
                     <div className="ticket-row-info">
@@ -389,7 +353,16 @@ export default function Tickets() {
                       <div className="ticket-row-desc">{t.desc}</div>
                     </div>
                     <div className="ticket-row-price">
-                      {getRowDisplayPrice(t.type)}
+                      {priceInfo.original ? (
+                        <span>
+                          <span style={{ textDecoration: "line-through", color: "#9ca3af", marginRight: 6, fontSize: "0.8em" }}>
+                            {priceInfo.original}
+                          </span>
+                          {priceInfo.display}
+                        </span>
+                      ) : (
+                        priceInfo.display
+                      )}
                     </div>
                     <div className="ticket-counter">
                       <button type="button" className="counter-btn"
@@ -406,37 +379,34 @@ export default function Tickets() {
 
             {/* Summary */}
             <div className="tickets-summary">
-              {computedTickets.length === 0 ? (
+              {totalTickets === 0 ? (
                 <p className="tickets-empty-summary">No tickets selected</p>
               ) : (
                 <>
-                  {computedTickets.map(t => (
-                    <div className="summary-line" key={t.type}>
+                  {displayTickets.map(ticket => (
+                    <div className="summary-line" key={ticket.type}>
                       <span>
-                        {t.quantity}× {t.label}
-                        {t.isFreeSlot && (
-                          <span style={{ fontSize: 11, color: "#16a34a", marginLeft: 6 }}>
-                            (free member ticket)
-                          </span>
-                        )}
-                        {!t.isFreeSlot && isMember && discountPct > 0 && t.basePrice > 0 && !isThursday && (
+                        {ticket.quantity}× {ticket.label}
+                        {isMember && !isThursday && memberLevel !== 'Benefactor' && memberLevel !== 'Leadership Circle' && ticket.priceInfo.original && (
                           <span style={{ fontSize: 11, color: "#c9a84c", marginLeft: 6 }}>
-                            ({discountPct}% off)
+                            ({TIER_DISCOUNT[memberLevel]}% off)
                           </span>
                         )}
                       </span>
                       <span>
-                        {isThursday || (t.finalPrice === 0 && t.basePrice > 0)
-                          ? "FREE"
-                          : t.basePrice === 0
-                          ? "FREE"
-                          : `$${(t.finalPrice * t.quantity).toFixed(2)}`}
+                        {isThursday || (memberLevel === 'Benefactor' || memberLevel === 'Leadership Circle') 
+                          ? "FREE" 
+                          : ticket.priceInfo.display}
                       </span>
                     </div>
                   ))}
                   <div className="summary-total">
                     <span>Total</span>
-                    <span>{isThursday || orderTotal === 0 ? "FREE" : `$${orderTotal.toFixed(2)}`}</span>
+                    <span>
+                      {isThursday || (memberLevel === 'Benefactor' || memberLevel === 'Leadership Circle') 
+                        ? "FREE" 
+                        : `$${displayTotal.toFixed(2)}`}
+                    </span>
                   </div>
                 </>
               )}
@@ -444,11 +414,8 @@ export default function Tickets() {
 
             {errorMsg && <div className="tickets-feedback error">{errorMsg}</div>}
 
-            <button className="tickets-purchase-btn" type="submit"
-              disabled={totalTickets === 0 || checkingFreeTicket}>
-              {totalTickets > 0
-                ? `Proceed to Checkout — ${isThursday || orderTotal === 0 ? "FREE" : `$${orderTotal.toFixed(2)}`}`
-                : "Select Tickets to Continue"}
+            <button className="tickets-purchase-btn" type="submit" disabled={totalTickets === 0}>
+              Proceed to Checkout
             </button>
           </form>
         </div>
