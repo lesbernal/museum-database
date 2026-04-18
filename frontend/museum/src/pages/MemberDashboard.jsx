@@ -517,8 +517,8 @@ export default function MemberDashboard() {
     ...giftOrders.map(o => ({ ...o, order_type: "Gift Shop", date: o.transaction_datetime, fulfillment_type: o.fulfillment_type, shipping_address: o.shipping_address })),
   ].sort((a, b) => new Date(b.date) - new Date(a.date));
 
-  const groupedByPurchase = tickets.reduce((acc, ticket) => {
-    const key = ticket.purchase_date;
+  const groupedByTransaction = tickets.reduce((acc, ticket) => {
+    const key = ticket.transaction_id || `single_${ticket.ticket_id}`;
     if (!acc[key]) acc[key] = [];
     acc[key].push(ticket);
     return acc;
@@ -651,27 +651,82 @@ export default function MemberDashboard() {
   const renderPurchases = () => (
     <>
       <div className="purchases-section">
-        <div className="purchase-group"><h3>Tickets</h3>
-          {tickets.length === 0 ? (<div className="empty-state small"><p>No tickets purchased yet.</p><Link to="/tickets" className="empty-action">Buy tickets</Link></div>) : (
+        <div className="purchase-group">
+          <h3>Tickets</h3>
+          {tickets.length === 0 ? (
+            <div className="empty-state small">
+              <p>No tickets purchased yet.</p>
+              <Link to="/tickets" className="empty-action">Buy tickets</Link>
+            </div>
+          ) : (
             <div className="purchase-list">
-              {Object.entries(groupedByPurchase).map(([purchaseDate, purchaseTickets]) => {
-                const total = purchaseTickets.reduce((sum, t) => sum + parseFloat(t.final_price || 0), 0);
-                return (<div key={purchaseDate} className="purchase-item"><div className="purchase-date">{fmt(purchaseDate)}</div><div className="purchase-info"><span className="purchase-qty">{purchaseTickets.length} tickets</span></div><div className="purchase-amount">${total.toFixed(2)}</div><button className="view-ticket-btn" onClick={() => setSelectedPurchaseTickets(purchaseTickets)}>View Tickets</button></div>);
+              {Object.entries(groupedByTransaction).map(([transactionId, transactionTickets]) => {
+                const total = transactionTickets.reduce((sum, t) => sum + parseFloat(t.final_price || 0), 0);
+                const purchaseDate = transactionTickets[0]?.purchase_date;
+                const ticketTypes = [...new Set(transactionTickets.map(t => t.ticket_type))].join(", ");
+                return (
+                  <div key={transactionId} className="purchase-item">
+                    <div className="purchase-date">{fmt(purchaseDate)}</div>
+                    <div className="purchase-info">
+                      <span className="purchase-type">{ticketTypes}</span>
+                      <span className="purchase-qty">{transactionTickets.length} tickets</span>
+                    </div>
+                    <div className="purchase-amount">${total.toFixed(2)}</div>
+                    <button 
+                      className="view-ticket-btn"
+                      onClick={() => setSelectedPurchaseTickets(transactionTickets)}
+                    >
+                      View Tickets
+                    </button>
+                  </div>
+                );
               })}
             </div>
           )}
         </div>
 
-        <div className="purchase-group"><h3>Donations</h3>
-          {donations.length === 0 ? (<div className="empty-state small"><p>No donations yet.</p><Link to="/donations" className="empty-action">Make a donation</Link></div>) : (
+        <div className="purchase-group">
+          <h3>Donations</h3>
+          {donations.length === 0 ? (
+            <div className="empty-state small">
+              <p>No donations yet.</p>
+              <Link to="/donations" className="empty-action">Make a donation</Link>
+            </div>
+          ) : (
             <div className="purchase-list">
-              {donations.map(d => (<div key={d.donation_id} className="purchase-item"><div className="purchase-date">{fmt(d.donation_date)}</div><div className="purchase-info"><span className="purchase-type">{d.donation_type}</span></div><div className="purchase-amount">${parseFloat(d.amount || 0).toFixed(2)}</div><button className="view-donation-btn" onClick={() => setSelectedDonation(d)}>View Receipt</button></div>))}
+              {donations.map(donation => (
+                <div key={donation.donation_id} className="purchase-item">
+                  <div className="purchase-date">{fmt(donation.donation_date)}</div>
+                  <div className="purchase-info">
+                    <span className="purchase-type">{donation.donation_type}</span>
+                  </div>
+                  <div className="purchase-amount">${parseFloat(donation.amount || 0).toFixed(2)}</div>
+                  <button 
+                    className="view-donation-btn"
+                    onClick={() => setSelectedDonation(donation)}
+                  >
+                    View Receipt
+                  </button>
+                </div>
+              ))}
             </div>
           )}
         </div>
       </div>
-      {selectedPurchaseTickets && <TicketGroupModal tickets={selectedPurchaseTickets} onClose={() => setSelectedPurchaseTickets(null)} />}
-      {selectedDonation && <DonationModal donation={selectedDonation} onClose={() => setSelectedDonation(null)} />}
+      
+      {selectedPurchaseTickets && (
+        <TicketGroupModal 
+          tickets={selectedPurchaseTickets} 
+          onClose={() => setSelectedPurchaseTickets(null)} 
+        />
+      )}
+      
+      {selectedDonation && (
+        <DonationModal 
+          donation={selectedDonation} 
+          onClose={() => setSelectedDonation(null)} 
+        />
+      )}
     </>
   );
 
