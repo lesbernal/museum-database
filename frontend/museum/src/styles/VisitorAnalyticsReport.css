@@ -1,0 +1,224 @@
+/* styles/VisitorAnalyticsReport.css */
+
+.visitor-analytics-report {
+  padding: 1.5rem;
+  background: #ffffff;
+  border: 1px solid #e5e5e5;
+}
+
+.report-header {
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #e5e5e5;
+}
+
+.report-header h2 {
+  font-size: 1.5rem;
+  font-weight: 500;
+  margin-bottom: 0.25rem;
+  color: #1a1a2e;
+}
+
+.report-header p {
+  color: #666666;
+  font-size: 0.875rem;
+}
+
+/* Filter Section */
+.filter-section {
+  background: #f8f9fa;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  border: 1px solid #e5e5e5;
+}
+
+.filter-row {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  align-items: flex-end;
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  flex: 1;
+  min-width: 150px;
+}
+
+.filter-group label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #555555;
+}
+
+.filter-group input,
+.filter-group select {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #d1d5db;
+  font-size: 0.875rem;
+  background: #ffffff;
+  color: #1f2937;
+}
+
+.filter-group input:focus,
+.filter-group select:focus {
+  outline: none;
+  border-color: #c5a028;
+}
+
+.generate-btn {
+  padding: 0.5rem 1rem;
+  background: #c5a028;
+  border: none;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: #000000;
+}
+
+.generate-btn:hover { background: #d4af37; }
+
+.reset-btn {
+  padding: 0.5rem 1rem;
+  background: transparent;
+  border: 1px solid #d1d5db;
+  color: #6b7280;
+  cursor: pointer;
+  font-size: 0.875rem;
+  transition: all 0.2s ease;
+}
+
+.reset-btn:hover {
+  border-color: #c5a028;
+  color: #c5a028;
+}
+
+/* Summary Grid — always 4 columns */
+.va-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.va-summary-card {
+  background: #f8f9fa;
+  border: 1px solid #e5e5e5;
+  padding: 1.25rem;
+  text-align: center;
+}
+
+.va-summary-card.primary {
+  background: #c5a028;
+  border-color: #c5a028;
+}
+
+.va-summary-card .va-summary-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #6b7280;
+  margin-bottom: 0.5rem;
+}
+
+.va-summary-card .va-summary-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1a1a2e;
+}
+
+.va-summary-card.primary .va-summary-label {
+  color: rgba(0, 0, 0, 0.7);
+}
+
+.va-summary-card.primary .va-summary-value {
+  color: #000000;
+}
+
+/* Data Section */
+.data-section {
+  margin-top: 1.5rem;
+}
+
+.data-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.data-header h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1a1a2e;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Table */
+.table-container {
+  overflow-x: auto;
+  overflow-y: auto;
+  max-height: 500px;
+  border: 1px solid #e5e5e5;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.data-table thead {
+  background: #f8f9fa;
+  border-bottom: 1px solid #e5e5e5;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.data-table th {
+  text-align: left;
+  padding: 0.875rem;
+  font-weight: 600;
+  color: #1f2937;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 0.7rem;
+  background: #f8f9fa;
+}
+
+.data-table td {
+  padding: 0.75rem;
+  border-bottom: 1px solid #f3f4f6;
+  color: #374151;
+}
+
+.data-table tbody tr:hover {
+  background: #f8f9fa;
+}
+
+/* Loading & No Results */
+.loading, .no-results {
+  text-align: center;
+  padding: 2rem;
+  color: #9ca3af;
+  font-size: 0.875rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .visitor-analytics-report { padding: 1rem; }
+  .va-summary-grid { grid-template-columns: repeat(2, 1fr); }
+  .filter-group { min-width: 100%; }
+  .filter-row { flex-direction: column; }
+  .generate-btn, .reset-btn { width: 100%; }
+}

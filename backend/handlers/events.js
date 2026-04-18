@@ -95,14 +95,14 @@ module.exports = (req, res, parsedUrl) => {
 
       const sql = `
         INSERT INTO event
-        (gallery_id, event_name, description, event_date, capacity, member_only, total_attendees, event_type)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        (gallery_id, event_name, description, event_date, capacity, member_only, total_attendees, event_type, image_url)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
       `;
 
       return db.query(sql,
         [data.gallery_id, data.event_name, data.description, data.event_date,
          data.capacity, data.member_only, data.total_attendees || 0,
-         data.event_type || "General"],
+         data.event_type || "General", data.image_url || null],
         (err) => {
           if (err) {
             res.writeHead(400, { "Content-Type": "application/json" });
@@ -129,14 +129,21 @@ module.exports = (req, res, parsedUrl) => {
 
       const sql = `
         UPDATE event
+<<<<<<< HEAD
         SET gallery_id=?, event_name=?, description=?, event_date=?,
             capacity=?, member_only=?, event_type=?
         WHERE event_id=?
+=======
+        SET gallery_id = ?, event_name = ?, description = ?, event_date = ?,
+            capacity = ?, member_only = ?, event_type = ?, image_url = ?
+        WHERE event_id = ?
+>>>>>>> 6fdd3d7f4b68f5d59840091a729f70937f6e3dcd
       `;
 
       db.query(sql,
         [data.gallery_id, data.event_name, data.description, data.event_date,
-         data.capacity, data.member_only, data.event_type || "General", eventId],
+         data.capacity, data.member_only, data.event_type || "General",
+         data.image_url || null, eventId],
         (err) => {
           if (err) {
             res.writeHead(400, { "Content-Type": "application/json" });
@@ -243,6 +250,10 @@ module.exports = (req, res, parsedUrl) => {
                 res.writeHead(500, { "Content-Type": "application/json" });
                 return res.end(JSON.stringify({ error: err.sqlMessage }));
               }
+<<<<<<< HEAD
+=======
+
+>>>>>>> 6fdd3d7f4b68f5d59840091a729f70937f6e3dcd
               db.query(
                 "INSERT INTO event_signup (user_id, event_id, quantity, signup_date) VALUES (?, ?, ?, CURDATE())",
                 [userId, eventId, quantity],

@@ -16,7 +16,6 @@ const TYPE_COLORS = {
   "Member Only": { bg: "#fef9c3", color: "#854d0e" },
 };
 
-// Toast Component
 const SuccessToast = ({ show, editingEvent, onClose }) => {
   if (!show) return null;
   setTimeout(() => onClose(), 3000);
@@ -27,7 +26,6 @@ const SuccessToast = ({ show, editingEvent, onClose }) => {
   );
 };
 
-// Form Modal Component
 const EventFormModal = ({ isOpen, editingEvent, formData, galleries, onSubmit, onCancel, onChange }) => {
   if (!isOpen) return null;
 
@@ -124,6 +122,28 @@ const EventFormModal = ({ isOpen, editingEvent, formData, galleries, onSubmit, o
               </div>
             </div>
 
+            {/* Image URL field */}
+            <div className="form-group full-width">
+              <label>Image URL <span style={{ fontSize: 11, color: "#9ca3af", fontWeight: 400 }}>(optional)</span></label>
+              <input
+                type="text"
+                name="image_url"
+                value={formData.image_url || ""}
+                onChange={onChange}
+                placeholder="https://example.com/image.jpg"
+              />
+              {formData.image_url && (
+                <div style={{ marginTop: "0.5rem" }}>
+                  <img
+                    src={formData.image_url}
+                    alt="Preview"
+                    style={{ width: "100%", maxHeight: 160, objectFit: "cover", borderRadius: 4, border: "1px solid #e5e7eb" }}
+                    onError={e => { e.target.style.display = "none"; }}
+                  />
+                </div>
+              )}
+            </div>
+
             <div className="form-group full-width" style={{ flexDirection: "row", alignItems: "center", gap: "0.75rem" }}>
               <input
                 type="checkbox"
@@ -151,7 +171,7 @@ const EventFormModal = ({ isOpen, editingEvent, formData, galleries, onSubmit, o
   );
 };
 
-export default function EventManager({ 
+export default function EventManager({
   events: externalEvents,
   onAdd,
   onUpdate,
@@ -160,57 +180,57 @@ export default function EventManager({
   loading: externalLoading,
   error: externalError
 }) {
-  const [isFormOpen, setIsFormOpen] = useState(false);
-  const [editingEvent, setEditingEvent] = useState(null);
-  const [galleries, setGalleries] = useState([]);
-  const [searchTerm, setSearchTerm] = useState("");
+  const [isFormOpen,       setIsFormOpen]       = useState(false);
+  const [editingEvent,     setEditingEvent]     = useState(null);
+  const [galleries,        setGalleries]        = useState([]);
+  const [searchTerm,       setSearchTerm]       = useState("");
   const [showSuccessToast, setShowSuccessToast] = useState(false);
-  const [formData, setFormData] = useState({
-    gallery_id: "",
-    event_name: "",
-    description: "",
-    event_date: "",
-    capacity: "",
-    member_only: 0,
+  const [formData,         setFormData]         = useState({
+    gallery_id:      "",
+    event_name:      "",
+    description:     "",
+    event_date:      "",
+    capacity:        "",
+    member_only:     0,
     total_attendees: 0,
-    event_type: "General",
+    event_type:      "General",
+    image_url:       "",
   });
 
-  // Load galleries
   useEffect(() => {
     getGalleries()
       .then(data => setGalleries(data))
       .catch(err => console.error("Failed to load galleries:", err));
   }, []);
 
-  // Prefill form for edit
   useEffect(() => {
     if (editingEvent) {
       setFormData({
-        gallery_id: editingEvent.gallery_id || "",
-        event_name: editingEvent.event_name || "",
-        description: editingEvent.description || "",
-        event_date: editingEvent.event_date?.split("T")[0] ?? editingEvent.event_date ?? "",
-        capacity: editingEvent.capacity || "",
-        member_only: editingEvent.member_only || 0,
+        gallery_id:      editingEvent.gallery_id      || "",
+        event_name:      editingEvent.event_name      || "",
+        description:     editingEvent.description     || "",
+        event_date:      editingEvent.event_date?.split("T")[0] ?? editingEvent.event_date ?? "",
+        capacity:        editingEvent.capacity        || "",
+        member_only:     editingEvent.member_only     || 0,
         total_attendees: editingEvent.total_attendees || 0,
-        event_type: editingEvent.event_type || "General",
+        event_type:      editingEvent.event_type      || "General",
+        image_url:       editingEvent.image_url       || "",
       });
     } else {
       setFormData({
-        gallery_id: "",
-        event_name: "",
-        description: "",
-        event_date: "",
-        capacity: "",
-        member_only: 0,
+        gallery_id:      "",
+        event_name:      "",
+        description:     "",
+        event_date:      "",
+        capacity:        "",
+        member_only:     0,
         total_attendees: 0,
-        event_type: "General",
+        event_type:      "General",
+        image_url:       "",
       });
     }
   }, [editingEvent]);
 
-  // Filter events based on search term
   const filteredEvents = externalEvents.filter(event =>
     event.event_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     event.event_type?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -242,26 +262,11 @@ export default function EventManager({
     }
   };
 
-  const handleAddClick = () => {
-    setEditingEvent(null);
-    setIsFormOpen(true);
-  };
+  const handleAddClick    = () => { setEditingEvent(null); setIsFormOpen(true); };
+  const handleEditClick   = (event) => { setEditingEvent(event); setIsFormOpen(true); };
+  const handleCancel      = () => { setIsFormOpen(false); setEditingEvent(null); };
+  const handleToastClose  = () => { setShowSuccessToast(false); };
 
-  const handleEditClick = (event) => {
-    setEditingEvent(event);
-    setIsFormOpen(true);
-  };
-
-  const handleCancel = () => {
-    setIsFormOpen(false);
-    setEditingEvent(null);
-  };
-
-  const handleToastClose = () => {
-    setShowSuccessToast(false);
-  };
-
-  // Event Table Component
   const EventTable = () => {
     if (filteredEvents.length === 0) {
       return <div className="empty-state">No events found.</div>;
