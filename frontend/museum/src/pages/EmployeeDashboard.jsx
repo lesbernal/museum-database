@@ -310,6 +310,11 @@ export default function EmployeeDashboard() {
   const [selectedMember,  setSelectedMember]  = useState(null);
   const [memberModalOpen, setMemberModalOpen] = useState(false);
 
+  // Add these state declarations near your other useState hooks (around line 320)
+  const [cafeAlerts, setCafeAlerts] = useState([]);
+  const [giftShopAlerts, setGiftShopAlerts] = useState([]);
+  const [dismissedAlerts, setDismissedAlerts] = useState({});
+
   const notify = (msg, type="success") => {
     setFeedback({ msg, type });
     setTimeout(()=>setFeedback(null), 7000);
@@ -340,8 +345,51 @@ export default function EmployeeDashboard() {
     load();
   },[]);
 
+  const loadStockAlerts = async () => {
+    try {
+      // Use the already imported functions from the top of the file
+      const [cafeItemsModule, giftItemsModule] = await Promise.all([
+        import("../services/api").then(module => module.getCafeItems()),
+        import("../services/api").then(module => module.getGiftShopItems())
+      ]);
+      
+      const cafeItems = cafeItemsModule;
+      const giftShopItems = giftItemsModule;
+      
+      const cafeAlertsData = cafeItems
+        .filter((item) => Number(item.low_stock_alert) === 1)
+        .map((item) => ({ source: "Cafe", name: item.item_name, stock: Number(item.stock_quantity) }));
+      
+      const giftShopAlertsData = giftShopItems
+        .filter((item) => Number(item.low_stock_alert) === 1)
+        .map((item) => ({ source: "Gift Shop", name: item.item_name, stock: Number(item.stock_quantity) }));
+      
+      // Only show alerts relevant to this employee's department
+      const deptId = empRecord?.department_id;
+      console.log("Department ID:", deptId);
+      console.log("Cafe alerts found:", cafeAlertsData.length);
+      console.log("Gift shop alerts found:", giftShopAlertsData.length);
+      
+      if (deptId === 5) { // Retail
+        setGiftShopAlerts(giftShopAlertsData);
+        setCafeAlerts([]);
+      } else if (deptId === 6) { // Cafe
+        setCafeAlerts(cafeAlertsData);
+        setGiftShopAlerts([]);
+      } else if (deptId === 1) { // Admin
+        setCafeAlerts(cafeAlertsData);
+        setGiftShopAlerts(giftShopAlertsData);
+      } else {
+        setCafeAlerts([]);
+        setGiftShopAlerts([]);
+      }
+    } catch (err) {
+      console.error("Stock alert load error:", err);
+    }
+  };
+
   // ── Load data once empRecord is known ───────────────────────────────────────
-  useEffect(()=>{
+  useEffect(() => {
     if (!empRecord) return;
     const deptId = empRecord.department_id;
     const perm   = DEPT[deptId] || DEPT[4];
@@ -361,6 +409,9 @@ export default function EmployeeDashboard() {
       if (results[3].status==="fulfilled") setTickets(results[3].value||[]);
       if (results[4].status==="fulfilled") setCafeTransactions(results[4].value||[]);
       if (results[5].status==="fulfilled") setGiftTransactions(results[5].value||[]);
+      
+      // Load stock alerts
+      await loadStockAlerts();
     }
     loadData();
 
@@ -370,7 +421,7 @@ export default function EmployeeDashboard() {
         headers:{ Authorization:`Bearer ${token}` },
       }).then(r=>r.ok?r.json():[]).then(d=>setPendingCount(Array.isArray(d)?d.length:0)).catch(()=>{});
     }
-  },[empRecord]);
+  }, [empRecord]);
 
   const deptId  = empRecord?.department_id;
   const perm    = DEPT[deptId] || DEPT[4];
@@ -411,7 +462,6 @@ export default function EmployeeDashboard() {
       notify("Password changed successfully"); 
       setPwForm({new_password:"", confirm_password:""});
       
-      // 🔥 ADD THIS - Reload profile to ensure data is intact
       const refreshedProfile = await getMyProfile();
       setProfile(refreshedProfile);
       setForm(refreshedProfile);
@@ -736,6 +786,100 @@ export default function EmployeeDashboard() {
 
   return (
     <div className="dashboard-page employee-dashboard">
+      {/* Stock Alert Toasts */}
+      {cafeAlerts.length > 0 && !dismissedAlerts.cafe && (
+        <div className="dashboard-toast cafe-toast" style={{ position: 'fixed', top: '80px', right: '20px', zIndex: 1000, maxWidth: '350px' }}>
+          <div className="dashboard-toast-content">
+            <div className="dashboard-toast-header">
+              <span className="toast-icon">☕</span>
+              <span className="toast-title">Cafe Inventory Alert</span>
+              <button className="toast-close" onClick={() => setDismissedAlerts(prev => ({ ...prev, cafe: true }))}>×</button>
+            </div>
+            <div className="dashboard-toast-body">
+              <p>{cafeAlerts.length} item{cafeAlerts.length !== 1 ? "s are" : " is"} running low on stock.</p>
+              <div className="toast-items-list">
+                {cafeAlerts.slice(0, 3).map((alert) => (
+                  <div key={alert.name} className="toast-item">
+                    <span className="toast-item-name">{alert.name}</span>
+                    <span className="toast-item-stock low">{alert.stock} left</span>
+                  </div>
+                ))}
+                {cafeAlerts.length > 3 && (
+                  <div className="toast-item-more">+{cafeAlerts.length - 3} more items</div>
+                )}
+              </div>
+            </div>
+            <div className="dashboard-toast-footer">
+              <button 
+                className="toast-resolve-btn"
+                onClick={() => {
+                  setActiveTab("cafe");
+                  setDismissedAlerts(prev => ({ ...prev, cafe: true }));
+                  setTimeout(() => {
+                    const inventorySection = document.querySelector('.cafe-inventory-section');
+                    if (inventorySection) inventorySection.scrollIntoView({ behavior: 'smooth' });
+                  }, 100);
+                }}
+              >
+                Go to Cafe Inventory →
+              </button>
+              <button 
+                className="toast-dismiss-btn"
+                onClick={() => setDismissedAlerts(prev => ({ ...prev, cafe: true }))}
+              >
+                Dismiss
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {giftShopAlerts.length > 0 && !dismissedAlerts.gift && (
+        <div className="dashboard-toast gift-toast" style={{ position: 'fixed', top: '80px', right: '20px', zIndex: 1000, maxWidth: '350px' }}>
+          <div className="dashboard-toast-content">
+            <div className="dashboard-toast-header">
+              <span className="toast-icon">🎁</span>
+              <span className="toast-title">Gift Shop Inventory Alert</span>
+              <button className="toast-close" onClick={() => setDismissedAlerts(prev => ({ ...prev, gift: true }))}>×</button>
+            </div>
+            <div className="dashboard-toast-body">
+              <p>{giftShopAlerts.length} item{giftShopAlerts.length !== 1 ? "s are" : " is"} running low on stock.</p>
+              <div className="toast-items-list">
+                {giftShopAlerts.slice(0, 3).map((alert) => (
+                  <div key={alert.name} className="toast-item">
+                    <span className="toast-item-name">{alert.name}</span>
+                    <span className="toast-item-stock low">{alert.stock} left</span>
+                  </div>
+                ))}
+                {giftShopAlerts.length > 3 && (
+                  <div className="toast-item-more">+{giftShopAlerts.length - 3} more items</div>
+                )}
+              </div>
+            </div>
+            <div className="dashboard-toast-footer">
+              <button 
+                className="toast-resolve-btn"
+                onClick={() => {
+                  setActiveTab("giftshop");
+                  setDismissedAlerts(prev => ({ ...prev, gift: true }));
+                  setTimeout(() => {
+                    const inventorySection = document.querySelector('.giftshop-inventory-section');
+                    if (inventorySection) inventorySection.scrollIntoView({ behavior: 'smooth' });
+                  }, 100);
+                }}
+              >
+                Go to Gift Shop Inventory →
+              </button>
+              <button 
+                className="toast-dismiss-btn"
+                onClick={() => setDismissedAlerts(prev => ({ ...prev, gift: true }))}
+              >
+                Dismiss
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="dashboard-hero employee-hero">
         <div className="dashboard-hero-overlay" />
         <div className="dashboard-hero-content">
