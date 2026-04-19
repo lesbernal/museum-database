@@ -2,43 +2,31 @@
 
 const db = require("../db");
 
+const DONATION_TIERS     = ["Benefactor", "Leadership Circle"];
+const PURCHASABLE_TIERS  = ["Bronze", "Silver", "Gold", "Platinum"];
+
 module.exports = (req, res, parsedUrl) => {
   const urlParts = parsedUrl.pathname.split("/").filter(Boolean);
 
   // ── GET ──────────────────────────────────────────────────────────────────────
   if (req.method === "GET") {
     const userId = parsedUrl.query?.user_id;
-    if (userId) {
-      db.query(
-        "SELECT * FROM membershiptransaction WHERE user_id = ? ORDER BY transaction_date DESC",
-        [userId],
-        (err, results) => {
-          if (err) return sendError(res, err);
-          sendJSON(res, results);
-        }
-      );
-    } else {
-      db.query(
-        "SELECT * FROM membershiptransaction ORDER BY transaction_date DESC",
-        (err, results) => {
-          if (err) return sendError(res, err);
-          sendJSON(res, results);
-        }
-      );
-    }
+    const sql    = userId
+      ? "SELECT * FROM membershiptransaction WHERE user_id = ? ORDER BY transaction_date DESC"
+      : "SELECT * FROM membershiptransaction ORDER BY transaction_date DESC";
+    db.query(sql, userId ? [userId] : [], (err, results) => {
+      if (err) return sendError(res, err);
+      sendJSON(res, results);
+    });
     return;
   }
 
-  // ── PATCH /membershiptransactions/pending — set pending_level ─────────────
-  // Body: { user_id, pending_level }
-  // pending_level can be a tier name (downgrade/upgrade) or 'cancelled'
+  // ── PATCH /membershiptransactions/pending ─────────────────────────────────
   if (req.method === "PATCH" && urlParts[1] === "pending") {
     parseBody(req, data => {
       const { user_id, pending_level } = data;
-      if (!user_id) {
-        res.writeHead(400, { "Content-Type": "application/json" });
-        return res.end(JSON.stringify({ error: "user_id required" }));
-      }
+      if (!user_id) return sendJSON(res, { error: "user_id required" }, 400);
+
       db.query(
         "UPDATE member SET pending_level = ? WHERE user_id = ?",
         [pending_level || null, user_id],
@@ -49,7 +37,7 @@ module.exports = (req, res, parsedUrl) => {
               ? "Membership cancellation scheduled. Your membership remains active until expiry."
               : pending_level
               ? `Tier change to ${pending_level} scheduled for next renewal.`
-              : "Pending change cleared."
+              : "Pending change cleared.",
           });
         }
       );
@@ -63,8 +51,7 @@ module.exports = (req, res, parsedUrl) => {
       const { user_id, membership_level, amount, payment_method, transaction_type } = data;
 
       if (!user_id || !membership_level || !amount || !payment_method) {
-        res.writeHead(400, { "Content-Type": "application/json" });
-        return res.end(JSON.stringify({ error: "Missing required fields" }));
+        return sendJSON(res, { error: "Missing required fields" }, 400);
       }
 
       const now    = new Date().toISOString().slice(0, 19).replace("T", " ");
@@ -75,33 +62,42 @@ module.exports = (req, res, parsedUrl) => {
         return d.toISOString().slice(0, 10);
       })();
 
-      // 1. Insert transaction record
-      const txSql = `
-        INSERT INTO membershiptransaction
-        (user_id, membership_level, transaction_date, amount, payment_method, transaction_type)
-        VALUES (?, ?, ?, ?, ?, ?)
-      `;
-      db.query(txSql,
-        [user_id, membership_level, now, amount, payment_method, transaction_type || "New"],
-        (err, txResult) => {
+      // Guard: Check if current membership is a donation tier before allowing purchase
+      db.query(
+        "SELECT membership_level, join_date FROM member WHERE user_id = ?",
+        [user_id],
+        (err, existing) => {
           if (err) return sendError(res, err);
 
-          // 2. Check if member record already exists
-          db.query(
-            "SELECT user_id, join_date FROM member WHERE user_id = ?",
-            [user_id],
-            (err, existing) => {
+          const currentLevel = existing[0]?.membership_level || null;
+
+          // BLOCK: If user is currently a donation-tier member, do not allow purchasing
+          // any purchasable tier — donation tiers can only be changed by the upgrade trigger.
+          if (currentLevel && DONATION_TIERS.includes(currentLevel) && PURCHASABLE_TIERS.includes(membership_level)) {
+            return sendJSON(res, {
+              error: `Your current ${currentLevel} membership was earned through donations and cannot be replaced by purchasing a standard tier. Please contact us if you need assistance.`
+            }, 403);
+          }
+
+          // Insert transaction record
+          const txSql = `
+            INSERT INTO membershiptransaction
+            (user_id, membership_level, transaction_date, amount, payment_method, transaction_type)
+            VALUES (?, ?, ?, ?, ?, ?)
+          `;
+          db.query(txSql,
+            [user_id, membership_level, now, amount, payment_method, transaction_type || "New"],
+            (err, txResult) => {
               if (err) return sendError(res, err);
 
               if (existing.length > 0) {
-                // ── RENEWAL / UPGRADE / DOWNGRADE ─────────────────────────
-                // Preserve original join_date, only extend expiration
-                // Also clear any pending_level since they just renewed
+                // ── EXISTING MEMBER: Renewal / Upgrade / Downgrade ────────────
+                // Preserve original join_date. Clear pending_level since they just acted.
                 db.query(
                   `UPDATE member SET
-                   membership_level = ?,
-                   expiration_date  = ?,
-                   pending_level    = NULL
+                     membership_level = ?,
+                     expiration_date  = ?,
+                     pending_level    = NULL
                    WHERE user_id = ?`,
                   [membership_level, expiry, user_id],
                   (err) => {
@@ -110,7 +106,7 @@ module.exports = (req, res, parsedUrl) => {
                   }
                 );
               } else {
-                // ── NEW MEMBERSHIP ────────────────────────────────────────
+                // ── NEW MEMBER ─────────────────────────────────────────────────
                 db.query(
                   "SELECT user_id FROM visitor WHERE user_id = ?",
                   [user_id],
@@ -120,8 +116,8 @@ module.exports = (req, res, parsedUrl) => {
                     function insertMemberRecord() {
                       db.query(
                         `INSERT INTO member
-                         (user_id, membership_level, join_date, expiration_date, pending_level)
-                         VALUES (?, ?, ?, ?, NULL)`,
+                           (user_id, membership_level, join_date, expiration_date, pending_level)
+                           VALUES (?, ?, ?, ?, NULL)`,
                         [user_id, membership_level, today, expiry],
                         (err) => {
                           if (err) return sendError(res, err);
@@ -132,8 +128,7 @@ module.exports = (req, res, parsedUrl) => {
 
                     if (visitorRows.length === 0) {
                       db.query(
-                        `INSERT INTO visitor (user_id, last_visit_date, total_visits)
-                         VALUES (?, ?, 0)`,
+                        `INSERT INTO visitor (user_id, last_visit_date, total_visits) VALUES (?, ?, 0)`,
                         [user_id, today],
                         (err) => {
                           if (err) return sendError(res, err);
@@ -154,7 +149,7 @@ module.exports = (req, res, parsedUrl) => {
     return;
   }
 
-  // ── DELETE — admin use only ───────────────────────────────────────────────
+  // ── DELETE ─────────────────────────────────────────────────────────────────
   if (req.method === "DELETE" && urlParts.length === 2) {
     db.query(
       "DELETE FROM membershiptransaction WHERE transaction_id = ?",
@@ -177,11 +172,7 @@ function updateUserRole(res, user_id, transaction_id, membership_level) {
     [user_id],
     (err) => {
       if (err) return sendError(res, err);
-      sendJSON(res, {
-        message: "Membership purchased successfully",
-        transaction_id,
-        membership_level,
-      }, 201);
+      sendJSON(res, { message: "Membership updated successfully", transaction_id, membership_level }, 201);
     }
   );
 }
