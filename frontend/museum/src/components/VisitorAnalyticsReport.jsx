@@ -193,7 +193,7 @@ export default function VisitorAnalyticsReport() {
           {data.topVisitors && data.topVisitors.length > 0 && (
             <div className="data-section">
               <div className="data-header">
-                <h3>🏆 Most Frequent Visitors</h3>
+                <h3>Most Frequent Visitors</h3>
                 <div className="pagination-controls">
                   <span>Rows per page:</span>
                   <select value={rowsPerPage} onChange={(e) => { setRowsPerPage(Number(e.target.value)); setCurrentPage(1); }}>
