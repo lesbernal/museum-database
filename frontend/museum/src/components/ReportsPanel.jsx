@@ -7,17 +7,11 @@ import VisitorAnalyticsReport from "./VisitorAnalyticsReport";
 import "../styles/ReportsPanel.css";
 
 export default function ReportsPanel() {
-  const [activeReport, setActiveReport] = useState("revenue");
+  const [activeReport, setActiveReport] = useState("artCollection"); // Changed default to artCollection
 
   return (
     <div className="reports-panel">
       <div className="report-buttons">
-        <button
-          className={activeReport === "revenue" ? "active" : ""}
-          onClick={() => setActiveReport("revenue")}
-        >
-          Revenue Report
-        </button>
         <button
           className={activeReport === "artCollection" ? "active" : ""}
           onClick={() => setActiveReport("artCollection")}
@@ -25,10 +19,10 @@ export default function ReportsPanel() {
           Art Collection
         </button>
         <button
-          className={activeReport === "membership" ? "active" : ""}
-          onClick={() => setActiveReport("membership")}
+          className={activeReport === "revenue" ? "active" : ""}
+          onClick={() => setActiveReport("revenue")}
         >
-          Membership
+          Revenue Report
         </button>
         <button
           className={activeReport === "visitorAnalytics" ? "active" : ""}
@@ -36,12 +30,18 @@ export default function ReportsPanel() {
         >
           Visitor Analytics
         </button>
+        <button
+          className={activeReport === "membership" ? "active" : ""}
+          onClick={() => setActiveReport("membership")}
+        >
+          Membership & Donor
+        </button>
       </div>
 
-      {activeReport === "revenue"          && <RevenueReport />}
       {activeReport === "artCollection"    && <ArtCollectionReport />}
-      {activeReport === "membership"       && <MembershipReport />}
+      {activeReport === "revenue"          && <RevenueReport />}
       {activeReport === "visitorAnalytics" && <VisitorAnalyticsReport />}
+      {activeReport === "membership"       && <MembershipReport />}
       {activeReport === "giftShop"         && <div className="coming-soon">Gift Shop Report Coming Soon</div>}
     </div>
   );

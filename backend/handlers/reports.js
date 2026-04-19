@@ -201,6 +201,7 @@ module.exports = (req, res, parsedUrl) => {
       SELECT 
         a.artwork_id, 
         a.title, 
+        a.image_url,
         a.creation_year, 
         a.medium, 
         a.current_display_status, 
