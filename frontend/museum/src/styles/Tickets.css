@@ -563,3 +563,18 @@
   border-color: #fca5a5 !important;
   color: #991b1b !important;
 }
+.summary-total {
+  color: var(--color-black, #111827) !important;
+}
+ 
+.summary-total span:last-child {
+  color: var(--color-black, #111827) !important;
+  font-weight: 600;
+}
+ 
+/* Member discount banner — no emoji version, bold text */
+.member-discount-banner strong {
+  font-weight: 600;
+  display: block;
+}
+ 
