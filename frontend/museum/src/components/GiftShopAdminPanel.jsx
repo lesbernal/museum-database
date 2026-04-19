@@ -18,7 +18,7 @@ const resources = [
   {
     id: "giftshop-items",
     label: "Gift Shop Item",
-    labelPlural: "📦 Inventory",
+    labelPlural: "Inventory",
     idKey: "item_id",
     load: getGiftShopItems,
     create: createGiftShopItem,

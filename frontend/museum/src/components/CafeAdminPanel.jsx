@@ -18,7 +18,7 @@ const resources = [
   {
     id: "cafe-items",
     label: "Cafe Item",
-    labelPlural: "☕ Menu Items",
+    labelPlural: "Menu Items",
     idKey: "item_id",
     load: getCafeItems,
     create: createCafeItem,
