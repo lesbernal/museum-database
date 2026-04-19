@@ -3,7 +3,32 @@ import { useState, useEffect, useRef } from "react";
 import { getArtists } from "../services/api";
 import "../styles/ArtworkManager.css";
 
-// Modal Component (moved outside to prevent re-rendering issues)
+const mediumOptions = [
+  "Oil on canvas",
+  "Oil on panel",
+  "Oil on masonite",
+  "Oil on wood",
+  "Acrylic on canvas",
+  "Watercolor on paper",
+  "Pastel on paper",
+  "Silkscreen ink on canvas",
+  "Synthetic polymer paint on canvas",
+  "Enamel on canvas",
+  "Oil, enamel, aluminum paint on canvas",
+  "Bronze",
+  "Steel, silver, tapestry, wood",
+  "Color engraving on wood",
+  "Fresco study",
+  "Pastel on paper",
+  "Photograph",
+  "Digital print",
+  "Mixed media",
+  "Sculpture",
+  "Installation"
+];
+
+
+// Modal Component
 const ArtworkFormModal = ({ isOpen, editingArtwork, form, errors, isSubmitting, uploading, imagePreview, fileInputRef, artists, onSubmit, onCancel, onChange, onImageUpload }) => {
   if (!isOpen) return null;
 
@@ -116,14 +141,17 @@ const ArtworkFormModal = ({ isOpen, editingArtwork, form, errors, isSubmitting, 
               
               <div className="form-group">
                 <label>Medium *</label>
-                <input
-                  type="text"
+                <select
                   name="medium"
                   value={form.medium}
                   onChange={onChange}
-                  placeholder="Oil on canvas"
                   className={errors.medium ? "error" : ""}
-                />
+                >
+                  <option value="">Select medium</option>
+                  {mediumOptions.map(option => (
+                    <option key={option} value={option}>{option}</option>
+                  ))}
+                </select>
                 {errors.medium && <span className="error-message">{errors.medium}</span>}
               </div>
             </div>
@@ -205,23 +233,16 @@ const ArtworkFormModal = ({ isOpen, editingArtwork, form, errors, isSubmitting, 
 };
 
 // Toast Component
-const SuccessToast = ({ show, editingArtwork, onClose }) => {
+const SuccessToast = ({ show, message, onClose }) => {
   if (!show) return null;
-  
   setTimeout(() => onClose(), 3000);
-  
-  return (
-    <div className="toast success">
-      ✅ Artwork {editingArtwork ? "updated" : "added"} successfully!
-    </div>
-  );
+  return <div className="toast success">✅ {message}</div>;
 };
 
 export default function ArtworkManager({ 
   artworks: externalArtworks,
   onAdd,
   onUpdate,
-  onDelete,
   onArchive,
   loading: externalLoading,
   error: externalError
@@ -229,8 +250,8 @@ export default function ArtworkManager({
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingArtwork, setEditingArtwork] = useState(null);
   const [artists, setArtists] = useState([]);
-  const [searchTerm, setSearchTerm] = useState("");
   const [showSuccessToast, setShowSuccessToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState("");
   
   // Form state
   const [form, setForm] = useState({
@@ -245,6 +266,8 @@ export default function ArtworkManager({
     current_display_status: "On Display",
     image_url: "",
   });
+
+
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [imagePreview, setImagePreview] = useState(null);
@@ -268,10 +291,8 @@ export default function ArtworkManager({
   // Prefill form for edit
   useEffect(() => {
     if (editingArtwork) {
-      // Simple date formatter - handles any format
       let formattedDate = "";
       if (editingArtwork.acquisition_date) {
-        // If it's a full ISO string like "2026-04-15T00:00:00.000Z", take just the date part
         if (editingArtwork.acquisition_date.includes('T')) {
           formattedDate = editingArtwork.acquisition_date.split('T')[0];
         } else {
@@ -310,13 +331,6 @@ export default function ArtworkManager({
       setImagePreview(null);
     }
   }, [editingArtwork]);
-
-  // Filter artworks based on search term
-  const filteredArtworks = externalArtworks.filter(artwork =>
-    artwork.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    artwork.medium?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    artwork.artist_name?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
 
   const validateForm = () => {
     const newErrors = {};
@@ -394,8 +408,10 @@ export default function ArtworkManager({
     try {
       if (editingArtwork) {
         await onUpdate(editingArtwork.artwork_id, form);
+        setToastMessage(`Artwork "${form.title}" updated successfully!`);
       } else {
         await onAdd(form);
+        setToastMessage(`Artwork "${form.title}" added successfully!`);
       }
       setShowSuccessToast(true);
       setIsFormOpen(false);
@@ -405,6 +421,14 @@ export default function ArtworkManager({
       setErrors(prev => ({ ...prev, submit: "Failed to save artwork. Please try again." }));
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleArchive = async (artworkId, artworkTitle) => {
+    if (window.confirm(`Archive "${artworkTitle}"? This artwork will be hidden from active views.`)) {
+      await onArchive(artworkId);
+      setToastMessage(`Artwork "${artworkTitle}" archived.`);
+      setShowSuccessToast(true);
     }
   };
 
@@ -439,9 +463,9 @@ export default function ArtworkManager({
     }
   };
 
-  // Artwork Table Component
+  // Artwork Table Component - uses externalArtworks directly (already filtered by AdminDashboard)
   const ArtworkTable = () => {
-    if (filteredArtworks.length === 0) {
+    if (externalArtworks.length === 0) {
       return <div className="empty-state">No artworks found</div>;
     }
 
@@ -461,7 +485,7 @@ export default function ArtworkManager({
             </tr>
           </thead>
           <tbody>
-            {filteredArtworks.map(artwork => (
+            {externalArtworks.map(artwork => (
               <tr key={artwork.artwork_id}>
                 <td className="image-cell">
                   {artwork.image_url ? (
@@ -492,8 +516,13 @@ export default function ArtworkManager({
                 </td>
                 <td className="actions">
                   <button className="edit-btn" onClick={() => handleEditClick(artwork)} title="Edit">Edit</button>
-                  <button className="archive-btn" onClick={() => onArchive(artwork.artwork_id)} title="Archive">Archive</button>
-                </td>
+                  <button 
+                    className="archive-btn" 
+                    onClick={() => onArchive(artwork.artwork_id, artwork.title)} 
+                    title="Archive"
+                  >
+                    Archive
+                  </button>                </td>
               </tr>
             ))}
           </tbody>
@@ -504,15 +533,9 @@ export default function ArtworkManager({
 
   return (
     <div className="artwork-manager">
+      <SuccessToast show={showSuccessToast} message={toastMessage} onClose={handleToastClose} />
+
       <div className="artwork-manager-header">
-        <div className="search-bar">
-          <input
-            type="text"
-            placeholder="Search artworks by title, artist, or medium..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
         <button className="add-btn" onClick={handleAddClick}>
           + Add New Artwork
         </button>

@@ -66,6 +66,25 @@ function ArchiveReasonModal({ type, onConfirm, onCancel }) {
   );
 }
 
+// Success Toast Component
+const SuccessToast = ({ show, message, onClose }) => {
+  if (!show) return null;
+  
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      onClose();
+    }, 3000);
+    return () => clearTimeout(timer);
+  }, [show, onClose]);
+  
+  return (
+    <div className="success-toast">
+      <span>✅ {message}</span>
+      <button onClick={onClose} className="success-toast-close">×</button>
+    </div>
+  );
+};
+
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState("artists");
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -81,6 +100,9 @@ export default function AdminDashboard() {
   const [dismissedAlerts, setDismissedAlerts] = useState({});
   const [cafeAlerts, setCafeAlerts] = useState([]);
   const [giftShopAlerts, setGiftShopAlerts] = useState([]);
+  const [confirmModal, setConfirmModal] = useState(null);
+  const [showSuccessToast, setShowSuccessToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState("");
 
   // Admin profile states
   const [adminProfile, setAdminProfile] = useState(null);
@@ -102,11 +124,26 @@ export default function AdminDashboard() {
   const [stockAlerts, setStockAlerts] = useState([]);
   const [showStockToast, setShowStockToast] = useState(false);
 
+  // Artist states (add near other filter states)
+  const [artistNationalityFilter, setArtistNationalityFilter] = useState("All");
+  const [artistCenturyFilter, setArtistCenturyFilter] = useState("All");
+  const [artistStatusFilter, setArtistStatusFilter] = useState("active"); // active, archived, all
+  const [artistSort, setArtistSort] = useState("name");
+
+
   // Artwork states
   const [artworkArtistFilter, setArtworkArtistFilter] = useState("All");
   const [artworkMediumFilter, setArtworkMediumFilter] = useState("All");
   const [artworkStatusFilter, setArtworkStatusFilter] = useState("All");
   const [artworkSort, setArtworkSort] = useState("title");
+
+
+  // Provenance states
+  const [provenanceMethodFilter, setProvenanceMethodFilter] = useState("All");
+  const [provenanceMinPrice, setProvenanceMinPrice] = useState("");
+  const [provenanceMaxPrice, setProvenanceMaxPrice] = useState("");
+  const [provenanceDateRange, setProvenanceDateRange] = useState("All");
+  const [provenanceSort, setProvenanceSort] = useState("date_desc");
 
   // Exhibition states
   const [exhibitionTypeFilter, setExhibitionTypeFilter] = useState("All");
@@ -271,22 +308,70 @@ export default function AdminDashboard() {
       artwork: loadArtworks,
       events: loadEvents,
     };
+    
+    // Display name mapping - THE FIX
+    const displayNames = {
+      exhibitions: "Exhibition",
+      galleries: "Gallery",
+      artwork: "Artwork",
+      events: "Event",
+    };
+    
     try {
-      await fetch(`${API_BASE}${endpoints[type]}`, {
+      const response = await fetch(`${API_BASE}${endpoints[type]}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ reason }),
       });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to archive ${displayNames[type]}`);
+      }
+      
       await reloaders[type]();
+      setToastMessage(`${displayNames[type]} archived successfully`);
+      setShowSuccessToast(true);
+      
     } catch (err) {
       console.error(err);
-      alert(`Failed to archive ${type.slice(0, -1)}`);
+      alert(`Failed to archive ${displayNames[type]}`);
     }
+  };
+
+  // Confirmation Modal Component
+  const ConfirmationModal = ({ title, message, onConfirm, onCancel }) => {
+    return (
+      <div className="um-overlay" onClick={onCancel}>
+        <div className="um-modal" style={{ maxWidth: 400 }} onClick={e => e.stopPropagation()}>
+          <div className="um-modal-header">
+            <h3>{title}</h3>
+            <button className="um-modal-close" onClick={onCancel}>×</button>
+          </div>
+          <div className="um-modal-body">
+            <p>{message}</p>
+          </div>
+          <div className="um-modal-footer">
+            <button className="um-cancel-btn" onClick={onCancel}>Cancel</button>
+            <button className="um-save-btn" onClick={onConfirm}>Confirm</button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const showConfirm = (title, message, onConfirm) => {
+    setConfirmModal({ title, message, onConfirm });
   };
 
   const handleExhibitionArchive = (id) => setArchiveModal({ type: "exhibitions", id });
   const handleGalleryArchive = (id) => setArchiveModal({ type: "galleries", id });
-  const handleArtworkArchive = (id) => setArchiveModal({ type: "artwork", id });
+  const handleArtworkArchive = (id, title) => {
+    showConfirm(
+      "Archive Artwork",
+      `Are you sure you want to archive "${title}"? This artwork will be hidden from public view but can be restored later.`,
+      () => setArchiveModal({ type: "artwork", id })
+    );
+  };
   const handleEventArchive = (id) => setArchiveModal({ type: "events", id });
 
   // Artist handlers
@@ -481,6 +566,82 @@ export default function AdminDashboard() {
     }, 0);
   };
 
+  // Artist unique values for filters
+  const artistNationalities = [...new Set(artists.map(a => a.nationality).filter(Boolean))].sort();
+
+  // Filtered Artists
+  const filteredArtists = artists.filter(artist => {
+    // Status filter
+    if (artistStatusFilter === "active" && artist.is_active === 0) return false;
+    if (artistStatusFilter === "archived" && artist.is_active !== 0) return false;
+    
+    // Nationality filter
+    if (artistNationalityFilter !== "All" && artist.nationality !== artistNationalityFilter) return false;
+    
+    // Century filter (based on birth_year)
+    if (artistCenturyFilter !== "All") {
+      const year = artist.birth_year;
+      if (artistCenturyFilter === "19th" && (!year || year < 1800 || year > 1899)) return false;
+      if (artistCenturyFilter === "20th" && (!year || year < 1900 || year > 1999)) return false;
+      if (artistCenturyFilter === "21st" && (!year || year < 2000)) return false;
+    }
+    
+    // Search filter
+    const searchLower = searchTerm.toLowerCase();
+    return `${artist.first_name} ${artist.last_name}`.toLowerCase().includes(searchLower) ||
+      artist.nationality?.toLowerCase().includes(searchLower);
+  }).sort((a, b) => {
+    switch (artistSort) {
+      case "name": return `${a.first_name} ${a.last_name}`.localeCompare(`${b.first_name} ${b.last_name}`);
+      case "name_desc": return `${b.first_name} ${b.last_name}`.localeCompare(`${a.first_name} ${a.last_name}`);
+      case "year_asc": return (a.birth_year ?? 0) - (b.birth_year ?? 0);
+      case "year_desc": return (b.birth_year ?? 0) - (a.birth_year ?? 0);
+      default: return 0;
+    }
+  });
+
+  // Filtered Provenance
+  const filteredProvenance = provenance.filter(record => {
+    // Method filter
+    if (provenanceMethodFilter !== "All" && record.acquisition_method !== provenanceMethodFilter) return false;
+    
+    // Price range filter
+    if (provenanceMinPrice && (record.price_paid < parseFloat(provenanceMinPrice))) return false;
+    if (provenanceMaxPrice && (record.price_paid > parseFloat(provenanceMaxPrice))) return false;
+    
+    // Date range filter
+    if (provenanceDateRange !== "All") {
+      const date = new Date(record.acquisition_date);
+      const now = new Date();
+      if (provenanceDateRange === "last30") {
+        const thirtyDaysAgo = new Date(); thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        if (date < thirtyDaysAgo) return false;
+      }
+      if (provenanceDateRange === "last90") {
+        const ninetyDaysAgo = new Date(); ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+        if (date < ninetyDaysAgo) return false;
+      }
+      if (provenanceDateRange === "lastYear") {
+        const oneYearAgo = new Date(); oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+        if (date < oneYearAgo) return false;
+      }
+    }
+    
+    // Search filter
+    const searchLower = searchTerm.toLowerCase();
+    return record.owner_name?.toLowerCase().includes(searchLower) ||
+      record.acquisition_method?.toLowerCase().includes(searchLower) ||
+      record.artwork_title?.toLowerCase().includes(searchLower);
+  }).sort((a, b) => {
+    switch (provenanceSort) {
+      case "date_asc": return new Date(a.acquisition_date) - new Date(b.acquisition_date);
+      case "date_desc": return new Date(b.acquisition_date) - new Date(a.acquisition_date);
+      case "price_desc": return (b.price_paid ?? 0) - (a.price_paid ?? 0);
+      case "price_asc": return (a.price_paid ?? 0) - (b.price_paid ?? 0);
+      default: return 0;
+    }
+  });
+
   const artworkArtists = [...new Set(artworks.map(a => a.artist_name).filter(Boolean))].sort();
   const artworkMediums = [...new Set(artworks.map(a => a.medium).filter(Boolean))].sort();
 
@@ -502,11 +663,6 @@ export default function AdminDashboard() {
         default: return 0;
       }
     });
-
-  const filteredProvenance = provenance.filter((r) =>
-    r.owner_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    r.acquisition_method?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
 
   const getExhibitionStatus = (start, end) => {
     const now = new Date();
@@ -990,6 +1146,16 @@ export default function AdminDashboard() {
             <>
               <div className="exhibition-filters-bar">
                 <div className="ex-filter-group">
+                  <label>Search</label>
+                  <input
+                    type="text"
+                    placeholder="Search by title, artist, or medium..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="filter-search-input"
+                  />
+                </div>
+                <div className="ex-filter-group">
                   <label>Artist</label>
                   <select value={artworkArtistFilter} onChange={(e) => setArtworkArtistFilter(e.target.value)}>
                     <option value="All">All Artists</option>
@@ -1023,8 +1189,9 @@ export default function AdminDashboard() {
                     <option value="year_desc">Year (Newest)</option>
                   </select>
                 </div>
-                {(artworkArtistFilter !== "All" || artworkMediumFilter !== "All" || artworkStatusFilter !== "All" || artworkSort !== "title") && (
+                {(searchTerm || artworkArtistFilter !== "All" || artworkMediumFilter !== "All" || artworkStatusFilter !== "All" || artworkSort !== "title") && (
                   <button className="ex-filter-clear" onClick={() => {
+                    setSearchTerm("");
                     setArtworkArtistFilter("All");
                     setArtworkMediumFilter("All");
                     setArtworkStatusFilter("All");
@@ -1116,10 +1283,159 @@ export default function AdminDashboard() {
             </>
           )}
 
+            {/* Artist filter bar */}
+            {activeTab === "artists" && (
+            <>
+              <div className="exhibition-filters-bar">
+                <div className="ex-filter-group">
+                  <label>Search</label>
+                  <input
+                    type="text"
+                    placeholder="Search artists by name or nationality..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="filter-search-input"
+                  />
+                </div>
+                <div className="ex-filter-group">
+                  <label>Status</label>
+                  <select value={artistStatusFilter} onChange={(e) => setArtistStatusFilter(e.target.value)}>
+                    <option value="active">Active</option>
+                    <option value="archived">Archived</option>
+                    <option value="all">All</option>
+                  </select>
+                </div>
+                <div className="ex-filter-group">
+                  <label>Nationality</label>
+                  <select value={artistNationalityFilter} onChange={(e) => setArtistNationalityFilter(e.target.value)}>
+                    <option value="All">All Nationalities</option>
+                    {artistNationalities.map(nat => (
+                      <option key={nat} value={nat}>{nat}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="ex-filter-group">
+                  <label>Century</label>
+                  <select value={artistCenturyFilter} onChange={(e) => setArtistCenturyFilter(e.target.value)}>
+                    <option value="All">All Centuries</option>
+                    <option value="19th">19th Century (1800-1899)</option>
+                    <option value="20th">20th Century (1900-1999)</option>
+                    <option value="21st">21st Century (2000+)</option>
+                  </select>
+                </div>
+                <div className="ex-filter-group">
+                  <label>Sort By</label>
+                  <select value={artistSort} onChange={(e) => setArtistSort(e.target.value)}>
+                    <option value="name">Name A–Z</option>
+                    <option value="name_desc">Name Z–A</option>
+                    <option value="year_asc">Birth Year (Oldest)</option>
+                    <option value="year_desc">Birth Year (Youngest)</option>
+                  </select>
+                </div>
+                {(searchTerm || artistStatusFilter !== "active" || artistNationalityFilter !== "All" || artistCenturyFilter !== "All" || artistSort !== "name") && (
+                  <button className="ex-filter-clear" onClick={() => {
+                    setSearchTerm("");
+                    setArtistStatusFilter("active");
+                    setArtistNationalityFilter("All");
+                    setArtistCenturyFilter("All");
+                    setArtistSort("name");
+                  }}>Clear Filters</button>
+                )}
+              </div>
+              <div className="exhibitions-admin-toolbar">
+                <p className="ex-results-count">
+                  {filteredArtists.length} artist{filteredArtists.length !== 1 ? "s" : ""}
+                </p>
+              </div>
+            </>
+          )}
+
+          {/* ===== MOVED PROVENANCE FILTER BAR (outside content-area) ===== */}
+          {activeTab === "provenance" && (
+            <>
+              <div className="exhibition-filters-bar">
+                <div className="ex-filter-group">
+                  <label>Search</label>
+                  <input
+                    type="text"
+                    placeholder="Search provenance by owner, method, or artwork..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="filter-search-input"
+                  />
+                </div>
+                <div className="ex-filter-group">
+                  <label>Method</label>
+                  <select value={provenanceMethodFilter} onChange={(e) => setProvenanceMethodFilter(e.target.value)}>
+                    <option value="All">All Methods</option>
+                    <option value="Purchase">Purchase</option>
+                    <option value="Donation">Donation</option>
+                    <option value="Inheritance">Inheritance</option>
+                    <option value="Bequest">Bequest</option>
+                    <option value="Exchange">Exchange</option>
+                  </select>
+                </div>
+                <div className="ex-filter-group">
+                  <label>Price Range</label>
+                  <div className="price-range-inputs">
+                    <input
+                      type="number"
+                      placeholder="Min $"
+                      value={provenanceMinPrice}
+                      onChange={(e) => setProvenanceMinPrice(e.target.value)}
+                    />
+                    <span>-</span>
+                    <input
+                      type="number"
+                      placeholder="Max $"
+                      value={provenanceMaxPrice}
+                      onChange={(e) => setProvenanceMaxPrice(e.target.value)}
+                    />
+                  </div>
+                </div>
+                <div className="ex-filter-group">
+                  <label>Date Range</label>
+                  <select value={provenanceDateRange} onChange={(e) => setProvenanceDateRange(e.target.value)}>
+                    <option value="All">All Time</option>
+                    <option value="last30">Last 30 Days</option>
+                    <option value="last90">Last 90 Days</option>
+                    <option value="lastYear">Last Year</option>
+                  </select>
+                </div>
+                <div className="ex-filter-group">
+                  <label>Sort By</label>
+                  <select value={provenanceSort} onChange={(e) => setProvenanceSort(e.target.value)}>
+                    <option value="date_desc">Date (Newest)</option>
+                    <option value="date_asc">Date (Oldest)</option>
+                    <option value="price_desc">Price (Highest)</option>
+                    <option value="price_asc">Price (Lowest)</option>
+                  </select>
+                </div>
+                {(searchTerm || provenanceMethodFilter !== "All" || provenanceMinPrice || provenanceMaxPrice || provenanceDateRange !== "All" || provenanceSort !== "date_desc") && (
+                  <button className="ex-filter-clear" onClick={() => {
+                    setSearchTerm("");
+                    setProvenanceMethodFilter("All");
+                    setProvenanceMinPrice("");
+                    setProvenanceMaxPrice("");
+                    setProvenanceDateRange("All");
+                    setProvenanceSort("date_desc");
+                  }}>Clear Filters</button>
+                )}
+              </div>
+              <div className="exhibitions-admin-toolbar">
+                <p className="ex-results-count">
+                  {filteredProvenance.length} provenance record{filteredProvenance.length !== 1 ? "s" : ""}
+                </p>
+              </div>
+            </>
+          )}
+
+          {/* ===== CONTENT AREA (where the actual tables go) ===== */}
           <div className="content-area">
+            {/* Artist Manager */}
             {activeTab === "artists" && (
               <ArtistManager
-                artists={artists}
+                artists={filteredArtists}
                 onAdd={handleAddArtist}
                 onUpdate={handleUpdateArtist}
                 onDelete={handleDeleteArtist}
@@ -1128,6 +1444,19 @@ export default function AdminDashboard() {
               />
             )}
 
+            {/* Provenance Manager */}
+            {activeTab === "provenance" && (
+              <ProvenanceManager
+                provenance={filteredProvenance}
+                onAdd={handleAddProvenance}
+                onUpdate={handleUpdateProvenance}
+                onDelete={handleDeleteProvenance}
+                loading={false}
+                error={provenanceError}
+              />
+            )}
+
+            {/* Artwork Manager */}
             {activeTab === "artwork" && (
               <>
                 {showArtworkArchive && (
@@ -1145,17 +1474,7 @@ export default function AdminDashboard() {
               </>
             )}
 
-            {activeTab === "provenance" && (
-              <ProvenanceManager
-                provenance={filteredProvenance}
-                onAdd={handleAddProvenance}
-                onUpdate={handleUpdateProvenance}
-                onDelete={handleDeleteProvenance}
-                loading={false}
-                error={provenanceError}
-              />
-            )}
-
+            {/* Exhibitions Manager */}
             {activeTab === "exhibitions" && (
               <>
                 {showExhibitionArchive && (
@@ -1173,6 +1492,7 @@ export default function AdminDashboard() {
               </>
             )}
 
+            {/* Galleries Manager */}
             {activeTab === "galleries" && (
               <>
                 {showGalleryArchive && (
@@ -1190,6 +1510,7 @@ export default function AdminDashboard() {
               </>
             )}
 
+            {/* Events Manager */}
             {activeTab === "events" && (
               <>
                 {showEventArchive && (
@@ -1207,6 +1528,7 @@ export default function AdminDashboard() {
               </>
             )}
 
+            {/* Cafe and Gift Shop */}
             {activeTab === "cafe" && <CafeAdminPanel />}
             {activeTab === "giftshop" && <GiftShopAdminPanel />}
             {activeTab === "reports" && <ReportsPanel />}
@@ -1301,6 +1623,26 @@ export default function AdminDashboard() {
           onCancel={() => setArchiveModal(null)}
         />
       )}
+
+      {/* Confirmation Modal */}
+      {confirmModal && (
+        <ConfirmationModal
+          title={confirmModal.title}
+          message={confirmModal.message}
+          onConfirm={() => {
+            confirmModal.onConfirm();
+            setConfirmModal(null);
+          }}
+          onCancel={() => setConfirmModal(null)}
+        />
+      )}
+
+      {/* Success Toast */}
+      <SuccessToast 
+        show={showSuccessToast} 
+        message={toastMessage} 
+        onClose={() => setShowSuccessToast(false)} 
+      />
     </>
   );
 }
