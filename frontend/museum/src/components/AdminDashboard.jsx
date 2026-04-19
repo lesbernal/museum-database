@@ -711,6 +711,51 @@ export default function AdminDashboard() {
         )}
       </div>
 
+      {/* Events Ended Toast */}
+      {showEndedEvents && endedEvents.length > 0 && !dismissedAlerts.events && (
+        <div className="dashboard-toast exhibitions-toast">
+          <div className="dashboard-toast-content">
+            <div className="dashboard-toast-header">
+              <span className="toast-icon"></span>
+              <span className="toast-title">Events Have Ended</span>
+              <button className="toast-close" onClick={() => setDismissedAlerts(prev => ({ ...prev, events: true }))}>×</button>
+            </div>
+            <div className="dashboard-toast-body">
+              <p>{endedEvents.length} event{endedEvents.length !== 1 ? "s have" : " has"} ended and may need to be archived.</p>
+              <div className="toast-items-list">
+                {endedEvents.slice(0, 3).map(event => (
+                  <div key={event.event_id} className="toast-item">
+                    <span className="toast-item-name">{event.event_name}</span>
+                    <span className="toast-item-stock">ended {new Date(event.event_date).toLocaleDateString()}</span>
+                  </div>
+                ))}
+                {endedEvents.length > 3 && (
+                  <div className="toast-item-more">+{endedEvents.length - 3} more events</div>
+                )}
+              </div>
+            </div>
+            <div className="dashboard-toast-footer">
+              <button
+                className="toast-resolve-btn"
+                onClick={() => {
+                  setActiveTab("events");
+                  setShowEndedEvents(false);
+                  setDismissedAlerts(prev => ({ ...prev, events: true }));
+                }}
+              >
+                Go to Events →
+              </button>
+              <button
+                className="toast-dismiss-btn"
+                onClick={() => setDismissedAlerts(prev => ({ ...prev, events: true }))}
+              >
+                Dismiss
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="admin-dashboard">
         <button
           className="mobile-menu-toggle"

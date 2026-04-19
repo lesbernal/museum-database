@@ -360,6 +360,9 @@ export default function MemberDashboard() {
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [selectedPurchaseTickets, setSelectedPurchaseTickets] = useState(null);
   const [selectedDonation, setSelectedDonation] = useState(null);
+  const [unsigningEvent, setUnsigningEvent] = useState(null);
+  const [editingSignup,  setEditingSignup]  = useState(null);
+  const [editQuantity, setEditQuantity] = useState(1);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [showTierModal, setShowTierModal] = useState(false);
 
@@ -621,6 +624,53 @@ export default function MemberDashboard() {
     </div>
   );
 
+  async function handleUnsignup(eventId, signupId) {
+    setUnsigningEvent(signupId);
+    try {
+      const res = await fetch(`${API_URL}/events/${eventId}/unsignup`, {
+        method: "DELETE",
+        headers: { "Authorization": `Bearer ${userId}` }
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setEventSignups(prev => prev.filter(e => e.signup_id !== signupId));
+        notify("Event signup cancelled successfully!");
+      } else {
+        notify(data.error || "Could not cancel signup.", "error");
+      }
+    } catch (err) {
+      console.error("Unsignup error:", err);
+      notify(err.message || "Something went wrong.", "error");
+    } finally {
+      setUnsigningEvent(null);
+    }
+  }
+
+  async function handleUpdateSignup(eventId, signupId, newQuantity) {
+  try {
+    const res = await fetch(`${API_URL}/events/${eventId}/update-signup`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${userId}`
+      },
+      body: JSON.stringify({ quantity: newQuantity })
+    });
+    const data = await res.json();
+    if (res.ok) {
+      setEventSignups(prev => prev.map(e =>
+        e.signup_id === signupId ? { ...e, quantity: newQuantity } : e
+      ));
+      notify("Signup updated successfully!");
+      setEditingSignup(null);
+    } else {
+      notify(data.error || "Could not update signup.", "error");
+    }
+  } catch (err) {
+    notify("Something went wrong.", "error");
+  }
+}
+
   const renderVisits = () => {
     const today = new Date().toISOString().slice(0, 10);
     const upcomingSignups = eventSignups.filter(e => String(e.event_date).slice(0, 10) >= today);
@@ -659,20 +709,67 @@ export default function MemberDashboard() {
             {upcomingSignups.length > 0 && (
               <div className="visit-group">
                 <h3>Upcoming Events</h3>
-                {upcomingSignups.map(e => (
-                  <div key={e.signup_id} className="visit-card upcoming" style={{ borderLeft: "3px solid #c5a028" }}>
-                    <div className="visit-date">{fmt(e.event_date)}</div>
-                    <div className="visit-details">
-                      <span style={{ fontWeight: 600 }}>{e.event_name}</span>
-                      <span style={{ fontSize: "0.8rem", color: "#6b7280" }}>
-                        {e.event_type} · {e.quantity} spot{e.quantity !== 1 ? "s" : ""}
-                      </span>
+                {upcomingSignups.map(e => {
+                  const isEditing = editingSignup === e.signup_id;
+                  return (
+                    <div key={e.signup_id} className="visit-card upcoming" style={{ borderLeft: "3px solid #c5a028" }}>
+                      <div className="visit-date">{fmt(e.event_date)}</div>
+                      <div className="visit-details">
+                        <span style={{ fontWeight: 600 }}>{e.event_name}</span>
+                        <span style={{ fontSize: "0.8rem", color: "#6b7280" }}>
+                          {e.event_type} · {e.quantity} spot{e.quantity !== 1 ? "s" : ""}
+                        </span>
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                        {isEditing ? (
+                          <>
+                            <input
+                              type="number"
+                              min="1"
+                              value={editQuantity}
+                              onChange={ev => setEditQuantity(Number(ev.target.value))}
+                              style={{ width: 50, padding: "0.2rem", border: "1px solid #d1d5db", borderRadius: 4, fontSize: 13 }}
+                            />
+                            <button
+                              onClick={() => handleUpdateSignup(e.event_id, e.signup_id, editQuantity)}
+                              style={{ fontSize: "0.72rem", padding: "0.2rem 0.6rem", background: "#d1fae5", color: "#065f46", border: "1px solid #6ee7b7", borderRadius: 999, cursor: "pointer", fontWeight: 600 }}
+                            >
+                              Save
+                            </button>
+                            <button
+                              onClick={() => setEditingSignup(null)}
+                              style={{ fontSize: "0.72rem", padding: "0.2rem 0.6rem", background: "#f3f4f6", color: "#374151", border: "1px solid #d1d5db", borderRadius: 999, cursor: "pointer", fontWeight: 600 }}
+                            >
+                              Cancel
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <span style={{ fontSize: "0.75rem", background: "#fef9c3", color: "#854d0e", padding: "0.2rem 0.6rem", borderRadius: 999, fontWeight: 600 }}>
+                              Event
+                            </span>
+                            <button
+                              onClick={() => {
+                                setEditingSignup(e.signup_id);
+                                setEditQuantity(e.quantity);
+                              }}
+                              style={{ fontSize: "0.72rem", padding: "0.2rem 0.6rem", background: "#dbeafe", color: "#1d4ed8", border: "1px solid #93c5fd", borderRadius: 999, cursor: "pointer", fontWeight: 600 }}
+                            >
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => handleUnsignup(e.event_id, e.signup_id)}
+                              disabled={unsigningEvent === e.signup_id}
+                              style={{ fontSize: "0.72rem", padding: "0.2rem 0.6rem", background: "#fee2e2", color: "#991b1b", border: "1px solid #fca5a5", borderRadius: 999, cursor: "pointer", fontWeight: 600 }}
+                            >
+                              {unsigningEvent === e.signup_id ? "Cancelling..." : "Cancel"}
+                            </button>
+                          </>
+                        )}
+                      </div>
                     </div>
-                    <span style={{ fontSize: "0.75rem", background: "#fef9c3", color: "#854d0e", padding: "0.2rem 0.6rem", borderRadius: 999, fontWeight: 600 }}>
-                      Event
-                    </span>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
 
