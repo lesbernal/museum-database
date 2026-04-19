@@ -228,16 +228,6 @@ export default function RevenueReport() {
               <option value="gift">Gift Shop</option>
             </select>
           </div>
-          <div className="filter-group">
-            <label>Payment Method</label>
-            <select value={filters.paymentMethod} onChange={(e) => updateFilter('paymentMethod', e.target.value)}>
-              <option value="">All</option>
-              <option value="Credit Card">💳 Credit Card</option>
-              <option value="Debit Card">💳 Debit Card</option>
-              <option value="Cash">💵 Cash</option>
-              <option value="Gift Card">🎁 Gift Card</option>
-            </select>
-          </div>
         </div>
         <div className="filter-row">
           <div className="filter-group">
@@ -247,10 +237,6 @@ export default function RevenueReport() {
           <div className="filter-group">
             <label>Max Amount ($)</label>
             <input type="number" step="0.01" placeholder="9999.99" value={filters.maxAmount} onChange={(e) => updateFilter('maxAmount', e.target.value)} />
-          </div>
-          <div className="filter-group">
-            <label>Customer Name</label>
-            <input type="text" placeholder="Search customer..." value={filters.customerName} onChange={(e) => updateFilter('customerName', e.target.value)} />
           </div>
           <div className="filter-group">
             <button className="generate-btn" onClick={handleGenerate} disabled={loading}>
@@ -301,7 +287,7 @@ export default function RevenueReport() {
           {/* NEW: Insights Cards */}
           {insights && (
             <div style={{ marginTop: "1.5rem" }}>
-              <h3 style={{ fontSize: "1rem", marginBottom: "1rem", color: "#1a1a2e" }}>📊 Key Insights</h3>
+              <h3 style={{ fontSize: "1rem", marginBottom: "1rem", color: "#1a1a2e" }}> Key Insights</h3>
               <div className="summary-grid">
                 <div className="summary-card">
                   <div className="summary-label">Average Daily Revenue</div>
@@ -323,7 +309,7 @@ export default function RevenueReport() {
           {insights?.trendData.length > 0 && (
             <div style={{ marginTop: "1.5rem", background: "white", border: "1px solid #e5e5e5", padding: "1.25rem", borderRadius: 8 }}>
               <h4 style={{ margin: "0 0 1rem", fontSize: 13, fontWeight: 600, color: "#6b7280", textTransform: "uppercase" }}>
-                📈 Revenue Trend (Last 7 Days)
+                Revenue Trend (Last 7 Days)
               </h4>
               <ResponsiveContainer width="100%" height={250}>
                 <LineChart data={insights.trendData}>
@@ -399,7 +385,7 @@ export default function RevenueReport() {
               {insights.topCustomers.length > 0 && (
                 <div style={{ background: "white", border: "1px solid #e5e5e5", padding: "1.25rem", borderRadius: 8 }}>
                   <h4 style={{ margin: "0 0 1rem", fontSize: 13, fontWeight: 600, color: "#6b7280", textTransform: "uppercase" }}>
-                    👥 Top Customers
+                     Top Customers
                   </h4>
                   <table style={{ width: "100%", fontSize: "0.875rem" }}>
                     <tbody>
@@ -495,6 +481,11 @@ export default function RevenueReport() {
       {hasGenerated && reportData.length === 0 && !loading && (
         <div className="no-results">No transactions found. Try adjusting your filters.</div>
       )}
+
+      {!hasGenerated && !loading && (
+        <div className="no-results">Select date range and click Generate Report to view revenue analytics.</div>
+      )}
+      
       {loading && <div className="loading">Loading report data...</div>}
     </div>
   );

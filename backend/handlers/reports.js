@@ -162,39 +162,167 @@ module.exports = (req, res, parsedUrl) => {
     return;
   }
 
-  // ==================== REPORT 3: GIFT SHOP REPORT ====================
-  if (parsedUrl.pathname === "/reports/giftshop-data") {
+  // ==================== REPORT 3: MEMBERSHIP & DONOR REPORT ====================
+  if (parsedUrl.pathname === "/reports/membership-donor") {
     const startDate = query.startDate || "1900-01-01";
-    const endDate   = query.endDate   || "2099-12-31";
-    const category  = query.category  || "";
-    let sql = `
-      SELECT ti.shop_item_id, i.item_name, i.category, i.price, ti.quantity, ti.subtotal,
-        t.transaction_datetime, t.payment_method,
-        CONCAT(u.first_name, ' ', u.last_name) as customer_name
-      FROM giftshoptransactionitem ti
-      JOIN giftshopitem i ON ti.item_id = i.item_id
-      JOIN giftshoptransaction t ON ti.transaction_id = t.transaction_id
-      JOIN user u ON t.user_id = u.user_id
-      WHERE t.transaction_datetime BETWEEN ? AND ?
+    const endDate = query.endDate || new Date().toISOString().split('T')[0];
+    
+    // 1. MEMBERSHIP SUMMARY
+    const membershipSummarySql = `
+      SELECT 
+        COUNT(*) as total_members,
+        COUNT(CASE WHEN expiration_date >= CURDATE() THEN 1 END) as active_members,
+        COUNT(CASE WHEN expiration_date < CURDATE() THEN 1 END) as expired_members,
+        ROUND(AVG(DATEDIFF(expiration_date, join_date)), 0) as avg_membership_days
+      FROM member
     `;
-    const params = [startDate, endDate];
-    if (category) { sql += ` AND i.category = ?`; params.push(category); }
-    sql += ` ORDER BY t.transaction_datetime DESC`;
-    db.query(sql, params, (err, results) => {
-      if (err) return sendError(res, err);
-      const statsSql = `
-        SELECT
-          (SELECT COUNT(*) FROM giftshoptransaction WHERE transaction_datetime BETWEEN ? AND ?) as total_transactions,
-          (SELECT ROUND(SUM(total_amount), 2) FROM giftshoptransaction WHERE transaction_datetime BETWEEN ? AND ?) as total_revenue,
-          (SELECT ROUND(AVG(total_amount), 2) FROM giftshoptransaction WHERE transaction_datetime BETWEEN ? AND ?) as avg_transaction,
-          (SELECT COUNT(DISTINCT category) FROM giftshopitem) as total_categories,
-          (SELECT COUNT(*) FROM giftshopitem WHERE stock_quantity < 10) as low_stock_items
-      `;
-      db.query(statsSql, [startDate, endDate, startDate, endDate, startDate, endDate], (err, stats) => {
-        if (err) return sendError(res, err);
-        sendJSON(res, { data: results, summary: stats[0] });
+    
+    // 2. MEMBERSHIP LEVEL BREAKDOWN
+    const membershipLevelsSql = `
+      SELECT 
+        membership_level,
+        COUNT(*) as count,
+        ROUND(AVG(DATEDIFF(expiration_date, join_date)), 0) as avg_duration_days
+      FROM member
+      WHERE expiration_date >= CURDATE()
+      GROUP BY membership_level
+      ORDER BY 
+        CASE membership_level
+          WHEN 'Bronze' THEN 1
+          WHEN 'Silver' THEN 2
+          WHEN 'Gold' THEN 3
+          WHEN 'Platinum' THEN 4
+          WHEN 'Benefactor' THEN 5
+          WHEN 'Leadership Circle' THEN 6
+          ELSE 7
+        END
+    `;
+    
+    // 3. DONATION SUMMARY
+    const donationSummarySql = `
+      SELECT 
+        ROUND(SUM(amount), 2) as total_donations,
+        COUNT(*) as total_donations_count,
+        ROUND(AVG(amount), 2) as avg_donation,
+        COUNT(DISTINCT user_id) as unique_donors
+      FROM donation
+      WHERE donation_date BETWEEN ? AND ?
+    `;
+    
+    // 4. DONATION TRENDS BY MONTH
+    const donationTrendsSql = `
+      SELECT 
+        DATE_FORMAT(donation_date, '%Y-%m') as month,
+        ROUND(SUM(amount), 2) as total,
+        COUNT(*) as count,
+        ROUND(AVG(amount), 2) as avg_amount
+      FROM donation
+      WHERE donation_date BETWEEN ? AND ?
+      GROUP BY DATE_FORMAT(donation_date, '%Y-%m')
+      ORDER BY month ASC
+    `;
+    
+    // 5. DONATION BREAKDOWN BY TYPE
+    const donationByTypeSql = `
+      SELECT 
+        donation_type,
+        ROUND(SUM(amount), 2) as total,
+        COUNT(*) as count,
+        ROUND(AVG(amount), 2) as avg_amount
+      FROM donation
+      WHERE donation_date BETWEEN ? AND ?
+      GROUP BY donation_type
+      ORDER BY total DESC
+    `;
+    
+    // 6. MEMBERSHIP TRANSACTIONS (New/Renewal/Upgrade)
+    const membershipTransactionsSql = `
+      SELECT 
+        transaction_type,
+        COUNT(*) as count,
+        ROUND(SUM(amount), 2) as total_amount,
+        ROUND(AVG(amount), 2) as avg_amount
+      FROM membershiptransaction
+      WHERE transaction_date BETWEEN ? AND ?
+      GROUP BY transaction_type
+    `;
+    
+    // 7. TOP DONORS
+    const topDonorsSql = `
+      SELECT 
+        u.user_id,
+        CONCAT(u.first_name, ' ', u.last_name) as name,
+        u.city,
+        u.state,
+        COUNT(d.donation_id) as donation_count,
+        ROUND(SUM(d.amount), 2) as total_donated,
+        MAX(d.donation_date) as last_donation_date,
+        CASE WHEN m.user_id IS NOT NULL THEN m.membership_level ELSE NULL END as membership_level
+      FROM donation d
+      JOIN user u ON d.user_id = u.user_id
+      LEFT JOIN member m ON u.user_id = m.user_id AND m.expiration_date >= CURDATE()
+      WHERE d.donation_date BETWEEN ? AND ?
+      GROUP BY u.user_id, u.first_name, u.last_name, u.city, u.state, m.membership_level
+      ORDER BY total_donated DESC
+      LIMIT 10
+    `;
+    
+    // 8. RECENT MEMBERSHIP ACTIVITY
+    const recentMembershipActivitySql = `
+      SELECT 
+        mt.transaction_id,
+        CONCAT(u.first_name, ' ', u.last_name) as member_name,
+        mt.membership_level,
+        mt.transaction_type,
+        mt.transaction_date,
+        mt.amount,
+        mt.payment_method
+      FROM membershiptransaction mt
+      JOIN user u ON mt.user_id = u.user_id
+      WHERE mt.transaction_date BETWEEN ? AND ?
+      ORDER BY mt.transaction_date DESC
+      LIMIT 20
+    `;
+    
+    Promise.all([
+      new Promise((res, rej) => db.query(membershipSummarySql, (err, r) => err ? rej(err) : res(r[0]))),
+      new Promise((res, rej) => db.query(membershipLevelsSql, (err, r) => err ? rej(err) : res(r))),
+      new Promise((res, rej) => db.query(donationSummarySql, [startDate, endDate], (err, r) => err ? rej(err) : res(r[0]))),
+      new Promise((res, rej) => db.query(donationTrendsSql, [startDate, endDate], (err, r) => err ? rej(err) : res(r))),
+      new Promise((res, rej) => db.query(donationByTypeSql, [startDate, endDate], (err, r) => err ? rej(err) : res(r))),
+      new Promise((res, rej) => db.query(membershipTransactionsSql, [startDate, endDate], (err, r) => err ? rej(err) : res(r))),
+      new Promise((res, rej) => db.query(topDonorsSql, [startDate, endDate], (err, r) => err ? rej(err) : res(r))),
+      new Promise((res, rej) => db.query(recentMembershipActivitySql, [startDate, endDate], (err, r) => err ? rej(err) : res(r)))
+    ])
+    .then(([membershipSummary, membershipLevels, donationSummary, donationTrends, donationByType, membershipTransactions, topDonors, recentActivity]) => {
+      
+      // Calculate upgrade rate from transactions
+      const totalTransactions = (membershipTransactions[0]?.count || 0) + 
+                                (membershipTransactions[1]?.count || 0) + 
+                                (membershipTransactions[2]?.count || 0);
+      const upgrades = membershipTransactions.find(t => t.transaction_type === 'Upgrade')?.count || 0;
+      const upgradeRate = totalTransactions > 0 ? ((upgrades / totalTransactions) * 100).toFixed(1) : 0;
+      
+      const enhancedMembershipSummary = {
+        ...membershipSummary,
+        upgrade_rate: upgradeRate,
+        total_members: membershipSummary.total_members || 0,
+        active_members: membershipSummary.active_members || 0,
+        expired_members: membershipSummary.expired_members || 0
+      };
+      
+      sendJSON(res, {
+        summary: enhancedMembershipSummary,
+        membershipLevels,
+        donationSummary,
+        donationTrends,
+        donationByType,
+        membershipTransactions,
+        topDonors,
+        recentActivity
       });
-    });
+    })
+    .catch(err => sendError(res, err));
     return;
   }
 
@@ -355,219 +483,6 @@ module.exports = (req, res, parsedUrl) => {
       return;
     }
     sendJSON(res, { message: "No options found" });
-    return;
-  }
-
-  // ==================== REPORT: TOP EVENT ATTENDEES ====================
-  if (parsedUrl.pathname === "/reports/top-event-attendees") {
-    const limit = parseInt(query.limit) || 10;
-    const sql = `
-      SELECT u.user_id, CONCAT(u.first_name, ' ', u.last_name) as full_name,
-        u.email, u.role,
-        COUNT(DISTINCT es.event_id) as total_events,
-        SUM(es.quantity) as total_spots,
-        MAX(es.signup_date) as last_signup_date,
-        GROUP_CONCAT(DISTINCT e.event_type ORDER BY e.event_type SEPARATOR ', ') as event_types_attended
-      FROM event_signup es
-      JOIN user u ON es.user_id = u.user_id
-      JOIN event e ON es.event_id = e.event_id
-      GROUP BY u.user_id, u.first_name, u.last_name, u.email, u.role
-      ORDER BY total_events DESC, total_spots DESC LIMIT ?
-    `;
-    db.query(sql, [limit], (err, results) => {
-      if (err) return sendError(res, err);
-      const summarySql = `
-        SELECT COUNT(DISTINCT user_id) as total_users_signed_up,
-          COUNT(DISTINCT event_id) as total_events_with_signups,
-          SUM(quantity) as total_spots_reserved,
-          ROUND(AVG(quantity), 1) as avg_spots_per_signup,
-          MAX(signup_date) as most_recent_signup
-        FROM event_signup
-      `;
-      db.query(summarySql, (err, stats) => {
-        if (err) return sendError(res, err);
-        sendJSON(res, { data: results, summary: stats[0] });
-      });
-    });
-    return;
-  }
-
-  // ==================== REPORT: EVENT PARTICIPATION VS TICKET PURCHASES ====================
-  if (parsedUrl.pathname === "/reports/event-vs-tickets") {
-    const sql = `
-      SELECT u.user_id, CONCAT(u.first_name, ' ', u.last_name) as full_name,
-        u.email, u.role,
-        COUNT(DISTINCT es.event_id) as events_signed_up,
-        COUNT(DISTINCT t.ticket_id) as tickets_purchased,
-        CASE
-          WHEN COUNT(DISTINCT es.event_id) > 0 AND COUNT(DISTINCT t.ticket_id) > 0 THEN 'Both'
-          WHEN COUNT(DISTINCT es.event_id) > 0 AND COUNT(DISTINCT t.ticket_id) = 0 THEN 'Events Only'
-          WHEN COUNT(DISTINCT es.event_id) = 0 AND COUNT(DISTINCT t.ticket_id) > 0 THEN 'Tickets Only'
-          ELSE 'Neither'
-        END as engagement_type,
-        ROUND(SUM(t.final_price), 2) as total_ticket_spend
-      FROM user u
-      LEFT JOIN event_signup es ON u.user_id = es.user_id
-      LEFT JOIN ticket t ON u.user_id = t.user_id
-      WHERE u.role IN ('visitor', 'member')
-      GROUP BY u.user_id, u.first_name, u.last_name, u.email, u.role
-      ORDER BY events_signed_up DESC, tickets_purchased DESC
-    `;
-    db.query(sql, (err, results) => {
-      if (err) return sendError(res, err);
-      const both        = results.filter(r => r.engagement_type === 'Both').length;
-      const eventsOnly  = results.filter(r => r.engagement_type === 'Events Only').length;
-      const ticketsOnly = results.filter(r => r.engagement_type === 'Tickets Only').length;
-      const neither     = results.filter(r => r.engagement_type === 'Neither').length;
-      const totalUsers  = results.length;
-      const engagementBreakdown = [
-        { type: "Both",         count: both,        percentage: totalUsers > 0 ? ((both / totalUsers) * 100).toFixed(1) : 0 },
-        { type: "Events Only",  count: eventsOnly,  percentage: totalUsers > 0 ? ((eventsOnly / totalUsers) * 100).toFixed(1) : 0 },
-        { type: "Tickets Only", count: ticketsOnly, percentage: totalUsers > 0 ? ((ticketsOnly / totalUsers) * 100).toFixed(1) : 0 },
-        { type: "Neither",      count: neither,     percentage: totalUsers > 0 ? ((neither / totalUsers) * 100).toFixed(1) : 0 },
-      ];
-      sendJSON(res, {
-        data: results,
-        summary: { total_users: totalUsers, both, events_only: eventsOnly, tickets_only: ticketsOnly, neither, most_engaged: results[0]?.full_name || "—" },
-        engagementBreakdown,
-      });
-    });
-    return;
-  }
-
-  // ==================== REPORT: MEMBER EVENT PARTICIPATION ====================
-  if (parsedUrl.pathname === "/reports/member-event-participation") {
-    const sql = `
-      SELECT m.user_id, CONCAT(u.first_name, ' ', u.last_name) as full_name,
-        u.email, m.membership_level, m.join_date, m.expiration_date,
-        COUNT(DISTINCT es.event_id) as total_events_attended,
-        SUM(es.quantity) as total_spots_reserved,
-        MAX(es.signup_date) as last_event_signup,
-        GROUP_CONCAT(DISTINCT e.event_type ORDER BY e.event_type SEPARATOR ', ') as event_types_attended
-      FROM member m
-      JOIN user u ON m.user_id = u.user_id
-      LEFT JOIN event_signup es ON m.user_id = es.user_id
-      LEFT JOIN event e ON es.event_id = e.event_id
-      GROUP BY m.user_id, u.first_name, u.last_name, u.email, m.membership_level, m.join_date, m.expiration_date
-      ORDER BY total_events_attended DESC, m.membership_level
-    `;
-    db.query(sql, (err, results) => {
-      if (err) return sendError(res, err);
-      const byLevelSql = `
-        SELECT m.membership_level,
-          COUNT(DISTINCT m.user_id) as total_members,
-          COUNT(DISTINCT es.signup_id) as total_signups,
-          SUM(es.quantity) as total_spots,
-          ROUND(AVG(sub.event_count), 1) as avg_events_per_member
-        FROM member m
-        LEFT JOIN event_signup es ON m.user_id = es.user_id
-        LEFT JOIN (
-          SELECT user_id, COUNT(DISTINCT event_id) as event_count
-          FROM event_signup GROUP BY user_id
-        ) sub ON m.user_id = sub.user_id
-        GROUP BY m.membership_level ORDER BY total_signups DESC
-      `;
-      db.query(byLevelSql, (err, byLevel) => {
-        if (err) return sendError(res, err);
-        const summarySql = `
-          SELECT COUNT(DISTINCT m.user_id) as total_members,
-            COUNT(DISTINCT es.user_id) as members_who_attended,
-            COUNT(DISTINCT es.event_id) as unique_events_attended,
-            SUM(es.quantity) as total_spots_reserved,
-            ROUND(AVG(sub.event_count), 1) as avg_events_per_active_member
-          FROM member m
-          LEFT JOIN event_signup es ON m.user_id = es.user_id
-          LEFT JOIN (
-            SELECT user_id, COUNT(DISTINCT event_id) as event_count
-            FROM event_signup GROUP BY user_id
-          ) sub ON m.user_id = sub.user_id
-          WHERE es.user_id IS NOT NULL
-        `;
-        db.query(summarySql, (err, stats) => {
-          if (err) return sendError(res, err);
-          sendJSON(res, { data: results, summary: stats[0], byLevel: byLevel });
-        });
-      });
-    });
-    return;
-  }
-
-  // ==================== ARCHIVED EVENTS ====================
-  if (parsedUrl.pathname === "/reports/archived-events") {
-    const sql = `
-      SELECT e.event_name, e.event_date, e.capacity, e.total_attendees, e.event_type,
-        ROUND((e.total_attendees / e.capacity) * 100, 1) as attendance_percentage
-      FROM event e WHERE e.is_active = 0
-      ORDER BY e.event_date DESC
-    `;
-    db.query(sql, (err, results) => {
-      if (err) return sendError(res, err);
-      sendJSON(res, results);
-    });
-    return;
-  }
-
-  // ==================== REPORT: EVENT REVENUE IMPACT ====================
-  // Tables: event, ticket, cafetransaction, giftshoptransaction, donation
-  if (parsedUrl.pathname === "/reports/event-revenue-impact") {
-    const sql = `
-      SELECT
-        e.event_id,
-        e.event_name,
-        e.event_type,
-        e.is_active,
-        DATE(e.event_date) as event_date,
-        e.total_attendees,
-        e.capacity,
-        COALESCE((
-          SELECT ROUND(SUM(t.final_price), 2)
-          FROM ticket t
-          WHERE DATE(t.purchase_date) = DATE(e.event_date)
-        ), 0) as ticket_revenue,
-        COALESCE((
-          SELECT ROUND(SUM(ct.total_amount), 2)
-          FROM cafetransaction ct
-          WHERE DATE(ct.transaction_datetime) = DATE(e.event_date)
-        ), 0) as cafe_revenue,
-        COALESCE((
-          SELECT ROUND(SUM(gt.total_amount), 2)
-          FROM giftshoptransaction gt
-          WHERE DATE(gt.transaction_datetime) = DATE(e.event_date)
-        ), 0) as giftshop_revenue,
-        COALESCE((
-          SELECT ROUND(SUM(d.amount), 2)
-          FROM donation d
-          WHERE DATE(d.donation_date) = DATE(e.event_date)
-        ), 0) as donation_revenue
-      FROM event e
-      ORDER BY e.event_date DESC
-    `;
-    db.query(sql, (err, results) => {
-      if (err) return sendError(res, err);
-
-      // Add total revenue to each row
-      const data = results.map(r => ({
-        ...r,
-        total_revenue:
-          parseFloat(r.ticket_revenue)   +
-          parseFloat(r.cafe_revenue)     +
-          parseFloat(r.giftshop_revenue) +
-          parseFloat(r.donation_revenue)
-      }));
-
-      // Summary
-      const summary = {
-        total_events:          data.length,
-        total_ticket_revenue:  data.reduce((s, r) => s + parseFloat(r.ticket_revenue), 0).toFixed(2),
-        total_cafe_revenue:    data.reduce((s, r) => s + parseFloat(r.cafe_revenue), 0).toFixed(2),
-        total_giftshop_revenue:data.reduce((s, r) => s + parseFloat(r.giftshop_revenue), 0).toFixed(2),
-        total_donation_revenue:data.reduce((s, r) => s + parseFloat(r.donation_revenue), 0).toFixed(2),
-        total_revenue:         data.reduce((s, r) => s + r.total_revenue, 0).toFixed(2),
-        highest_revenue_event: data.reduce((a, b) => a.total_revenue > b.total_revenue ? a : b, { event_name: "—", total_revenue: 0 }).event_name,
-      };
-
-      sendJSON(res, { data, summary });
-    });
     return;
   }
 
