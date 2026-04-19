@@ -15,6 +15,7 @@
 
 .exhibition-manager-header .search-bar {
   flex: 1;
+  min-width: 200px;
   max-width: 400px;
 }
 
@@ -42,6 +43,7 @@
   text-transform: uppercase;
   letter-spacing: 0.03em;
   transition: all 0.2s ease;
+  white-space: nowrap;
 }
 
 .exhibition-manager-header .add-btn:hover {
@@ -53,6 +55,7 @@
   background: #ffffff;
   border: 1px solid #e5e5e5;
   min-height: 400px;
+  overflow-x: auto;
 }
 
 .loading-spinner {
@@ -65,15 +68,29 @@
 /* Table Styles */
 .exhibition-table-container {
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
   background: white;
   width: 100%;
   min-width: 0;
 }
 
 .exhibition-table {
+  min-width: 700px;
   width: 100%;
   border-collapse: collapse;
   font-size: 0.875rem;
+}
+
+@media (max-width: 768px) {
+  .exhibition-table {
+    min-width: 600px;
+  }
+}
+
+@media (max-width: 480px) {
+  .exhibition-table {
+    min-width: 500px;
+  }
 }
 
 .exhibition-table thead {
@@ -86,6 +103,7 @@
   padding: 1rem;
   font-weight: 600;
   color: #374151;
+  white-space: nowrap;
 }
 
 .exhibition-table td {
@@ -101,6 +119,10 @@
 
 .title-cell {
   font-weight: 500;
+  max-width: 200px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .status-badge {
@@ -109,6 +131,7 @@
   border-radius: 20px;
   font-size: 0.75rem;
   font-weight: 500;
+  white-space: nowrap;
 }
 
 .badge-permanent {
@@ -132,6 +155,7 @@
   border-radius: 20px;
   font-size: 0.75rem;
   font-weight: 500;
+  white-space: nowrap;
 }
 
 .date-active {
@@ -152,6 +176,7 @@
 .actions {
   display: flex;
   gap: 0.5rem;
+  white-space: nowrap;
 }
 
 .edit-btn, .delete-btn, .archive-btn {
@@ -210,6 +235,7 @@
   align-items: center;
   justify-content: center;
   z-index: 1000;
+  padding: 1rem;
 }
 
 .modal-content {
@@ -227,6 +253,10 @@
   align-items: center;
   padding: 1.5rem;
   border-bottom: 1px solid #e5e5e5;
+  position: sticky;
+  top: 0;
+  background: #ffffff;
+  z-index: 10;
 }
 
 .modal-header h2 {
@@ -243,6 +273,8 @@
   cursor: pointer;
   color: #888888;
   transition: color 0.2s ease;
+  padding: 0.25rem;
+  line-height: 1;
 }
 
 .close-btn:hover {
@@ -293,6 +325,7 @@
   width: 100%;
   background: #ffffff;
   color: #1f2937;
+  border-radius: 0;
 }
 
 .form-group input:focus,
@@ -307,6 +340,8 @@
   align-items: center;
   justify-content: space-between;
   margin-bottom: 4px;
+  flex-wrap: wrap;
+  gap: 0.5rem;
 }
 
 .section-header label {
@@ -356,6 +391,7 @@
   border: 1px solid #e0d9f7;
   border-radius: 8px;
   padding: 12px 14px;
+  flex-wrap: wrap;
 }
 
 .artwork-row-fields {
@@ -383,10 +419,10 @@
   font-size: 1rem;
   cursor: pointer;
   padding: 4px 6px;
-  margin-top: 22px;
   border-radius: 4px;
   transition: color 0.15s, background 0.15s;
   flex-shrink: 0;
+  align-self: center;
 }
 
 .remove-row-btn:hover {
@@ -464,6 +500,17 @@
   }
 }
 
+.error-message {
+  display: inline-block;
+  background-color: #fee2e2;
+  border: 1px solid #ef4444;
+  color: #b91c1c;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  margin-top: 4px;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .exhibition-manager-header {
@@ -473,6 +520,7 @@
   
   .exhibition-manager-header .search-bar {
     max-width: 100%;
+    min-width: auto;
   }
   
   .exhibition-manager-header .add-btn {
@@ -496,6 +544,10 @@
     padding: 1rem;
   }
   
+  .modal-header h2 {
+    font-size: 1rem;
+  }
+  
   .form-actions {
     flex-direction: column-reverse;
   }
@@ -506,26 +558,81 @@
   }
   
   .actions {
-    flex-direction: column;
+    flex-direction: row;
+    flex-wrap: wrap;
     gap: 0.25rem;
   }
   
-  .artwork-row-fields {
+  .edit-btn,
+  .delete-btn,
+  .archive-btn {
+    flex: 1;
+    text-align: center;
+  }
+  
+  .artwork-row {
     flex-direction: column;
   }
   
+  .artwork-row-fields {
+    width: 100%;
+  }
+  
   .remove-row-btn {
-    margin-top: 0;
+    align-self: flex-end;
+    margin-top: 0.5rem;
+  }
+  
+  .section-header {
+    flex-direction: column;
+    align-items: flex-start;
   }
 }
 
-.error-message {
-  display: inline-block;
-  background-color: #fee2e2;
-  border: 1px solid #ef4444;
-  color: #b91c1c;
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 12px;
-  margin-top: 4px;
+@media (max-width: 480px) {
+  .modal-content {
+    width: 95%;
+    max-height: 95vh;
+  }
+  
+  .exhibition-table th,
+  .exhibition-table td {
+    padding: 0.5rem;
+    font-size: 0.75rem;
+  }
+  
+  .title-cell {
+    max-width: 120px;
+  }
+  
+  .status-badge,
+  .date-status {
+    font-size: 0.65rem;
+    padding: 0.15rem 0.5rem;
+  }
+  
+  .actions {
+    flex-direction: column;
+  }
+  
+  .edit-btn,
+  .delete-btn,
+  .archive-btn {
+    width: 100%;
+  }
+  
+  .toast {
+    bottom: 1rem;
+    right: 1rem;
+    left: 1rem;
+    text-align: center;
+  }
+  
+  .artwork-row-fields .form-group {
+    min-width: 100%;
+  }
+  
+  .artwork-select-group {
+    min-width: 100% !important;
+  }
 }

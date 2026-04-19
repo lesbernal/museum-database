@@ -1,61 +1,118 @@
 // components/RevenueReport.jsx
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, Cell, PieChart, Pie, Legend
+  ResponsiveContainer, Cell, PieChart, Pie, Legend, LineChart, Line
 } from "recharts";
 import "../styles/RevenueReport.css";
 
 const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
-
 const CHART_COLORS = ["#c5a028", "#1d4ed8", "#065f46", "#92400e"];
 
 export default function RevenueReport() {
+  // Simplified state - no duplicate "applied" versions
   const [reportData, setReportData] = useState([]);
-  const [filteredData, setFilteredData] = useState([]);
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(false);
   const [hasGenerated, setHasGenerated] = useState(false);
+
+  // Filters - single source of truth
+  const [filters, setFilters] = useState({
+    startDate: "",
+    endDate: "",
+    revenueType: "all",
+    paymentMethod: "",
+    minAmount: "",
+    maxAmount: "",
+    customerName: ""
+  });
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(25);
 
-  // Filters
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
-  const [revenueType, setRevenueType] = useState("all");
-  const [paymentMethod, setPaymentMethod] = useState("");
-  const [minAmount, setMinAmount] = useState("");
-  const [maxAmount, setMaxAmount] = useState("");
-  const [customerName, setCustomerName] = useState("");
+  // Derived insights (calculated from data)
+  const insights = useMemo(() => {
+    if (!reportData.length) return null;
 
-  // Applied filters
-  const [appliedStartDate, setAppliedStartDate] = useState("");
-  const [appliedEndDate, setAppliedEndDate] = useState("");
-  const [appliedRevenueType, setAppliedRevenueType] = useState("all");
-  const [appliedPaymentMethod, setAppliedPaymentMethod] = useState("");
-  const [appliedMinAmount, setAppliedMinAmount] = useState("");
-  const [appliedMaxAmount, setAppliedMaxAmount] = useState("");
-  const [appliedCustomerName, setAppliedCustomerName] = useState("");
+    // Calculate daily revenue trend
+    const dailyRevenue = {};
+    reportData.forEach(row => {
+      const date = row.date?.split('T')[0];
+      if (date) {
+        dailyRevenue[date] = (dailyRevenue[date] || 0) + parseFloat(row.amount || 0);
+      }
+    });
 
-  const [paymentMethodsList] = useState(["Credit Card", "Debit Card"]);
+    const trendData = Object.entries(dailyRevenue)
+      .map(([date, revenue]) => ({ date, revenue }))
+      .sort((a, b) => a.date.localeCompare(b.date))
+      .slice(-7); // Last 7 days
 
-  useEffect(() => {
-    if (hasGenerated) loadReportData();
-  }, [appliedStartDate, appliedEndDate, appliedRevenueType, appliedPaymentMethod, appliedMinAmount, appliedMaxAmount, appliedCustomerName, hasGenerated]);
+    // Calculate top customers
+    const customerSpending = {};
+    reportData.forEach(row => {
+      if (row.customer_name && row.customer_name !== "—") {
+        customerSpending[row.customer_name] = (customerSpending[row.customer_name] || 0) + parseFloat(row.amount || 0);
+      }
+    });
+    const topCustomers = Object.entries(customerSpending)
+      .map(([name, total]) => ({ name, total }))
+      .sort((a, b) => b.total - a.total)
+      .slice(0, 5);
+
+    // Calculate payment method breakdown
+    const paymentBreakdown = {};
+    reportData.forEach(row => {
+      if (row.payment_method) {
+        paymentBreakdown[row.payment_method] = (paymentBreakdown[row.payment_method] || 0) + parseFloat(row.amount || 0);
+      }
+    });
+
+    // Calculate average donation amount (excluding non-donations)
+    const donations = reportData.filter(row => row.source === "Donation");
+    const avgDonation = donations.length > 0 
+      ? donations.reduce((sum, d) => sum + parseFloat(d.amount || 0), 0) / donations.length 
+      : 0;
+
+    // Best selling items (cafe + gift shop)
+    const itemSales = {};
+    reportData.forEach(row => {
+      if ((row.source === "Cafe" || row.source === "Gift Shop") && row.item_name) {
+        itemSales[row.item_name] = (itemSales[row.item_name] || 0) + (row.quantity || 1);
+      }
+    });
+    const topItems = Object.entries(itemSales)
+      .map(([name, quantity]) => ({ name, quantity }))
+      .sort((a, b) => b.quantity - a.quantity)
+      .slice(0, 5);
+
+    return {
+      trendData,
+      topCustomers,
+      paymentBreakdown,
+      avgDonation,
+      topItems,
+      totalDays: Object.keys(dailyRevenue).length,
+      avgDailyRevenue: Object.values(dailyRevenue).reduce((a, b) => a + b, 0) / Object.keys(dailyRevenue).length || 0
+    };
+  }, [reportData]);
 
   const loadReportData = async () => {
     setLoading(true);
     try {
-      let dataUrl = `${BASE_URL}/reports/revenue-data?`;
-      if (appliedStartDate) dataUrl += `startDate=${appliedStartDate}&`;
-      if (appliedEndDate) dataUrl += `endDate=${appliedEndDate}&`;
-      if (appliedRevenueType && appliedRevenueType !== "all") dataUrl += `type=${appliedRevenueType}`;
+      // Build query params from filters
+      const params = new URLSearchParams();
+      if (filters.startDate) params.append('startDate', filters.startDate);
+      if (filters.endDate) params.append('endDate', filters.endDate);
+      if (filters.revenueType && filters.revenueType !== "all") params.append('type', filters.revenueType);
+      if (filters.paymentMethod) params.append('paymentMethod', filters.paymentMethod);
+      if (filters.minAmount) params.append('minAmount', filters.minAmount);
+      if (filters.maxAmount) params.append('maxAmount', filters.maxAmount);
+      if (filters.customerName) params.append('customerName', filters.customerName);
 
-      let summaryUrl = `${BASE_URL}/reports/revenue-summary?`;
-      if (appliedStartDate) summaryUrl += `startDate=${appliedStartDate}&`;
-      if (appliedEndDate) summaryUrl += `endDate=${appliedEndDate}&`;
+      const dataUrl = `${BASE_URL}/reports/revenue-data?${params}`;
+      const summaryUrl = `${BASE_URL}/reports/revenue-summary?${params}`;
 
       const [dataResponse, summaryResponse] = await Promise.all([
         fetch(dataUrl), fetch(summaryUrl)
@@ -66,107 +123,82 @@ export default function RevenueReport() {
 
       const dataArray = Array.isArray(data) ? data : [];
       setReportData(dataArray);
-      setFilteredData(dataArray);
       setSummary({
-        totalRevenue:      summaryData.totalRevenue      || 0,
+        totalRevenue: summaryData.totalRevenue || 0,
         totalTransactions: summaryData.totalTransactions || 0,
-        avgTransaction:    summaryData.avgTransaction    || 0,
-        ticketRevenue:     summaryData.ticketRevenue     || 0,
-        donationRevenue:   summaryData.donationRevenue   || 0,
-        cafeRevenue:       summaryData.cafeRevenue       || 0,
-        giftShopRevenue:   summaryData.giftShopRevenue   || 0,
-        largestDonation: 0,
-        largestTicket:   0,
+        avgTransaction: summaryData.avgTransaction || 0,
+        ticketRevenue: summaryData.ticketRevenue || 0,
+        donationRevenue: summaryData.donationRevenue || 0,
+        cafeRevenue: summaryData.cafeRevenue || 0,
+        giftShopRevenue: summaryData.giftShopRevenue || 0,
       });
     } catch (err) {
       console.error("Failed to load revenue data:", err);
       setReportData([]);
-      setFilteredData([]);
-      setSummary({ totalRevenue: 0, totalTransactions: 0, avgTransaction: 0, ticketRevenue: 0, donationRevenue: 0, cafeRevenue: 0, giftShopRevenue: 0, largestDonation: 0, largestTicket: 0 });
+      setSummary(null);
     } finally {
       setLoading(false);
     }
   };
 
   const handleGenerate = () => {
-    if (startDate && endDate && new Date(startDate) > new Date(endDate)) {
+    if (filters.startDate && filters.endDate && new Date(filters.startDate) > new Date(filters.endDate)) {
       alert("Start Date cannot be after End Date.");
       return;
     }
-    setAppliedStartDate(startDate || "");
-    setAppliedEndDate(endDate || "");
-    setAppliedRevenueType(revenueType);
-    setAppliedPaymentMethod(paymentMethod);
-    setAppliedMinAmount(minAmount);
-    setAppliedMaxAmount(maxAmount);
-    setAppliedCustomerName(customerName);
     setHasGenerated(true);
     setCurrentPage(1);
+    loadReportData();
   };
 
   const resetFilters = () => {
-    setStartDate(""); setEndDate(""); setRevenueType("all");
-    setPaymentMethod(""); setMinAmount(""); setMaxAmount(""); setCustomerName("");
-    setAppliedStartDate(""); setAppliedEndDate(""); setAppliedRevenueType("all");
-    setAppliedPaymentMethod(""); setAppliedMinAmount(""); setAppliedMaxAmount(""); setAppliedCustomerName("");
+    setFilters({
+      startDate: "", endDate: "", revenueType: "all",
+      paymentMethod: "", minAmount: "", maxAmount: "", customerName: ""
+    });
     setHasGenerated(false);
-    setReportData([]); setFilteredData([]);
-    setSummary({ totalRevenue: 0, totalTransactions: 0, avgTransaction: 0, ticketRevenue: 0, donationRevenue: 0, cafeRevenue: 0, giftShopRevenue: 0, largestDonation: 0, largestTicket: 0 });
+    setReportData([]);
+    setSummary(null);
     setCurrentPage(1);
   };
 
-  // Pagination
-  const indexOfLastRow  = currentPage * rowsPerPage;
-  const indexOfFirstRow = indexOfLastRow - rowsPerPage;
-  const currentRows     = filteredData.slice(indexOfFirstRow, indexOfLastRow);
-  const totalPages      = Math.ceil(filteredData.length / rowsPerPage) || 1;
-
-  const handlePageChange = (page) => {
-    setCurrentPage(page);
-    document.querySelector('.table-container')?.scrollTo({ top: 0, behavior: 'smooth' });
+  const updateFilter = (key, value) => {
+    setFilters(prev => ({ ...prev, [key]: value }));
   };
 
+  // Pagination
+  const indexOfLastRow = currentPage * rowsPerPage;
+  const indexOfFirstRow = indexOfLastRow - rowsPerPage;
+  const currentRows = reportData.slice(indexOfFirstRow, indexOfLastRow);
+  const totalPages = Math.ceil(reportData.length / rowsPerPage) || 1;
+
   const formatCurrency = (value) => {
-    if (!value && value !== 0) return "$0.00";
     const numValue = typeof value === 'string' ? parseFloat(value) : value;
     if (isNaN(numValue)) return "$0.00";
     return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 }).format(numValue);
   };
 
-  const formatNumber = (value) => {
-    if (!value && value !== 0) return "0";
-    const numValue = typeof value === 'string' ? parseFloat(value) : value;
-    if (isNaN(numValue)) return "0";
-    return new Intl.NumberFormat('en-US').format(numValue);
-  };
-
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
-    if (typeof dateString === 'string' && dateString.match(/^\d{4}-\d{2}-\d{2}/)) {
-      const [year, month, day] = dateString.split('T')[0].split('-');
-      return `${month}/${day}/${year}`;
-    }
     const date = new Date(dateString);
     if (isNaN(date.getTime())) return dateString;
     return `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()}`;
   };
 
-  // Chart data derived from summary
+  // Chart data
   const barChartData = summary ? [
-    { name: "Tickets",   revenue: parseFloat(summary.ticketRevenue)   || 0 },
+    { name: "Tickets", revenue: parseFloat(summary.ticketRevenue) || 0 },
     { name: "Donations", revenue: parseFloat(summary.donationRevenue) || 0 },
-    { name: "Cafe",      revenue: parseFloat(summary.cafeRevenue)     || 0 },
+    { name: "Cafe", revenue: parseFloat(summary.cafeRevenue) || 0 },
     { name: "Gift Shop", revenue: parseFloat(summary.giftShopRevenue) || 0 },
   ] : [];
 
   const pieChartData = summary ? [
-    { name: "Tickets",   value: parseFloat(summary.ticketRevenue)   || 0 },
+    { name: "Tickets", value: parseFloat(summary.ticketRevenue) || 0 },
     { name: "Donations", value: parseFloat(summary.donationRevenue) || 0 },
-    { name: "Cafe",      value: parseFloat(summary.cafeRevenue)     || 0 },
+    { name: "Cafe", value: parseFloat(summary.cafeRevenue) || 0 },
     { name: "Gift Shop", value: parseFloat(summary.giftShopRevenue) || 0 },
   ].filter(d => d.value > 0) : [];
-
-  const totalRevenue = parseFloat(summary?.totalRevenue) || 0;
 
   return (
     <div className="revenue-report">
@@ -179,22 +211,46 @@ export default function RevenueReport() {
       <div className="filter-section">
         <div className="filter-row">
           <div className="filter-group">
-            <label>Start Date (Optional)</label>
-            <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+            <label>Start Date</label>
+            <input type="date" value={filters.startDate} onChange={(e) => updateFilter('startDate', e.target.value)} />
           </div>
           <div className="filter-group">
-            <label>End Date (Optional)</label>
-            <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+            <label>End Date</label>
+            <input type="date" value={filters.endDate} onChange={(e) => updateFilter('endDate', e.target.value)} />
           </div>
           <div className="filter-group">
             <label>Transaction Type</label>
-            <select value={revenueType} onChange={(e) => setRevenueType(e.target.value)}>
+            <select value={filters.revenueType} onChange={(e) => updateFilter('revenueType', e.target.value)}>
               <option value="all">All Types</option>
               <option value="ticket">Tickets</option>
               <option value="donation">Donations</option>
               <option value="cafe">Cafe</option>
               <option value="gift">Gift Shop</option>
             </select>
+          </div>
+          <div className="filter-group">
+            <label>Payment Method</label>
+            <select value={filters.paymentMethod} onChange={(e) => updateFilter('paymentMethod', e.target.value)}>
+              <option value="">All</option>
+              <option value="Credit Card">💳 Credit Card</option>
+              <option value="Debit Card">💳 Debit Card</option>
+              <option value="Cash">💵 Cash</option>
+              <option value="Gift Card">🎁 Gift Card</option>
+            </select>
+          </div>
+        </div>
+        <div className="filter-row">
+          <div className="filter-group">
+            <label>Min Amount ($)</label>
+            <input type="number" step="0.01" placeholder="0.00" value={filters.minAmount} onChange={(e) => updateFilter('minAmount', e.target.value)} />
+          </div>
+          <div className="filter-group">
+            <label>Max Amount ($)</label>
+            <input type="number" step="0.01" placeholder="9999.99" value={filters.maxAmount} onChange={(e) => updateFilter('maxAmount', e.target.value)} />
+          </div>
+          <div className="filter-group">
+            <label>Customer Name</label>
+            <input type="text" placeholder="Search customer..." value={filters.customerName} onChange={(e) => updateFilter('customerName', e.target.value)} />
           </div>
           <div className="filter-group">
             <button className="generate-btn" onClick={handleGenerate} disabled={loading}>
@@ -215,7 +271,7 @@ export default function RevenueReport() {
             </div>
             <div className="summary-card">
               <div className="summary-label">Total Transactions</div>
-              <div className="summary-value">{formatNumber(summary.totalTransactions)}</div>
+              <div className="summary-value">{summary.totalTransactions.toLocaleString()}</div>
             </div>
             <div className="summary-card">
               <div className="summary-label">Average Transaction</div>
@@ -242,21 +298,59 @@ export default function RevenueReport() {
             </div>
           </div>
 
-          {/* ── CHARTS ── */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem", marginTop: "1.5rem" }}>
+          {/* NEW: Insights Cards */}
+          {insights && (
+            <div style={{ marginTop: "1.5rem" }}>
+              <h3 style={{ fontSize: "1rem", marginBottom: "1rem", color: "#1a1a2e" }}>📊 Key Insights</h3>
+              <div className="summary-grid">
+                <div className="summary-card">
+                  <div className="summary-label">Average Daily Revenue</div>
+                  <div className="summary-value">{formatCurrency(insights.avgDailyRevenue)}</div>
+                </div>
+                <div className="summary-card">
+                  <div className="summary-label">Average Donation</div>
+                  <div className="summary-value">{formatCurrency(insights.avgDonation)}</div>
+                </div>
+                <div className="summary-card">
+                  <div className="summary-label">Reporting Period</div>
+                  <div className="summary-value">{insights.totalDays} days</div>
+                </div>
+              </div>
+            </div>
+          )}
 
-            {/* Bar Chart — Revenue by Source */}
-            <div style={{ background: "var(--color-white)", border: "1px solid var(--color-border)", padding: "1.25rem", borderRadius: 4 }}>
-              <h4 style={{ margin: "0 0 1rem", fontSize: 13, fontWeight: 600, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.07em" }}>
+          {/* Revenue Trend Chart - NEW */}
+          {insights?.trendData.length > 0 && (
+            <div style={{ marginTop: "1.5rem", background: "white", border: "1px solid #e5e5e5", padding: "1.25rem", borderRadius: 8 }}>
+              <h4 style={{ margin: "0 0 1rem", fontSize: 13, fontWeight: 600, color: "#6b7280", textTransform: "uppercase" }}>
+                📈 Revenue Trend (Last 7 Days)
+              </h4>
+              <ResponsiveContainer width="100%" height={250}>
+                <LineChart data={insights.trendData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="date" tick={{ fontSize: 11 }} />
+                  <YAxis tickFormatter={(v) => `$${v}`} />
+                  <Tooltip formatter={(v) => formatCurrency(v)} />
+                  <Line type="monotone" dataKey="revenue" stroke="#c5a028" strokeWidth={2} dot={{ fill: "#c5a028", r: 4 }} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+
+          {/* Two-column charts */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem", marginTop: "1.5rem" }}>
+            {/* Bar Chart */}
+            <div style={{ background: "white", border: "1px solid #e5e5e5", padding: "1.25rem", borderRadius: 8 }}>
+              <h4 style={{ margin: "0 0 1rem", fontSize: 13, fontWeight: 600, color: "#6b7280", textTransform: "uppercase" }}>
                 Revenue by Source
               </h4>
               <ResponsiveContainer width="100%" height={220}>
-                <BarChart data={barChartData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e5e5" />
+                <BarChart data={barChartData}>
+                  <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-                  <YAxis tick={{ fontSize: 11 }} tickFormatter={v => `$${(v / 1000).toFixed(0)}k`} />
+                  <YAxis tickFormatter={v => `$${v}`} />
                   <Tooltip formatter={(v) => formatCurrency(v)} />
-                  <Bar dataKey="revenue" name="Revenue" radius={[2, 2, 0, 0]}>
+                  <Bar dataKey="revenue" radius={[4, 4, 0, 0]}>
                     {barChartData.map((_, i) => (
                       <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
                     ))}
@@ -265,9 +359,9 @@ export default function RevenueReport() {
               </ResponsiveContainer>
             </div>
 
-            {/* Pie Chart — Revenue Distribution */}
-            <div style={{ background: "var(--color-white)", border: "1px solid var(--color-border)", padding: "1.25rem", borderRadius: 4 }}>
-              <h4 style={{ margin: "0 0 1rem", fontSize: 13, fontWeight: 600, color: "#6b7280", textTransform: "uppercase", letterSpacing: "0.07em" }}>
+            {/* Pie Chart */}
+            <div style={{ background: "white", border: "1px solid #e5e5e5", padding: "1.25rem", borderRadius: 8 }}>
+              <h4 style={{ margin: "0 0 1rem", fontSize: 13, fontWeight: 600, color: "#6b7280", textTransform: "uppercase" }}>
                 Revenue Distribution
               </h4>
               {pieChartData.length > 0 ? (
@@ -292,17 +386,58 @@ export default function RevenueReport() {
                   </PieChart>
                 </ResponsiveContainer>
               ) : (
-                <div style={{ height: 220, display: "flex", alignItems: "center", justifyContent: "center", color: "#9ca3af", fontSize: 13 }}>
-                  No revenue data to display
+                <div style={{ height: 220, display: "flex", alignItems: "center", justifyContent: "center", color: "#9ca3af" }}>
+                  No data to display
                 </div>
               )}
             </div>
           </div>
+
+          {/* NEW: Top Customers & Best Sellers */}
+          {(insights?.topCustomers.length > 0 || insights?.topItems.length > 0) && (
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem", marginTop: "1.5rem" }}>
+              {insights.topCustomers.length > 0 && (
+                <div style={{ background: "white", border: "1px solid #e5e5e5", padding: "1.25rem", borderRadius: 8 }}>
+                  <h4 style={{ margin: "0 0 1rem", fontSize: 13, fontWeight: 600, color: "#6b7280", textTransform: "uppercase" }}>
+                    👥 Top Customers
+                  </h4>
+                  <table style={{ width: "100%", fontSize: "0.875rem" }}>
+                    <tbody>
+                      {insights.topCustomers.map((customer, i) => (
+                        <tr key={i} style={{ borderBottom: "1px solid #f3f4f6" }}>
+                          <td style={{ padding: "0.5rem 0" }}>{i + 1}. {customer.name}</td>
+                          <td style={{ padding: "0.5rem 0", textAlign: "right", fontWeight: 600 }}>{formatCurrency(customer.total)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              {insights.topItems.length > 0 && (
+                <div style={{ background: "white", border: "1px solid #e5e5e5", padding: "1.25rem", borderRadius: 8 }}>
+                  <h4 style={{ margin: "0 0 1rem", fontSize: 13, fontWeight: 600, color: "#6b7280", textTransform: "uppercase" }}>
+                    🏆 Best Selling Items
+                  </h4>
+                  <table style={{ width: "100%", fontSize: "0.875rem" }}>
+                    <tbody>
+                      {insights.topItems.map((item, i) => (
+                        <tr key={i} style={{ borderBottom: "1px solid #f3f4f6" }}>
+                          <td style={{ padding: "0.5rem 0" }}>{i + 1}. {item.name}</td>
+                          <td style={{ padding: "0.5rem 0", textAlign: "right", fontWeight: 600 }}>{item.quantity} sold</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
 
       {/* Data Table */}
-      {hasGenerated && filteredData.length > 0 && (
+      {hasGenerated && reportData.length > 0 && (
         <div className="data-section">
           <div className="data-header">
             <h3>Transaction Details</h3>
@@ -314,34 +449,26 @@ export default function RevenueReport() {
                   <th>Date</th>
                   <th>Source</th>
                   <th>Customer</th>
-                  <th>Type/Item</th>
+                  <th>Payment</th>
+                  <th>Description</th>
                   <th>Amount</th>
                 </tr>
               </thead>
               <tbody>
-                {currentRows.map((row, idx) => {
-                  let typeValue = "—";
-                  if (row.type && row.type !== "null")       typeValue = row.type;
-                  else if (row.donation_type)                typeValue = row.donation_type;
-                  else if (row.item_name)                    typeValue = row.item_name;
-                  else if (row.source === "Cafe")            typeValue = "Cafe Purchase";
-                  else if (row.source === "Gift Shop")       typeValue = "Gift Purchase";
-                  else if (row.source === "Ticket")          typeValue = "Ticket Sale";
-                  else if (row.source === "Donation")        typeValue = "Donation";
-                  return (
-                    <tr key={idx}>
-                      <td>{formatDate(row.date)}</td>
-                      <td>
-                        <span className={`source-badge ${row.source?.toLowerCase().replace(' ', '-')}`}>
-                          {row.source || "Unknown"}
-                        </span>
-                      </td>
-                      <td>{row.customer_name || "—"}</td>
-                      <td>{typeValue}</td>
-                      <td className="amount-cell">{formatCurrency(row.amount)}</td>
-                    </tr>
-                  );
-                })}
+                {currentRows.map((row, idx) => (
+                  <tr key={idx}>
+                    <td>{formatDate(row.date)}</td>
+                    <td>
+                      <span className={`source-badge ${row.source?.toLowerCase().replace(' ', '-')}`}>
+                        {row.source || "Unknown"}
+                      </span>
+                    </td>
+                    <td>{row.customer_name || "—"}</td>
+                    <td>{row.payment_method || "—"}</td>
+                    <td>{row.item_name || row.type || row.donation_type || "—"}</td>
+                    <td className="amount-cell">{formatCurrency(row.amount)}</td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
@@ -365,7 +492,7 @@ export default function RevenueReport() {
         </div>
       )}
 
-      {hasGenerated && filteredData.length === 0 && !loading && (
+      {hasGenerated && reportData.length === 0 && !loading && (
         <div className="no-results">No transactions found. Try adjusting your filters.</div>
       )}
       {loading && <div className="loading">Loading report data...</div>}

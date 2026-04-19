@@ -18,7 +18,7 @@ const resources = [
   {
     id: "giftshop-items",
     label: "Gift Shop Item",
-    labelPlural: "Gift Shop Items",
+    labelPlural: "📦 Inventory",
     idKey: "item_id",
     load: getGiftShopItems,
     create: createGiftShopItem,
@@ -29,7 +29,7 @@ const resources = [
       { key: "item_id", label: "ID" },
       { key: "item_name", label: "Name" },
       { key: "category", label: "Category" },
-      { key: "price", label: "Price" },
+      { key: "price", label: "Price", type: "currency" },
       { key: "stock_quantity", label: "Stock" },
       { key: "image_url", label: "Image URL", maxLength: 28 },
     ],
@@ -46,22 +46,56 @@ const resources = [
         fullWidth: true,
       },
     ],
+    // Add filters for inventory
+    filters: [
+      { 
+        field: "category", 
+        label: "Category", 
+        type: "select", 
+        options: [
+          { value: "", label: "All Categories" },
+          { value: "Decor", label: "Decor" },
+          { value: "Toys", label: "Toys" },
+          { value: "Apparel", label: "Apparel" },
+          { value: "Books", label: "Books" },
+          { value: "Accessories", label: "Accessories" }
+        ]
+      },
+      {
+        field: "stock_status",
+        label: "Stock Status",
+        type: "select",
+        options: [
+          { value: "", label: "All" },
+          { value: "low", label: "⚠️ Low Stock (≤20)" },
+          { value: "in", label: "✅ In Stock (>20)" },
+          { value: "out", label: "❌ Out of Stock" }
+        ]
+      },
+      {
+        field: "price",
+        label: "Price Range",
+        type: "range",
+        unit: "$"
+      }
+    ]
   },
   {
     id: "giftshop-transactions",
     label: "Gift Shop Transaction",
-    labelPlural: "Gift Shop Transactions",
+    labelPlural: "💰 Sales",
     idKey: "transaction_id",
+    isTransactionResource: true,
     load: getGiftShopTransactions,
     create: createGiftShopTransaction,
     update: updateGiftShopTransaction,
     remove: deleteGiftShopTransaction,
     searchKeys: ["transaction_id", "user_id", "payment_method"],
     columns: [
-      { key: "transaction_id", label: "ID" },
-      { key: "user_id", label: "User ID" },
-      { key: "transaction_datetime", label: "Date Time", type: "datetime" },
-      { key: "total_amount", label: "Total" },
+      { key: "transaction_id", label: "Sale ID" },
+      { key: "user_id", label: "Customer ID" },
+      { key: "transaction_datetime", label: "Date & Time", type: "datetime" },
+      { key: "total_amount", label: "Total", type: "currency" },
       { key: "payment_method", label: "Payment" },
     ],
     fields: [
@@ -71,40 +105,43 @@ const resources = [
       { name: "total_amount", label: "Total Amount", required: true, placeholder: "19.99" },
       { name: "payment_method", label: "Payment Method", required: true, placeholder: "Card" },
     ],
-  },
-  {
-    id: "giftshop-transaction-items",
-    label: "Gift Shop Transaction Item",
-    labelPlural: "Gift Shop Transaction Items",
-    idKey: "shop_item_id",
-    load: getGiftShopTransactionItems,
-    create: createGiftShopTransactionItem,
-    update: updateGiftShopTransactionItem,
-    remove: deleteGiftShopTransactionItem,
-    searchKeys: ["shop_item_id", "transaction_id", "item_id"],
-    columns: [
-      { key: "shop_item_id", label: "ID" },
-      { key: "transaction_id", label: "Transaction ID" },
-      { key: "item_id", label: "Item ID" },
-      { key: "quantity", label: "Quantity" },
-      { key: "subtotal", label: "Subtotal" },
-    ],
-    fields: [
-      { name: "shop_item_id", label: "Shop Item ID", required: true, readOnlyOnEdit: true, placeholder: "30" },
-      { name: "transaction_id", label: "Transaction ID", required: true, placeholder: "30" },
-      { name: "item_id", label: "Item ID", required: true, placeholder: "30" },
-      { name: "quantity", label: "Quantity", required: true, placeholder: "1" },
-      { name: "subtotal", label: "Subtotal", required: true, placeholder: "19.99" },
-    ],
-  },
+    // Add filters for transactions
+    filters: [
+      {
+        field: "payment_method",
+        label: "Payment Method",
+        type: "select",
+        options: [
+          { value: "", label: "All" },
+          { value: "Card", label: "💳 Card" },
+          { value: "Cash", label: "💵 Cash" },
+          { value: "Gift Card", label: "🎁 Gift Card" }
+        ]
+      },
+      {
+        field: "date",
+        label: "Date Range",
+        type: "dateRange"
+      },
+      {
+        field: "total_amount",
+        label: "Sale Amount",
+        type: "range",
+        unit: "$"
+      }
+    ]
+  }
+  // Note: giftshop-transaction-items is REMOVED as a separate tab
+  // It now appears as expandable rows within the Sales tab
 ];
 
 export default function GiftShopAdminPanel() {
   return (
     <OperationsManagement
       title="Gift Shop Management"
-      description="Manage gift shop inventory, sales, and line items."
+      description="Manage inventory, track sales, and view transaction details"
       resources={resources}
+      getTransactionItems={getGiftShopTransactionItems}
     />
   );
 }

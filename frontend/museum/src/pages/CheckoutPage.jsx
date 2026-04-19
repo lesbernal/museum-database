@@ -153,17 +153,30 @@ export default function CheckoutPage() {
     const today = new Date();
     const localDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
     
+    // Generate a unique transaction_id for this entire purchase
+    const transactionId = Date.now();
+    
     for (const ticket of order.tickets) {
       for (let i = 0; i < ticket.quantity; i++) {
+        let discountType = 'None';
+        if (order.isThursday) {
+          discountType = 'None';
+        } else if (order.discount === 'Member' || ticket.discount_type === 'Member') {
+          discountType = 'Member';
+        } else if (typeof order.discount === 'string' && order.discount.toLowerCase().includes('member')) {
+          discountType = 'Member';
+        }
+
         await postTicket({
           user_id: Number(userId),
-          purchase_date: localDate,  // ← Changed from UTC to local
+          purchase_date: localDate,
           visit_date: order.visitDate,
           ticket_type: ticket.type,
           base_price: ticket.basePrice,
-          discount_type: order.discount,
+          discount_type: discountType,
           final_price: ticket.finalPrice,
           payment_method: "Credit Card",
+          transaction_id: transactionId,  // Add the same transaction_id to all tickets in this purchase
         });
       }
     }
@@ -300,6 +313,7 @@ export default function CheckoutPage() {
     }
   }
 
+
   function renderSummary() {
     if (order.type === "membership") {
       return (
@@ -325,31 +339,85 @@ export default function CheckoutPage() {
     }
 
     if (order.type === "tickets") {
-      return (
-        <>
-          <div className="summary-section">
-            <p className="summary-label">Visit Date</p>
-            <p className="summary-value">{order.visitDate}</p>
-          </div>
-          <div className="summary-section">
-            <p className="summary-label">Discount</p>
-            <p className="summary-value">{order.discount}</p>
-          </div>
-          <div className="summary-items">
-            {order.tickets.map(ticket => (
-              <div className="summary-item" key={ticket.type}>
-                <span>{ticket.quantity}x {ticket.label}</span>
-                <span>{formatCurrency(ticket.finalPrice * ticket.quantity)}</span>
-              </div>
-            ))}
-          </div>
-          <div className="summary-total">
-            <span>Total</span>
-            <span>{formatCurrency(order.total)}</span>
-          </div>
-        </>
-      );
-    }
+    // Check if it's Thursday
+    const isThursday = order.isThursday || (order.visitDate && new Date(order.visitDate).getDay() === 4);
+    
+    // Get member level from order (passed from Tickets.jsx)
+    const memberLevel = order.memberLevel;
+    const isMember = order.isMember;
+    
+    // Calculate discount percentage based on member level
+    const getDiscountPercent = () => {
+      if (isThursday) return 100;
+      if (!isMember) return 0;
+      switch (memberLevel) {
+        case 'Leadership Circle':
+        case 'Benefactor':
+          return 100;
+        case 'Platinum':
+          return 25;
+        case 'Gold':
+          return 20;
+        case 'Silver':
+          return 15;
+        case 'Bronze':
+          return 10;
+        default:
+          return 0;
+      }
+    };
+    
+    const discountPercent = getDiscountPercent();
+    
+    // Calculate discounted price for each ticket
+    const getFinalPrice = (ticket) => {
+      if (isThursday) return 0;
+      if (discountPercent === 100) return 0;
+      if (discountPercent > 0) {
+        return ticket.basePrice * (1 - discountPercent / 100);
+      }
+      return ticket.finalPrice; // Fallback to what was sent
+    };
+    
+    // Calculate totals
+    let calculatedTotal = 0;
+    const ticketsWithPrices = order.tickets.map(ticket => {
+      const finalPrice = getFinalPrice(ticket);
+      calculatedTotal += finalPrice * ticket.quantity;
+      return { ...ticket, calculatedFinalPrice: finalPrice };
+    });
+    
+    const isFree = isThursday || discountPercent === 100;
+    
+    return (
+      <>
+        <div className="summary-section">
+          <p className="summary-label">Visit Date</p>
+          <p className="summary-value">{order.visitDate}</p>
+        </div>
+        <div className="summary-section">
+          <p className="summary-label">Discount</p>
+          <p className="summary-value">
+            {isThursday ? "Thursday Special" : 
+            discountPercent === 100 ? `${memberLevel} Member - FREE` :
+            isMember ? `${memberLevel} Member (${discountPercent}% off)` : "None"}
+          </p>
+        </div>
+        <div className="summary-items">
+          {ticketsWithPrices.map((ticket, idx) => (
+            <div className="summary-item" key={idx}>
+              <span>{ticket.quantity}x {ticket.label}</span>
+              <span>{isFree ? "FREE" : formatCurrency(ticket.calculatedFinalPrice * ticket.quantity)}</span>
+            </div>
+          ))}
+        </div>
+        <div className="summary-total">
+          <span>Total</span>
+          <span>{isFree ? "FREE" : formatCurrency(calculatedTotal)}</span>
+        </div>
+      </>
+    );
+  }
 
     if (order.type === "donation") {
       return (
@@ -399,6 +467,7 @@ export default function CheckoutPage() {
       </>
     );
   }
+
 
   function renderMembershipFields() {
     return (
@@ -493,11 +562,53 @@ export default function CheckoutPage() {
 
   function getSubmitLabel() {
     if (loading) return "Processing...";
-    if (order.type === "membership") return `Pay ${formatCurrency(order.amount)}`;
-    if (order.type === "donation")   return `Donate ${formatCurrency(order.amount)}`;
-    if (order.type === "cafe")       return `Place Order ${formatCurrency(order.total)}`;
-    if (order.type === "giftshop")   return `Place Order ${formatCurrency(order.total)}`;
-    return `Pay ${formatCurrency(order.total)}`;
+    
+    const isThursday = order.isThursday || (order.visitDate && new Date(order.visitDate).getDay() === 4);
+    const memberLevel = order.memberLevel;
+    const isMember = order.isMember;
+    
+    const getDiscountPercent = () => {
+      if (isThursday) return 100;
+      if (!isMember) return 0;
+      switch (memberLevel) {
+        case 'Leadership Circle':
+        case 'Benefactor':
+          return 100;
+        case 'Platinum':
+          return 25;
+        case 'Gold':
+          return 20;
+        case 'Silver':
+          return 15;
+        case 'Bronze':
+          return 10;
+        default:
+          return 0;
+      }
+    };
+    
+    const discountPercent = getDiscountPercent();
+    const isFree = isThursday || discountPercent === 100;
+    
+    switch (order.type) {
+      case "membership":
+        return `Pay ${formatCurrency(order.amount)}`;
+      case "donation":
+        return `Donate ${formatCurrency(order.amount)}`;
+      case "cafe":
+        return `Place Order ${formatCurrency(order.total)}`;
+      case "giftshop":
+        return `Place Order ${formatCurrency(order.total)}`;
+      case "tickets": {
+        if (isFree) {
+          return `Confirm FREE Tickets`;
+        }
+        const calculatedTotal = order.tickets.reduce((sum, ticket) => sum + (ticket.basePrice * (1 - discountPercent / 100) * ticket.quantity), 0);
+        return `Pay ${formatCurrency(calculatedTotal)}`;
+      }
+      default:
+        return `Pay ${formatCurrency(order.total)}`;
+    }
   }
 
   if (!order) return null;
