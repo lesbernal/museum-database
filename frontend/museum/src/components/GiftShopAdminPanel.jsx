@@ -134,7 +134,7 @@ const resources = [
   // It now appears as expandable rows within the Sales tab
 ];
 
-export default function GiftShopAdminPanel() {
+export default function GiftShopAdminPanel({ canEdit = true, canDelete = true }) {
   return (
     <OperationsManagement
       resources={resources}
