@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { getCafeItems } from "../services/api";
+import { getCafeItems, getMyMemberRecord } from "../services/api";
 import { readCafeCart, writeCafeCart } from "../utils/cafeCart";
+import { calculateDiscountedAmount, formatMoney, getCafeDiscountPercent } from "../utils/shopDiscounts";
 import "../styles/CafePage.css";
 
 function SignInPrompt({ onClose }) {
@@ -38,6 +39,8 @@ export default function CafePage() {
   );
   const [showAuthPrompt, setShowAuthPrompt] = useState(false);
   const [cartToast, setCartToast] = useState("");
+  const [memberDiscountPercent, setMemberDiscountPercent] = useState(0);
+  const [memberLevel, setMemberLevel] = useState("");
 
   useEffect(() => {
     async function loadItems() {
@@ -53,6 +56,25 @@ export default function CafePage() {
     }
 
     loadItems();
+  }, []);
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) return;
+
+    async function loadMemberDiscount() {
+      try {
+        const member = await getMyMemberRecord();
+        const level = member?.membership_level || "";
+        setMemberLevel(level);
+        setMemberDiscountPercent(getCafeDiscountPercent(level));
+      } catch {
+        setMemberLevel("");
+        setMemberDiscountPercent(0);
+      }
+    }
+
+    loadMemberDiscount();
   }, []);
 
   useEffect(() => {
@@ -179,6 +201,16 @@ export default function CafePage() {
           </div>
         </div>
         <div className="cafe-info-item">
+          <div>
+            <strong>Member Benefit</strong>
+            <p>
+              {memberDiscountPercent > 0
+                ? `${memberLevel} discount applied (${memberDiscountPercent}% off)`
+                : "Select memberships receive cafe discounts"}
+            </p>
+          </div>
+        </div>
+        <div className="cafe-info-item">
           <Link to="/cafe/cart" className="cafe-cart-btn">
             View Cart ({cartCount})
           </Link>
@@ -248,11 +280,14 @@ export default function CafePage() {
             </label>
           </div>
 
-          {hasActiveFilters && (
-            <button className="clear-filters-btn" onClick={clearFilters}>
-              Clear All
-            </button>
-          )}
+          <button
+            className={`clear-filters-btn${hasActiveFilters ? "" : " is-hidden"}`}
+            onClick={clearFilters}
+            type="button"
+            disabled={!hasActiveFilters}
+          >
+            Clear All
+          </button>
         </div>
       </div>
 
@@ -293,7 +328,15 @@ export default function CafePage() {
               <div className="cafe-card-body">
                 <p className="cafe-category">{item.category}</p>
                 <h3>{item.item_name}</h3>
-                <p className="cafe-price">${Number(item.price).toFixed(2)}</p>
+                {memberDiscountPercent > 0 ? (
+                  <div className="cafe-price-block">
+                    <p className="cafe-price cafe-price-original">{formatMoney(item.price)}</p>
+                    <p className="cafe-price">{formatMoney(calculateDiscountedAmount(item.price, memberDiscountPercent))}</p>
+                    <p className="cafe-member-discount">{memberDiscountPercent}% member discount</p>
+                  </div>
+                ) : (
+                  <p className="cafe-price">{formatMoney(item.price)}</p>
+                )}
                 <p className="cafe-stock">
                   {Number(item.stock_quantity) > 0 
                     ? "Available today" 
