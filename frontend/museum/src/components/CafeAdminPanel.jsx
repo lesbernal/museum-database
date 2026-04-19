@@ -137,8 +137,6 @@ const resources = [
 export default function CafeAdminPanel() {
   return (
     <OperationsManagement
-      title="Cafe Management"
-      description="Manage menu items, track sales, and view order details"
       resources={resources}
       getTransactionItems={getCafeTransactionItems}
     />

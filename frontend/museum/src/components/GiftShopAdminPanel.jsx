@@ -137,8 +137,6 @@ const resources = [
 export default function GiftShopAdminPanel() {
   return (
     <OperationsManagement
-      title="Gift Shop Management"
-      description="Manage inventory, track sales, and view transaction details"
       resources={resources}
       getTransactionItems={getGiftShopTransactionItems}
     />
