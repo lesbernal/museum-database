@@ -75,6 +75,22 @@ export default function RevenueReport() {
       ? donations.reduce((sum, d) => sum + parseFloat(d.amount || 0), 0) / donations.length 
       : 0;
 
+
+    const dayOfWeekCount = {
+      Monday: 0, Tuesday: 0, Wednesday: 0, Thursday: 0, Friday: 0, Saturday: 0, Sunday: 0
+    };
+    reportData.forEach(row => {
+      if (row.day_of_week) {
+        dayOfWeekCount[row.day_of_week] = (dayOfWeekCount[row.day_of_week] || 0) + 1;
+      }
+    });
+    const dayOfWeekData = Object.entries(dayOfWeekCount)
+      .map(([day, count]) => ({ day, count }))
+      .sort((a, b) => {
+        const order = { Monday: 1, Tuesday: 2, Wednesday: 3, Thursday: 4, Friday: 5, Saturday: 6, Sunday: 7 };
+        return order[a.day] - order[b.day];
+      });
+
     // Best selling items (cafe + gift shop)
     const itemSales = {};
     reportData.forEach(row => {
@@ -93,6 +109,7 @@ export default function RevenueReport() {
       paymentBreakdown,
       avgDonation,
       topItems,
+      dayOfWeekData,
       totalDays: Object.keys(dailyRevenue).length,
       avgDailyRevenue: Object.values(dailyRevenue).reduce((a, b) => a + b, 0) / Object.keys(dailyRevenue).length || 0
     };
@@ -184,6 +201,25 @@ export default function RevenueReport() {
     if (isNaN(date.getTime())) return dateString;
     return `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()}`;
   };
+
+  const formatNumber = (value) => {
+    if (!value && value !== 0) return "0";
+    return new Intl.NumberFormat('en-US').format(value);
+  };
+
+  const getTierClass = (tier) => {
+    if (!tier) return "";
+    if (tier.includes("High") || tier.includes("Major")) return "tier-high";
+    if (tier.includes("Medium") || tier.includes("Significant") || tier.includes("Moderate")) return "tier-medium";
+    if (tier.includes("Low") || tier.includes("Small")) return "tier-low";
+    return "tier-standard";
+  };
+
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+    document.querySelector('.table-container')?.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
 
   // Chart data
   const barChartData = summary ? [
@@ -345,31 +381,20 @@ export default function RevenueReport() {
               </ResponsiveContainer>
             </div>
 
-            {/* Pie Chart */}
+            {/* Transactions by Day of Week Chart */}
             <div style={{ background: "white", border: "1px solid #e5e5e5", padding: "1.25rem", borderRadius: 8 }}>
               <h4 style={{ margin: "0 0 1rem", fontSize: 13, fontWeight: 600, color: "#6b7280", textTransform: "uppercase" }}>
-                Revenue Distribution
+                Transactions by Day of Week
               </h4>
-              {pieChartData.length > 0 ? (
+              {insights?.dayOfWeekData && insights.dayOfWeekData.length > 0 ? (
                 <ResponsiveContainer width="100%" height={220}>
-                  <PieChart>
-                    <Pie
-                      data={pieChartData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={55}
-                      outerRadius={85}
-                      paddingAngle={3}
-                      dataKey="value"
-                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                      labelLine={false}
-                    >
-                      {pieChartData.map((_, i) => (
-                        <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip formatter={(v) => formatCurrency(v)} />
-                  </PieChart>
+                  <BarChart data={insights.dayOfWeekData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="day" tick={{ fontSize: 11 }} />
+                    <YAxis />
+                    <Tooltip formatter={(v) => formatNumber(v)} />
+                    <Bar dataKey="count" fill="#c5a028" radius={[4, 4, 0, 0]} name="Transactions" />
+                  </BarChart>
                 </ResponsiveContainer>
               ) : (
                 <div style={{ height: 220, display: "flex", alignItems: "center", justifyContent: "center", color: "#9ca3af" }}>
@@ -432,27 +457,35 @@ export default function RevenueReport() {
             <table className="data-table">
               <thead>
                 <tr>
-                  <th>Date</th>
                   <th>Source</th>
+                  <th>Date</th>
                   <th>Customer</th>
-                  <th>Payment</th>
-                  <th>Description</th>
+                  <th>Type</th>
+                  <th>Customer Type</th>
                   <th>Amount</th>
+                  <th>Tier</th>
+                  <th>Payment</th>
                 </tr>
               </thead>
               <tbody>
                 {currentRows.map((row, idx) => (
                   <tr key={idx}>
+                    <td>{row.source_with_icon || row.source}</td>
                     <td>{formatDate(row.date)}</td>
+                    <td>{row.customer_name || "—"}</td>
+                    <td>{row.type || "—"}</td>
                     <td>
-                      <span className={`source-badge ${row.source?.toLowerCase().replace(' ', '-')}`}>
-                        {row.source || "Unknown"}
+                      <span className={`customer-badge ${row.customer_type === 'Member' ? 'badge-member' : 'badge-nonmember'}`}>
+                        {row.customer_type || "—"}
                       </span>
                     </td>
-                    <td>{row.customer_name || "—"}</td>
-                    <td>{row.payment_method || "—"}</td>
-                    <td>{row.item_name || row.type || row.donation_type || "—"}</td>
                     <td className="amount-cell">{formatCurrency(row.amount)}</td>
+                    <td>
+                      <span className={`tier-badge ${getTierClass(row.revenue_tier)}`}>
+                        {row.revenue_tier || "—"}
+                      </span>
+                    </td>
+                    <td>{row.payment_method || "—"}</td>
                   </tr>
                 ))}
               </tbody>

@@ -244,6 +244,15 @@ export default function ArtCollectionReport() {
     }
   };
 
+  const getValueCategoryClass = (category) => {
+    if (!category) return "";
+    if (category.includes("Iconic")) return "value-iconic";
+    if (category.includes("Priceless")) return "value-priceless";
+    if (category.includes("Major")) return "value-major";
+    if (category.includes("Significant")) return "value-significant";
+    return "value-standard";
+  };
+
   // Chart data
   const statusChartData = statuses.map(s => ({
     name: s,
@@ -349,7 +358,7 @@ export default function ArtCollectionReport() {
           {insights && (
             <div className="insights-section">
               <h3> Collection Insights & Risk Assessment</h3>
-              <div className="summary-grid">
+              <div className="summary-grid-3">
                 <div className="summary-card risk-card">
                   <div className="summary-label">⚠️ At-Risk Value (On Loan/Storage)</div>
                   <div className="summary-value">{formatCurrency(insights.atRiskValue)}</div>
@@ -361,7 +370,7 @@ export default function ArtCollectionReport() {
                   <div className="insight-subtext">Artworks needing conservation</div>
                 </div>
                 <div className="summary-card">
-                  <div className="summary-label"> Active Galleries</div>
+                  <div className="summary-label">🏛️ Active Galleries</div>
                   <div className="summary-value">{insights.uniqueGalleries}</div>
                 </div>
               </div>
@@ -415,22 +424,6 @@ export default function ArtCollectionReport() {
             </div>
           )}
 
-          {/* Value by Century Chart - NEW */}
-          {insights?.centuryData.length > 0 && (
-            <div className="chart-container" style={{ marginTop: "1.5rem" }}>
-              <h4> Collection Value by Century</h4>
-              <ResponsiveContainer width="100%" height={250}>
-                <BarChart data={insights.centuryData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="century" />
-                  <YAxis tickFormatter={(v) => `$${(v / 1000000).toFixed(1)}M`} />
-                  <Tooltip formatter={(v) => formatCurrency(v)} />
-                  <Bar dataKey="value" fill="#c5a028" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          )}
-
           {/* Status & Medium Charts */}
           <div className="charts-grid">
             {/* Status Bar Chart */}
@@ -478,21 +471,50 @@ export default function ArtCollectionReport() {
             </div>
           </div>
 
-          {/* NEW: Acquisition Insights */}
+          {/* NEW: Acquisition Insights with Images */}
           {insights?.oldestAcquisition && (
             <div className="insights-section">
-              <h3>📅 Acquisition Insights</h3>
-              <div className="summary-grid">
-                <div className="summary-card">
-                  <div className="summary-label">Oldest Acquisition</div>
-                  <div className="summary-value">{insights.oldestAcquisition.title}</div>
-                  <div className="insight-subtext">{new Date(insights.oldestAcquisition.acquisition_date).toLocaleDateString()}</div>
+              <h3>Acquisition Insights</h3>
+              <div className="acquisition-grid">
+                <div className="acquisition-card">
+                  <div className="acquisition-image">
+                    {insights.oldestAcquisition.image_url ? (
+                      <img 
+                        src={insights.oldestAcquisition.image_url} 
+                        alt={insights.oldestAcquisition.title}
+                        onError={(e) => { e.target.src = 'https://via.placeholder.com/120x80?text=No+Image'; }}
+                      />
+                    ) : (
+                      <div className="no-image">🖼️ No Image</div>
+                    )}
+                  </div>
+                  <div className="acquisition-info">
+                    <div className="acquisition-label">Oldest Acquisition</div>
+                    <div className="acquisition-title">{insights.oldestAcquisition.title}</div>
+                    <div className="acquisition-date">{new Date(insights.oldestAcquisition.acquisition_date).toLocaleDateString()}</div>
+                  </div>
                 </div>
-                <div className="summary-card">
-                  <div className="summary-label">Newest Acquisition</div>
-                  <div className="summary-value">{insights.newestAcquisition.title}</div>
-                  <div className="insight-subtext">{new Date(insights.newestAcquisition.acquisition_date).toLocaleDateString()}</div>
-                </div>
+                
+                {insights.newestAcquisition && (
+                  <div className="acquisition-card">
+                    <div className="acquisition-image">
+                      {insights.newestAcquisition.image_url ? (
+                        <img 
+                          src={insights.newestAcquisition.image_url} 
+                          alt={insights.newestAcquisition.title}
+                          onError={(e) => { e.target.src = 'https://via.placeholder.com/120x80?text=No+Image'; }}
+                        />
+                      ) : (
+                        <div className="no-image">🖼️ No Image</div>
+                      )}
+                    </div>
+                    <div className="acquisition-info">
+                      <div className="acquisition-label">Newest Acquisition</div>
+                      <div className="acquisition-title">{insights.newestAcquisition.title}</div>
+                      <div className="acquisition-date">{new Date(insights.newestAcquisition.acquisition_date).toLocaleDateString()}</div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -520,11 +542,13 @@ export default function ArtCollectionReport() {
                   <th>Title</th>
                   <th>Artist</th>
                   <th>Year</th>
+                  <th>Age (years)</th>
                   <th>Medium</th>
                   <th>Status</th>
+                  <th>Value Category</th>
                   <th>Insurance Value</th>
+                  <th>Artist Age at Creation</th>
                   <th>Gallery</th>
-                  <th>Gallery Status</th>
                 </tr>
               </thead>
               <tbody>
@@ -533,15 +557,21 @@ export default function ArtCollectionReport() {
                     <td className="title-cell">{artwork.title}</td>
                     <td>{artwork.artist_name}</td>
                     <td>{artwork.creation_year || "—"}</td>
+                    <td>{artwork.age_years || "—"}</td>
                     <td>{artwork.medium || "—"}</td>
                     <td>
                       <span className={`status-badge ${getStatusBadgeClass(artwork.current_display_status)}`}>
                         {artwork.current_display_status || "Unknown"}
                       </span>
                     </td>
+                    <td>
+                      <span className={`value-badge ${getValueCategoryClass(artwork.value_category)}`}>
+                        {artwork.value_category || "—"}
+                      </span>
+                    </td>
                     <td className="value-cell">{formatCurrency(artwork.insurance_value)}</td>
+                    <td>{artwork.artist_age_at_creation || "—"}</td>
                     <td>{artwork.gallery_name || "Not Assigned"}</td>
-                    <td>{artwork.gallery_active === 1 ? "🟢 Active" : "⚪ Inactive"}</td>
                   </tr>
                 ))}
               </tbody>

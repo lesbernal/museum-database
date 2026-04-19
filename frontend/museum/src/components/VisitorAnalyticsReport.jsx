@@ -14,8 +14,9 @@ export default function VisitorAnalyticsReport() {
   const [filters, setFilters] = useState({ startDate: "", endDate: "" });
   const [data, setData] = useState(null);
   
+  // Pagination - matching other reports
   const [currentPage, setCurrentPage] = useState(1);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [rowsPerPage, setRowsPerPage] = useState(25);  // Changed from 10 to 25 to match others
 
   const handleGenerate = async () => {
     setLoading(true);
@@ -42,21 +43,22 @@ export default function VisitorAnalyticsReport() {
     setCurrentPage(1);
   };
 
-  const formatCurrency = (value) => {
-    if (!value) return "$0";
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format(value);
-  };
-
   const formatNumber = (value) => {
-    if (!value) return "0";
+    if (!value && value !== 0) return "0";
     return new Intl.NumberFormat('en-US').format(value);
   };
 
-  // Pagination for top visitors
+  // Pagination - matching other reports (using handlePageChange)
   const indexOfLastRow = currentPage * rowsPerPage;
   const indexOfFirstRow = indexOfLastRow - rowsPerPage;
   const currentVisitors = data?.topVisitors?.slice(indexOfFirstRow, indexOfLastRow) || [];
-  const totalPages = Math.ceil((data?.topVisitors?.length || 0) / rowsPerPage);
+  const totalPages = Math.ceil((data?.topVisitors?.length || 0) / rowsPerPage) || 1;
+
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+    // Optional: scroll to top of table
+    document.querySelector('.table-container')?.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   return (
     <div className="visitor-analytics-report">
@@ -109,31 +111,31 @@ export default function VisitorAnalyticsReport() {
                 <div className="summary-value">{formatNumber(data.summary.active_members)}</div>
               </div>
               <div className="summary-card">
-                <div className="summary-label">Tickets Sold</div>
-                <div className="summary-value">{formatNumber(data.summary.total_tickets_sold)}</div>
-              </div>
-              <div className="summary-card">
-                <div className="summary-label">Ticket Revenue</div>
-                <div className="summary-value">{formatCurrency(data.summary.total_ticket_revenue)}</div>
-              </div>
-            </div>
-            
-            <div className="summary-grid">
-              <div className="summary-card">
-                <div className="summary-label">Avg Revenue per Visitor</div>
-                <div className="summary-value">{formatCurrency(data.summary.avg_revenue_per_visitor)}</div>
+                <div className="summary-label">Retention Rate</div>
+                <div className="summary-value">{data.summary.retention_rate || 0}%</div>
               </div>
               <div className="summary-card">
                 <div className="summary-label">Avg Visits per Visitor</div>
                 <div className="summary-value">{data.summary.avg_visits_per_visitor || 0}</div>
               </div>
+            </div>
+            
+            <div className="summary-grid">
               <div className="summary-card">
-                <div className="summary-label">Total Donations</div>
-                <div className="summary-value">{formatCurrency(data.summary.total_donations)}</div>
+                <div className="summary-label">Unique Visitors (Period)</div>
+                <div className="summary-value">{formatNumber(data.summary.unique_visitors)}</div>
+              </div>
+              <div className="summary-card">
+                <div className="summary-label">Tickets Sold</div>
+                <div className="summary-value">{formatNumber(data.summary.total_tickets_sold)}</div>
               </div>
               <div className="summary-card">
                 <div className="summary-label">Event Signups</div>
                 <div className="summary-value">{formatNumber(data.summary.total_event_signups)}</div>
+              </div>
+              <div className="summary-card">
+                <div className="summary-label">Active Days</div>
+                <div className="summary-value">{formatNumber(data.summary.active_days)}</div>
               </div>
             </div>
           </div>
@@ -172,34 +174,34 @@ export default function VisitorAnalyticsReport() {
               </div>
             )}
 
-            {/* Peak Hours Chart */}
-            {data.peakHours && data.peakHours.length > 0 && (
+            {/* Frequency Distribution Chart */}
+            {data.frequencyDistribution && data.frequencyDistribution.length > 0 && (
               <div className="chart-container">
-                <h4>Peak Visiting Hours</h4>
+                <h4>Visitor Frequency</h4>
                 <ResponsiveContainer width="100%" height={200}>
-                  <BarChart data={data.peakHours}>
+                  <BarChart data={data.frequencyDistribution}>
                     <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="hour" tick={{ fontSize: 11 }} tickFormatter={(h) => `${h}:00`} />
+                    <XAxis dataKey="frequency_group" tick={{ fontSize: 10 }} angle={-15} textAnchor="end" height={60} />
                     <YAxis tick={{ fontSize: 11 }} />
                     <Tooltip />
-                    <Bar dataKey="tickets_sold" fill="#c5a028" radius={[4, 4, 0, 0]} name="Tickets Sold" />
+                    <Bar dataKey="visitor_count" fill="#c5a028" radius={[4, 4, 0, 0]} name="Visitors" />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
             )}
           </div>
 
-          {/* Top Visitors Table */}
+          {/* All Visitors Table */}
           {data.topVisitors && data.topVisitors.length > 0 && (
             <div className="data-section">
               <div className="data-header">
-                <h3>Most Frequent Visitors</h3>
+                <h3>All Visitors</h3>
                 <div className="pagination-controls">
                   <span>Rows per page:</span>
                   <select value={rowsPerPage} onChange={(e) => { setRowsPerPage(Number(e.target.value)); setCurrentPage(1); }}>
-                    <option value={10}>10</option>
                     <option value={25}>25</option>
                     <option value={50}>50</option>
+                    <option value={100}>100</option>
                   </select>
                 </div>
               </div>
@@ -210,9 +212,9 @@ export default function VisitorAnalyticsReport() {
                       <th>Visitor</th>
                       <th>Location</th>
                       <th>Membership</th>
-                      <th>Total Visits</th>
-                      <th>Tickets Purchased</th>
-                      <th>Total Spent</th>
+                      <th>Visit Days</th>
+                      <th>Tickets</th>
+                      <th>Events Attended</th>
                       <th>Last Visit</th>
                     </tr>
                   </thead>
@@ -220,32 +222,30 @@ export default function VisitorAnalyticsReport() {
                     {currentVisitors.map((visitor, idx) => (
                       <tr key={idx}>
                         <td className="title-cell">{visitor.name}</td>
-                        <td>{visitor.city}, {visitor.state}</td>
+                        <td>{visitor.city}, {visitor.state || "—"}</td>
                         <td>
                           <span className={`visitor-badge ${visitor.membership_level ? 'badge-member' : 'badge-nonmember'}`}>
                             {visitor.membership_level || "Non-Member"}
                           </span>
                         </td>
-                        <td>{visitor.visit_days || visitor.total_visits || 0}</td>  {/* Use visit_days if available */}
+                        <td>{visitor.visit_days || visitor.total_visits || 0}</td>
                         <td>{visitor.tickets_purchased || 0}</td>
-                        <td className="amount-cell">{formatCurrency(visitor.total_spent)}</td>
+                        <td>{visitor.events_attended || 0}</td>
                         <td>{visitor.last_visit ? new Date(visitor.last_visit).toLocaleDateString() : "—"}</td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
-              {totalPages > 1 && (
-                <div className="pagination-container">
-                  <div className="pagination-controls">
-                    <button onClick={() => setCurrentPage(1)} disabled={currentPage === 1} className="pagination-btn">⏮ First</button>
-                    <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="pagination-btn">◀ Prev</button>
-                    <span className="page-info">Page {currentPage} of {totalPages}</span>
-                    <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="pagination-btn">Next ▶</button>
-                    <button onClick={() => setCurrentPage(totalPages)} disabled={currentPage === totalPages} className="pagination-btn">Last ⏭</button>
-                  </div>
+              <div className="pagination-container">
+                <div className="pagination-controls">
+                  <button onClick={() => handlePageChange(1)} disabled={currentPage === 1} className="pagination-btn">⏮ First</button>
+                  <button onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage === 1} className="pagination-btn">◀ Prev</button>
+                  <span className="page-info">Page {currentPage} of {totalPages}</span>
+                  <button onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage === totalPages} className="pagination-btn">Next ▶</button>
+                  <button onClick={() => handlePageChange(totalPages)} disabled={currentPage === totalPages} className="pagination-btn">Last ⏭</button>
                 </div>
-              )}
+              </div>
             </div>
           )}
         </>

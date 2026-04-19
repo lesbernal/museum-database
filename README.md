@@ -1,6 +1,6 @@
 # Museum of Fine Arts, Houston (MFAH)
 
-(description of application)
+A comprehensive database management system for the Museum of Fine Arts, Houston (MFAH). The system lets visitors explore art, buy tickets, become members, and helps museum staff manage the collection and view reports.
 
 ## Hosted MFAH Application:
 ### https://museum-database.vercel.app/ 
@@ -16,8 +16,14 @@
 ## File Structure:
 ### frontend\museum
 Language/Framework: JavaScript, React
+#### cd src\components
+- this folder contains admin specific pages
+- consists of files for the admin dashboard (data entry forms, reports, etc)
 #### cd src\pages
-- (include description of each file)
+- this folder contains all non-admin pages, including the home page, artwork gallery, ticket purchasing page, etc.
+#### cd src\styles
+- this folder contains all css styling for the files in the "pages" and "components" folders
+
 
 
 ### backend
