@@ -18,52 +18,123 @@ module.exports = (req, res, parsedUrl) => {
     const type = query.type || "all";
     if (!startDate || startDate === "") startDate = "1900-01-01";
     if (!endDate || endDate === "") endDate = "2099-12-31";
-    console.log("Revenue query - startDate:", startDate, "endDate:", endDate, "type:", type);
+    
     let sqlParts = [];
     let params = [];
+    
     if (type === "ticket" || type === "all") {
       sqlParts.push(`
-        SELECT 'Ticket' as source, t.ticket_id as id, t.purchase_date as date,
-          t.ticket_type as type, t.final_price as amount, t.payment_method,
-          CONCAT(u.first_name, ' ', u.last_name) as customer_name
-        FROM ticket t LEFT JOIN user u ON t.user_id = u.user_id
+        SELECT 
+          'Ticket' as source,
+          'Ticket' as source_with_icon,
+          t.purchase_date as date,
+          DAYNAME(t.purchase_date) as day_of_week,
+          WEEK(t.purchase_date) as week_number,
+          MONTHNAME(t.purchase_date) as month_name,
+          t.ticket_type as type,
+          t.final_price as amount,
+          t.payment_method,
+          CONCAT(u.first_name, ' ', u.last_name) as customer_name,
+          CASE WHEN m.user_id IS NOT NULL THEN 'Member' ELSE 'Non-Member' END as customer_type,
+          CASE 
+            WHEN t.final_price >= 100 THEN 'High ($100+)'
+            WHEN t.final_price >= 50 THEN 'Medium ($50-99)'
+            WHEN t.final_price >= 20 THEN 'Low ($20-49)'
+            ELSE 'Small (<$20)'
+          END as revenue_tier
+        FROM ticket t 
+        LEFT JOIN user u ON t.user_id = u.user_id
+        LEFT JOIN member m ON t.user_id = m.user_id AND m.expiration_date >= CURDATE()
         WHERE t.purchase_date >= ? AND t.purchase_date <= ?
       `);
       params.push(startDate, endDate);
     }
+    
     if (type === "donation" || type === "all") {
       if (sqlParts.length > 0) sqlParts.push("UNION ALL");
       sqlParts.push(`
-        SELECT 'Donation' as source, d.donation_id as id, d.donation_date as date,
-          d.donation_type as type, d.amount as amount, NULL as payment_method,
-          CONCAT(u.first_name, ' ', u.last_name) as customer_name
-        FROM donation d LEFT JOIN user u ON d.user_id = u.user_id
+        SELECT 
+          'Donation' as source,
+          'Donation' as source_with_icon,
+          d.donation_date as date,
+          DAYNAME(d.donation_date) as day_of_week,
+          WEEK(d.donation_date) as week_number,
+          MONTHNAME(d.donation_date) as month_name,
+          d.donation_type as type,
+          d.amount as amount,
+          NULL as payment_method,
+          CONCAT(u.first_name, ' ', u.last_name) as customer_name,
+          CASE WHEN m.user_id IS NOT NULL THEN 'Member' ELSE 'Non-Member' END as customer_type,
+          CASE 
+            WHEN d.amount >= 1000 THEN 'Major ($1000+)'
+            WHEN d.amount >= 500 THEN 'Significant ($500-999)'
+            WHEN d.amount >= 100 THEN 'Moderate ($100-499)'
+            ELSE 'Small (<$100)'
+          END as revenue_tier
+        FROM donation d 
+        LEFT JOIN user u ON d.user_id = u.user_id
+        LEFT JOIN member m ON d.user_id = m.user_id AND m.expiration_date >= CURDATE()
         WHERE d.donation_date >= ? AND d.donation_date <= ?
       `);
       params.push(startDate, endDate);
     }
+    
     if (type === "cafe" || type === "all") {
       if (sqlParts.length > 0) sqlParts.push("UNION ALL");
       sqlParts.push(`
-        SELECT 'Cafe' as source, ct.cafe_transaction_id as id, DATE(ct.transaction_datetime) as date,
-          NULL as type, ct.total_amount as amount, ct.payment_method,
-          CONCAT(u.first_name, ' ', u.last_name) as customer_name
-        FROM cafetransaction ct LEFT JOIN user u ON ct.user_id = u.user_id
+        SELECT 
+          'Cafe' as source,
+          'Cafe' as source_with_icon,
+          DATE(ct.transaction_datetime) as date,
+          DAYNAME(ct.transaction_datetime) as day_of_week,
+          WEEK(ct.transaction_datetime) as week_number,
+          MONTHNAME(ct.transaction_datetime) as month_name,
+          'Cafe Purchase' as type,
+          ct.total_amount as amount,
+          ct.payment_method,
+          CONCAT(u.first_name, ' ', u.last_name) as customer_name,
+          CASE WHEN m.user_id IS NOT NULL THEN 'Member' ELSE 'Non-Member' END as customer_type,
+          CASE 
+            WHEN ct.total_amount >= 50 THEN 'High ($50+)'
+            WHEN ct.total_amount >= 25 THEN 'Medium ($25-49)'
+            ELSE 'Small (<$25)'
+          END as revenue_tier
+        FROM cafetransaction ct 
+        LEFT JOIN user u ON ct.user_id = u.user_id
+        LEFT JOIN member m ON ct.user_id = m.user_id AND m.expiration_date >= CURDATE()
         WHERE DATE(ct.transaction_datetime) >= ? AND DATE(ct.transaction_datetime) <= ?
       `);
       params.push(startDate, endDate);
     }
+    
     if (type === "gift" || type === "all") {
       if (sqlParts.length > 0) sqlParts.push("UNION ALL");
       sqlParts.push(`
-        SELECT 'Gift Shop' as source, gt.transaction_id as id, DATE(gt.transaction_datetime) as date,
-          NULL as type, gt.total_amount as amount, gt.payment_method,
-          CONCAT(u.first_name, ' ', u.last_name) as customer_name
-        FROM giftshoptransaction gt LEFT JOIN user u ON gt.user_id = u.user_id
+        SELECT 
+          'Gift Shop' as source,
+          'Gift Shop' as source_with_icon,
+          DATE(gt.transaction_datetime) as date,
+          DAYNAME(gt.transaction_datetime) as day_of_week,
+          WEEK(gt.transaction_datetime) as week_number,
+          MONTHNAME(gt.transaction_datetime) as month_name,
+          'Gift Purchase' as type,
+          gt.total_amount as amount,
+          gt.payment_method,
+          CONCAT(u.first_name, ' ', u.last_name) as customer_name,
+          CASE WHEN m.user_id IS NOT NULL THEN 'Member' ELSE 'Non-Member' END as customer_type,
+          CASE 
+            WHEN gt.total_amount >= 100 THEN 'High ($100+)'
+            WHEN gt.total_amount >= 50 THEN 'Medium ($50-99)'
+            ELSE 'Small (<$50)'
+          END as revenue_tier
+        FROM giftshoptransaction gt 
+        LEFT JOIN user u ON gt.user_id = u.user_id
+        LEFT JOIN member m ON gt.user_id = m.user_id AND m.expiration_date >= CURDATE()
         WHERE DATE(gt.transaction_datetime) >= ? AND DATE(gt.transaction_datetime) <= ?
       `);
       params.push(startDate, endDate);
     }
+    
     const finalSql = sqlParts.join(" ") + " ORDER BY date DESC";
     db.query(finalSql, params, (err, results) => {
       if (err) { console.error("Revenue query error:", err); return sendError(res, err); }
