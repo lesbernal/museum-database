@@ -184,7 +184,7 @@ export default function MembershipReport() {
           <div className="charts-grid">
             {/* Membership Level Distribution */}
             <div className="chart-container">
-              <h4>📊 Membership Level Distribution</h4>
+              <h4>Membership Level Distribution</h4>
               {pieData.length > 0 ? (
                 <ResponsiveContainer width="100%" height={250}>
                   <PieChart>
@@ -213,7 +213,7 @@ export default function MembershipReport() {
 
             {/* Donation by Type */}
             <div className="chart-container">
-              <h4>💰 Donations by Type</h4>
+              <h4>Donations by Type</h4>
               {donationPieData.length > 0 ? (
                 <ResponsiveContainer width="100%" height={250}>
                   <PieChart>
@@ -244,7 +244,7 @@ export default function MembershipReport() {
           {/* Donation Trends Chart */}
           {data.donationTrends && data.donationTrends.length > 0 && (
             <div className="chart-container full-width">
-              <h4>📈 Donation Trends Over Time</h4>
+              <h4>Donation Trends Over Time</h4>
               <ResponsiveContainer width="100%" height={300}>
                 <LineChart data={data.donationTrends}>
                   <CartesianGrid strokeDasharray="3 3" />
@@ -260,7 +260,7 @@ export default function MembershipReport() {
           {/* Transaction Type Breakdown */}
           {data.membershipTransactions && data.membershipTransactions.length > 0 && (
             <div className="chart-container">
-              <h4>🔄 Membership Transactions</h4>
+              <h4>Membership Transactions</h4>
               <ResponsiveContainer width="100%" height={250}>
                 <BarChart data={data.membershipTransactions}>
                   <CartesianGrid strokeDasharray="3 3" />
@@ -281,7 +281,7 @@ export default function MembershipReport() {
           {data.topDonors && data.topDonors.length > 0 && (
             <div className="data-section">
               <div className="data-header">
-                <h3>🏆 Top Donors</h3>
+                <h3>Top Donors</h3>
                 <div className="pagination-controls">
                   <span>Rows per page:</span>
                   <select value={rowsPerPage} onChange={(e) => { setRowsPerPage(Number(e.target.value)); setCurrentPage(1); }}>
@@ -339,7 +339,7 @@ export default function MembershipReport() {
           {data.recentActivity && data.recentActivity.length > 0 && (
             <div className="data-section">
               <div className="data-header">
-                <h3>📋 Recent Membership Activity</h3>
+                <h3>Recent Membership Activity</h3>
               </div>
               <div className="table-container small">
                 <table className="data-table">
