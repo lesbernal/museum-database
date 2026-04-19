@@ -226,7 +226,7 @@ export default function Tickets() {
   };
 
   // ── Submit - Let the TRIGGER handle final pricing! ──
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
     setErrorMsg("");
     if (!userId) return setErrorMsg("Please log in first.");
@@ -235,36 +235,74 @@ export default function Tickets() {
       return setErrorMsg("The museum is closed on Mondays.");
     if (totalTickets === 0) return setErrorMsg("Please select at least one ticket.");
 
-    // Build tickets - trigger will calculate final prices
     const tickets = [];
-    
-    for (const ticketType of TICKET_TYPES.map(t => t.type)) {
-      const qty = quantities[ticketType];
+    for (const t of TICKET_TYPES) {
+      const qty = quantities[t.type];
       if (qty === 0) continue;
-      
-      const ticket = TICKET_TYPES.find(t => t.type === ticketType);
-      
+      const priceInfo = getDisplayPrice(t.type);
       for (let i = 0; i < qty; i++) {
         tickets.push({
-          type: ticket.type,
-          label: ticket.label,
+          type: t.type,
+          label: t.label,
           quantity: 1,
-          basePrice: ticket.basePrice,
-          finalPrice: ticket.basePrice,  // Placeholder - trigger will override
-          discount_type: isMember ? "Member" : "None",
+          basePrice: t.basePrice,
+          finalPrice: priceInfo.value,
+          discount_type: isThursday ? "None" : isMember ? "Member" : "None",
           visit_date: visitDate,
         });
       }
     }
 
+    const orderTotal = tickets.reduce((sum, t) => sum + t.finalPrice, 0);
+
+    // If total is $0 skip checkout and purchase directly
+    if (orderTotal === 0) {
+      try {
+        const today = new Date().toISOString().slice(0, 10);
+        const transactionId = 0;
+
+        const results = await Promise.all(tickets.map(t =>
+          fetch(`${BASE_URL}/tickets`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${userId}`
+            },
+            body: JSON.stringify({
+              user_id:        userId,
+              purchase_date:  today,
+              visit_date:     visitDate,
+              ticket_type:    t.type,
+              base_price:     t.basePrice,
+              discount_type:  isThursday ? "None" : "Member",
+              final_price:    0,
+              payment_method: "Free",
+              transaction_id: transactionId,
+            })
+          })
+        ));
+
+        const allOk = results.every(r => r.ok);
+        if (allOk) {
+          navigate("/", { state: { successToast: "Your free tickets have been confirmed! See you soon." } });
+        } else {
+          setErrorMsg("Something went wrong processing your free tickets. Please try again.");
+        }
+      } catch {
+        setErrorMsg("Something went wrong. Please try again.");
+      }
+      return;
+    }
+
+    // Otherwise go to checkout as normal
     navigate("/checkout", {
       state: {
-        type: "tickets",
+        type:         "tickets",
         tickets,
         visitDate,
-        discount: isThursday ? "Thursday Special" : (isMember ? `Member (${TIER_DISCOUNT[memberLevel]}% off)` : "None"),
+        discount:     isThursday ? "Thursday Special" : (isMember ? `Member (${TIER_DISCOUNT[memberLevel]}% off)` : "None"),
         totalTickets: tickets.length,
-        total: 0,  // Placeholder - trigger will set actual
+        total:        0,
         isThursday,
         isMember,
         memberLevel,
@@ -324,7 +362,7 @@ export default function Tickets() {
             {/* Thursday banner */}
             {isThursday && (
               <div className="thursday-discount-banner">
-                🎉 Admission is FREE every Thursday! 🎉
+                 Admission is FREE every Thursday! 
               </div>
             )}
 
@@ -417,7 +455,11 @@ export default function Tickets() {
             {errorMsg && <div className="tickets-feedback error">{errorMsg}</div>}
 
             <button className="tickets-purchase-btn" type="submit" disabled={totalTickets === 0}>
-              Proceed to Checkout
+              {totalTickets === 0
+                ? "Select Tickets to Continue"
+                : displayTotal === 0 && totalTickets > 0
+                  ? "Confirm Free Tickets"
+                  : "Proceed to Checkout"}
             </button>
           </form>
         </div>
