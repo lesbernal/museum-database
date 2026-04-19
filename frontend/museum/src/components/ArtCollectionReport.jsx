@@ -244,6 +244,15 @@ export default function ArtCollectionReport() {
     }
   };
 
+  const getValueCategoryClass = (category) => {
+    if (!category) return "";
+    if (category.includes("Iconic")) return "value-iconic";
+    if (category.includes("Priceless")) return "value-priceless";
+    if (category.includes("Major")) return "value-major";
+    if (category.includes("Significant")) return "value-significant";
+    return "value-standard";
+  };
+
   // Chart data
   const statusChartData = statuses.map(s => ({
     name: s,
@@ -520,11 +529,13 @@ export default function ArtCollectionReport() {
                   <th>Title</th>
                   <th>Artist</th>
                   <th>Year</th>
+                  <th>Age (years)</th>
                   <th>Medium</th>
                   <th>Status</th>
+                  <th>Value Category</th>
                   <th>Insurance Value</th>
+                  <th>Artist Age at Creation</th>
                   <th>Gallery</th>
-                  <th>Gallery Status</th>
                 </tr>
               </thead>
               <tbody>
@@ -533,15 +544,21 @@ export default function ArtCollectionReport() {
                     <td className="title-cell">{artwork.title}</td>
                     <td>{artwork.artist_name}</td>
                     <td>{artwork.creation_year || "—"}</td>
+                    <td>{artwork.age_years || "—"}</td>
                     <td>{artwork.medium || "—"}</td>
                     <td>
                       <span className={`status-badge ${getStatusBadgeClass(artwork.current_display_status)}`}>
                         {artwork.current_display_status || "Unknown"}
                       </span>
                     </td>
+                    <td>
+                      <span className={`value-badge ${getValueCategoryClass(artwork.value_category)}`}>
+                        {artwork.value_category || "—"}
+                      </span>
+                    </td>
                     <td className="value-cell">{formatCurrency(artwork.insurance_value)}</td>
+                    <td>{artwork.artist_age_at_creation || "—"}</td>
                     <td>{artwork.gallery_name || "Not Assigned"}</td>
-                    <td>{artwork.gallery_active === 1 ? "🟢 Active" : "⚪ Inactive"}</td>
                   </tr>
                 ))}
               </tbody>

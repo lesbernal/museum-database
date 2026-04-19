@@ -617,3 +617,17 @@
     font-size: 0.6rem;
   }
 }
+
+.value-badge {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+.value-iconic { background: #fef3c7; color: #92400e; }
+.value-priceless { background: #fed7aa; color: #9a3412; }
+.value-major { background: #e0e7ff; color: #3730a3; }
+.value-significant { background: #d1fae5; color: #065f46; }
+.value-standard { background: #f3f4f6; color: #374151; }

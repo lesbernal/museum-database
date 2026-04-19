@@ -116,7 +116,7 @@ module.exports = (req, res, parsedUrl) => {
     return;
   }
 
-  // ==================== REPORT 2: ART COLLECTION REPORT ====================
+  // ==================== REPORT 2: ART COLLECTION REPORT (ENHANCED) ====================
   if (parsedUrl.pathname === "/reports/art-collection-data") {
     const artistId  = query.artistId  || "";
     const startYear = query.startYear || "";
@@ -125,18 +125,44 @@ module.exports = (req, res, parsedUrl) => {
     const medium    = query.medium    || "";
     const minValue  = query.minValue  || "";
     const maxValue  = query.maxValue  || "";
+    
     let sql = `
-      SELECT a.artwork_id, a.title, a.creation_year, a.medium, a.dimensions,
-        a.current_display_status, a.insurance_value,
+      SELECT 
+        a.artwork_id, 
+        a.title, 
+        a.creation_year, 
+        a.medium, 
+        a.current_display_status, 
+        a.insurance_value,
+        a.acquisition_date,
+        
+        -- REPLACED COLUMNS (calculated data instead of raw)
+        (YEAR(CURDATE()) - a.creation_year) as age_years,          
+        CASE 
+          WHEN a.insurance_value >= 100000000 THEN 'Iconic ($100M+)'
+          WHEN a.insurance_value >= 50000000 THEN 'Priceless ($50M-100M)'
+          WHEN a.insurance_value >= 10000000 THEN 'Major ($10M-50M)'
+          WHEN a.insurance_value >= 1000000 THEN 'Significant ($1M-10M)'
+          ELSE 'Standard (<$1M)'
+        END as value_category,                                      
+        (a.creation_year - ar.birth_year) as artist_age_at_creation, 
+        -- Artist info
         CONCAT(ar.first_name, ' ', ar.last_name) as artist_name,
         ar.nationality as artist_nationality,
-        g.gallery_name, g.is_active as gallery_active, b.building_name, b.building_id
+        
+        -- Gallery info
+        g.gallery_name, 
+        g.is_active as gallery_active,
+        b.building_name, 
+        b.building_id
+        
       FROM artwork a
       JOIN artist ar ON a.artist_id = ar.artist_id
       LEFT JOIN gallery g ON a.gallery_id = g.gallery_id
       LEFT JOIN museumbuilding b ON g.building_id = b.building_id
       WHERE a.is_active = 1
     `;
+    
     const params = [];
     if (artistId)  { sql += ` AND a.artist_id = ?`;              params.push(artistId); }
     if (startYear) { sql += ` AND a.creation_year >= ?`;         params.push(startYear); }
@@ -145,15 +171,36 @@ module.exports = (req, res, parsedUrl) => {
     if (medium)    { sql += ` AND a.medium = ?`;                 params.push(medium); }
     if (minValue)  { sql += ` AND a.insurance_value >= ?`;       params.push(minValue); }
     if (maxValue)  { sql += ` AND a.insurance_value <= ?`;       params.push(maxValue); }
+    
     sql += ` ORDER BY a.creation_year DESC`;
+    
     db.query(sql, params, (err, results) => {
       if (err) return sendError(res, err);
+      
       const statsSql = `
-        SELECT COUNT(*) as total_artworks, ROUND(SUM(insurance_value), 2) as total_value,
-          ROUND(AVG(insurance_value), 2) as avg_value, COUNT(DISTINCT artist_id) as total_artists,
-          COUNT(DISTINCT medium) as total_mediums, COUNT(DISTINCT gallery_id) as total_galleries_used
-        FROM artwork a WHERE a.is_active = 1
+        SELECT 
+          COUNT(*) as total_artworks, 
+          ROUND(SUM(insurance_value), 2) as total_value,
+          ROUND(AVG(insurance_value), 2) as avg_value, 
+          COUNT(DISTINCT artist_id) as total_artists,
+          COUNT(DISTINCT medium) as total_mediums, 
+          COUNT(DISTINCT gallery_id) as total_galleries_used,
+          
+          -- Additional calculated summary stats
+          ROUND(AVG(YEAR(CURDATE()) - creation_year), 1) as avg_age_years,
+          MIN(creation_year) as oldest_artwork_year,
+          MAX(creation_year) as newest_artwork_year,
+          COUNT(CASE WHEN current_display_status = 'On Display' THEN 1 END) as on_display_count,
+          COUNT(CASE WHEN current_display_status = 'In Storage' THEN 1 END) as in_storage_count,
+          COUNT(CASE WHEN current_display_status = 'On Loan' THEN 1 END) as on_loan_count,
+          COUNT(CASE WHEN current_display_status = 'Under Restoration' THEN 1 END) as under_restoration_count,
+          ROUND(SUM(CASE WHEN current_display_status = 'On Display' THEN insurance_value ELSE 0 END), 2) as value_on_display,
+          ROUND(SUM(CASE WHEN current_display_status IN ('On Loan', 'In Storage') THEN insurance_value ELSE 0 END), 2) as value_at_risk
+          
+        FROM artwork a 
+        WHERE a.is_active = 1
       `;
+      
       db.query(statsSql, (err, stats) => {
         if (err) return sendError(res, err);
         sendJSON(res, { data: results, summary: stats[0] });
