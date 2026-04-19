@@ -5,6 +5,26 @@ import "../styles/Home.css";
 
 const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
+const TYPE_COLORS = {
+  "General":     { bg: "#f3f4f6", color: "#374151" },
+  "Lecture":     { bg: "#dbeafe", color: "#1d4ed8" },
+  "Tour":        { bg: "#d1fae5", color: "#065f46" },
+  "Activity":    { bg: "#fef3c7", color: "#92400e" },
+  "Workshop":    { bg: "#ede9fe", color: "#5b21b6" },
+  "Exhibition":  { bg: "#fce7f3", color: "#9d174d" },
+  "Member Only": { bg: "#fef9c3", color: "#854d0e" },
+};
+
+const TYPE_IMAGES = {
+  "General":     "https://images.unsplash.com/photo-1554907984-15263bfd63bd?w=600&q=80",
+  "Lecture":     "https://images.unsplash.com/photo-1524178232363-1fb2b075b655?w=600&q=80",
+  "Tour":        "https://i.postimg.cc/hGrqQ2bx/american-art-galleries-16502746617110251196.jpg",
+  "Activity":    "https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=600&q=80",
+  "Workshop":    "https://images.unsplash.com/photo-1607453998774-d533f65dac99?w=600&q=80",
+  "Exhibition":  "https://images.unsplash.com/photo-1580136579312-94651dfd596d?w=600&q=80",
+  "Member Only": "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=600&q=80",
+};
+
 export default function Home() {
   const [events,       setEvents]       = useState([]);
   const [loading,      setLoading]      = useState(true);
@@ -27,18 +47,18 @@ export default function Home() {
     fetch(`${BASE_URL}/events`)
       .then(res => res.json())
       .then(data => {
-        setEvents(data);
+        setEvents(Array.isArray(data) ? data : []);
         setLoading(false);
       })
       .catch(() => setLoading(false));
   }, []);
 
-  // Auto-scroll every 8 seconds (slower)
+  // Auto-scroll every 8 seconds
   useEffect(() => {
     if (events.length === 0) return;
     const interval = setInterval(() => {
       setCurrentIndex((prev) => (prev + 1) % events.length);
-    }, 8000);  // Changed from 5000 to 8000
+    }, 8000);
     return () => clearInterval(interval);
   }, [events.length]);
 
@@ -64,21 +84,6 @@ export default function Home() {
     }
     return visible;
   };
-
-  function getEventIcon(name = "") {
-    const lower = name.toLowerCase();
-    if (lower.includes("photo")) return "📷";
-    if (lower.includes("sculpt")) return "🗿";
-    if (lower.includes("workshop")) return "🎨";
-    if (lower.includes("lecture") || lower.includes("talk") || lower.includes("panel")) return "🎤";
-    if (lower.includes("family") || lower.includes("kids")) return "👨‍👩‍👧";
-    if (lower.includes("member")) return "⭐";
-    if (lower.includes("latin") || lower.includes("african") || lower.includes("egypt")) return "🏺";
-    if (lower.includes("tour")) return "🗺️";
-    if (lower.includes("contemporary") || lower.includes("modern")) return "🖼️";
-    if (lower.includes("music") || lower.includes("evening") || lower.includes("solstice")) return "🎶";
-    return "🎭";
-  }
 
   const visibleEvents = getVisibleEvents();
 
@@ -113,9 +118,7 @@ export default function Home() {
         <section className="hero-section">
           <div className="hero-overlay"></div>
           <div className="hero-content">
-            <h1 className="hero-title">
-              Museum of Fine Arts, Houston
-            </h1>
+            <h1 className="hero-title">Museum of Fine Arts, Houston</h1>
             <p className="hero-description">
               Discover masterpieces from around the world, immerse yourself in art history,
               and experience the vibrant cultural heart of Houston.
@@ -132,40 +135,76 @@ export default function Home() {
             </div>
 
             <div className="carousel-container">
-              <button className="carousel-btn prev" onClick={handlePrevEvent} aria-label="Previous">
-                ‹
-              </button>
+              <button className="carousel-btn prev" onClick={handlePrevEvent} aria-label="Previous">‹</button>
 
               <div className="carousel-track">
-                {visibleEvents.map((event) => (
-                  <div 
-                    className="event-card" 
-                    key={event.event_id}
-                    onClick={() => handleEventClick(event.event_id)}
-                    style={{ cursor: "pointer" }}
-                  >
-                    <div className="event-card-image">
-                      <div className="event-icon">{getEventIcon(event.event_name)}</div>
+                {visibleEvents.map((event) => {
+                  const spotsLeft = (event.capacity || 0) - (event.total_attendees || 0);
+                  const isFull = spotsLeft <= 0;
+                  const imgSrc = event.image_url || TYPE_IMAGES[event.event_type] || TYPE_IMAGES["General"];
+                  const typeStyle = TYPE_COLORS[event.event_type] || TYPE_COLORS["General"];
+
+                  return (
+                    <div
+                      className="event-card"
+                      key={event.event_id}
+                      onClick={() => handleEventClick(event.event_id)}
+                      style={{ cursor: "pointer" }}
+                    >
+                      {/* Image */}
+                      <div className="event-card-image">
+                        <img src={imgSrc} alt={event.event_name} />
+                        <div className="event-card-image-badges">
+                          {event.event_type && (
+                            <span className="event-type-badge" style={{
+                              background: typeStyle.bg,
+                              color: typeStyle.color,
+                            }}>
+                              {event.event_type}
+                            </span>
+                          )}
+                          {event.member_only === 1 && (
+                            <span className="event-type-badge" style={{
+                              background: "#fef9c3",
+                              color: "#854d0e",
+                            }}>
+                              Members Only
+                            </span>
+                          )}
+                        </div>
+                        {isFull && <div className="event-card-full-overlay">Fully Booked</div>}
+                      </div>
+
+                      {/* Body */}
+                      <div className="event-card-body">
+                        <h3 className="event-title">{event.event_name}</h3>
+                        <p className="event-date">
+                          {event.event_date
+                            ? new Date(String(event.event_date).slice(0, 10) + "T00:00:00").toLocaleDateString("en-US", {
+                                weekday: "long", year: "numeric", month: "long", day: "numeric",
+                              })
+                            : "Date TBD"}
+                        </p>
+                        {event.description && (
+                          <p className="event-description">{event.description}</p>
+                        )}
+                        <div style={{ marginTop: "auto", paddingTop: "0.5rem" }}>
+                          {isFull ? (
+                            <span className="availability-full">Fully Booked</span>
+                          ) : (
+                            <span className="availability-available">
+                              {spotsLeft} spot{spotsLeft !== 1 ? "s" : ""} available
+                            </span>
+                          )}
+                        </div>
+                      </div>
                     </div>
-                    <div className="event-card-content">
-                      <h3>{event.event_name}</h3>
-                      <p className="event-date">{event.event_date?.split("T")[0] ?? event.event_date}</p>
-                      <p className="event-description">{event.description}</p>
-                      <p className="event-location">
-                        Capacity: {event.capacity}
-                        {event.member_only ? " · Members Only ⭐" : ""}
-                      </p>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
 
-              <button className="carousel-btn next" onClick={handleNextEvent} aria-label="Next">
-                ›
-              </button>
+              <button className="carousel-btn next" onClick={handleNextEvent} aria-label="Next">›</button>
             </div>
-
-            {/* REMOVED: carousel-dots section - page buttons removed */}
           </section>
         )}
 
@@ -195,20 +234,17 @@ export default function Home() {
             <h2>Plan Your Visit</h2>
             <p>Everything you need to know about your museum experience</p>
           </div>
-
           <div className="links-grid">
             <Link to="/tickets" className="link-card">
               <h3>Admission</h3>
               <p>Purchase tickets to access all galleries and exhibitions</p>
               <span className="extras-link">Buy Now →</span>
             </Link>
-
             <Link to="/membership" className="link-card">
               <h3>Memberships</h3>
               <p>Become a member for exclusive benefits and support the arts</p>
               <span className="extras-link">View Memberships →</span>
             </Link>
-
             <Link to="/events" className="link-card">
               <h3>Events</h3>
               <p>Special exhibitions, lectures, workshops, and family programs</p>
@@ -223,20 +259,17 @@ export default function Home() {
             <h2>More to Explore</h2>
             <p>Enhance your museum experience</p>
           </div>
-
           <div className="extras-grid">
             <Link to="/gift-shop" className="extras-card">
               <h3>MFAH Gift Shop</h3>
               <p>Unique art-inspired gifts, books, jewelry, and museum merchandise</p>
               <span className="extras-link">Shop Now →</span>
             </Link>
-
             <Link to="/cafe" className="extras-card">
               <h3>Café Leonelli</h3>
               <p>Place an order in advance and avoid the line at our cafe</p>
               <span className="extras-link">View Menu →</span>
             </Link>
-
             <Link to="/donations" className="extras-card">
               <h3>Make a Donation</h3>
               <p>Support exhibitions, education programs, and art conservation efforts</p>

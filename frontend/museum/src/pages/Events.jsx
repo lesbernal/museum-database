@@ -33,6 +33,8 @@ export default function Events() {
   const [loading,     setLoading]     = useState(true);
   const [signingUp,   setSigningUp]   = useState(null);
   const [unsigning,   setUnsigning]   = useState(null);
+  const [editingSignup,  setEditingSignup]  = useState(null);
+  const [editQuantity,   setEditQuantity]   = useState(1);
   const [messages,    setMessages]    = useState({});
   const [quantities,  setQuantities]  = useState({});
   const [isMember,    setIsMember]    = useState(false);
@@ -171,6 +173,32 @@ export default function Events() {
       setMessages(prev => ({ ...prev, [eventId]: { type: "error", text: "Something went wrong." } }));
     } finally {
       setUnsigning(null);
+    }
+  }
+
+  async function handleUpdateSignup(eventId, signupId, newQuantity) {
+    try {
+      const res = await fetch(`${BASE_URL}/events/${eventId}/update-signup`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${userId}`
+        },
+        body: JSON.stringify({ quantity: newQuantity })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setMySignups(prev => prev.map(s =>
+          s.event_id === eventId ? { ...s, quantity: newQuantity } : s
+        ));
+        setMessages(prev => ({ ...prev, [eventId]: { type: "success", text: data.message } }));
+        setEditingSignup(null);
+        loadEvents();
+      } else {
+        setMessages(prev => ({ ...prev, [eventId]: { type: "error", text: data.error || "Could not update." } }));
+      }
+    } catch (err) {
+      setMessages(prev => ({ ...prev, [eventId]: { type: "error", text: "Something went wrong." } }));
     }
   }
 
@@ -338,16 +366,62 @@ export default function Events() {
                     <div className={`event-message ${msg.type}`}>{msg.text}</div>
                   )}
 
-                  {/* Sign Up / Cancel button */}
+                  {/* Sign Up / Edit / Cancel buttons */}
                   {alreadySignedUp ? (
-                    <button
-                      className="event-signup-btn"
-                      style={{ background: "#fee2e2", color: "#991b1b", border: "1px solid #fca5a5" }}
-                      disabled={unsigning === e.event_id}
-                      onClick={() => handleUnsignup(e.event_id)}
-                    >
-                      {unsigning === e.event_id ? "Cancelling..." : "Cancel Signup"}
-                    </button>
+                    <>
+                      {editingSignup === e.event_id ? (
+                        <div style={{ display: "flex", gap: "0.5rem", alignItems: "center", marginBottom: "0.5rem" }}>
+                          <label style={{ fontSize: 13, color: "#374151" }}>Spots:</label>
+                          <input
+                            type="number"
+                            min="1"
+                            max={e.capacity - e.total_attendees + (mySignups.find(s => s.event_id === e.event_id)?.quantity || 0)}
+                            value={editQuantity}
+                            onChange={ev => setEditQuantity(Number(ev.target.value))}
+                            style={{ width: 60, padding: "0.3rem", border: "1px solid #d1d5db", borderRadius: 4, fontSize: 13 }}
+                          />
+                          <button
+                            className="event-signup-btn"
+                            style={{ background: "#d1fae5", color: "#065f46", border: "1px solid #6ee7b7", flex: 1 }}
+                            onClick={() => handleUpdateSignup(
+                              e.event_id,
+                              mySignups.find(s => s.event_id === e.event_id)?.signup_id,
+                              editQuantity
+                            )}
+                          >
+                            Save
+                          </button>
+                          <button
+                            className="event-signup-btn"
+                            style={{ background: "#f3f4f6", color: "#374151", border: "1px solid #d1d5db", flex: 1 }}
+                            onClick={() => setEditingSignup(null)}
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      ) : (
+                        <div style={{ display: "flex", gap: "0.5rem" }}>
+                          <button
+                            className="event-signup-btn"
+                            style={{ background: "#dbeafe", color: "#1d4ed8", border: "1px solid #93c5fd", flex: 1 }}
+                            onClick={() => {
+                              setEditingSignup(e.event_id);
+                              setEditQuantity(mySignups.find(s => s.event_id === e.event_id)?.quantity || 1);
+                            }}
+                          >
+                            Edit Spots
+                          </button>
+                          <button
+                            className="event-signup-btn"
+                            style={{ background: "#fee2e2", color: "#991b1b", border: "1px solid #fca5a5", flex: 1 }}
+                            disabled={unsigning === e.event_id}
+                            onClick={() => handleUnsignup(e.event_id)}
+                          >
+                            {unsigning === e.event_id ? "Cancelling..." : "Cancel Signup"}
+                          </button>
+                        </div>
+                      )}
+                    </>
                   ) : (
                     <button
                       className={`event-signup-btn ${(isFull || isLocked) ? "disabled" : ""}`}
