@@ -200,68 +200,116 @@ module.exports = (req, res, parsedUrl) => {
 
   // ==================== REPORT: VISITOR ANALYTICS ====================
   if (parsedUrl.pathname === "/reports/visitor-analytics") {
-    const startDate       = query.startDate       || "1900-01-01";
-    const endDate         = query.endDate         || new Date().toISOString().split('T')[0];
-    const membershipLevel = query.membershipLevel || "";
-    const ticketType      = query.ticketType      || "";
-    const visitorsSql = `
-      SELECT u.user_id, u.first_name, u.last_name, u.email, u.city, u.state,
-        DATE(u.date_of_birth) as date_of_birth, v.total_visits, v.last_visit_date,
-        CASE WHEN m.user_id IS NOT NULL THEN 'Yes' ELSE 'No' END as is_member,
-        m.membership_level, m.join_date, m.expiration_date
-      FROM user u
-      LEFT JOIN visitor v ON u.user_id = v.user_id
-      LEFT JOIN member m ON u.user_id = m.user_id
-      WHERE u.role IN ('visitor', 'member')
-      ORDER BY v.total_visits DESC
+    const startDate = query.startDate || "1900-01-01";
+    const endDate = query.endDate || new Date().toISOString().split('T')[0];
+    
+    // 1. OVERALL SUMMARY
+    const summarySql = `
+      SELECT 
+        (SELECT COUNT(*) FROM user WHERE role IN ('visitor', 'member')) as total_visitors,
+        (SELECT COUNT(*) FROM member WHERE expiration_date >= CURDATE()) as active_members,
+        (SELECT COUNT(*) FROM ticket WHERE purchase_date BETWEEN ? AND ?) as total_tickets_sold,
+        (SELECT ROUND(SUM(final_price), 2) FROM ticket WHERE purchase_date BETWEEN ? AND ?) as total_ticket_revenue,
+        (SELECT COUNT(DISTINCT user_id) FROM ticket WHERE purchase_date BETWEEN ? AND ?) as unique_paying_visitors,
+        (SELECT ROUND(AVG(total_visits), 1) FROM visitor WHERE total_visits > 0) as avg_visits_per_visitor,
+        (SELECT COUNT(*) FROM event_signup WHERE signup_date BETWEEN ? AND ?) as total_event_signups,
+        (SELECT ROUND(SUM(amount), 2) FROM donation WHERE donation_date BETWEEN ? AND ?) as total_donations
     `;
-    const ticketsSql = `
-      SELECT ticket_type, COUNT(*) as count,
-        ROUND(SUM(final_price), 2) as total_revenue,
-        ROUND(AVG(final_price), 2) as avg_price,
-        DATE(purchase_date) as purchase_date
-      FROM ticket WHERE purchase_date BETWEEN ? AND ?
-      GROUP BY ticket_type, DATE(purchase_date) ORDER BY purchase_date DESC
-    `;
-    const attendanceSql = `
-      SELECT DATE(t.purchase_date) as date,
+    
+    // 2. DAILY VISITOR TRENDS
+    const dailyTrendsSql = `
+      SELECT 
+        DATE(t.purchase_date) as date,
         COUNT(DISTINCT t.user_id) as unique_visitors,
-        COUNT(*) as total_tickets_sold,
-        ROUND(SUM(t.final_price), 2) as daily_revenue
-      FROM ticket t WHERE t.purchase_date BETWEEN ? AND ?
-      GROUP BY DATE(t.purchase_date) ORDER BY date DESC
+        COUNT(*) as tickets_sold,
+        ROUND(SUM(t.final_price), 2) as revenue,
+        COUNT(DISTINCT CASE WHEN m.user_id IS NOT NULL THEN t.user_id END) as member_visitors
+      FROM ticket t
+      LEFT JOIN member m ON t.user_id = m.user_id AND m.expiration_date >= CURDATE()
+      WHERE t.purchase_date BETWEEN ? AND ?
+      GROUP BY DATE(t.purchase_date)
+      ORDER BY date DESC
+      LIMIT 30
     `;
-    const memberStatsSql = `
-      SELECT membership_level, COUNT(*) as count,
-        ROUND(AVG(DATEDIFF(expiration_date, join_date))) as avg_membership_days
-      FROM member GROUP BY membership_level
+    
+    // 3. VISITOR TYPE BREAKDOWN
+    const visitorBreakdownSql = `
+      SELECT 
+        CASE 
+          WHEN m.user_id IS NOT NULL AND m.expiration_date >= CURDATE() THEN 'Member'
+          ELSE 'Non-Member'
+        END as visitor_type,
+        COUNT(DISTINCT t.user_id) as visitor_count,
+        COUNT(t.ticket_id) as tickets_purchased,
+        ROUND(SUM(t.final_price), 2) as total_spent,
+        ROUND(AVG(t.final_price), 2) as avg_ticket_price
+      FROM ticket t
+      LEFT JOIN member m ON t.user_id = m.user_id AND m.expiration_date >= CURDATE()
+      WHERE t.purchase_date BETWEEN ? AND ?
+      GROUP BY visitor_type
     `;
-    const eventSql = `
-      SELECT e.event_name, e.event_date, e.capacity, e.total_attendees, e.event_type,
-        ROUND((e.total_attendees / e.capacity) * 100, 1) as attendance_percentage
-      FROM event e WHERE e.is_active = 1
-      ORDER BY e.event_date DESC
+    
+    // 4. TOP VISITORS (most frequent)
+    const topVisitorsSql = `
+      SELECT 
+        u.user_id,
+        CONCAT(u.first_name, ' ', u.last_name) as name,
+        u.city,
+        u.state,
+        COUNT(DISTINCT DATE(t.purchase_date)) as visit_days,
+        COUNT(t.ticket_id) as tickets_purchased,
+        ROUND(SUM(t.final_price), 2) as total_spent,
+        MAX(t.purchase_date) as last_visit,
+        CASE WHEN m.user_id IS NOT NULL AND m.expiration_date >= CURDATE() 
+            THEN m.membership_level 
+            ELSE NULL 
+        END as membership_level
+      FROM ticket t
+      JOIN user u ON t.user_id = u.user_id
+      LEFT JOIN member m ON u.user_id = m.user_id AND m.expiration_date >= CURDATE()
+      WHERE t.purchase_date BETWEEN ? AND ?
+      GROUP BY u.user_id, u.first_name, u.last_name, u.city, u.state, m.membership_level
+      ORDER BY visit_days DESC, total_spent DESC
+      LIMIT 10
     `;
+    
+    // 5. PEAK VISITING HOURS (based on ticket purchase times - approximated)
+    const peakHoursSql = `
+      SELECT 
+        HOUR(t.purchase_date) as hour,
+        COUNT(*) as tickets_sold,
+        COUNT(DISTINCT t.user_id) as unique_visitors
+      FROM ticket t
+      WHERE t.purchase_date BETWEEN ? AND ?
+      GROUP BY HOUR(t.purchase_date)
+      ORDER BY hour ASC
+    `;
+    
     Promise.all([
-      new Promise((resolve, reject) => { db.query(visitorsSql, (err, r) => err ? reject(err) : resolve(r)); }),
-      new Promise((resolve, reject) => { db.query(ticketsSql, [startDate, endDate], (err, r) => err ? reject(err) : resolve(r)); }),
-      new Promise((resolve, reject) => { db.query(attendanceSql, [startDate, endDate], (err, r) => err ? reject(err) : resolve(r)); }),
-      new Promise((resolve, reject) => { db.query(memberStatsSql, (err, r) => err ? reject(err) : resolve(r)); }),
-      new Promise((resolve, reject) => { db.query(eventSql, (err, r) => err ? reject(err) : resolve(r)); })
+      new Promise((res, rej) => db.query(summarySql, [startDate, endDate, startDate, endDate, startDate, endDate, startDate, endDate, startDate, endDate, startDate, endDate], (err, r) => err ? rej(err) : res(r[0]))),
+      new Promise((res, rej) => db.query(dailyTrendsSql, [startDate, endDate], (err, r) => err ? rej(err) : res(r))),
+      new Promise((res, rej) => db.query(visitorBreakdownSql, [startDate, endDate], (err, r) => err ? rej(err) : res(r))),
+      new Promise((res, rej) => db.query(topVisitorsSql, [startDate, endDate], (err, r) => err ? rej(err) : res(r))),
+      new Promise((res, rej) => db.query(peakHoursSql, [startDate, endDate], (err, r) => err ? rej(err) : res(r)))
     ])
-    .then(([visitors, tickets, attendance, memberStats, events]) => {
-      const summary = {
-        total_visitors:         visitors.length,
-        total_members:          visitors.filter(v => v.is_member === 'Yes').length,
-        total_visits:           visitors.reduce((sum, v) => sum + (v.total_visits || 0), 0),
-        avg_visits_per_visitor: (visitors.reduce((sum, v) => sum + (v.total_visits || 0), 0) / visitors.length || 0).toFixed(1),
-        total_tickets_sold:     tickets.reduce((sum, t) => sum + t.count, 0),
-        total_ticket_revenue:   tickets.reduce((sum, t) => sum + t.total_revenue, 0),
-        most_popular_ticket:    tickets.reduce((a, b) => a.count > b.count ? a : b, { ticket_type: 'None', count: 0 }).ticket_type,
-        total_events:           events.length,
-        avg_event_attendance:   (events.reduce((sum, e) => sum + e.total_attendees, 0) / events.length || 0).toFixed(1)
+    .then(([summary, dailyTrends, visitorBreakdown, topVisitors, peakHours]) => {
+      // Calculate additional insights
+      const totalRevenue = summary.total_ticket_revenue || 0;
+      const uniqueVisitors = summary.unique_paying_visitors || 1;
+      
+      const enhancedSummary = {
+        ...summary,
+        avg_revenue_per_visitor: (totalRevenue / uniqueVisitors).toFixed(2),
+        new_visitors: dailyTrends.filter(d => d.unique_visitors > 0).length || 0
       };
-      sendJSON(res, { summary, visitors, tickets, attendance, memberStats, events });
+      
+      sendJSON(res, {
+        summary: enhancedSummary,
+        dailyTrends,
+        visitorBreakdown,
+        topVisitors,
+        peakHours
+      });
     })
     .catch(err => sendError(res, err));
     return;
