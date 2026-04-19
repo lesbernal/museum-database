@@ -107,34 +107,35 @@ module.exports = (req, res, parsedUrl) => {
     parseBody(req, data => {
 
       if (isPrivileged) {
-        // ── Admin / employee: can update role + date_of_birth ─────────────
-        const sql = `
-          UPDATE user SET
-          first_name=?, last_name=?, email=?, phone_number=?,
-          street_address=?, city=?, state=?, zip_code=?,
-          date_of_birth=?, role=?
-          WHERE user_id=?
-        `;
-        db.query(sql, [
-          data.first_name     || "",
-          data.last_name      || "",
-          data.email          || "",
-          data.phone_number   || "",
-          data.street_address || "",
-          data.city           || "",
-          data.state          || "",
-          data.zip_code       || "",
-          data.date_of_birth  || null,
-          data.role           || "visitor",
-          urlParts[1]
-        ], err => {
+        // Build dynamic SQL for privileged users
+        const updateFields = [];
+        const values = [];
+        
+        if (data.first_name !== undefined) { updateFields.push("first_name = ?"); values.push(data.first_name); }
+        if (data.last_name !== undefined) { updateFields.push("last_name = ?"); values.push(data.last_name); }
+        if (data.email !== undefined) { updateFields.push("email = ?"); values.push(data.email); }
+        if (data.phone_number !== undefined) { updateFields.push("phone_number = ?"); values.push(data.phone_number); }
+        if (data.street_address !== undefined) { updateFields.push("street_address = ?"); values.push(data.street_address); }
+        if (data.city !== undefined) { updateFields.push("city = ?"); values.push(data.city); }
+        if (data.state !== undefined) { updateFields.push("state = ?"); values.push(data.state); }
+        if (data.zip_code !== undefined) { updateFields.push("zip_code = ?"); values.push(data.zip_code); }
+        if (data.date_of_birth !== undefined) { updateFields.push("date_of_birth = ?"); values.push(data.date_of_birth); }
+        if (data.role !== undefined) { updateFields.push("role = ?"); values.push(data.role); }
+        if (data.password !== undefined && data.password.length > 0) { updateFields.push("password = ?"); values.push(data.password); }
+        
+        if (updateFields.length === 0) {
+          return sendJSON(res, { message: "No fields to update" });
+        }
+        
+        values.push(urlParts[1]);
+        const sql = `UPDATE user SET ${updateFields.join(", ")} WHERE user_id = ?`;
+        
+        db.query(sql, values, err => {
           if (err) return sendError(res, err);
           sendJSON(res, { message: "User updated" });
         });
-
       } else {
-        // ── Self-update: fetch current values first so no field gets
-        //    accidentally nulled (fixes password change wiping date_of_birth)
+        // Self-update for non-privileged users (visitors/members)
         db.query(
           "SELECT * FROM user WHERE user_id = ?",
           [urlParts[1]],
@@ -142,37 +143,27 @@ module.exports = (req, res, parsedUrl) => {
             if (err) return sendError(res, err);
             const current = rows[0] || {};
 
-            // Build SQL dynamically — include password only if provided
-            const hasPassword = data.password && data.password.length > 0;
-
-            const sql = hasPassword
-              ? `UPDATE user SET
-                 first_name=?, last_name=?, email=?, phone_number=?,
-                 street_address=?, city=?, state=?, zip_code=?,
-                 date_of_birth=?, password=?
-                 WHERE user_id=?`
-              : `UPDATE user SET
-                 first_name=?, last_name=?, email=?, phone_number=?,
-                 street_address=?, city=?, state=?, zip_code=?,
-                 date_of_birth=?
-                 WHERE user_id=?`;
-
-            // Use incoming value if provided, otherwise keep existing DB value
-            const values = [
-              data.first_name     !== undefined ? data.first_name     : current.first_name,
-              data.last_name      !== undefined ? data.last_name      : current.last_name,
-              data.email          !== undefined ? data.email          : current.email,
-              data.phone_number   !== undefined ? data.phone_number   : current.phone_number,
-              data.street_address !== undefined ? data.street_address : current.street_address,
-              data.city           !== undefined ? data.city           : current.city,
-              data.state          !== undefined ? data.state          : current.state,
-              data.zip_code       !== undefined ? data.zip_code       : current.zip_code,
-              data.date_of_birth  !== undefined ? data.date_of_birth  : current.date_of_birth,
-            ];
-
-            if (hasPassword) values.push(data.password);
+            const updateFields = [];
+            const values = [];
+            
+            if (data.first_name !== undefined) { updateFields.push("first_name = ?"); values.push(data.first_name); }
+            if (data.last_name !== undefined) { updateFields.push("last_name = ?"); values.push(data.last_name); }
+            if (data.email !== undefined) { updateFields.push("email = ?"); values.push(data.email); }
+            if (data.phone_number !== undefined) { updateFields.push("phone_number = ?"); values.push(data.phone_number); }
+            if (data.street_address !== undefined) { updateFields.push("street_address = ?"); values.push(data.street_address); }
+            if (data.city !== undefined) { updateFields.push("city = ?"); values.push(data.city); }
+            if (data.state !== undefined) { updateFields.push("state = ?"); values.push(data.state); }
+            if (data.zip_code !== undefined) { updateFields.push("zip_code = ?"); values.push(data.zip_code); }
+            if (data.date_of_birth !== undefined) { updateFields.push("date_of_birth = ?"); values.push(data.date_of_birth); }
+            if (data.password !== undefined && data.password.length > 0) { updateFields.push("password = ?"); values.push(data.password); }
+            
+            if (updateFields.length === 0) {
+              return sendJSON(res, { message: "No fields to update" });
+            }
+            
             values.push(urlParts[1]);
-
+            const sql = `UPDATE user SET ${updateFields.join(", ")} WHERE user_id = ?`;
+            
             db.query(sql, values, err => {
               if (err) return sendError(res, err);
               sendJSON(res, { message: "User updated" });
