@@ -281,32 +281,54 @@ module.exports = (req, res, parsedUrl) => {
     return;
   }
 
-  // ==================== REPORT 3: MEMBERSHIP & DONOR REPORT ====================
-  if (parsedUrl.pathname === "/reports/membership-donor") {
+  // ==================== REPORT 3: MEMBERSHIP ANALYTICS (REFINED) ====================
+  if (parsedUrl.pathname === "/reports/membership-analytics") {
     const startDate = query.startDate || "1900-01-01";
     const endDate = query.endDate || new Date().toISOString().split('T')[0];
     
-    // 1. MEMBERSHIP SUMMARY
-    const membershipSummarySql = `
+    // 1. MEMBERSHIP SUMMARY (with upgrade_rate calculation)
+    const summarySql = `
       SELECT 
         COUNT(*) as total_members,
         COUNT(CASE WHEN expiration_date >= CURDATE() THEN 1 END) as active_members,
         COUNT(CASE WHEN expiration_date < CURDATE() THEN 1 END) as expired_members,
-        ROUND(AVG(DATEDIFF(expiration_date, join_date)), 0) as avg_membership_days
+        ROUND(AVG(DATEDIFF(expiration_date, join_date)), 0) as avg_membership_days,
+        COUNT(CASE WHEN pending_level = 'cancelled' THEN 1 END) as pending_cancellations,
+        COUNT(CASE WHEN pending_level IS NOT NULL AND pending_level != 'cancelled' THEN 1 END) as pending_changes
       FROM member
     `;
     
-    // 2. MEMBERSHIP LEVEL BREAKDOWN
-    const membershipLevelsSql = `
+    // 1b. Calculate upgrade rate separately
+    const upgradeRateSql = `
       SELECT 
-        membership_level,
+        COUNT(*) as total_transactions,
+        COUNT(CASE WHEN transaction_type = 'Upgrade' THEN 1 END) as upgrade_count
+      FROM membershiptransaction
+      WHERE transaction_date BETWEEN ? AND ?
+    `;
+    
+    // 2. MEMBERSHIP LEVEL BREAKDOWN WITH VALUE
+    const levelBreakdownSql = `
+      SELECT 
+        m.membership_level,
         COUNT(*) as count,
-        ROUND(AVG(DATEDIFF(expiration_date, join_date)), 0) as avg_duration_days
-      FROM member
-      WHERE expiration_date >= CURDATE()
-      GROUP BY membership_level
+        ROUND(AVG(DATEDIFF(m.expiration_date, m.join_date)), 0) as avg_duration_days,
+        COUNT(CASE WHEN m.pending_level = 'cancelled' THEN 1 END) as cancelling,
+        COUNT(CASE WHEN m.pending_level IS NOT NULL AND m.pending_level != 'cancelled' THEN 1 END) as changing_level,
+        SUM(CASE 
+          WHEN m.membership_level = 'Bronze' THEN 75
+          WHEN m.membership_level = 'Silver' THEN 150
+          WHEN m.membership_level = 'Gold' THEN 300
+          WHEN m.membership_level = 'Platinum' THEN 600
+          WHEN m.membership_level = 'Benefactor' THEN 1500
+          WHEN m.membership_level = 'Leadership Circle' THEN 5000
+          ELSE 0
+        END) as potential_annual_revenue
+      FROM member m
+      WHERE m.expiration_date >= CURDATE()
+      GROUP BY m.membership_level
       ORDER BY 
-        CASE membership_level
+        CASE m.membership_level
           WHEN 'Bronze' THEN 1
           WHEN 'Silver' THEN 2
           WHEN 'Gold' THEN 3
@@ -317,77 +339,171 @@ module.exports = (req, res, parsedUrl) => {
         END
     `;
     
-    // 3. DONATION SUMMARY
-    const donationSummarySql = `
+    // 3. MEMBERSHIP TRANSACTION TRENDS
+    const transactionTrendsSql = `
       SELECT 
-        ROUND(SUM(amount), 2) as total_donations,
-        COUNT(*) as total_donations_count,
-        ROUND(AVG(amount), 2) as avg_donation,
-        COUNT(DISTINCT user_id) as unique_donors
-      FROM donation
-      WHERE donation_date BETWEEN ? AND ?
-    `;
-    
-    // 4. DONATION TRENDS BY MONTH
-    const donationTrendsSql = `
-      SELECT 
-        DATE_FORMAT(donation_date, '%Y-%m') as month,
-        ROUND(SUM(amount), 2) as total,
-        COUNT(*) as count,
-        ROUND(AVG(amount), 2) as avg_amount
-      FROM donation
-      WHERE donation_date BETWEEN ? AND ?
-      GROUP BY DATE_FORMAT(donation_date, '%Y-%m')
+        DATE_FORMAT(transaction_date, '%Y-%m') as month,
+        COUNT(CASE WHEN transaction_type = 'New' THEN 1 END) as new_members,
+        COUNT(CASE WHEN transaction_type = 'Renewal' THEN 1 END) as renewals,
+        COUNT(CASE WHEN transaction_type = 'Upgrade' THEN 1 END) as upgrades,
+        COUNT(CASE WHEN transaction_type = 'Cancellation' THEN 1 END) as cancellations,
+        ROUND(SUM(CASE WHEN transaction_type = 'New' THEN amount ELSE 0 END), 0) as new_revenue,
+        ROUND(SUM(CASE WHEN transaction_type = 'Renewal' THEN amount ELSE 0 END), 0) as renewal_revenue,
+        ROUND(SUM(CASE WHEN transaction_type = 'Upgrade' THEN amount ELSE 0 END), 0) as upgrade_revenue
+      FROM membershiptransaction
+      WHERE transaction_date BETWEEN ? AND ?
+      GROUP BY DATE_FORMAT(transaction_date, '%Y-%m')
       ORDER BY month ASC
     `;
     
-    // 5. DONATION BREAKDOWN BY TYPE
-    const donationByTypeSql = `
+    // 4. MEMBERSHIP CONVERSION FUNNEL
+    const conversionFunnelSql = `
       SELECT 
-        donation_type,
-        ROUND(SUM(amount), 2) as total,
-        COUNT(*) as count,
-        ROUND(AVG(amount), 2) as avg_amount
-      FROM donation
-      WHERE donation_date BETWEEN ? AND ?
-      GROUP BY donation_type
-      ORDER BY total DESC
+        'Visitors with tickets' as stage,
+        COUNT(DISTINCT t.user_id) as count
+      FROM ticket t
+      WHERE t.purchase_date BETWEEN ? AND ?
+      
+      UNION ALL
+      
+      SELECT 
+        'Converted to Member' as stage,
+        COUNT(DISTINCT m.user_id) as count
+      FROM member m
+      WHERE m.join_date BETWEEN ? AND ?
+      
+      UNION ALL
+      
+      SELECT 
+        'Active Members' as stage,
+        COUNT(*) as count
+      FROM member
+      WHERE expiration_date >= CURDATE()
+      
+      UNION ALL
+      
+      SELECT 
+        'Returning Next Year' as stage,
+        COUNT(DISTINCT m.user_id) as count
+      FROM member m
+      JOIN membershiptransaction mt ON m.user_id = mt.user_id
+      WHERE mt.transaction_type IN ('Renewal', 'Upgrade')
+        AND mt.transaction_date BETWEEN ? AND ?
     `;
     
-    // 6. MEMBERSHIP TRANSACTIONS (New/Renewal/Upgrade)
-    const membershipTransactionsSql = `
+    // 5. MEMBERSHIP LIFECYCLE
+    const lifecycleSql = `
       SELECT 
-        transaction_type,
-        COUNT(*) as count,
-        ROUND(SUM(amount), 2) as total_amount,
-        ROUND(AVG(amount), 2) as avg_amount
-      FROM membershiptransaction
-      WHERE transaction_date BETWEEN ? AND ?
-      GROUP BY transaction_type
+        DATE_FORMAT(join_date, '%Y-%m') as cohort,
+        COUNT(*) as joined,
+        COUNT(CASE WHEN EXISTS (
+          SELECT 1 FROM membershiptransaction mt 
+          WHERE mt.user_id = m.user_id 
+            AND mt.transaction_type = 'Renewal'
+            AND mt.transaction_date > m.join_date
+        ) THEN 1 END) as renewed,
+        COUNT(CASE WHEN EXISTS (
+          SELECT 1 FROM membershiptransaction mt 
+          WHERE mt.user_id = m.user_id 
+            AND mt.transaction_type = 'Upgrade'
+        ) THEN 1 END) as upgraded
+      FROM member m
+      WHERE m.join_date BETWEEN ? AND ?
+      GROUP BY DATE_FORMAT(join_date, '%Y-%m')
+      ORDER BY cohort ASC
     `;
     
-    // 7. TOP DONORS
-    const topDonorsSql = `
+    // 6. MEMBER ENGAGEMENT
+    const memberEngagementSql = `
       SELECT 
-        u.user_id,
+        m.membership_level,
+        COUNT(DISTINCT t.user_id) as members_with_visits,
+        ROUND(AVG(t.visit_count), 1) as avg_visits_per_member,
+        ROUND(AVG(DATEDIFF(CURDATE(), m.join_date)), 0) as avg_days_as_member
+      FROM member m
+      LEFT JOIN (
+        SELECT user_id, COUNT(DISTINCT DATE(visit_date)) as visit_count
+        FROM ticket
+        WHERE purchase_date >= DATE_SUB(CURDATE(), INTERVAL 90 DAY)
+        GROUP BY user_id
+      ) t ON m.user_id = t.user_id
+      WHERE m.expiration_date >= CURDATE()
+      GROUP BY m.membership_level
+      ORDER BY 
+        CASE m.membership_level
+          WHEN 'Bronze' THEN 1
+          WHEN 'Silver' THEN 2
+          WHEN 'Gold' THEN 3
+          WHEN 'Platinum' THEN 4
+          WHEN 'Benefactor' THEN 5
+          WHEN 'Leadership Circle' THEN 6
+          ELSE 7
+        END
+    `;
+    
+    // 7. ALL ACTIVE MEMBERS (not just at-risk)
+    const activeMembersSql = `
+      SELECT 
+        m.user_id,
         CONCAT(u.first_name, ' ', u.last_name) as name,
-        u.city,
-        u.state,
-        COUNT(d.donation_id) as donation_count,
-        ROUND(SUM(d.amount), 2) as total_donated,
-        MAX(d.donation_date) as last_donation_date,
-        CASE WHEN m.user_id IS NOT NULL THEN m.membership_level ELSE NULL END as membership_level
-      FROM donation d
-      JOIN user u ON d.user_id = u.user_id
-      LEFT JOIN member m ON u.user_id = m.user_id AND m.expiration_date >= CURDATE()
-      WHERE d.donation_date BETWEEN ? AND ?
-      GROUP BY u.user_id, u.first_name, u.last_name, u.city, u.state, m.membership_level
-      ORDER BY total_donated DESC
-      LIMIT 10
+        u.email,
+        m.membership_level,
+        m.join_date,
+        m.expiration_date,
+        m.pending_level,
+        DATEDIFF(m.expiration_date, CURDATE()) as days_remaining,
+        CASE 
+          WHEN DATEDIFF(m.expiration_date, CURDATE()) <= 30 THEN 'Critical (30 days)'
+          WHEN DATEDIFF(m.expiration_date, CURDATE()) <= 60 THEN 'Warning (60 days)'
+          WHEN DATEDIFF(m.expiration_date, CURDATE()) <= 90 THEN 'Notice (90 days)'
+          ELSE 'Healthy'
+        END as risk_level
+      FROM member m
+      JOIN user u ON m.user_id = u.user_id
+      WHERE m.expiration_date >= CURDATE()
+      ORDER BY m.expiration_date ASC
     `;
     
-    // 8. RECENT MEMBERSHIP ACTIVITY
-    const recentMembershipActivitySql = `
+    // 8. MEMBERSHIP VALUE TIER ANALYSIS
+    const valueTierSql = `
+      SELECT 
+        m.membership_level,
+        COUNT(DISTINCT m.user_id) as member_count,
+        COALESCE(ROUND(AVG(
+          (SELECT COALESCE(SUM(final_price), 0) 
+          FROM ticket 
+          WHERE user_id = m.user_id 
+          AND purchase_date >= DATE_SUB(CURDATE(), INTERVAL 1 YEAR)
+          )), 2), 0) as avg_ticket_spend,
+        COALESCE(ROUND(AVG(
+          (SELECT COALESCE(SUM(total_amount), 0) 
+          FROM cafetransaction 
+          WHERE user_id = m.user_id 
+          AND transaction_datetime >= DATE_SUB(CURDATE(), INTERVAL 1 YEAR)
+          )), 2), 0) as avg_cafe_spend,
+        COALESCE(ROUND(AVG(
+          (SELECT COALESCE(SUM(total_amount), 0) 
+          FROM giftshoptransaction 
+          WHERE user_id = m.user_id 
+          AND transaction_datetime >= DATE_SUB(CURDATE(), INTERVAL 1 YEAR)
+          )), 2), 0) as avg_shop_spend
+      FROM member m
+      WHERE m.expiration_date >= CURDATE()
+      GROUP BY m.membership_level
+      ORDER BY 
+        CASE m.membership_level
+          WHEN 'Bronze' THEN 1
+          WHEN 'Silver' THEN 2
+          WHEN 'Gold' THEN 3
+          WHEN 'Platinum' THEN 4
+          WHEN 'Benefactor' THEN 5
+          WHEN 'Leadership Circle' THEN 6
+          ELSE 7
+        END
+    `;
+    
+    // 9. RECENT MEMBERSHIP ACTIVITY (for the frontend)
+    const recentActivitySql = `
       SELECT 
         mt.transaction_id,
         CONCAT(u.first_name, ' ', u.last_name) as member_name,
@@ -404,40 +520,39 @@ module.exports = (req, res, parsedUrl) => {
     `;
     
     Promise.all([
-      new Promise((res, rej) => db.query(membershipSummarySql, (err, r) => err ? rej(err) : res(r[0]))),
-      new Promise((res, rej) => db.query(membershipLevelsSql, (err, r) => err ? rej(err) : res(r))),
-      new Promise((res, rej) => db.query(donationSummarySql, [startDate, endDate], (err, r) => err ? rej(err) : res(r[0]))),
-      new Promise((res, rej) => db.query(donationTrendsSql, [startDate, endDate], (err, r) => err ? rej(err) : res(r))),
-      new Promise((res, rej) => db.query(donationByTypeSql, [startDate, endDate], (err, r) => err ? rej(err) : res(r))),
-      new Promise((res, rej) => db.query(membershipTransactionsSql, [startDate, endDate], (err, r) => err ? rej(err) : res(r))),
-      new Promise((res, rej) => db.query(topDonorsSql, [startDate, endDate], (err, r) => err ? rej(err) : res(r))),
-      new Promise((res, rej) => db.query(recentMembershipActivitySql, [startDate, endDate], (err, r) => err ? rej(err) : res(r)))
+      new Promise((res, rej) => db.query(summarySql, (err, r) => err ? rej(err) : res(r[0]))),
+      new Promise((res, rej) => db.query(upgradeRateSql, [startDate, endDate], (err, r) => err ? rej(err) : res(r[0]))),
+      new Promise((res, rej) => db.query(levelBreakdownSql, (err, r) => err ? rej(err) : res(r))),
+      new Promise((res, rej) => db.query(transactionTrendsSql, [startDate, endDate], (err, r) => err ? rej(err) : res(r))),
+      new Promise((res, rej) => db.query(conversionFunnelSql, [startDate, endDate, startDate, endDate, startDate, endDate], (err, r) => err ? rej(err) : res(r))),
+      new Promise((res, rej) => db.query(lifecycleSql, [startDate, endDate], (err, r) => err ? rej(err) : res(r))),
+      new Promise((res, rej) => db.query(memberEngagementSql, (err, r) => err ? rej(err) : res(r))),
+      new Promise((res, rej) => db.query(activeMembersSql, (err, r) => err ? rej(err) : res(r))),
+      new Promise((res, rej) => db.query(valueTierSql, (err, r) => err ? rej(err) : res(r))),
+      new Promise((res, rej) => db.query(recentActivitySql, [startDate, endDate], (err, r) => err ? rej(err) : res(r)))
     ])
-    .then(([membershipSummary, membershipLevels, donationSummary, donationTrends, donationByType, membershipTransactions, topDonors, recentActivity]) => {
+    .then(([summary, upgradeData, levelBreakdown, transactionTrends, conversionFunnel, lifecycle, memberEngagement, activeMembers, valueTier, recentActivity]) => {
+
+      // Calculate upgrade rate
+      const totalTransactions = upgradeData.total_transactions || 0;
+      const upgradeCount = upgradeData.upgrade_count || 0;
+      const upgradeRate = totalTransactions > 0 ? ((upgradeCount / totalTransactions) * 100).toFixed(1) : 0;
       
-      // Calculate upgrade rate from transactions
-      const totalTransactions = (membershipTransactions[0]?.count || 0) + 
-                                (membershipTransactions[1]?.count || 0) + 
-                                (membershipTransactions[2]?.count || 0);
-      const upgrades = membershipTransactions.find(t => t.transaction_type === 'Upgrade')?.count || 0;
-      const upgradeRate = totalTransactions > 0 ? ((upgrades / totalTransactions) * 100).toFixed(1) : 0;
-      
-      const enhancedMembershipSummary = {
-        ...membershipSummary,
-        upgrade_rate: upgradeRate,
-        total_members: membershipSummary.total_members || 0,
-        active_members: membershipSummary.active_members || 0,
-        expired_members: membershipSummary.expired_members || 0
+      // Add upgrade_rate to summary
+      const enhancedSummary = {
+        ...summary,
+        upgrade_rate: upgradeRate
       };
       
       sendJSON(res, {
-        summary: enhancedMembershipSummary,
-        membershipLevels,
-        donationSummary,
-        donationTrends,
-        donationByType,
-        membershipTransactions,
-        topDonors,
+        summary: enhancedSummary,
+        levelBreakdown,
+        transactionTrends,
+        conversionFunnel,
+        lifecycle,
+        memberEngagement,
+        activeMembers,
+        valueTier,
         recentActivity
       });
     })

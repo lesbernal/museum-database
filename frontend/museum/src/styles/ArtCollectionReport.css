@@ -248,6 +248,7 @@
   gap: 1.5rem;
   margin-top: 1.5rem;
   margin-bottom: 1.5rem;
+  min-width: 0;
 }
 
 /* Chart Containers */
@@ -256,7 +257,8 @@
   border: 1px solid #e5e5e5;
   border-radius: 8px;
   padding: 1.25rem;
-  transition: all 0.2s ease;
+  min-width: 0;
+  overflow-x: auto;
 }
 
 .chart-container:hover {
@@ -347,9 +349,10 @@
   font-size: 0.875rem;
 }
 
-/* Data Section */
 .data-section {
   margin-top: 1.5rem;
+  min-width: 0;
+  overflow-x: auto;
 }
 
 .data-header {
@@ -371,6 +374,9 @@
 /* Table */
 .table-container {
   overflow-x: auto;
+  overflow-y: auto;
+  max-height: 500px;
+  min-height: 400px;
   border: 1px solid #e5e5e5;
   border-radius: 8px;
 }
@@ -379,6 +385,7 @@
   width: 100%;
   border-collapse: collapse;
   font-size: 0.875rem;
+  min-width: 800px;
 }
 
 .data-table thead {
@@ -531,100 +538,7 @@
   to { transform: rotate(360deg); }
 }
 
-/* Responsive */
-@media (max-width: 1024px) {
-  .summary-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-  
-  .charts-grid {
-    grid-template-columns: 1fr;
-    gap: 1rem;
-  }
-}
-
-@media (max-width: 768px) {
-  .art-collection-report {
-    padding: 1rem;
-  }
-  
-  .filter-section {
-    padding: 1rem;
-  }
-  
-  .summary-grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 0.75rem;
-  }
-  
-  .filter-group {
-    min-width: 100%;
-  }
-  
-  .filter-row {
-    flex-direction: column;
-    gap: 0.75rem;
-  }
-  
-  .generate-btn,
-  .reset-btn {
-    width: 100%;
-    margin-left: 0;
-  }
-  
-  .data-header {
-    flex-direction: column;
-    align-items: stretch;
-  }
-  
-  .pagination-controls {
-    gap: 0.25rem;
-  }
-  
-  .pagination-controls button {
-    padding: 0.25rem 0.5rem;
-    font-size: 0.7rem;
-    min-width: 32px;
-  }
-  
-  .summary-value {
-    font-size: 1.25rem;
-  }
-  
-  .insights-table td {
-    padding: 0.5rem 0;
-  }
-  
-  .chart-container {
-    padding: 1rem;
-  }
-}
-
-@media (max-width: 480px) {
-  .summary-grid {
-    grid-template-columns: 1fr;
-    gap: 0.5rem;
-  }
-  
-  .data-table th,
-  .data-table td {
-    padding: 0.5rem;
-    font-size: 0.75rem;
-  }
-  
-  .status-badge {
-    font-size: 0.6rem;
-    padding: 0.2rem 0.4rem;
-  }
-  
-  .rank-badge {
-    width: 20px;
-    height: 20px;
-    line-height: 20px;
-    font-size: 0.6rem;
-  }
-}
-
+/* Value Badges */
 .value-badge {
   display: inline-block;
   padding: 0.25rem 0.5rem;
@@ -711,10 +625,95 @@
 }
 
 /* Responsive */
-@media (max-width: 768px) {
-  .acquisition-grid {
+@media (max-width: 1024px) {
+  .summary-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .charts-grid {
     grid-template-columns: 1fr;
     gap: 1rem;
+  }
+  
+  .table-container {
+    max-height: 400px;
+    min-height: 300px;
+  }
+  
+  .acquisition-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .art-collection-report {
+    padding: 1rem;
+  }
+  
+  .filter-section {
+    padding: 1rem;
+  }
+  
+  .summary-grid {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+  
+  .filter-group {
+    min-width: 100%;
+  }
+  
+  .filter-row {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  
+  .generate-btn,
+  .reset-btn {
+    width: 100%;
+    margin-left: 0;
+  }
+  
+  .data-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .pagination-controls {
+    gap: 0.25rem;
+  }
+  
+  .pagination-controls button {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.7rem;
+    min-width: 32px;
+  }
+  
+  .summary-value {
+    font-size: 1.25rem;
+  }
+  
+  .insights-table td {
+    padding: 0.5rem 0;
+  }
+  
+  .chart-container {
+    padding: 1rem;
+  }
+  
+  .table-container {
+    max-height: 350px;
+    min-height: 250px;
+  }
+  
+  .data-table {
+    font-size: 0.75rem;
+    min-width: 700px;
+  }
+  
+  .data-table th,
+  .data-table td {
+    padding: 0.5rem;
   }
   
   .acquisition-card {
@@ -725,4 +724,35 @@
     width: 80px;
     height: 60px;
   }
+}
+
+@media (max-width: 480px) {
+  .summary-grid {
+    gap: 0.5rem;
+  }
+  
+  .data-table th,
+  .data-table td {
+    padding: 0.5rem;
+    font-size: 0.75rem;
+  }
+  
+  .status-badge {
+    font-size: 0.6rem;
+    padding: 0.2rem 0.4rem;
+  }
+  
+  .rank-badge {
+    width: 20px;
+    height: 20px;
+    line-height: 20px;
+    font-size: 0.6rem;
+  }
+}
+
+
+.art-collection-report {
+  overflow: visible;
+  max-height: none;
+  height: auto;
 }
