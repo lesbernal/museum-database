@@ -571,8 +571,17 @@
   color: var(--color-black, #111827) !important;
   font-weight: 600;
 }
- 
-/* Member discount banner — no emoji version, bold text */
+
+.tickets-summary .summary-total {
+  color: var(--color-black, #111827);
+}
+
+.tickets-summary .summary-total span {
+  color: var(--color-black, #111827);
+  font-weight: 600;
+}
+
+/* Member discount banner — bold, no emoji */
 .member-discount-banner strong {
   font-weight: 600;
   display: block;
