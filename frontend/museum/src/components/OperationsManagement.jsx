@@ -544,9 +544,7 @@ export default function OperationsManagement({
       {error && <div className="error-message dashboard-error">{error}</div>}
 
       <div className="content-area">
-        {loading ? (
-          <div className="loading-spinner">Loading {activeResource.labelPlural.toLowerCase()}...</div>
-        ) : filteredRecords.length === 0 ? (
+        {filteredRecords.length === 0 ? (
           <div className="empty-state">No {activeResource.labelPlural.toLowerCase()} found</div>
         ) : (
           <div className="operations-table-container">

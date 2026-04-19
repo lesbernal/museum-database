@@ -571,9 +571,7 @@ export default function ExhibitionManager({
       </div>
 
       <div className="content-area">
-        {externalLoading ? (
-          <div className="loading-spinner">Loading exhibitions...</div>
-        ) : externalError ? (
+        {externalError ? (
           <div className="error-message">{externalError}</div>
         ) : (
           <ExhibitionTable />

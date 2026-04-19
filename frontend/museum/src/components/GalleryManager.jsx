@@ -353,9 +353,7 @@ export default function GalleryManager({
       </div>
 
       <div className="content-area">
-        {externalLoading ? (
-          <div className="loading-spinner">Loading galleries...</div>
-        ) : externalError ? (
+        {externalError ? (
           <div className="error-message">{externalError}</div>
         ) : (
           <GalleryTable />
