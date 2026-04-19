@@ -25,6 +25,7 @@ import MemberDashboard from "./pages/MemberDashboard";
 import EmployeeDashboard from "./pages/EmployeeDashboard";
 import MembershipPage from "./pages/MembershipPage";
 import CheckoutPage from "./pages/CheckoutPage";
+import PendingOrderPage from "./pages/PendingOrderPage";
 
 function App() {
   return (
@@ -45,6 +46,7 @@ function App() {
         <Route path="/donations" element={<DonationPage />} />
         <Route path="/membership" element={<MembershipPage />} />
         <Route path="/checkout" element={<CheckoutPage />} />
+        <Route path="/order-pending" element={<PendingOrderPage />} />
         
         {/* Cafe Routes */}
         <Route path="/cafe" element={<CafePage />} />
