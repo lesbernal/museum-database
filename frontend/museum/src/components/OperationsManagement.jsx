@@ -7,6 +7,27 @@ function formatValue(value, field) {
     return "—";
   }
 
+  // Handle image type
+  if (field?.type === "image") {
+    return (
+      <div className="table-thumbnail-wrapper">
+        <img 
+          src={value} 
+          alt="Product" 
+          className="table-thumbnail"
+          onError={(e) => {
+            e.target.onerror = null;
+            e.target.style.display = "none";
+            const parent = e.target.parentElement;
+            if (parent) {
+              parent.innerHTML = '<div className="thumbnail-placeholder">🖼️</div>';
+            }
+          }}
+        />
+      </div>
+    );
+  }
+
   // Handle datetime fields - convert UTC to CST
   if (field?.type === "datetime") {
     return formatDateTimeToCST(value);
