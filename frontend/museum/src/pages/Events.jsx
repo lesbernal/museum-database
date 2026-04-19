@@ -204,12 +204,6 @@ export default function Events() {
     }
   }
 
-  if (loading) return (
-    <div className="events-loading">
-      <div className="loading-spinner"></div>
-      <p>Loading events...</p>
-    </div>
-  );
 
   return (
     <div className="events-page">

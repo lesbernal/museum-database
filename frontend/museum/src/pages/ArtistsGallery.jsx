@@ -35,10 +35,6 @@ export default function ArtistsGallery() {
     return matchesSearch && matchesNationality;
   });
 
-  if (loading) {
-    return <div className="loading-spinner">Loading artists...</div>;
-  }
-
   return (
     <div className="artists-gallery">
       <div className="gallery-header">

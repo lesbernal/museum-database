@@ -355,9 +355,7 @@ export default function ProvenanceManager({
       </div>
 
       <div className="content-area">
-        {externalLoading ? (
-          <div className="loading-spinner">Loading provenance records...</div>
-        ) : externalError ? (
+        {externalError ? (
           <div className="error-message">{externalError}</div>
         ) : (
           <ProvenanceTable />
