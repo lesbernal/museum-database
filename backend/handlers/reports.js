@@ -444,23 +444,28 @@ module.exports = (req, res, parsedUrl) => {
     return;
   }
 
-  // ==================== REPORT: VISITOR ANALYTICS ====================
+  // ==================== REPORT: VISITOR ANALYTICS (FOCUSED ON BEHAVIOR, NOT REVENUE) ====================
   if (parsedUrl.pathname === "/reports/visitor-analytics") {
-    const startDate = query.startDate || "1900-01-01";
-    const endDate = query.endDate || new Date().toISOString().split('T')[0];
+    let startDate = query.startDate;
+    let endDate = query.endDate;
+    
+    // If no date range provided, use a wide default range
+    if (!startDate || startDate === "") startDate = "1900-01-01";
+    if (!endDate || endDate === "") endDate = new Date().toISOString().split('T')[0];
     
     // 1. OVERALL SUMMARY
     const summarySql = `
       SELECT 
         (SELECT COUNT(*) FROM user WHERE role IN ('visitor', 'member')) as total_visitors,
         (SELECT COUNT(*) FROM member WHERE expiration_date >= CURDATE()) as active_members,
-        (SELECT COUNT(*) FROM ticket WHERE purchase_date BETWEEN ? AND ?) as total_tickets_sold,
-        (SELECT ROUND(SUM(final_price), 2) FROM ticket WHERE purchase_date BETWEEN ? AND ?) as total_ticket_revenue,
-        (SELECT COUNT(DISTINCT user_id) FROM ticket WHERE purchase_date BETWEEN ? AND ?) as unique_paying_visitors,
+        (SELECT COUNT(DISTINCT user_id) FROM ticket WHERE purchase_date BETWEEN ? AND ?) as unique_visitors,
         (SELECT ROUND(AVG(total_visits), 1) FROM visitor WHERE total_visits > 0) as avg_visits_per_visitor,
         (SELECT COUNT(*) FROM event_signup WHERE signup_date BETWEEN ? AND ?) as total_event_signups,
-        (SELECT ROUND(SUM(amount), 2) FROM donation WHERE donation_date BETWEEN ? AND ?) as total_donations
-    `;
+        (SELECT COUNT(DISTINCT user_id) FROM event_signup WHERE signup_date BETWEEN ? AND ?) as unique_event_participants,
+        (SELECT COUNT(DISTINCT user_id) FROM donation WHERE donation_date BETWEEN ? AND ?) as unique_donors,
+        (SELECT COUNT(*) FROM ticket WHERE purchase_date BETWEEN ? AND ?) as total_tickets_sold,
+        (SELECT COUNT(DISTINCT DATE(purchase_date)) FROM ticket WHERE purchase_date BETWEEN ? AND ?) as active_days
+      `;
     
     // 2. DAILY VISITOR TRENDS
     const dailyTrendsSql = `
@@ -468,8 +473,8 @@ module.exports = (req, res, parsedUrl) => {
         DATE(t.purchase_date) as date,
         COUNT(DISTINCT t.user_id) as unique_visitors,
         COUNT(*) as tickets_sold,
-        ROUND(SUM(t.final_price), 2) as revenue,
-        COUNT(DISTINCT CASE WHEN m.user_id IS NOT NULL THEN t.user_id END) as member_visitors
+        COUNT(DISTINCT CASE WHEN m.user_id IS NOT NULL THEN t.user_id END) as member_visitors,
+        COUNT(DISTINCT CASE WHEN m.user_id IS NULL THEN t.user_id END) as non_member_visitors
       FROM ticket t
       LEFT JOIN member m ON t.user_id = m.user_id AND m.expiration_date >= CURDATE()
       WHERE t.purchase_date BETWEEN ? AND ?
@@ -487,15 +492,14 @@ module.exports = (req, res, parsedUrl) => {
         END as visitor_type,
         COUNT(DISTINCT t.user_id) as visitor_count,
         COUNT(t.ticket_id) as tickets_purchased,
-        ROUND(SUM(t.final_price), 2) as total_spent,
-        ROUND(AVG(t.final_price), 2) as avg_ticket_price
+        COUNT(DISTINCT DATE(t.purchase_date)) as unique_visit_days
       FROM ticket t
       LEFT JOIN member m ON t.user_id = m.user_id AND m.expiration_date >= CURDATE()
       WHERE t.purchase_date BETWEEN ? AND ?
       GROUP BY visitor_type
     `;
     
-    // 4. TOP VISITORS (most frequent)
+    // 4. ALL VISITORS (removed LIMIT to show everyone)
     const topVisitorsSql = `
       SELECT 
         u.user_id,
@@ -504,49 +508,85 @@ module.exports = (req, res, parsedUrl) => {
         u.state,
         COUNT(DISTINCT DATE(t.purchase_date)) as visit_days,
         COUNT(t.ticket_id) as tickets_purchased,
-        ROUND(SUM(t.final_price), 2) as total_spent,
         MAX(t.purchase_date) as last_visit,
         CASE WHEN m.user_id IS NOT NULL AND m.expiration_date >= CURDATE() 
             THEN m.membership_level 
             ELSE NULL 
-        END as membership_level
+        END as membership_level,
+        (SELECT COUNT(*) FROM event_signup es WHERE es.user_id = u.user_id) as events_attended
       FROM ticket t
       JOIN user u ON t.user_id = u.user_id
       LEFT JOIN member m ON u.user_id = m.user_id AND m.expiration_date >= CURDATE()
       WHERE t.purchase_date BETWEEN ? AND ?
       GROUP BY u.user_id, u.first_name, u.last_name, u.city, u.state, m.membership_level
-      ORDER BY visit_days DESC, total_spent DESC
-      LIMIT 10
+      ORDER BY visit_days DESC, tickets_purchased DESC
     `;
     
-    // 5. PEAK VISITING HOURS (based on ticket purchase times - approximated)
-    const peakHoursSql = `
+    // 5. VISIT FREQUENCY DISTRIBUTION
+    const frequencyDistributionSql = `
       SELECT 
-        HOUR(t.purchase_date) as hour,
-        COUNT(*) as tickets_sold,
-        COUNT(DISTINCT t.user_id) as unique_visitors
+        CASE 
+          WHEN visit_counts.visit_count = 1 THEN 'First-time'
+          WHEN visit_counts.visit_count BETWEEN 2 AND 3 THEN 'Occasional (2-3 visits)'
+          WHEN visit_counts.visit_count BETWEEN 4 AND 6 THEN 'Regular (4-6 visits)'
+          WHEN visit_counts.visit_count >= 7 THEN 'Frequent (7+ visits)'
+          ELSE 'Unknown'
+        END as frequency_group,
+        COUNT(*) as visitor_count
+      FROM (
+        SELECT t.user_id, COUNT(DISTINCT DATE(t.purchase_date)) as visit_count
+        FROM ticket t
+        WHERE t.purchase_date BETWEEN ? AND ?
+        GROUP BY t.user_id
+      ) as visit_counts
+      GROUP BY frequency_group
+      ORDER BY 
+        CASE frequency_group
+          WHEN 'First-time' THEN 1
+          WHEN 'Occasional (2-3 visits)' THEN 2
+          WHEN 'Regular (4-6 visits)' THEN 3
+          WHEN 'Frequent (7+ visits)' THEN 4
+          ELSE 5
+        END
+    `;
+    
+    // 6. RETENTION RATE (FIXED - based on multiple visits within the period, not first visit date)
+    const retentionRateSql = `
+      SELECT 
+        COUNT(DISTINCT t.user_id) as total_visitors_in_period,
+        COUNT(DISTINCT CASE 
+          WHEN visit_counts.visit_count >= 2 THEN t.user_id 
+        END) as returning_visitors
       FROM ticket t
+      INNER JOIN (
+        SELECT user_id, COUNT(DISTINCT DATE(purchase_date)) as visit_count
+        FROM ticket
+        WHERE purchase_date BETWEEN ? AND ?
+        GROUP BY user_id
+      ) as visit_counts ON t.user_id = visit_counts.user_id
       WHERE t.purchase_date BETWEEN ? AND ?
-      GROUP BY HOUR(t.purchase_date)
-      ORDER BY hour ASC
     `;
     
     Promise.all([
-      new Promise((res, rej) => db.query(summarySql, [startDate, endDate, startDate, endDate, startDate, endDate, startDate, endDate, startDate, endDate, startDate, endDate], (err, r) => err ? rej(err) : res(r[0]))),
+      new Promise((res, rej) => db.query(summarySql, [startDate, endDate, startDate, endDate, startDate, endDate, startDate, endDate, startDate, endDate, startDate, endDate, startDate, endDate], (err, r) => err ? rej(err) : res(r[0]))),
       new Promise((res, rej) => db.query(dailyTrendsSql, [startDate, endDate], (err, r) => err ? rej(err) : res(r))),
       new Promise((res, rej) => db.query(visitorBreakdownSql, [startDate, endDate], (err, r) => err ? rej(err) : res(r))),
       new Promise((res, rej) => db.query(topVisitorsSql, [startDate, endDate], (err, r) => err ? rej(err) : res(r))),
-      new Promise((res, rej) => db.query(peakHoursSql, [startDate, endDate], (err, r) => err ? rej(err) : res(r)))
+      new Promise((res, rej) => db.query(frequencyDistributionSql, [startDate, endDate], (err, r) => err ? rej(err) : res(r))),
+      new Promise((res, rej) => db.query(retentionRateSql, [startDate, endDate, startDate, endDate], (err, r) => err ? rej(err) : res(r[0])))
     ])
-    .then(([summary, dailyTrends, visitorBreakdown, topVisitors, peakHours]) => {
-      // Calculate additional insights
-      const totalRevenue = summary.total_ticket_revenue || 0;
-      const uniqueVisitors = summary.unique_paying_visitors || 1;
+    .then(([summary, dailyTrends, visitorBreakdown, topVisitors, frequencyDistribution, retentionData]) => {
+      
+      // Calculate retention rate from the retention query
+      const totalVisitorsInPeriod = retentionData.total_visitors_in_period || summary.unique_visitors || 0;
+      const returningVisitors = retentionData.returning_visitors || 0;
+      const retentionRate = totalVisitorsInPeriod > 0 ? ((returningVisitors / totalVisitorsInPeriod) * 100).toFixed(1) : 0;
       
       const enhancedSummary = {
         ...summary,
-        avg_revenue_per_visitor: (totalRevenue / uniqueVisitors).toFixed(2),
-        new_visitors: dailyTrends.filter(d => d.unique_visitors > 0).length || 0
+        retention_rate: retentionRate,
+        returning_visitors: returningVisitors,
+        new_visitors: totalVisitorsInPeriod - returningVisitors
       };
       
       sendJSON(res, {
@@ -554,7 +594,7 @@ module.exports = (req, res, parsedUrl) => {
         dailyTrends,
         visitorBreakdown,
         topVisitors,
-        peakHours
+        frequencyDistribution
       });
     })
     .catch(err => sendError(res, err));
