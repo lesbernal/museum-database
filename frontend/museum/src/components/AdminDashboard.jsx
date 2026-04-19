@@ -121,6 +121,13 @@ export default function AdminDashboard() {
   const [galleryFloorFilter, setGalleryFloorFilter] = useState("All");
   const [gallerySort, setGallerySort] = useState("name");
 
+  //Event states
+  const [eventDateFrom,    setEventDateFrom]    = useState("");
+  const [eventDateTo,      setEventDateTo]      = useState("");
+  const [eventAvailFilter, setEventAvailFilter] = useState("All");
+  const [eventTypeFilter,  setEventTypeFilter]  = useState("All");
+  const [eventSort,        setEventSort]        = useState("name");
+
   // UI states
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
@@ -555,10 +562,30 @@ export default function AdminDashboard() {
       }
     });
 
-  const filteredEvents = events.filter((e) =>
-    e.event_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    e.description?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredEvents = events
+    .filter(e => {
+      const now = new Date();
+      const eventDate = new Date(e.event_date);
+      const matchesSearch = e.event_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        e.description?.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesDate =
+        (!eventDateFrom || eventDate >= new Date(eventDateFrom)) &&
+        (!eventDateTo   || eventDate <= new Date(eventDateTo + "T23:59:59"));
+      const matchesAvail = eventAvailFilter === "All" ||
+        (eventAvailFilter === "Available" && (e.capacity - e.total_attendees) > 0) ||
+        (eventAvailFilter === "Full" && (e.capacity - e.total_attendees) <= 0);
+      const matchesType = eventTypeFilter === "All" || e.event_type === eventTypeFilter;
+      return matchesSearch && matchesDate && matchesAvail && matchesType;
+    })
+    .sort((a, b) => {
+      switch (eventSort) {
+        case "name":      return (a.event_name || "").localeCompare(b.event_name || "");
+        case "name_desc": return (b.event_name || "").localeCompare(a.event_name || "");
+        case "date_asc":  return new Date(a.event_date) - new Date(b.event_date);
+        case "date_desc": return new Date(b.event_date) - new Date(a.event_date);
+        default: return 0;
+      }
+  });
 
   const usesCustomManager = activeTab === "cafe" || activeTab === "giftshop";
 
@@ -709,7 +736,6 @@ export default function AdminDashboard() {
             </div>
           </div>
         )}
-      </div>
 
       {/* Events Ended Toast */}
       {showEndedEvents && endedEvents.length > 0 && !dismissedAlerts.events && (
@@ -755,6 +781,7 @@ export default function AdminDashboard() {
           </div>
         </div>
       )}
+    </div>
 
       <div className="admin-dashboard">
         <button
@@ -1014,16 +1041,79 @@ export default function AdminDashboard() {
             </>
           )}
 
-          {/* Events toolbar */}
+          {/* Events filter bar */}
           {activeTab === "events" && (
-            <div className="exhibitions-admin-toolbar">
-              <p className="ex-results-count">
-                {filteredEvents.length} event{filteredEvents.length !== 1 ? "s" : ""}
-              </p>
-              <button className="btn-view-archived" onClick={() => setShowEventArchive(v => !v)}>
-                {showEventArchive ? "Hide Archived" : "View Archived Events"}
-              </button>
-            </div>
+            <>
+              <div className="exhibition-filters-bar">
+                <div className="ex-filter-group">
+                  <label>From</label>
+                  <input
+                    type="date"
+                    value={eventDateFrom}
+                    onChange={e => setEventDateFrom(e.target.value)}
+                    className="filter-date-input"
+                    style={{ colorScheme: "dark" }}
+                  />
+                </div>
+                <div className="ex-filter-group">
+                  <label>To</label>
+                  <input
+                    type="date"
+                    value={eventDateTo}
+                    onChange={e => setEventDateTo(e.target.value)}
+                    className="filter-date-input"
+                    style={{ colorScheme: "dark" }}
+                  />
+                </div>
+                <div className="ex-filter-group">
+                  <label>Availability</label>
+                  <select value={eventAvailFilter} onChange={e => setEventAvailFilter(e.target.value)}>
+                    <option value="All">All</option>
+                    <option value="Available">Available</option>
+                    <option value="Full">Full</option>
+                  </select>
+                </div>
+                <div className="ex-filter-group">
+                  <label>Event Type</label>
+                  <select value={eventTypeFilter} onChange={e => setEventTypeFilter(e.target.value)}>
+                    <option value="All">All Types</option>
+                    <option value="General">General</option>
+                    <option value="Lecture">Lecture</option>
+                    <option value="Tour">Tour</option>
+                    <option value="Activity">Activity</option>
+                    <option value="Workshop">Workshop</option>
+                    <option value="Exhibition">Exhibition</option>
+                    <option value="Member Only">Member Only</option>
+                  </select>
+                </div>
+                <div className="ex-filter-group">
+                  <label>Sort By</label>
+                  <select value={eventSort} onChange={e => setEventSort(e.target.value)}>
+                    <option value="name">Name A–Z</option>
+                    <option value="name_desc">Name Z–A</option>
+                    <option value="date_asc">Date (Earliest)</option>
+                    <option value="date_desc">Date (Latest)</option>
+                  </select>
+                </div>
+                {(eventDateFrom !== "" || eventDateTo !== "" || eventAvailFilter !== "All" || eventTypeFilter !== "All" || eventSort !== "name") && (
+                  <button className="ex-filter-clear" onClick={() => {
+                    setEventDateFrom("");
+                    setEventDateTo("");
+                    setEventAvailFilter("All");
+                    setEventTypeFilter("All");
+                    setEventSort("name");
+                  }}>Clear Filters</button>
+                )}
+              </div>
+              <div className="exhibitions-admin-toolbar">
+                <p className="ex-results-count">
+                  {filteredEvents.length} event{filteredEvents.length !== 1 ? "s" : ""}
+                </p>
+                <button className="btn-view-archived" onClick={() => setShowEventArchive(v => !v)}>
+                  {showEventArchive ? "Hide Archived" : "View Archived Events"}
+                </button>
+              </div>
+            </>
           )}
 
           <div className="content-area">

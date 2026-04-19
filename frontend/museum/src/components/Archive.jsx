@@ -150,7 +150,7 @@ export default function Archive({ type, onRestored, reloadTrigger }) {
   const config = ARCHIVE_CONFIGS[type];
   if (!config) return <div className="archived-state-msg">Invalid archive type: {type}</div>;
 
-  const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5001";
+  const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
   const load = async () => {
     setLoading(true);
