@@ -1,8 +1,8 @@
 // components/MembershipReport.jsx
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line
+  ResponsiveContainer, PieChart, Pie, Cell
 } from "recharts";
 import "../styles/MembershipReport.css";
 
@@ -17,20 +17,6 @@ const CHART_COLORS = {
   "Leadership Circle": "#c5a028"
 };
 
-const DONATION_TYPE_COLORS = {
-  General: "#3b82f6",
-  Conservation: "#10b981",
-  Scholarship: "#8b5cf6",
-  Exhibition: "#f59e0b",
-  "One-time": "#6b7280"
-};
-
-const TRANSACTION_TYPE_COLORS = {
-  New: "#10b981",
-  Renewal: "#3b82f6",
-  Upgrade: "#f59e0b"
-};
-
 export default function MembershipReport() {
   const [loading, setLoading] = useState(false);
   const [hasGenerated, setHasGenerated] = useState(false);
@@ -38,7 +24,7 @@ export default function MembershipReport() {
   const [data, setData] = useState(null);
   
   const [currentPage, setCurrentPage] = useState(1);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [rowsPerPage, setRowsPerPage] = useState(25);
 
   const handleGenerate = async () => {
     setLoading(true);
@@ -47,10 +33,12 @@ export default function MembershipReport() {
       if (filters.startDate) params.append("startDate", filters.startDate);
       if (filters.endDate) params.append("endDate", filters.endDate);
       
-      const response = await fetch(`${BASE_URL}/reports/membership-donor?${params}`);
+      const response = await fetch(`${BASE_URL}/reports/membership-analytics?${params}`);
       const result = await response.json();
+      console.log("API Response:", result); // Debug log
       setData(result);
       setHasGenerated(true);
+      setCurrentPage(1);
     } catch (err) {
       console.error("Failed to load membership data:", err);
     } finally {
@@ -66,13 +54,18 @@ export default function MembershipReport() {
   };
 
   const formatCurrency = (value) => {
-    if (!value) return "$0";
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format(value);
+    if (!value || value === 0) return "$0";
+    // Ensure value is a number and not astronomical
+    const numValue = Number(value);
+    if (isNaN(numValue) || numValue > 1000000) return "$0";
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(numValue);
   };
 
   const formatNumber = (value) => {
     if (!value) return "0";
-    return new Intl.NumberFormat('en-US').format(value);
+    const numValue = Number(value);
+    if (isNaN(numValue)) return "0";
+    return new Intl.NumberFormat('en-US').format(numValue);
   };
 
   const formatDate = (dateStr) => {
@@ -80,30 +73,60 @@ export default function MembershipReport() {
     return new Date(dateStr).toLocaleDateString();
   };
 
-  // Pagination for top donors
+  const getRiskColor = (riskLevel) => {
+    if (riskLevel?.includes("Critical")) return "#ef4444";
+    if (riskLevel?.includes("Warning")) return "#f59e0b";
+    return "#10b981";
+  };
+
+  // Use activeMembers from the API response (backend sends activeMembers now)
+  const membersList = data?.activeMembers || [];
+  
+  // Pagination for members
   const indexOfLastRow = currentPage * rowsPerPage;
   const indexOfFirstRow = indexOfLastRow - rowsPerPage;
-  const currentDonors = data?.topDonors?.slice(indexOfFirstRow, indexOfLastRow) || [];
-  const totalPages = Math.ceil((data?.topDonors?.length || 0) / rowsPerPage);
+  const currentMembers = membersList.slice(indexOfFirstRow, indexOfLastRow);
+  const totalPages = Math.ceil(membersList.length / rowsPerPage) || 1;
 
   // Prepare chart data
-  const pieData = data?.membershipLevels?.map(level => ({
+  const pieData = data?.levelBreakdown?.map(level => ({
     name: level.membership_level,
     value: level.count,
     color: CHART_COLORS[level.membership_level] || "#c5a028"
   })) || [];
 
-  const donationPieData = data?.donationByType?.map(type => ({
-    name: type.donation_type,
-    value: parseFloat(type.total),
-    color: DONATION_TYPE_COLORS[type.donation_type] || "#c5a028"
-  })) || [];
+  // Calculate retention rate from funnel data
+  const retentionRate = useMemo(() => {
+    if (!data?.conversionFunnel) return 0;
+    const activeMembersCount = data.conversionFunnel.find(s => s.stage === "Active Members")?.count || 0;
+    const totalVisitors = data.conversionFunnel.find(s => s.stage === "Visitors with tickets")?.count || 0;
+    return totalVisitors > 0 ? ((activeMembersCount / totalVisitors) * 100).toFixed(1) : 0;
+  }, [data]);
+
+  // Calculate member lifetime value from valueTier data - with sanity check
+  const avgMemberLTV = useMemo(() => {
+    if (!data?.valueTier || data.valueTier.length === 0) return 0;
+    
+    // Filter out unreasonable values (> $1,000,000 is suspicious)
+    const validTiers = data.valueTier.filter(tier => {
+      const total = (Number(tier.avg_ticket_spend) || 0) + (Number(tier.avg_cafe_spend) || 0) + (Number(tier.avg_shop_spend) || 0);
+      return total < 1000000 && total >= 0;
+    });
+    
+    if (validTiers.length === 0) return 0;
+    
+    const totalSpend = validTiers.reduce((sum, tier) => {
+      return sum + (Number(tier.avg_ticket_spend) || 0) + (Number(tier.avg_cafe_spend) || 0) + (Number(tier.avg_shop_spend) || 0);
+    }, 0);
+    
+    return totalSpend / validTiers.length;
+  }, [data]);
 
   return (
     <div className="membership-report">
       <div className="report-header">
-        <h2>Membership & Donor Report</h2>
-        <p>Track member engagement, donation trends, and community support</p>
+        <h2>Membership Analytics</h2>
+        <p>Track member acquisition, retention, engagement, and at-risk members</p>
       </div>
 
       {/* Filters */}
@@ -153,34 +176,33 @@ export default function MembershipReport() {
               <div className="summary-card">
                 <div className="summary-label">Upgrade Rate</div>
                 <div className="summary-value">{data.summary?.upgrade_rate || 0}%</div>
+                <div className="insight-subtext">of transactions are upgrades</div>
               </div>
               <div className="summary-card">
-                <div className="summary-label">Avg Membership</div>
-                <div className="summary-value">{data.summary?.avg_membership_days || 0} days</div>
+                <div className="summary-label">Member Retention Rate</div>
+                <div className="summary-value">{retentionRate}%</div>
+                <div className="insight-subtext">visitors who became members</div>
               </div>
             </div>
-
             <div className="summary-grid">
               <div className="summary-card">
-                <div className="summary-label">Total Donations</div>
-                <div className="summary-value">{formatCurrency(data.donationSummary?.total_donations)}</div>
+                <div className="summary-label">Avg Member LTV</div>
+                <div className="summary-value">{formatCurrency(avgMemberLTV)}</div>
+                <div className="insight-subtext">annual spend per member</div>
               </div>
               <div className="summary-card">
-                <div className="summary-label">Unique Donors</div>
-                <div className="summary-value">{formatNumber(data.donationSummary?.unique_donors)}</div>
+                <div className="summary-label">Pending Changes</div>
+                <div className="summary-value">{formatNumber(data.summary?.pending_changes)}</div>
+                <div className="insight-subtext">{formatNumber(data.summary?.pending_cancellations)} cancelling</div>
               </div>
               <div className="summary-card">
-                <div className="summary-label">Avg Donation</div>
-                <div className="summary-value">{formatCurrency(data.donationSummary?.avg_donation)}</div>
-              </div>
-              <div className="summary-card">
-                <div className="summary-label">Total Donations Count</div>
-                <div className="summary-value">{formatNumber(data.donationSummary?.total_donations_count)}</div>
+                <div className="summary-label">Avg Membership Duration</div>
+                <div className="summary-value">{data.summary?.avg_membership_days || 0} days</div>
               </div>
             </div>
           </div>
 
-          {/* Charts Grid */}
+          {/* Simplified Charts - Just 2 key visuals */}
           <div className="charts-grid">
             {/* Membership Level Distribution */}
             <div className="chart-container">
@@ -211,177 +233,165 @@ export default function MembershipReport() {
               )}
             </div>
 
-            {/* Donation by Type */}
+            {/* Value by Tier - Bar Chart */}
             <div className="chart-container">
-              <h4>Donations by Type</h4>
-              {donationPieData.length > 0 ? (
+              <h4>Annual Value by Tier</h4>
+              {data.valueTier && data.valueTier.length > 0 ? (
                 <ResponsiveContainer width="100%" height={250}>
-                  <PieChart>
-                    <Pie
-                      data={donationPieData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={50}
-                      outerRadius={80}
-                      paddingAngle={3}
-                      dataKey="value"
-                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                      labelLine={false}
-                    >
-                      {donationPieData.map((entry, i) => (
-                        <Cell key={i} fill={entry.color} />
-                      ))}
-                    </Pie>
+                  <BarChart data={data.valueTier}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="membership_level" tick={{ fontSize: 11 }} />
+                    <YAxis tickFormatter={(v) => `$${v}`} />
                     <Tooltip formatter={(v) => formatCurrency(v)} />
-                  </PieChart>
+                    <Bar dataKey="avg_ticket_spend" fill="#3b82f6" radius={[4, 4, 0, 0]} name="Ticket Spend" />
+                    <Bar dataKey="avg_cafe_spend" fill="#10b981" radius={[4, 4, 0, 0]} name="Cafe Spend" />
+                    <Bar dataKey="avg_shop_spend" fill="#f59e0b" radius={[4, 4, 0, 0]} name="Shop Spend" />
+                  </BarChart>
                 </ResponsiveContainer>
               ) : (
-                <div className="no-data">No donation data</div>
+                <div className="no-data">No value data</div>
               )}
             </div>
           </div>
 
-          {/* Donation Trends Chart */}
-          {data.donationTrends && data.donationTrends.length > 0 && (
-            <div className="chart-container full-width">
-              <h4>Donation Trends Over Time</h4>
-              <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={data.donationTrends}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="month" tick={{ fontSize: 11 }} />
-                  <YAxis tickFormatter={(v) => `$${v}`} />
-                  <Tooltip formatter={(v) => formatCurrency(v)} />
-                  <Line type="monotone" dataKey="total" stroke="#c5a028" strokeWidth={2} dot={{ fill: "#c5a028", r: 4 }} name="Donations" />
-                </LineChart>
-              </ResponsiveContainer>
+          {/* ===== MAIN DATA TABLE ===== */}
+          <div className="data-section">
+            <div className="data-header">
+              <h3>📊 Member Analytics Data</h3>
+              <div className="pagination-controls">
+                <span>Rows per page:</span>
+                <select value={rowsPerPage} onChange={(e) => { setRowsPerPage(Number(e.target.value)); setCurrentPage(1); }}>
+                  <option value={25}>25</option>
+                  <option value={50}>50</option>
+                  <option value={100}>100</option>
+                </select>
+              </div>
             </div>
-          )}
-
-          {/* Transaction Type Breakdown */}
-          {data.membershipTransactions && data.membershipTransactions.length > 0 && (
-            <div className="chart-container">
-              <h4>Membership Transactions</h4>
-              <ResponsiveContainer width="100%" height={250}>
-                <BarChart data={data.membershipTransactions}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="transaction_type" tick={{ fontSize: 12 }} />
-                  <YAxis tickFormatter={(v) => `$${v}`} />
-                  <Tooltip formatter={(v) => formatCurrency(v)} />
-                  <Bar dataKey="total_amount" fill="#c5a028" radius={[4, 4, 0, 0]}>
-                    {data.membershipTransactions.map((entry, i) => (
-                      <Cell key={i} fill={TRANSACTION_TYPE_COLORS[entry.transaction_type] || "#c5a028"} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
+            <div className="table-container">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>Member Name</th>
+                    <th>Email</th>
+                    <th>Level</th>
+                    <th>Join Date</th>
+                    <th>Expires</th>
+                    <th>Days as Member</th>
+                    <th>Status</th>
+                    <th>Pending Change</th>
+                    <th>Risk Level</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {currentMembers.length === 0 ? (
+                    <tr>
+                      <td colSpan="9" style={{ textAlign: "center", padding: "2rem" }}>
+                        No active members found
+                      </td>
+                    </tr>
+                  ) : (
+                    currentMembers.map((member, idx) => {
+                      // Calculate days as member using join_date
+                      let daysAsMember = 0;
+                      if (member.join_date) {
+                        const joinDate = new Date(member.join_date);
+                        const today = new Date();
+                        daysAsMember = Math.floor((today - joinDate) / (1000 * 60 * 60 * 24));
+                      }
+                      
+                      const isExpiringSoon = member.days_remaining <= 30;
+                      const status = member.days_remaining > 0 ? "Active" : "Expired";
+                      
+                      return (
+                        <tr key={idx} className={isExpiringSoon ? "expiring-soon" : ""}>
+                          <td className="title-cell">{member.name}</td>
+                          <td>{member.email}</td>
+                          <td>
+                            <span className={`membership-badge badge-${member.membership_level?.toLowerCase().replace(' ', '-')}`}>
+                              {member.membership_level}
+                            </span>
+                          </td>
+                          <td>{formatDate(member.join_date)}</td>
+                          <td>{formatDate(member.expiration_date)}</td>
+                          <td className="amount-cell">{daysAsMember} days</td>
+                          <td>
+                            <span className={`status-badge ${status === "Active" ? "status-active" : "status-expired"}`}>
+                              {status}
+                            </span>
+                          </td>
+                          <td>
+                            {member.pending_level === "cancelled" ? (
+                              <span className="pending-badge pending-cancel">Cancelling</span>
+                            ) : member.pending_level ? (
+                              <span className="pending-badge pending-change">→ {member.pending_level}</span>
+                            ) : (
+                              <span className="pending-badge pending-none">—</span>
+                            )}
+                          </td>
+                          <td>
+                            <span style={{ 
+                              color: getRiskColor(member.risk_level),
+                              fontWeight: 600,
+                              fontSize: 12,
+                              background: member.risk_level?.includes("Critical") ? "#fee2e2" : 
+                                         member.risk_level?.includes("Warning") ? "#fef3c7" : "#d1fae5",
+                              padding: "4px 8px",
+                              borderRadius: "4px",
+                              display: "inline-block"
+                            }}>
+                              {member.risk_level || "Healthy"}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
             </div>
-          )}
-
-          {/* Top Donors Table */}
-          {data.topDonors && data.topDonors.length > 0 && (
-            <div className="data-section">
-              <div className="data-header">
-                <h3>Top Donors</h3>
+            {totalPages > 1 && (
+              <div className="pagination-container">
                 <div className="pagination-controls">
-                  <span>Rows per page:</span>
-                  <select value={rowsPerPage} onChange={(e) => { setRowsPerPage(Number(e.target.value)); setCurrentPage(1); }}>
-                    <option value={10}>10</option>
-                    <option value={25}>25</option>
-                    <option value={50}>50</option>
-                  </select>
+                  <button onClick={() => setCurrentPage(1)} disabled={currentPage === 1} className="pagination-btn">⏮ First</button>
+                  <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="pagination-btn">◀ Prev</button>
+                  <span className="page-info">Page {currentPage} of {totalPages}</span>
+                  <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="pagination-btn">Next ▶</button>
+                  <button onClick={() => setCurrentPage(totalPages)} disabled={currentPage === totalPages} className="pagination-btn">Last ⏭</button>
                 </div>
               </div>
-              <div className="table-container">
-                <table className="data-table">
-                  <thead>
-                    <tr>
-                      <th>Donor</th>
-                      <th>Location</th>
-                      <th>Membership</th>
-                      <th>Donation Count</th>
-                      <th>Total Donated</th>
-                      <th>Last Donation</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {currentDonors.map((donor, idx) => (
-                      <tr key={idx}>
-                        <td className="title-cell">{donor.name}</td>
-                        <td>{donor.city}, {donor.state}</td>
-                        <td>
-                          <span className={`membership-badge ${donor.membership_level ? `badge-${donor.membership_level.toLowerCase().replace(' ', '-')}` : 'badge-none'}`}>
-                            {donor.membership_level || "Non-Member"}
-                          </span>
-                        </td>
-                        <td>{donor.donation_count}</td>
-                        <td className="amount-cell">{formatCurrency(donor.total_donated)}</td>
-                        <td>{formatDate(donor.last_donation_date)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              {totalPages > 1 && (
-                <div className="pagination-container">
-                  <div className="pagination-controls">
-                    <button onClick={() => setCurrentPage(1)} disabled={currentPage === 1} className="pagination-btn">⏮ First</button>
-                    <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="pagination-btn">◀ Prev</button>
-                    <span className="page-info">Page {currentPage} of {totalPages}</span>
-                    <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="pagination-btn">Next ▶</button>
-                    <button onClick={() => setCurrentPage(totalPages)} disabled={currentPage === totalPages} className="pagination-btn">Last ⏭</button>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
+            )}
+          </div>
 
-          {/* Recent Membership Activity */}
-          {data.recentActivity && data.recentActivity.length > 0 && (
-            <div className="data-section">
-              <div className="data-header">
-                <h3>Recent Membership Activity</h3>
+          {/* Summary Stats Footer */}
+          <div className="summary-footer">
+            <div className="footer-stats">
+              <div className="footer-stat">
+                <span className="footer-label">Total Active Members:</span>
+                <span className="footer-value">{formatNumber(membersList.length)}</span>
               </div>
-              <div className="table-container small">
-                <table className="data-table">
-                  <thead>
-                    <tr>
-                      <th>Member</th>
-                      <th>Level</th>
-                      <th>Transaction Type</th>
-                      <th>Date</th>
-                      <th>Amount</th>
-                      <th>Payment</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {data.recentActivity.map((activity, idx) => (
-                      <tr key={idx}>
-                        <td className="title-cell">{activity.member_name}</td>
-                        <td>
-                          <span className={`membership-badge ${activity.membership_level ? `badge-${activity.membership_level.toLowerCase().replace(' ', '-')}` : 'badge-none'}`}>
-                            {activity.membership_level}
-                          </span>
-                        </td>
-                        <td>
-                          <span className={`transaction-badge ${activity.transaction_type?.toLowerCase()}`}>
-                            {activity.transaction_type}
-                          </span>
-                        </td>
-                        <td>{formatDate(activity.transaction_date)}</td>
-                        <td className="amount-cell">{formatCurrency(activity.amount)}</td>
-                        <td>{activity.payment_method}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <div className="footer-stat">
+                <span className="footer-label">Expiring in 30 days:</span>
+                <span className="footer-value critical">
+                  {formatNumber(membersList.filter(m => m.days_remaining <= 30).length)}
+                </span>
+              </div>
+              <div className="footer-stat">
+                <span className="footer-label">Expiring in 60 days:</span>
+                <span className="footer-value warning">
+                  {formatNumber(membersList.filter(m => m.days_remaining > 30 && m.days_remaining <= 60).length)}
+                </span>
+              </div>
+              <div className="footer-stat">
+                <span className="footer-label">Pending Cancellations:</span>
+                <span className="footer-value">{formatNumber(data.summary?.pending_cancellations)}</span>
               </div>
             </div>
-          )}
+          </div>
         </>
       )}
 
       {!hasGenerated && !loading && (
-        <div className="no-results">Select date range and click Generate Report to view membership and donor analytics.</div>
+        <div className="no-results">Select date range and click Generate Report to view membership analytics.</div>
       )}
     </div>
   );

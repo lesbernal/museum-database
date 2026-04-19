@@ -1,4 +1,4 @@
-/* styles/AdminDashboard.css - Simplified Version */
+/* styles/AdminDashboard.css - CLEAN VERSION */
 
 .admin-dashboard {
   display: flex;
@@ -7,7 +7,7 @@
 }
 
 /* ============================================
-   SIMPLIFIED TOAST NOTIFICATIONS
+   TOAST NOTIFICATIONS
    ============================================ */
 
 .dashboard-toasts-stack {
@@ -182,6 +182,7 @@
   left: 0;
   top: 0;
   overflow-y: auto;
+  z-index: 100;
 }
 
 .sidebar-header {
@@ -327,13 +328,17 @@
 }
 
 /* ============================================
-   MAIN CONTENT
+   MAIN CONTENT - KEY FIX
    ============================================ */
 
 .admin-main {
   flex: 1;
   margin-left: 280px;
-  padding: var(--spacing-3xl);
+  padding: 1.5rem;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden; /* Prevent double scrollbars */
 }
 
 .admin-header {
@@ -343,6 +348,7 @@
   margin-bottom: var(--spacing-3xl);
   flex-wrap: wrap;
   gap: var(--spacing-md);
+  flex-shrink: 0;
 }
 
 .admin-header h1 {
@@ -367,6 +373,7 @@
   flex-wrap: wrap;
   gap: 12px;
   padding: 16px 0 8px;
+  flex-shrink: 0;
 }
 
 .ex-filter-group {
@@ -429,6 +436,7 @@
   align-items: center;
   justify-content: space-between;
   margin-bottom: 12px;
+  flex-shrink: 0;
 }
 
 .ex-results-count {
@@ -452,15 +460,29 @@
 }
 
 /* ============================================
-   CONTENT AREA
+   CONTENT AREA - SINGLE SCROLL SOURCE
    ============================================ */
 
 .content-area {
   background: var(--color-white);
   border: var(--border-width) solid var(--color-border);
-  overflow-x: auto;
-  width: 100%;
   border-radius: 8px;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 1rem;
+}
+
+/* Make all report containers behave */
+.content-area > div {
+  height: auto;
+  overflow: visible;
+}
+
+/* Only tables should scroll internally */
+.content-area .table-container {
+  max-height: 400px;
+  overflow-y: auto;
 }
 
 .content-area table {
@@ -527,6 +549,10 @@
     left: 10px;
     max-width: none;
   }
+  
+  .content-area .table-container {
+    max-height: 300px;
+  }
 }
 
 @media (max-width: 480px) {
@@ -566,44 +592,6 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   cursor: pointer;
 }
 
-/* Only target the success toasts from managers */
-.toast.success,
-.success-toast {
-  position: fixed !important;
-  bottom: 20px !important;
-  right: 20px !important;
-  top: auto !important;
-  left: auto !important;
-  padding: 8px 16px !important;
-  background: #c5a028 !important;
-  color: #000 !important;
-  font-size: 13px !important;
-  font-weight: 500 !important;
-  border-radius: 8px !important;
-  width: auto !important;
-  max-width: 280px !important;
-  min-width: 180px !important;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.15) !important;
-  z-index: 10000 !important;
-}
-
-.toast.success button,
-.success-toast button {
-  background: none !important;
-  border: none !important;
-  font-size: 16px !important;
-  margin-left: 12px !important;
-  cursor: pointer !important;
-  padding: 0 !important;
-  color: #000 !important;
-  opacity: 0.6 !important;
-}
-
-.toast.success button:hover,
-.success-toast button:hover {
-  opacity: 1 !important;
-}
-
 /* Success Toast */
 .success-toast {
   position: fixed;
@@ -636,17 +624,6 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 
 .success-toast-close:hover {
   opacity: 1;
-}
-
-@keyframes slideInRight {
-  from {
-    transform: translateX(100%);
-    opacity: 0;
-  }
-  to {
-    transform: translateX(0);
-    opacity: 1;
-  }
 }
 
 @media (max-width: 480px) {
