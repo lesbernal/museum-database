@@ -61,7 +61,7 @@ export default function VisitorAnalyticsReport() {
   return (
     <div className="visitor-analytics-report">
       <div className="report-header">
-        <h2>📊 Visitor Analytics</h2>
+        <h2>Visitor Analytics</h2>
         <p>Track museum attendance, visitor behavior, and engagement metrics</p>
       </div>
 
