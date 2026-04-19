@@ -159,7 +159,7 @@ export default function VisitorAnalyticsReport() {
             {/* Visitor Type Breakdown */}
             {data.visitorBreakdown && data.visitorBreakdown.length > 0 && (
               <div className="chart-container">
-                <h4>👥 Visitor Type Breakdown</h4>
+                <h4>Visitor Type Breakdown</h4>
                 <ResponsiveContainer width="100%" height={200}>
                   <BarChart data={data.visitorBreakdown}>
                     <CartesianGrid strokeDasharray="3 3" />
@@ -175,7 +175,7 @@ export default function VisitorAnalyticsReport() {
             {/* Peak Hours Chart */}
             {data.peakHours && data.peakHours.length > 0 && (
               <div className="chart-container">
-                <h4>⏰ Peak Visiting Hours</h4>
+                <h4>Peak Visiting Hours</h4>
                 <ResponsiveContainer width="100%" height={200}>
                   <BarChart data={data.peakHours}>
                     <CartesianGrid strokeDasharray="3 3" />
