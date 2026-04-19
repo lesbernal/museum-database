@@ -34,7 +34,6 @@ const resources = [
       { key: "stock_quantity", label: "Stock" },
     ],
     fields: [
-      { name: "item_id", label: "Item ID", required: true, readOnlyOnEdit: true, placeholder: "20" },
       { name: "item_name", label: "Item Name", required: true, placeholder: "Vanilla Latte" },
       { name: "category", label: "Category", required: true, placeholder: "Drink" },
       { name: "price", label: "Price", required: true, placeholder: "6.25" },

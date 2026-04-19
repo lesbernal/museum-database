@@ -34,7 +34,6 @@ const resources = [
       { key: "stock_quantity", label: "Stock" },
     ],
     fields: [
-      { name: "item_id", label: "Item ID", required: true, readOnlyOnEdit: true, placeholder: "30" },
       { name: "item_name", label: "Item Name", required: true, placeholder: "Museum Poster" },
       { name: "category", label: "Category", required: true, placeholder: "Decor" },
       { name: "price", label: "Price", required: true, placeholder: "19.99" },
