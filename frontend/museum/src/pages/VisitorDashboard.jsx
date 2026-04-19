@@ -1,4 +1,5 @@
 // pages/VisitorDashboard.jsx
+//fixed vistor dashboard for events
 
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";

@@ -1,4 +1,6 @@
 // src/pages/Events.jsx
+//added events image
+
 import { useEffect, useState } from "react";
 import "../styles/theme.css";
 import "../styles/Events.css";
