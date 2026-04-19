@@ -28,6 +28,8 @@ const handleLogin = require("./handlers/auth");
 const handleReports = require("./handlers/reports");
 const handleMembershipTransactions = require("./handlers/membershiptransactions");
 const membershipExpiryCheck = require("./handlers/membershipExpiryCheck");
+const handlePendingOrders = require("./handlers/pendingOrders");
+const handleMembershipNotifications = require("./handlers/membershipNotifications");
 
 const server = http.createServer((req, res) => {
   // Enable CORS
@@ -94,6 +96,13 @@ const server = http.createServer((req, res) => {
     return membershipExpiryCheck(req, res);
   }
 
+  if (parsedUrl.pathname.startsWith("/pending-orders")) {
+    return handlePendingOrders(req, res, parsedUrl);
+  }
+ 
+  if (parsedUrl.pathname.startsWith("/membership-notifications")) {
+    return handleMembershipNotifications(req, res, parsedUrl);
+  }
   // Tickets, Events, Donations
   if (parsedUrl.pathname.startsWith("/tickets")) {
     return handleTickets(req, res, parsedUrl);
