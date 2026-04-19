@@ -1,18 +1,13 @@
-import { formatToCST } from "../utils/dateUtils";
 // components/ProvenanceManager.jsx
 import { useState, useEffect } from "react";
 import { getArtworks } from "../services/api";
 import "../styles/ProvenanceManager.css";
 
 // Toast Component
-const SuccessToast = ({ show, editingProvenance, onClose }) => {
+const SuccessToast = ({ show, message, onClose }) => {
   if (!show) return null;
   setTimeout(() => onClose(), 3000);
-  return (
-    <div className="toast success">
-      ✅ Provenance {editingProvenance ? "updated" : "added"} successfully!
-    </div>
-  );
+  return <div className="toast success">✅ {message}</div>;
 };
 
 // Form Modal Component
@@ -146,8 +141,9 @@ export default function ProvenanceManager({
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingProvenance, setEditingProvenance] = useState(null);
   const [artworks, setArtworks] = useState([]);
-  const [searchTerm, setSearchTerm] = useState("");
   const [showSuccessToast, setShowSuccessToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState("");
+  
   const [formData, setFormData] = useState({
     artwork_id: "",
     owner_name: "",
@@ -196,13 +192,6 @@ export default function ProvenanceManager({
     }
   };
 
-  // Filter provenance based on search term
-  const filteredProvenance = externalProvenance.filter(record =>
-    record.owner_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    record.acquisition_method?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    record.artwork_title?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
   const validateForm = () => {
     const newErrors = {};
 
@@ -237,8 +226,10 @@ export default function ProvenanceManager({
     try {
       if (editingProvenance) {
         await onUpdate(editingProvenance.provenance_id, formData);
+        setToastMessage(`Provenance record updated successfully!`);
       } else {
         await onAdd(formData);
+        setToastMessage(`Provenance record added successfully!`);
       }
       setShowSuccessToast(true);
       setIsFormOpen(false);
@@ -256,6 +247,14 @@ export default function ProvenanceManager({
       setErrors(prev => ({ ...prev, submit: "Failed to save provenance record. Please try again." }));
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleDelete = async (provenanceId) => {
+    if (window.confirm("Delete this provenance record? This action cannot be undone.")) {
+      await onDelete(provenanceId);
+      setToastMessage("Provenance record deleted.");
+      setShowSuccessToast(true);
     }
   };
 
@@ -298,9 +297,9 @@ export default function ProvenanceManager({
     }).format(price);
   };
 
-  // Provenance Table Component
+  // Provenance Table Component - uses externalProvenance directly (already filtered by AdminDashboard)
   const ProvenanceTable = () => {
-    if (filteredProvenance.length === 0) {
+    if (externalProvenance.length === 0) {
       return <div className="empty-state">No provenance records found</div>;
     }
 
@@ -320,7 +319,7 @@ export default function ProvenanceManager({
             </tr>
           </thead>
           <tbody>
-            {filteredProvenance.map(record => (
+            {externalProvenance.map(record => (
               <tr key={record.provenance_id}>
                 <td>{record.provenance_id}</td>
                 <td className="artwork-cell">{record.artwork_title || `Artwork #${record.artwork_id}`}</td>
@@ -335,7 +334,7 @@ export default function ProvenanceManager({
                 <td>{record.transfer_date || "—"}</td>
                 <td className="actions">
                   <button className="edit-btn" onClick={() => handleEditClick(record)} title="Edit">Edit</button>
-                  <button className="delete-btn" onClick={() => onDelete(record.provenance_id)} title="Delete">Delete</button>
+                  <button className="delete-btn" onClick={() => handleDelete(record.provenance_id)} title="Delete">Delete</button>
                 </td>
               </tr>
             ))}
@@ -347,17 +346,9 @@ export default function ProvenanceManager({
 
   return (
     <div className="provenance-manager">
-      <SuccessToast show={showSuccessToast} editingProvenance={editingProvenance} onClose={handleToastClose} />
+      <SuccessToast show={showSuccessToast} message={toastMessage} onClose={handleToastClose} />
 
       <div className="provenance-manager-header">
-        <div className="search-bar">
-          <input
-            type="text"
-            placeholder="Search provenance by owner, method, or artwork..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
         <button className="add-btn" onClick={handleAddClick}>
           + Add Provenance Record
         </button>

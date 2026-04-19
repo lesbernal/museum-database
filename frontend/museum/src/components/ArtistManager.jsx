@@ -1,159 +1,142 @@
-// components/ArtistManager.jsx
-import { useState, useEffect, useCallback } from "react";
+// components/ArtistManager.jsx (SIMPLIFIED - NO INTERNAL FILTERING)
+import { useState, useEffect } from "react";
 import "../styles/ArtistManager.css";
 
-// Move ArtistFormModal outside as a separate component
+// Artist Form Modal Component (keep as is - no changes)
 const ArtistFormModal = ({ isOpen, editingArtist, form, errors, isSubmitting, onSubmit, onCancel, onChange }) => {
   if (!isOpen) return null;
 
   return (
-    <>
-      <div className="modal-overlay" onClick={onCancel}>
-        <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-          <div className="modal-header">
-            <h2>{editingArtist ? "Edit Artist" : "Add New Artist"}</h2>
-            <button className="close-btn" onClick={onCancel}>&times;</button>
+    <div className="modal-overlay" onClick={onCancel}>
+      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-header">
+          <h2>{editingArtist ? "Edit Artist" : "Add New Artist"}</h2>
+          <button className="close-btn" onClick={onCancel}>&times;</button>
+        </div>
+        
+        <form onSubmit={onSubmit} className="artist-form">
+          <div className="form-fields">
+            <div className="form-row">
+              <div className="form-group">
+                <label>First Name *</label>
+                <input
+                  type="text"
+                  name="first_name"
+                  value={form.first_name}
+                  onChange={onChange}
+                  className={errors.first_name ? "error" : ""}
+                  placeholder="e.g., Frida"
+                />
+                {errors.first_name && <span className="error-message">{errors.first_name}</span>}
+              </div>
+              
+              <div className="form-group">
+                <label>Last Name *</label>
+                <input
+                  type="text"
+                  name="last_name"
+                  value={form.last_name}
+                  onChange={onChange}
+                  className={errors.last_name ? "error" : ""}
+                  placeholder="e.g., Kahlo"
+                />
+                {errors.last_name && <span className="error-message">{errors.last_name}</span>}
+              </div>
+            </div>
+            
+            <div className="form-row">
+              <div className="form-group">
+                <label>Birth Year</label>
+                <input
+                  type="number"
+                  name="birth_year"
+                  value={form.birth_year}
+                  onChange={onChange}
+                  className={errors.birth_year ? "error" : ""}
+                  placeholder="1907"
+                  min="0"
+                  max={new Date().getFullYear()}
+                />
+                {errors.birth_year && <span className="error-message">{errors.birth_year}</span>}
+              </div>
+              
+              <div className="form-group">
+                <label>Death Year</label>
+                <input
+                  type="number"
+                  name="death_year"
+                  value={form.death_year}
+                  onChange={onChange}
+                  className={errors.death_year ? "error" : ""}
+                  placeholder="1954"
+                  min="0"
+                />
+                {errors.death_year && <span className="error-message">{errors.death_year}</span>}
+              </div>
+            </div>
+            
+            <div className="form-group">
+              <label>Nationality *</label>
+              <input
+                type="text"
+                name="nationality"
+                value={form.nationality}
+                onChange={onChange}
+                placeholder="e.g., Mexican, American, French"
+                className={errors.nationality ? "error" : ""}
+              />
+              {errors.nationality && <span className="error-message">{errors.nationality}</span>}
+            </div>
+            
+            <div className="form-group">
+              <label>Biography</label>
+              <textarea
+                name="biography"
+                value={form.biography}
+                onChange={onChange}
+                placeholder="Write a biography of the artist..."
+                rows="5"
+              />
+              <div className="char-counter">
+                {form.biography.length} characters
+              </div>
+            </div>
           </div>
           
-          <form onSubmit={onSubmit} className="artist-form">
-            <div className="form-fields">
-              <div className="form-row">
-                <div className="form-group">
-                  <label>First Name *</label>
-                  <input
-                    type="text"
-                    name="first_name"
-                    value={form.first_name}
-                    onChange={onChange}
-                    className={errors.first_name ? "error" : ""}
-                    placeholder="e.g., Frida"
-                  />
-                  {errors.first_name && <span className="error-message">{errors.first_name}</span>}
-                </div>
-                
-                <div className="form-group">
-                  <label>Last Name *</label>
-                  <input
-                    type="text"
-                    name="last_name"
-                    value={form.last_name}
-                    onChange={onChange}
-                    className={errors.last_name ? "error" : ""}
-                    placeholder="e.g., Kahlo"
-                  />
-                  {errors.last_name && <span className="error-message">{errors.last_name}</span>}
-                </div>
-              </div>
-              
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Birth Year</label>
-                  <input
-                    type="number"
-                    name="birth_year"
-                    value={form.birth_year}
-                    onChange={onChange}
-                    className={errors.birth_year ? "error" : ""}
-                    placeholder="1907"
-                    min="0"
-                    max={new Date().getFullYear()}
-                  />
-                  {errors.birth_year && <span className="error-message">{errors.birth_year}</span>}
-                </div>
-                
-                <div className="form-group">
-                  <label>Death Year</label>
-                  <input
-                    type="number"
-                    name="death_year"
-                    value={form.death_year}
-                    onChange={onChange}
-                    className={errors.death_year ? "error" : ""}
-                    placeholder="1954"
-                    min="0"
-                  />
-                  {errors.death_year && <span className="error-message">{errors.death_year}</span>}
-                </div>
-              </div>
-              
-              <div className="form-group">
-                <label>Nationality *</label>
-                <select
-                  name="nationality"
-                  value={form.nationality}
-                  onChange={onChange}
-                  className={errors.nationality ? "error" : ""}
-                >
-                  <option value="">Select nationality</option>
-                  <option value="American">American</option>
-                  <option value="British">British</option>
-                  <option value="Dutch">Dutch</option>
-                  <option value="French">French</option>
-                  <option value="German">German</option>
-                  <option value="Italian">Italian</option>
-                  <option value="Mexican">Mexican</option>
-                  <option value="Spanish">Spanish</option>
-                  <option value="Other">Other</option>
-                </select>
-                {errors.nationality && <span className="error-message">{errors.nationality}</span>}
-              </div>
-              
-              <div className="form-group">
-                <label>Biography</label>
-                <textarea
-                  name="biography"
-                  value={form.biography}
-                  onChange={onChange}
-                  placeholder="Write a biography of the artist..."
-                  rows="5"
-                />
-                <div className="char-counter">
-                  {form.biography.length} characters
-                </div>
-              </div>
-            </div>
-            
-            {errors.submit && (
-              <div className="error-message submit-error">{errors.submit}</div>
-            )}
-            
-            <div className="form-actions">
-              <button type="button" className="cancel-btn" onClick={onCancel}>
-                Cancel
-              </button>
-              <button type="submit" className="submit-btn" disabled={isSubmitting}>
-                {isSubmitting ? "Saving..." : (editingArtist ? "Update Artist" : "Add Artist")}
-              </button>
-            </div>
-          </form>
-        </div>
+          {errors.submit && (
+            <div className="error-message submit-error">{errors.submit}</div>
+          )}
+          
+          <div className="form-actions">
+            <button type="button" className="cancel-btn" onClick={onCancel}>
+              Cancel
+            </button>
+            <button type="submit" className="submit-btn" disabled={isSubmitting}>
+              {isSubmitting ? "Saving..." : (editingArtist ? "Update Artist" : "Add Artist")}
+            </button>
+          </div>
+        </form>
       </div>
-    </>
-  );
-};
-
-// Toast component
-const SuccessToast = ({ show, editingArtist, onClose }) => {
-  if (!show) return null;
-  
-  setTimeout(() => onClose(), 3000);
-  
-  return (
-    <div className="toast success">
-      ✅ Artist {editingArtist ? "updated" : "added"} successfully!
     </div>
   );
 };
 
+// Toast Component
+const SuccessToast = ({ show, message, onClose }) => {
+  if (!show) return null;
+  setTimeout(() => onClose(), 3000);
+  return <div className="toast success">✅ {message}</div>;
+};
+
 export default function ArtistManager({ 
-  artists: externalArtists, 
+  artists: externalArtists,
   onAdd, 
   onUpdate, 
-  onDelete,
+  onArchive,
+  onRestore,
   loading: externalLoading,
   error: externalError
 }) {
-  // Form state
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingArtist, setEditingArtist] = useState(null);
   const [form, setForm] = useState({
@@ -167,7 +150,7 @@ export default function ArtistManager({
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccessToast, setShowSuccessToast] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
+  const [toastMessage, setToastMessage] = useState("");
 
   // Prefill form for edit
   useEffect(() => {
@@ -192,13 +175,6 @@ export default function ArtistManager({
     }
   }, [editingArtist]);
 
-  // Filter artists based on search term
-  const filteredArtists = externalArtists.filter(artist =>
-    `${artist.first_name} ${artist.last_name}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    artist.nationality?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  // Validate form fields
   const validateForm = () => {
     const newErrors = {};
     
@@ -242,8 +218,10 @@ export default function ArtistManager({
     try {
       if (editingArtist) {
         await onUpdate(editingArtist.artist_id, form);
+        setToastMessage(`Artist "${form.first_name} ${form.last_name}" updated successfully!`);
       } else {
         await onAdd(form);
+        setToastMessage(`Artist "${form.first_name} ${form.last_name}" added successfully!`);
       }
       setShowSuccessToast(true);
       setIsFormOpen(false);
@@ -261,6 +239,22 @@ export default function ArtistManager({
       setErrors(prev => ({ ...prev, submit: "Failed to save artist. Please try again." }));
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleArchive = async (artistId, artistName) => {
+    if (window.confirm(`Archive "${artistName}"? This artist will be hidden from active views.`)) {
+      await onArchive(artistId);
+      setToastMessage(`Artist "${artistName}" archived.`);
+      setShowSuccessToast(true);
+    }
+  };
+
+  const handleRestore = async (artistId, artistName) => {
+    if (window.confirm(`Restore "${artistName}"?`)) {
+      await onRestore(artistId);
+      setToastMessage(`Artist "${artistName}" restored.`);
+      setShowSuccessToast(true);
     }
   };
 
@@ -293,9 +287,9 @@ export default function ArtistManager({
     setShowSuccessToast(false);
   };
 
-  // Table component
+  // Artist Table Component
   const ArtistTable = () => {
-    if (filteredArtists.length === 0) {
+    if (externalArtists.length === 0) {
       return <div className="empty-state">No artists found</div>;
     }
 
@@ -309,12 +303,13 @@ export default function ArtistManager({
               <th>Nationality</th>
               <th>Born</th>
               <th>Died</th>
+              <th>Status</th>
               <th>Actions</th>
             </tr>
           </thead>
           <tbody>
-            {filteredArtists.map(artist => (
-              <tr key={artist.artist_id}>
+            {externalArtists.map(artist => (
+              <tr key={artist.artist_id} className={artist.is_active === 0 ? "archived-row" : ""}>
                 <td>{artist.artist_id}</td>
                 <td>
                   <div className="artist-name">
@@ -325,9 +320,16 @@ export default function ArtistManager({
                 <td>{artist.nationality}</td>
                 <td>{artist.birth_year || "—"}</td>
                 <td>{artist.death_year || "—"}</td>
+                <td className="status-cell">
+                  {artist.is_active === 0 && <span className="archived-badge">Archived</span>}
+                </td>
                 <td className="actions">
                   <button className="edit-btn" onClick={() => handleEditClick(artist)} title="Edit">Edit</button>
-                  <button className="delete-btn" onClick={() => onDelete(artist.artist_id)} title="Delete">Delete</button>
+                  {artist.is_active === 0 ? (
+                    <button className="restore-btn" onClick={() => handleRestore(artist.artist_id, `${artist.first_name} ${artist.last_name}`)} title="Restore">Restore</button>
+                  ) : (
+                    <button className="archive-btn" onClick={() => handleArchive(artist.artist_id, `${artist.first_name} ${artist.last_name}`)} title="Archive">Archive</button>
+                  )}
                 </td>
               </tr>
             ))}
@@ -339,25 +341,14 @@ export default function ArtistManager({
 
   return (
     <div className="artist-manager">
-      {/* Success Toast */}
-      <SuccessToast show={showSuccessToast} editingArtist={editingArtist} onClose={handleToastClose} />
+      <SuccessToast show={showSuccessToast} message={toastMessage} onClose={handleToastClose} />
 
-      {/* Header with Search and Add Button */}
       <div className="artist-manager-header">
-        <div className="search-bar">
-          <input
-            type="text"
-            placeholder="Search artists by name or nationality..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
         <button className="add-btn" onClick={handleAddClick}>
           + Add New Artist
         </button>
       </div>
 
-      {/* Content Area */}
       <div className="content-area">
         {externalLoading ? (
           <div className="loading-spinner">Loading artists...</div>
@@ -368,7 +359,6 @@ export default function ArtistManager({
         )}
       </div>
 
-      {/* Form Modal - Now using the external component */}
       <ArtistFormModal
         isOpen={isFormOpen}
         editingArtist={editingArtist}
