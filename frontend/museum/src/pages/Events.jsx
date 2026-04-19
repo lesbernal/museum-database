@@ -2,7 +2,7 @@
 import { useEffect, useState } from "react";
 import "../styles/theme.css";
 import "../styles/Events.css";
-import { getEvents } from "../services/api";
+import { getEvents, getMyEventSignups } from "../services/api";
 
 const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
@@ -29,12 +29,14 @@ const TYPE_IMAGES = {
 };
 
 export default function Events() {
-  const [events,     setEvents]     = useState([]);
-  const [loading,    setLoading]    = useState(true);
-  const [signingUp,  setSigningUp]  = useState(null);
-  const [messages,   setMessages]   = useState({});
-  const [quantities, setQuantities] = useState({});
-  const [isMember,   setIsMember]   = useState(false);
+  const [events,      setEvents]      = useState([]);
+  const [loading,     setLoading]     = useState(true);
+  const [signingUp,   setSigningUp]   = useState(null);
+  const [unsigning,   setUnsigning]   = useState(null);
+  const [messages,    setMessages]    = useState({});
+  const [quantities,  setQuantities]  = useState({});
+  const [isMember,    setIsMember]    = useState(false);
+  const [mySignups,   setMySignups]   = useState([]);
 
   // Filters
   const [typeFilter,    setTypeFilter]    = useState("All");
@@ -66,7 +68,20 @@ export default function Events() {
       .finally(() => setLoading(false));
   };
 
-  useEffect(() => { loadEvents(); }, []);
+  const loadMySignups = () => {
+    if (!userId) return;
+    getMyEventSignups()
+      .then(data => setMySignups(Array.isArray(data) ? data : []))
+      .catch(() => setMySignups([]));
+  };
+
+  useEffect(() => {
+    loadEvents();
+    loadMySignups();
+  }, []);
+
+  // Check if user is signed up for a specific event
+  const isSignedUp = (eventId) => mySignups.some(s => s.event_id === eventId);
 
   const filteredEvents = events
     .filter(e => {
@@ -123,11 +138,39 @@ export default function Events() {
       } else {
         setMessages(prev => ({ ...prev, [eventId]: { type: "success", text: data.message } }));
         loadEvents();
+        loadMySignups();
       }
     } catch {
       setMessages(prev => ({ ...prev, [eventId]: { type: "error", text: "Something went wrong." } }));
     } finally {
       setSigningUp(null);
+    }
+  }
+
+  async function handleUnsignup(eventId) {
+    if (!userId) return;
+    setUnsigning(eventId);
+    setMessages(prev => ({ ...prev, [eventId]: null }));
+
+    try {
+      const res = await fetch(`${BASE_URL}/events/${eventId}/unsignup`, {
+        method: "DELETE",
+        headers: { "Authorization": `Bearer ${userId}` }
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setMessages(prev => ({ ...prev, [eventId]: { type: "error", text: data.error || "Could not cancel signup." } }));
+      } else {
+        setMessages(prev => ({ ...prev, [eventId]: { type: "success", text: "Successfully cancelled your signup!" } }));
+        loadEvents();
+        loadMySignups();
+      }
+    } catch {
+      setMessages(prev => ({ ...prev, [eventId]: { type: "error", text: "Something went wrong." } }));
+    } finally {
+      setUnsigning(null);
     }
   }
 
@@ -164,19 +207,11 @@ export default function Events() {
         <div className="events-filter-controls">
           <div className="events-filter-group">
             <label>From</label>
-            <input
-              type="date"
-              value={dateFrom}
-              onChange={e => setDateFrom(e.target.value)}
-            />
+            <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} />
           </div>
           <div className="events-filter-group">
             <label>To</label>
-            <input
-              type="date"
-              value={dateTo}
-              onChange={e => setDateTo(e.target.value)}
-            />
+            <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} />
           </div>
           <div className="events-filter-group">
             <label>Sort By</label>
@@ -194,9 +229,7 @@ export default function Events() {
             <span>Available only</span>
           </label>
           {hasActiveFilters && (
-            <button className="events-clear-btn" onClick={clearFilters}>
-              Clear Filters
-            </button>
+            <button className="events-clear-btn" onClick={clearFilters}>Clear Filters</button>
           )}
         </div>
       </div>
@@ -210,9 +243,7 @@ export default function Events() {
       {filteredEvents.length === 0 ? (
         <div className="events-empty">
           <p>No events match your filters.</p>
-          <button className="events-reset-btn" onClick={clearFilters}>
-            Reset all filters
-          </button>
+          <button className="events-reset-btn" onClick={clearFilters}>Reset all filters</button>
         </div>
       ) : (
         <div className="events-grid">
@@ -226,6 +257,7 @@ export default function Events() {
             const typeStyle    = TYPE_COLORS[e.event_type] || TYPE_COLORS["General"];
             const isLowStock   = spotsLeft <= 5 && spotsLeft > 0;
             const imgSrc       = e.image_url || TYPE_IMAGES[e.event_type] || TYPE_IMAGES["General"];
+            const alreadySignedUp = isSignedUp(e.event_id);
 
             return (
               <div key={e.event_id} className={`event-card ${isLocked ? "event-card-locked" : ""}`}>
@@ -235,23 +267,22 @@ export default function Events() {
                   <img src={imgSrc} alt={e.event_name} />
                   <div className="event-card-image-badges">
                     {e.event_type && (
-                      <span className="event-type-badge" style={{
-                        background: typeStyle.bg,
-                        color: typeStyle.color,
-                      }}>
+                      <span className="event-type-badge" style={{ background: typeStyle.bg, color: typeStyle.color }}>
                         {e.event_type}
                       </span>
                     )}
                     {isMemberOnly && (
-                      <span className="event-type-badge" style={{
-                        background: "#fef9c3",
-                        color: "#854d0e",
-                      }}>
+                      <span className="event-type-badge" style={{ background: "#fef9c3", color: "#854d0e" }}>
                         Members Only
                       </span>
                     )}
+                    {alreadySignedUp && (
+                      <span className="event-type-badge" style={{ background: "#d1fae5", color: "#065f46" }}>
+                        ✓ Signed Up
+                      </span>
+                    )}
                   </div>
-                  {isFull && <div className="event-card-full-overlay">Fully Booked</div>}
+                  {isFull && !alreadySignedUp && <div className="event-card-full-overlay">Fully Booked</div>}
                 </div>
 
                 {/* Body */}
@@ -260,20 +291,15 @@ export default function Events() {
 
                   <p className="event-date">
                     {new Date(e.event_date).toLocaleDateString("en-US", {
-                      weekday: "long",
-                      year: "numeric",
-                      month: "long",
-                      day: "numeric",
+                      weekday: "long", year: "numeric", month: "long", day: "numeric",
                     })}
                   </p>
 
-                  {e.description && (
-                    <p className="event-description">{e.description}</p>
-                  )}
+                  {e.description && <p className="event-description">{e.description}</p>}
 
                   <div className="event-footer">
                     <div className="event-availability">
-                      {isFull ? (
+                      {isFull && !alreadySignedUp ? (
                         <span className="availability-full">Fully Booked</span>
                       ) : (
                         <span className={`availability-available ${isLowStock ? "low-stock" : ""}`}>
@@ -282,7 +308,7 @@ export default function Events() {
                       )}
                     </div>
 
-                    {!isFull && !isLocked && (
+                    {!isFull && !isLocked && !alreadySignedUp && (
                       <div className="event-quantity">
                         <label>Attendees</label>
                         <input
@@ -309,21 +335,31 @@ export default function Events() {
                   )}
 
                   {msg && (
-                    <div className={`event-message ${msg.type}`}>
-                      {msg.text}
-                    </div>
+                    <div className={`event-message ${msg.type}`}>{msg.text}</div>
                   )}
 
-                  <button
-                    className={`event-signup-btn ${(isFull || isLocked) ? "disabled" : ""}`}
-                    disabled={isFull || isLocked || signingUp === e.event_id}
-                    onClick={() => handleSignup(e.event_id, isMemberOnly)}
-                  >
-                    {signingUp === e.event_id ? "Processing..." :
-                      isLocked ? "Members Only" :
-                      isFull   ? "Fully Booked" :
-                      "Sign Up"}
-                  </button>
+                  {/* Sign Up / Cancel button */}
+                  {alreadySignedUp ? (
+                    <button
+                      className="event-signup-btn"
+                      style={{ background: "#fee2e2", color: "#991b1b", border: "1px solid #fca5a5" }}
+                      disabled={unsigning === e.event_id}
+                      onClick={() => handleUnsignup(e.event_id)}
+                    >
+                      {unsigning === e.event_id ? "Cancelling..." : "Cancel Signup"}
+                    </button>
+                  ) : (
+                    <button
+                      className={`event-signup-btn ${(isFull || isLocked) ? "disabled" : ""}`}
+                      disabled={isFull || isLocked || signingUp === e.event_id}
+                      onClick={() => handleSignup(e.event_id, isMemberOnly)}
+                    >
+                      {signingUp === e.event_id ? "Processing..." :
+                        isLocked ? "Members Only" :
+                        isFull   ? "Fully Booked" :
+                        "Sign Up"}
+                    </button>
+                  )}
                 </div>
               </div>
             );

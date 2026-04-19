@@ -2,7 +2,7 @@ const db = require("../db");
 
 module.exports = (req, res, parsedUrl) => {
   const query = parsedUrl.query;
-  console.log("📊 reports.js handler called for:", parsedUrl.pathname);
+  console.log("reports.js handler called for:", parsedUrl.pathname);
 
   // ==================== TEST ENDPOINT ====================
   if (parsedUrl.pathname === "/reports/test") {

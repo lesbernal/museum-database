@@ -83,7 +83,7 @@ const resources = [
   {
     id: "giftshop-transactions",
     label: "Gift Shop Transaction",
-    labelPlural: "💰 Sales",
+    labelPlural: "Sales",
     idKey: "transaction_id",
     isTransactionResource: true,
     load: getGiftShopTransactions,

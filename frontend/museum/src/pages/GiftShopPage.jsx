@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { getGiftShopItems } from "../services/api";
+import { getGiftShopItems, getMyMemberRecord } from "../services/api";
 import { readGiftShopCart, writeGiftShopCart } from "../utils/giftShopCart";
+import { calculateDiscountedAmount, formatMoney, getGiftShopDiscountPercent } from "../utils/shopDiscounts";
 import "../styles/GiftShopPage.css";
 
 function SignInPrompt({ onClose }) {
@@ -38,6 +39,8 @@ export default function GiftShopPage() {
   );
   const [showAuthPrompt, setShowAuthPrompt] = useState(false);
   const [cartToast, setCartToast] = useState("");
+  const [memberDiscountPercent, setMemberDiscountPercent] = useState(0);
+  const [memberLevel, setMemberLevel] = useState("");
 
   useEffect(() => {
     async function loadItems() {
@@ -53,6 +56,25 @@ export default function GiftShopPage() {
     }
 
     loadItems();
+  }, []);
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) return;
+
+    async function loadMemberDiscount() {
+      try {
+        const member = await getMyMemberRecord();
+        const level = member?.membership_level || "";
+        setMemberLevel(level);
+        setMemberDiscountPercent(getGiftShopDiscountPercent(level));
+      } catch {
+        setMemberLevel("");
+        setMemberDiscountPercent(0);
+      }
+    }
+
+    loadMemberDiscount();
   }, []);
 
   useEffect(() => {
@@ -162,7 +184,12 @@ export default function GiftShopPage() {
           <p><strong>Hours:</strong> During regular museum hours</p>
           <p><strong>Location:</strong> Beck Building street level</p>
           <p><strong>Phone:</strong> 713.639.7360</p>
-          <p><strong>Member Benefit:</strong> Discounts available in-store</p>
+          <p>
+            <strong>Member Benefit:</strong>{" "}
+            {memberDiscountPercent > 0
+              ? `${memberLevel} discount applied online (${memberDiscountPercent}% off)`
+              : "Member discounts available"}
+          </p>
           <Link to="/gift-shop/cart" className="btn btn-primary giftshop-cart-link">
             View Cart ({cartCount})
           </Link>
@@ -232,11 +259,14 @@ export default function GiftShopPage() {
             </label>
           </div>
 
-          {hasActiveFilters && (
-            <button className="clear-filters-btn" onClick={clearFilters}>
-              Clear All
-            </button>
-          )}
+          <button
+            className={`clear-filters-btn${hasActiveFilters ? "" : " is-hidden"}`}
+            onClick={clearFilters}
+            type="button"
+            disabled={!hasActiveFilters}
+          >
+            Clear All
+          </button>
         </div>
       </div>
 
@@ -273,7 +303,15 @@ export default function GiftShopPage() {
               <div className="giftshop-card-body">
                 <p className="giftshop-category">{item.category}</p>
                 <h3>{item.item_name}</h3>
-                <p className="giftshop-price">${Number(item.price).toFixed(2)}</p>
+                {memberDiscountPercent > 0 ? (
+                  <div className="giftshop-price-block">
+                    <p className="giftshop-price giftshop-price-original">{formatMoney(item.price)}</p>
+                    <p className="giftshop-price">{formatMoney(calculateDiscountedAmount(item.price, memberDiscountPercent))}</p>
+                    <p className="giftshop-member-discount">{memberDiscountPercent}% member discount</p>
+                  </div>
+                ) : (
+                  <p className="giftshop-price">{formatMoney(item.price)}</p>
+                )}
                 <p className="giftshop-stock">
                   {Number(item.stock_quantity) > 0
                     ? `${item.stock_quantity} available`

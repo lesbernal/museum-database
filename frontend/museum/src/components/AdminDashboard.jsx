@@ -570,7 +570,7 @@ export default function AdminDashboard() {
           <div className="dashboard-toast cafe-toast">
             <div className="dashboard-toast-content">
               <div className="dashboard-toast-header">
-                <span className="toast-icon">☕</span>
+                <span className="toast-icon"></span>
                 <span className="toast-title">Cafe Inventory Alert</span>
                 <button className="toast-close" onClick={() => setDismissedAlerts(prev => ({ ...prev, cafe: true }))}>×</button>
               </div>
@@ -620,7 +620,7 @@ export default function AdminDashboard() {
           <div className="dashboard-toast gift-toast">
             <div className="dashboard-toast-content">
               <div className="dashboard-toast-header">
-                <span className="toast-icon">🛍️</span>
+                <span className="toast-icon"></span>
                 <span className="toast-title">Gift Shop Inventory Alert</span>
                 <button className="toast-close" onClick={() => setDismissedAlerts(prev => ({ ...prev, gift: true }))}>×</button>
               </div>
@@ -670,7 +670,7 @@ export default function AdminDashboard() {
           <div className="dashboard-toast exhibitions-toast">
             <div className="dashboard-toast-content">
               <div className="dashboard-toast-header">
-                <span className="toast-icon">🏛️</span>
+                <span className="toast-icon"></span>
                 <span className="toast-title">Exhibitions Have Ended</span>
                 <button className="toast-close" onClick={() => setDismissedAlerts(prev => ({ ...prev, exhibitions: true }))}>×</button>
               </div>

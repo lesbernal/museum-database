@@ -82,7 +82,7 @@ const resources = [
   {
     id: "cafe-transactions",
     label: "Cafe Transaction",
-    labelPlural: "💰 Sales",
+    labelPlural: "Sales",
     idKey: "cafe_transaction_id",
     isTransactionResource: true,
     load: getCafeTransactions,

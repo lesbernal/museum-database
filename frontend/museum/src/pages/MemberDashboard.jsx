@@ -6,6 +6,7 @@ import {
   getMyProfile, updateMyProfile, changeMyPassword,
   getMyVisitorRecord, getMyMemberRecord, getMyMembershipTransactions,
   getMyTickets, getMyDonations, getMyCafeTransactions, getMyGiftShopTransactions,
+  getMyEventSignups,
 } from "../services/api";
 import { PasswordInput, PhoneInput, StateSelect, ZipInput } from "../components/FormUtils";
 import "../styles/Dashboard.css";
@@ -349,6 +350,7 @@ export default function MemberDashboard() {
   const [donations, setDonations] = useState([]);
   const [cafeOrders, setCafeOrders] = useState([]);
   const [giftOrders, setGiftOrders] = useState([]);
+  const [eventSignups, setEventSignups] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [feedback, setFeedback] = useState(null);
@@ -370,10 +372,10 @@ export default function MemberDashboard() {
     async function load() {
       setLoading(true);
       try {
-        const [prof, vis, mem, txns, tix, don, cafe, gift] = await Promise.allSettled([
+        const [prof, vis, mem, txns, tix, don, cafe, gift, signups] = await Promise.allSettled([
           getMyProfile(), getMyVisitorRecord(), getMyMemberRecord(),
           getMyMembershipTransactions(), getMyTickets(), getMyDonations(),
-          getMyCafeTransactions(), getMyGiftShopTransactions(),
+          getMyCafeTransactions(), getMyGiftShopTransactions(), getMyEventSignups(),
         ]);
         if (prof.status === "fulfilled") { setProfile(prof.value); setForm(prof.value); }
         if (vis.status === "fulfilled") setVisitorRec(vis.value);
@@ -383,6 +385,7 @@ export default function MemberDashboard() {
         if (don.status === "fulfilled") setDonations(Array.isArray(don.value) ? don.value : []);
         if (cafe.status === "fulfilled") setCafeOrders(Array.isArray(cafe.value) ? cafe.value : []);
         if (gift.status === "fulfilled") setGiftOrders(Array.isArray(gift.value) ? gift.value : []);
+        if (signups.status === "fulfilled") setEventSignups(Array.isArray(signups.value) ? signups.value : []);
       } catch (e) { notify(e.message, "error"); }
       finally { setLoading(false); }
 
@@ -618,35 +621,109 @@ export default function MemberDashboard() {
     </div>
   );
 
-  const renderVisits = () => (
-    <div className="visits-section">
-      {sortedVisitDates.length === 0 ? (
-        <div className="empty-state"><p>No visits yet.</p><Link to="/tickets" className="empty-action">Plan your first visit</Link></div>
-      ) : (
-        <>
-          {upcomingVisits.length > 0 && (
-            <div className="visit-group"><h3>Upcoming</h3>
-              {upcomingVisits.map(date => {
-                const group = groupedTickets[date];
-                const total = group.reduce((s, t) => s + parseFloat(t.final_price || 0), 0);
-                return (<div key={date} className="visit-card upcoming"><div className="visit-date">{fmt(date)}</div><div className="visit-details"><span>{group.length} ticket{group.length > 1 ? "s" : ""}</span><span className="visit-total">${total.toFixed(2)}</span></div></div>);
-              })}
-            </div>
-          )}
-          {pastVisits.length > 0 && (
-            <div className="visit-group"><h3>Past Visits</h3>
-              {pastVisits.slice(0, 5).map(date => {
-                const group = groupedTickets[date];
-                const total = group.reduce((s, t) => s + parseFloat(t.final_price || 0), 0);
-                return (<div key={date} className="visit-card past"><div className="visit-date">{fmt(date)}</div><div className="visit-details"><span>{group.length} ticket{group.length > 1 ? "s" : ""}</span><span className="visit-total">${total.toFixed(2)}</span></div></div>);
-              })}
-              {pastVisits.length > 5 && <button className="view-more">View all past visits</button>}
-            </div>
-          )}
-        </>
-      )}
-    </div>
-  );
+  const renderVisits = () => {
+    const today = new Date().toISOString().slice(0, 10);
+    const upcomingSignups = eventSignups.filter(e => String(e.event_date).slice(0, 10) >= today);
+    const pastSignups     = eventSignups.filter(e => String(e.event_date).slice(0, 10) < today);
+
+    return (
+      <div className="visits-section">
+        {sortedVisitDates.length === 0 && eventSignups.length === 0 ? (
+          <div className="empty-state">
+            <p>No visits yet.</p>
+            <Link to="/tickets" className="empty-action">Plan your first visit</Link>
+          </div>
+        ) : (
+          <>
+            {/* Upcoming Ticket Visits */}
+            {upcomingVisits.length > 0 && (
+              <div className="visit-group">
+                <h3>Upcoming</h3>
+                {upcomingVisits.map(date => {
+                  const group = groupedTickets[date];
+                  const total = group.reduce((s, t) => s + parseFloat(t.final_price || 0), 0);
+                  return (
+                    <div key={date} className="visit-card upcoming">
+                      <div className="visit-date">{fmt(date)}</div>
+                      <div className="visit-details">
+                        <span>{group.length} ticket{group.length > 1 ? "s" : ""}</span>
+                        <span className="visit-total">${total.toFixed(2)}</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Upcoming Event Signups */}
+            {upcomingSignups.length > 0 && (
+              <div className="visit-group">
+                <h3>Upcoming Events</h3>
+                {upcomingSignups.map(e => (
+                  <div key={e.signup_id} className="visit-card upcoming" style={{ borderLeft: "3px solid #c5a028" }}>
+                    <div className="visit-date">{fmt(e.event_date)}</div>
+                    <div className="visit-details">
+                      <span style={{ fontWeight: 600 }}>{e.event_name}</span>
+                      <span style={{ fontSize: "0.8rem", color: "#6b7280" }}>
+                        {e.event_type} · {e.quantity} spot{e.quantity !== 1 ? "s" : ""}
+                      </span>
+                    </div>
+                    <span style={{ fontSize: "0.75rem", background: "#fef9c3", color: "#854d0e", padding: "0.2rem 0.6rem", borderRadius: 999, fontWeight: 600 }}>
+                      Event
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Past Visits */}
+            {pastVisits.length > 0 && (
+              <div className="visit-group">
+                <h3>Past Visits</h3>
+                {pastVisits.slice(0, 5).map(date => {
+                  const group = groupedTickets[date];
+                  const total = group.reduce((s, t) => s + parseFloat(t.final_price || 0), 0);
+                  return (
+                    <div key={date} className="visit-card past">
+                      <div className="visit-date">{fmt(date)}</div>
+                      <div className="visit-details">
+                        <span>{group.length} ticket{group.length > 1 ? "s" : ""}</span>
+                        <span className="visit-total">${total.toFixed(2)}</span>
+                      </div>
+                    </div>
+                  );
+                })}
+                {pastVisits.length > 5 && (
+                  <button className="view-more">View all past visits</button>
+                )}
+              </div>
+            )}
+
+            {/* Past Event Signups */}
+            {pastSignups.length > 0 && (
+              <div className="visit-group">
+                <h3>Past Events Attended</h3>
+                {pastSignups.map(e => (
+                  <div key={e.signup_id} className="visit-card past" style={{ borderLeft: "3px solid #d1d5db" }}>
+                    <div className="visit-date">{fmt(e.event_date)}</div>
+                    <div className="visit-details">
+                      <span style={{ fontWeight: 600 }}>{e.event_name}</span>
+                      <span style={{ fontSize: "0.8rem", color: "#6b7280" }}>
+                        {e.event_type} · {e.quantity} spot{e.quantity !== 1 ? "s" : ""}
+                      </span>
+                    </div>
+                    <span style={{ fontSize: "0.75rem", background: "#f3f4f6", color: "#6b7280", padding: "0.2rem 0.6rem", borderRadius: 999, fontWeight: 600 }}>
+                      Event
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    );
+  };
 
   const renderPurchases = () => (
     <>

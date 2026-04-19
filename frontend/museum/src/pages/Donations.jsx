@@ -109,7 +109,7 @@ export default function Donations() {
         {/* Tier preview */}
         {parsedAmount >= 1500 && (
           <div className={`donations-tier-preview ${tierEarned === "Leadership Circle" ? "leadership" : "benefactor"}`}>
-            <span className="tier-icon">🏆</span>
+            <span className="tier-icon"></span>
             <span className="tier-text">
               This donation qualifies you for <strong>{tierEarned}</strong> membership!
             </span>

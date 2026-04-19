@@ -98,10 +98,54 @@ const ARCHIVE_CONFIGS = {
   },
 };
 
+const TYPE_LABELS = {
+  exhibitions: "Exhibition",
+  galleries:   "Gallery",
+  artwork:     "Artwork",
+  events:      "Event",
+};
+
+function RestoreConfirmModal({ item, type, onConfirm, onCancel }) {
+  const label = TYPE_LABELS[type] || type;
+  const name  = item.exhibition_name || item.gallery_name || item.title ||
+                item.event_name      || `#${item.artwork_id || item.event_id ||
+                item.exhibition_id   || item.gallery_id}`;
+
+  return (
+    <div className="um-overlay" onClick={onCancel}>
+      <div className="um-modal" style={{ maxWidth: 400 }} onClick={e => e.stopPropagation()}>
+        <div className="um-modal-header">
+          <h3>Restore {label}</h3>
+          <button className="um-modal-close" onClick={onCancel}>×</button>
+        </div>
+        <div className="um-modal-body">
+          <p style={{ fontSize: 13, color: "#374151", marginBottom: 8 }}>
+            Are you sure you want to restore <strong>{name}</strong>?
+          </p>
+          <p style={{ fontSize: 13, color: "#6b7280" }}>
+            It will become visible to the public again.
+          </p>
+        </div>
+        <div className="um-modal-footer">
+          <button className="um-cancel-btn" onClick={onCancel}>Cancel</button>
+          <button
+            className="um-save-btn"
+            style={{ background: "#16a34a" }}
+            onClick={onConfirm}
+          >
+            ↩ Restore
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function Archive({ type, onRestored, reloadTrigger }) {
-  const [archived, setArchived] = useState([]);
-  const [loading,  setLoading]  = useState(true);
-  const [error,    setError]    = useState("");
+  const [archived,      setArchived]      = useState([]);
+  const [loading,       setLoading]       = useState(true);
+  const [error,         setError]         = useState("");
+  const [restoreTarget, setRestoreTarget] = useState(null);
 
   const config = ARCHIVE_CONFIGS[type];
   if (!config) return <div className="archived-state-msg">Invalid archive type: {type}</div>;
@@ -126,16 +170,18 @@ export default function Archive({ type, onRestored, reloadTrigger }) {
 
   useEffect(() => { load(); }, [type, reloadTrigger]);
 
-  const handleRestore = async (id) => {
-    const itemName = type.slice(0, -1);
-    if (!window.confirm(`Restore this ${itemName}? It will become visible again.`)) return;
+  const handleRestoreConfirm = async () => {
+    if (!restoreTarget) return;
+    const id = config.getId(restoreTarget);
     try {
       const res = await fetch(`${API_BASE}${config.restoreEndpoint(id)}`, { method: "PATCH" });
       if (!res.ok) throw new Error("Failed to restore");
       setArchived(prev => prev.filter(item => config.getId(item) !== id));
       if (onRestored) onRestored();
     } catch (err) {
-      alert(`Failed to restore ${itemName}: ` + err.message);
+      alert("Failed to restore: " + err.message);
+    } finally {
+      setRestoreTarget(null);
     }
   };
 
@@ -143,54 +189,68 @@ export default function Archive({ type, onRestored, reloadTrigger }) {
   const columnConfig = firstItem ? config.getRowData(firstItem).columns : [];
 
   return (
-    <div className="archived-exhibitions-panel">
-      <div className="archived-panel-header">
-        <h3 className="archived-panel-title">{config.title}</h3>
-        <span className="archived-panel-count">{archived.length} archived</span>
+    <>
+      <div className="archived-exhibitions-panel">
+        <div className="archived-panel-header">
+          <h3 className="archived-panel-title">{config.title}</h3>
+          <span className="archived-panel-count">{archived.length} archived</span>
+        </div>
+
+        {loading && <p className="archived-state-msg">Loading…</p>}
+        {error   && <p className="archived-state-msg archived-error">{error}</p>}
+
+        {!loading && !error && archived.length === 0 && (
+          <p className="archived-state-msg">No archived {type}.</p>
+        )}
+
+        {!loading && !error && archived.length > 0 && (
+          <div className="archived-table-wrap">
+            <table className="archived-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  {columnConfig.map((col, idx) => <th key={idx}>{col.label}</th>)}
+                  <th>Restore</th>
+                </tr>
+              </thead>
+              <tbody>
+                {archived.map((item) => {
+                  const rowData = config.getRowData(item);
+                  return (
+                    <tr key={rowData.id}>
+                      <td>{rowData.id}</td>
+                      {rowData.columns.map((col, idx) => (
+                        <td key={idx} className={col.className || ""}>
+                          {col.badge
+                            ? <span className={`status-badge ${col.badge}`}>{col.value}</span>
+                            : col.value}
+                        </td>
+                      ))}
+                      <td>
+                        <button
+                          className="btn-restore"
+                          onClick={() => setRestoreTarget(item)}
+                        >
+                          ↩ Restore
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
-      {loading && <p className="archived-state-msg">Loading…</p>}
-      {error   && <p className="archived-state-msg archived-error">{error}</p>}
-
-      {!loading && !error && archived.length === 0 && (
-        <p className="archived-state-msg">No archived {type}.</p>
+      {restoreTarget && (
+        <RestoreConfirmModal
+          item={restoreTarget}
+          type={type}
+          onConfirm={handleRestoreConfirm}
+          onCancel={() => setRestoreTarget(null)}
+        />
       )}
-
-      {!loading && !error && archived.length > 0 && (
-        <div className="archived-table-wrap">
-          <table className="archived-table">
-            <thead>
-              <tr>
-                <th>ID</th>
-                {columnConfig.map((col, idx) => <th key={idx}>{col.label}</th>)}
-                <th>Restore</th>
-              </tr>
-            </thead>
-            <tbody>
-              {archived.map((item) => {
-                const rowData = config.getRowData(item);
-                return (
-                  <tr key={rowData.id}>
-                    <td>{rowData.id}</td>
-                    {rowData.columns.map((col, idx) => (
-                      <td key={idx} className={col.className || ""}>
-                        {col.badge
-                          ? <span className={`status-badge ${col.badge}`}>{col.value}</span>
-                          : col.value}
-                      </td>
-                    ))}
-                    <td>
-                      <button className="btn-restore" onClick={() => handleRestore(rowData.id)}>
-                        ↩ Restore
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </div>
+    </>
   );
 }
