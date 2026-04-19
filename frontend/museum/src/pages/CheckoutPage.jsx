@@ -13,10 +13,10 @@ import {
   postDonation,
   postTicket,
   createMembershipTransaction,
-  getMyMemberRecord,
 } from "../services/api";
 import { clearCafeCart } from "../utils/cafeCart";
 import { clearGiftShopCart } from "../utils/giftShopCart";
+import { calculateDiscountedAmount } from "../utils/shopDiscounts";
 import "../styles/CheckoutPage.css";
 
 function nowSqlDateTime() {
@@ -32,6 +32,15 @@ function nowSqlDateTime() {
 
 function formatCurrency(amount) {
   return `$${Number(amount || 0).toFixed(2)}`;
+}
+
+function getOrderBaseTotal(order) {
+  if (!order?.items?.length) return 0;
+  if (typeof order.baseTotal === "number") return order.baseTotal;
+  return order.items.reduce(
+    (sum, item) => sum + Number(item.price || 0) * Number(item.quantity || 0),
+    0
+  );
 }
 
 export default function CheckoutPage() {
@@ -453,13 +462,32 @@ export default function CheckoutPage() {
           </>
         )}
         <div className="summary-items">
-          {order.items.map(item => (
-            <div className="summary-item" key={item.item_id}>
-              <span>{item.quantity}x {item.item_name}</span>
-              <span>{formatCurrency(item.quantity * item.price)}</span>
-            </div>
-          ))}
+          {order.items.map(item => {
+            const lineBaseTotal = Number(item.quantity) * Number(item.price);
+            const lineTotal = order.discountPercent > 0
+              ? calculateDiscountedAmount(lineBaseTotal, order.discountPercent)
+              : lineBaseTotal;
+
+            return (
+              <div className="summary-item" key={item.item_id}>
+                <span>{item.quantity}x {item.item_name}</span>
+                <span>{formatCurrency(lineTotal)}</span>
+              </div>
+            );
+          })}
         </div>
+        {order.discountPercent > 0 && (
+          <>
+            <div className="summary-item">
+              <span>Subtotal</span>
+              <span>{formatCurrency(getOrderBaseTotal(order))}</span>
+            </div>
+            <div className="summary-item summary-discount">
+              <span>Member Discount ({order.discountPercent}%)</span>
+              <span>-{formatCurrency(getOrderBaseTotal(order) - Number(order.total || 0))}</span>
+            </div>
+          </>
+        )}
         <div className="summary-total">
           <span>Total</span>
           <span>{formatCurrency(order.total)}</span>

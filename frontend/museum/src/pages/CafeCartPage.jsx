@@ -1,6 +1,8 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { getMyMemberRecord } from "../services/api";
 import { readCafeCart, writeCafeCart } from "../utils/cafeCart";
+import { calculateDiscountedAmount, formatMoney, getCafeDiscountPercent } from "../utils/shopDiscounts";
 import "../styles/CafePage.css";
 
 function getPickupEstimate(cart) {
@@ -13,13 +15,35 @@ function getPickupEstimate(cart) {
 export default function CafeCartPage() {
   const navigate = useNavigate();
   const [cart, setCart] = useState(readCafeCart());
+  const [memberDiscountPercent, setMemberDiscountPercent] = useState(0);
 
-  const total = useMemo(
+  const baseTotal = useMemo(
     () => cart.reduce((sum, item) => sum + item.price * item.quantity, 0),
     [cart]
   );
 
+  const total = useMemo(
+    () => calculateDiscountedAmount(baseTotal, memberDiscountPercent),
+    [baseTotal, memberDiscountPercent]
+  );
+
   const pickupEstimate = useMemo(() => getPickupEstimate(cart), [cart]);
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) return;
+
+    async function loadMemberDiscount() {
+      try {
+        const member = await getMyMemberRecord();
+        setMemberDiscountPercent(getCafeDiscountPercent(member?.membership_level || ""));
+      } catch {
+        setMemberDiscountPercent(0);
+      }
+    }
+
+    loadMemberDiscount();
+  }, []);
 
   function syncCart(nextCart) {
     setCart(nextCart);
@@ -53,6 +77,8 @@ export default function CafeCartPage() {
       state: {
         type: "cafe",
         items: cart,
+        baseTotal,
+        discountPercent: memberDiscountPercent,
         total,
         pickupEstimate,
       },
@@ -80,7 +106,14 @@ export default function CafeCartPage() {
                 <div>
                   <p className="cafe-category">{item.category}</p>
                   <h2>{item.item_name}</h2>
-                  <p className="cafe-price">${item.price.toFixed(2)}</p>
+                  {memberDiscountPercent > 0 ? (
+                    <div className="cafe-price-block">
+                      <p className="cafe-price cafe-price-original">{formatMoney(item.price)}</p>
+                      <p className="cafe-price">{formatMoney(calculateDiscountedAmount(item.price, memberDiscountPercent))}</p>
+                    </div>
+                  ) : (
+                    <p className="cafe-price">{formatMoney(item.price)}</p>
+                  )}
                 </div>
                 <div className="cafe-cart-controls">
                   <button type="button" onClick={() => updateQuantity(item.item_id, item.quantity - 1)}>-</button>
@@ -97,9 +130,21 @@ export default function CafeCartPage() {
           <aside className="cafe-summary-card">
             <h2>Pickup Summary</h2>
             <p><strong>Estimated Ready Time:</strong> {pickupEstimate}</p>
+            {memberDiscountPercent > 0 && (
+              <>
+                <div className="summary-line">
+                  <span>Subtotal</span>
+                  <span>{formatMoney(baseTotal)}</span>
+                </div>
+                <div className="summary-line">
+                  <span>Member Discount ({memberDiscountPercent}%)</span>
+                  <span>-{formatMoney(baseTotal - total)}</span>
+                </div>
+              </>
+            )}
             <div className="cafe-total-row">
               <span>Total</span>
-              <strong>${total.toFixed(2)}</strong>
+              <strong>{formatMoney(total)}</strong>
             </div>
             <button className="btn btn-primary" type="button" onClick={handleCheckout}>
               Continue to Checkout
