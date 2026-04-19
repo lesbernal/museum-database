@@ -27,11 +27,11 @@ const resources = [
     searchKeys: ["item_id", "item_name", "category", "image_url"],
     columns: [
       { key: "item_id", label: "ID" },
+      { key: "image_url", label: "Image", type: "image" },  
       { key: "item_name", label: "Name" },
       { key: "category", label: "Category" },
       { key: "price", label: "Price", type: "currency" },
       { key: "stock_quantity", label: "Stock" },
-      { key: "image_url", label: "Image URL", maxLength: 28 },
     ],
     fields: [
       { name: "item_id", label: "Item ID", required: true, readOnlyOnEdit: true, placeholder: "20" },
