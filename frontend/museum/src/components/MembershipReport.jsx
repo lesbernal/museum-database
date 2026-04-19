@@ -102,7 +102,7 @@ export default function MembershipReport() {
   return (
     <div className="membership-report">
       <div className="report-header">
-        <h2>👥 Membership & Donor Report</h2>
+        <h2>Membership & Donor Report</h2>
         <p>Track member engagement, donation trends, and community support</p>
       </div>
 
