@@ -1,6 +1,4 @@
 // handlers/events.js
-// ALTER TABLE event ADD COLUMN archive_reason VARCHAR(500) NULL;
-
 const db = require("../db");
 
 function verifyUser(req) {
@@ -32,7 +30,6 @@ module.exports = (req, res, parsedUrl) => {
       res.writeHead(400, { "Content-Type": "application/json" });
       return res.end(JSON.stringify({ error: "user_id is required" }));
     }
-
     const sql = `
       SELECT
         es.signup_id, es.quantity, es.signup_date,
@@ -45,7 +42,6 @@ module.exports = (req, res, parsedUrl) => {
       WHERE es.user_id = ?
       ORDER BY e.event_date DESC
     `;
-
     db.query(sql, [userId], (err, results) => {
       if (err) {
         res.writeHead(500, { "Content-Type": "application/json" });
@@ -92,13 +88,11 @@ module.exports = (req, res, parsedUrl) => {
         res.writeHead(400, { "Content-Type": "application/json" });
         return res.end(JSON.stringify({ error: "Invalid JSON" }));
       }
-
       const sql = `
         INSERT INTO event
         (gallery_id, event_name, description, event_date, capacity, member_only, total_attendees, event_type, image_url)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
       `;
-
       return db.query(sql,
         [data.gallery_id, data.event_name, data.description, data.event_date,
          data.capacity, data.member_only, data.total_attendees || 0,
@@ -126,20 +120,12 @@ module.exports = (req, res, parsedUrl) => {
         res.writeHead(400, { "Content-Type": "application/json" });
         return res.end(JSON.stringify({ error: "Invalid JSON" }));
       }
-
       const sql = `
         UPDATE event
-<<<<<<< HEAD
-        SET gallery_id=?, event_name=?, description=?, event_date=?,
-            capacity=?, member_only=?, event_type=?
-        WHERE event_id=?
-=======
         SET gallery_id = ?, event_name = ?, description = ?, event_date = ?,
             capacity = ?, member_only = ?, event_type = ?, image_url = ?
         WHERE event_id = ?
->>>>>>> 6fdd3d7f4b68f5d59840091a729f70937f6e3dcd
       `;
-
       db.query(sql,
         [data.gallery_id, data.event_name, data.description, data.event_date,
          data.capacity, data.member_only, data.event_type || "General",
@@ -197,7 +183,6 @@ module.exports = (req, res, parsedUrl) => {
       res.writeHead(401, { "Content-Type": "application/json" });
       return res.end(JSON.stringify({ error: "You must be logged in to sign up." }));
     }
-
     let body = "";
     req.on("data", chunk => { body += chunk.toString(); });
     req.on("end", () => {
@@ -207,9 +192,7 @@ module.exports = (req, res, parsedUrl) => {
         res.writeHead(400, { "Content-Type": "application/json" });
         return res.end(JSON.stringify({ error: "Invalid JSON" }));
       }
-
       const quantity = parseInt(data.quantity) || 1;
-
       db.query("SELECT capacity, total_attendees FROM event WHERE event_id = ? AND is_active = 1", [eventId], (err, results) => {
         if (err) {
           res.writeHead(500, { "Content-Type": "application/json" });
@@ -219,10 +202,8 @@ module.exports = (req, res, parsedUrl) => {
           res.writeHead(404, { "Content-Type": "application/json" });
           return res.end(JSON.stringify({ error: "Event not found." }));
         }
-
         const event = results[0];
         const spotsLeft = event.capacity - event.total_attendees;
-
         if (quantity > spotsLeft) {
           res.writeHead(400, { "Content-Type": "application/json" });
           return res.end(JSON.stringify({
@@ -231,7 +212,6 @@ module.exports = (req, res, parsedUrl) => {
               : `Only ${spotsLeft} spot${spotsLeft !== 1 ? "s" : ""} remaining.`
           }));
         }
-
         db.query("SELECT signup_id FROM event_signup WHERE user_id = ? AND event_id = ?", [userId, eventId], (err, existing) => {
           if (err) {
             res.writeHead(500, { "Content-Type": "application/json" });
@@ -241,7 +221,6 @@ module.exports = (req, res, parsedUrl) => {
             res.writeHead(400, { "Content-Type": "application/json" });
             return res.end(JSON.stringify({ error: "You have already signed up for this event." }));
           }
-
           db.query(
             "UPDATE event SET total_attendees = total_attendees + ? WHERE event_id = ?",
             [quantity, eventId],
@@ -267,6 +246,52 @@ module.exports = (req, res, parsedUrl) => {
         });
       });
     });
+  }
+
+  // DELETE /events/:id/unsignup — cancel signup
+  else if (req.method === "DELETE" && eventId && action === "unsignup") {
+    const userId = verifyUser(req);
+    if (!userId) {
+      res.writeHead(401, { "Content-Type": "application/json" });
+      return res.end(JSON.stringify({ error: "You must be logged in." }));
+    }
+    db.query(
+      "SELECT quantity FROM event_signup WHERE user_id = ? AND event_id = ?",
+      [userId, eventId],
+      (err, results) => {
+        if (err) {
+          res.writeHead(500, { "Content-Type": "application/json" });
+          return res.end(JSON.stringify({ error: err.sqlMessage }));
+        }
+        if (results.length === 0) {
+          res.writeHead(404, { "Content-Type": "application/json" });
+          return res.end(JSON.stringify({ error: "You are not signed up for this event." }));
+        }
+        const quantity = results[0].quantity;
+        db.query(
+          "DELETE FROM event_signup WHERE user_id = ? AND event_id = ?",
+          [userId, eventId],
+          (err) => {
+            if (err) {
+              res.writeHead(500, { "Content-Type": "application/json" });
+              return res.end(JSON.stringify({ error: err.sqlMessage }));
+            }
+            db.query(
+              "UPDATE event SET total_attendees = total_attendees - ? WHERE event_id = ?",
+              [quantity, eventId],
+              (err) => {
+                if (err) {
+                  res.writeHead(500, { "Content-Type": "application/json" });
+                  return res.end(JSON.stringify({ error: err.sqlMessage }));
+                }
+                res.writeHead(200, { "Content-Type": "application/json" });
+                return res.end(JSON.stringify({ message: "Signup cancelled successfully." }));
+              }
+            );
+          }
+        );
+      }
+    );
   }
 
   // DELETE /events/:id — soft delete

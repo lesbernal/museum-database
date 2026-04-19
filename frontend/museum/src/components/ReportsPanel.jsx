@@ -2,6 +2,7 @@
 import { useState } from "react";
 import RevenueReport from "./RevenueReport";
 import ArtCollectionReport from "./ArtCollectionReport";
+import MembershipReport from "./MembershipReport";
 import VisitorAnalyticsReport from "./VisitorAnalyticsReport";
 import "../styles/ReportsPanel.css";
 
@@ -24,6 +25,12 @@ export default function ReportsPanel() {
           Art Collection
         </button>
         <button
+          className={activeReport === "membership" ? "active" : ""}
+          onClick={() => setActiveReport("membership")}
+        >
+          Membership
+        </button>
+        <button
           className={activeReport === "visitorAnalytics" ? "active" : ""}
           onClick={() => setActiveReport("visitorAnalytics")}
         >
@@ -33,6 +40,7 @@ export default function ReportsPanel() {
 
       {activeReport === "revenue"          && <RevenueReport />}
       {activeReport === "artCollection"    && <ArtCollectionReport />}
+      {activeReport === "membership"       && <MembershipReport />}
       {activeReport === "visitorAnalytics" && <VisitorAnalyticsReport />}
       {activeReport === "giftShop"         && <div className="coming-soon">Gift Shop Report Coming Soon</div>}
     </div>

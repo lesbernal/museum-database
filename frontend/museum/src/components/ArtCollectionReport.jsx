@@ -262,7 +262,7 @@ export default function ArtCollectionReport() {
   return (
     <div className="art-collection-report">
       <div className="report-header">
-        <h2>🏛️ Art Collection Report</h2>
+        <h2> Art Collection Report</h2>
         <p>Comprehensive analysis of the museum's art collection including valuations, artist insights, and risk assessment</p>
       </div>
 
@@ -292,17 +292,6 @@ export default function ArtCollectionReport() {
             <select value={filters.status} onChange={(e) => updateFilter('status', e.target.value)}>
               <option value="">All Statuses</option>
               {statuses.map(status => <option key={status} value={status}>{status}</option>)}
-            </select>
-          </div>
-          <div className="filter-group">
-            <label>Gallery</label>
-            <select value={filters.galleryId} onChange={(e) => updateFilter('galleryId', e.target.value)}>
-              <option value="">All Galleries</option>
-              {galleries.map(gallery => (
-                <option key={gallery.gallery_id} value={gallery.gallery_id}>
-                  {gallery.name}
-                </option>
-              ))}
             </select>
           </div>
         </div>
@@ -359,7 +348,7 @@ export default function ArtCollectionReport() {
           {/* NEW: Risk & Insurance Insights */}
           {insights && (
             <div className="insights-section">
-              <h3>📊 Collection Insights & Risk Assessment</h3>
+              <h3> Collection Insights & Risk Assessment</h3>
               <div className="summary-grid">
                 <div className="summary-card risk-card">
                   <div className="summary-label">⚠️ At-Risk Value (On Loan/Storage)</div>
@@ -372,7 +361,7 @@ export default function ArtCollectionReport() {
                   <div className="insight-subtext">Artworks needing conservation</div>
                 </div>
                 <div className="summary-card">
-                  <div className="summary-label">🏛️ Active Galleries</div>
+                  <div className="summary-label"> Active Galleries</div>
                   <div className="summary-value">{insights.uniqueGalleries}</div>
                 </div>
               </div>
@@ -384,7 +373,7 @@ export default function ArtCollectionReport() {
             <div className="charts-grid">
               {insights.topArtists.length > 0 && (
                 <div className="chart-container">
-                  <h4>💰 Most Valuable Artists</h4>
+                  <h4> Most Valuable Artists</h4>
                   <table className="insights-table">
                     <tbody>
                       {insights.topArtists.map((artist, i) => (
@@ -405,7 +394,7 @@ export default function ArtCollectionReport() {
 
               {insights.topGalleries.length > 0 && (
                 <div className="chart-container">
-                  <h4>🏛️ Gallery Value Distribution</h4>
+                  <h4> Gallery Value Distribution</h4>
                   <table className="insights-table">
                     <tbody>
                       {insights.topGalleries.map((gallery, i) => (
@@ -429,7 +418,7 @@ export default function ArtCollectionReport() {
           {/* Value by Century Chart - NEW */}
           {insights?.centuryData.length > 0 && (
             <div className="chart-container" style={{ marginTop: "1.5rem" }}>
-              <h4>📅 Collection Value by Century</h4>
+              <h4> Collection Value by Century</h4>
               <ResponsiveContainer width="100%" height={250}>
                 <BarChart data={insights.centuryData}>
                   <CartesianGrid strokeDasharray="3 3" />
@@ -573,6 +562,11 @@ export default function ArtCollectionReport() {
       {hasGenerated && reportData.length === 0 && !loading && (
         <div className="no-results">No artworks found. Try adjusting your filters.</div>
       )}
+
+      {!hasGenerated && !loading && (
+        <div className="no-results">Select date range and click Generate Report to view Art Collection analytics.</div>
+      )}
+
       {loading && <div className="loading">Loading collection data...</div>}
     </div>
   );
