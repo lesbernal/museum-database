@@ -141,7 +141,7 @@ export default function VisitorAnalyticsReport() {
           {/* Daily Trends Chart */}
           {data.dailyTrends && data.dailyTrends.length > 0 && (
             <div className="chart-container">
-              <h4>📈 Daily Visitor Trends</h4>
+              <h4>Daily Visitor Trends</h4>
               <ResponsiveContainer width="100%" height={300}>
                 <AreaChart data={data.dailyTrends.slice().reverse()}>
                   <CartesianGrid strokeDasharray="3 3" />

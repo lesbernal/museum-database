@@ -403,7 +403,7 @@ export default function RevenueReport() {
               {insights.topItems.length > 0 && (
                 <div style={{ background: "white", border: "1px solid #e5e5e5", padding: "1.25rem", borderRadius: 8 }}>
                   <h4 style={{ margin: "0 0 1rem", fontSize: 13, fontWeight: 600, color: "#6b7280", textTransform: "uppercase" }}>
-                    🏆 Best Selling Items
+                    Best Selling Items
                   </h4>
                   <table style={{ width: "100%", fontSize: "0.875rem" }}>
                     <tbody>

@@ -184,7 +184,7 @@ export default function MembershipReport() {
           <div className="charts-grid">
             {/* Membership Level Distribution */}
             <div className="chart-container">
-              <h4>📊 Membership Level Distribution</h4>
+              <h4>Membership Level Distribution</h4>
               {pieData.length > 0 ? (
                 <ResponsiveContainer width="100%" height={250}>
                   <PieChart>
@@ -213,7 +213,7 @@ export default function MembershipReport() {
 
             {/* Donation by Type */}
             <div className="chart-container">
-              <h4>💰 Donations by Type</h4>
+              <h4>Donations by Type</h4>
               {donationPieData.length > 0 ? (
                 <ResponsiveContainer width="100%" height={250}>
                   <PieChart>
