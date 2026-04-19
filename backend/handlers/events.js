@@ -176,6 +176,90 @@ module.exports = (req, res, parsedUrl) => {
     );
   }
 
+  // PATCH /events/:id/update-signup — update quantity
+  else if (req.method === "PATCH" && eventId && action === "update-signup") {
+    const userId = verifyUser(req);
+    if (!userId) {
+      res.writeHead(401, { "Content-Type": "application/json" });
+      return res.end(JSON.stringify({ error: "You must be logged in." }));
+    }
+    parseBody(req, (data) => {
+      const newQuantity = parseInt(data.quantity);
+      if (!newQuantity || newQuantity < 1) {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        return res.end(JSON.stringify({ error: "Invalid quantity." }));
+      }
+
+      // Get current signup quantity
+      db.query(
+        "SELECT quantity FROM event_signup WHERE user_id = ? AND event_id = ?",
+        [userId, eventId],
+        (err, results) => {
+          if (err) {
+            res.writeHead(500, { "Content-Type": "application/json" });
+            return res.end(JSON.stringify({ error: err.sqlMessage }));
+          }
+          if (results.length === 0) {
+            res.writeHead(404, { "Content-Type": "application/json" });
+            return res.end(JSON.stringify({ error: "You are not signed up for this event." }));
+          }
+
+          const oldQuantity = results[0].quantity;
+          const diff = newQuantity - oldQuantity;
+
+          // If increasing check capacity
+          if (diff > 0) {
+            db.query(
+              "SELECT capacity, total_attendees FROM event WHERE event_id = ?",
+              [eventId],
+              (err, eventResults) => {
+                if (err) {
+                  res.writeHead(500, { "Content-Type": "application/json" });
+                  return res.end(JSON.stringify({ error: err.sqlMessage }));
+                }
+                const spotsLeft = eventResults[0].capacity - eventResults[0].total_attendees;
+                if (diff > spotsLeft) {
+                  res.writeHead(400, { "Content-Type": "application/json" });
+                  return res.end(JSON.stringify({
+                    error: `Only ${spotsLeft} spot${spotsLeft !== 1 ? "s" : ""} remaining.`
+                  }));
+                }
+                updateSignup();
+              }
+            );
+          } else {
+            updateSignup();
+          }
+
+          function updateSignup() {
+            db.query(
+              "UPDATE event_signup SET quantity = ? WHERE user_id = ? AND event_id = ?",
+              [newQuantity, userId, eventId],
+              (err) => {
+                if (err) {
+                  res.writeHead(500, { "Content-Type": "application/json" });
+                  return res.end(JSON.stringify({ error: err.sqlMessage }));
+                }
+                db.query(
+                  "UPDATE event SET total_attendees = total_attendees + ? WHERE event_id = ?",
+                  [diff, eventId],
+                  (err) => {
+                    if (err) {
+                      res.writeHead(500, { "Content-Type": "application/json" });
+                      return res.end(JSON.stringify({ error: err.sqlMessage }));
+                    }
+                    res.writeHead(200, { "Content-Type": "application/json" });
+                    return res.end(JSON.stringify({ message: `Updated to ${newQuantity} spot${newQuantity !== 1 ? "s" : ""}!` }));
+                  }
+                );
+              }
+            );
+          }
+        }
+      );
+    });
+  }
+
   // PATCH /events/:id — signup
   else if (req.method === "PATCH" && eventId) {
     const userId = verifyUser(req);
