@@ -1,4 +1,5 @@
 // pages/VisitorDashboard.jsx
+//fixed vistor dashboard for events
 
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
@@ -10,6 +11,9 @@ import {
 } from "../services/api";
 import { PasswordInput, PhoneInput, StateSelect, ZipInput } from "../components/FormUtils";
 import "../styles/Dashboard.css";
+
+const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+const userId = localStorage.getItem("user_id");
 
 const TABS = [
   { id: "overview", label: "Overview" },
@@ -772,7 +776,7 @@ export default function VisitorDashboard() {
 
   async function handleUpdateSignup(eventId, signupId, newQuantity) {
   try {
-    const res = await fetch(`${API_URL}/events/${eventId}/update-signup`, {
+    const res = await fetch(`${BASE_URL}/events/${eventId}/update-signup`, {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json",

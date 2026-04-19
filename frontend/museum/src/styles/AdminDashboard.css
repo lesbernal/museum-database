@@ -627,6 +627,8 @@
   background: #e5e7eb;
 }
 
+
+/*added calender icon color*/
 input[type="date"]::-webkit-calendar-picker-indicator {
   filter: invert(1);
 }
