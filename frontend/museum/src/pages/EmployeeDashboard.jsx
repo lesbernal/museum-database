@@ -324,7 +324,15 @@ export default function EmployeeDashboard() {
       setLoading(true);
       try {
         const [prof, emp] = await Promise.allSettled([getMyProfile(), getMyEmployeeRecord()]);
-        if (prof.status==="fulfilled") { setProfile(prof.value); setForm(prof.value); }
+        if (prof.status==="fulfilled") { 
+          const profileData = prof.value;
+          if (!profileData.first_name || !profileData.last_name || !profileData.email) {
+            console.warn("Profile data incomplete - refreshing from server");
+            // Could trigger a repair here
+          }
+          setProfile(profileData); 
+          setForm(profileData); 
+        }
         if (emp.status ==="fulfilled") setEmpRecord(emp.value?.user_id ? emp.value : null);
       } catch(e){ notify(e.message,"error"); }
       finally { setLoading(false); }
@@ -388,12 +396,31 @@ export default function EmployeeDashboard() {
 
   async function handlePasswordChange(e) {
     e.preventDefault();
-    if (pwForm.new_password.length<6) { setPwErrors({new_password:"Min. 6 characters"}); return; }
-    if (pwForm.new_password!==pwForm.confirm_password) { setPwErrors({confirm_password:"Passwords do not match"}); return; }
-    setPwErrors({}); setSaving(true);
-    try { await changeMyPassword(pwForm.new_password); notify("Password changed"); setPwForm({new_password:"",confirm_password:""}); }
-    catch(e){ notify(e.message,"error"); }
-    finally { setSaving(false); }
+    if (pwForm.new_password.length < 6) { 
+      setPwErrors({new_password:"Min. 6 characters"}); 
+      return; 
+    }
+    if (pwForm.new_password !== pwForm.confirm_password) { 
+      setPwErrors({confirm_password:"Passwords do not match"}); 
+      return; 
+    }
+    setPwErrors({}); 
+    setSaving(true);
+    try { 
+      await changeMyPassword(pwForm.new_password); 
+      notify("Password changed successfully"); 
+      setPwForm({new_password:"", confirm_password:""});
+      
+      // 🔥 ADD THIS - Reload profile to ensure data is intact
+      const refreshedProfile = await getMyProfile();
+      setProfile(refreshedProfile);
+      setForm(refreshedProfile);
+      
+    } catch(e){ 
+      notify(e.message,"error"); 
+    } finally { 
+      setSaving(false); 
+    }
   }
 
   // ── Admin component handlers: no-op delete for regular employees ─────────────
