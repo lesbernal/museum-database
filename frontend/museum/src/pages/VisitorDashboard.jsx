@@ -1148,15 +1148,3 @@ export default function VisitorDashboard() {
     </div>
   );
 }
-
-
-/* adding this comment to hopefully be able to add a push
-becuase for some reason I cant pull from github so now im typing a really long comment
-and hopefully this will let the push but to be honest im not sure cause its just a comment and
-github may just be like nah I dont see this so i hope this works or i just wasted 5 minutes
-on this comment but it wasnt bad im just typing whatever comes first in my mind so it its not bad
-ok im going to type watermellon now because i ran out of thoughts
-watermellonwatermellonwatermellonwatermellonwatermellonwatermellonwatermellonwatermellonwatermellonwatermellon
-watermellonwatermellonwatermellonwatermellonwatermellonwatermellonwatermellonwatermellonwatermellonwatermellon
-watermellonwatermellonwatermellonwatermellonwatermellonwatermellonwatermellonwatermellonwatermellonwatermellon
-*/
