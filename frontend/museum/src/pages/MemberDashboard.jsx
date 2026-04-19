@@ -26,14 +26,14 @@ const TABS = [
 const PURCHASABLE_TIERS = ["Bronze", "Silver", "Gold", "Platinum"];
 
 const LEVEL_COLORS = {
-  Bronze: { bg: "#fdf2e9", color: "#a04000", border: "#f0a070" },
-  Silver: { bg: "#f2f3f4", color: "#566573", border: "#aab7b8" },
-  Gold: { bg: "#fef9e7", color: "#9a7d0a", border: "#f4d03f" },
-  Platinum: { bg: "#eaf4fb", color: "#1a5276", border: "#7fb3d3" },
-  Benefactor: { bg: "#f3e8ff", color: "#6b21a8", border: "#c084fc" },
+  Bronze:              { bg: "#fdf2e9", color: "#a04000", border: "#f0a070" },
+  Silver:              { bg: "#f2f3f4", color: "#566573", border: "#aab7b8" },
+  Gold:                { bg: "#fef9e7", color: "#9a7d0a", border: "#f4d03f" },
+  Platinum:            { bg: "#eaf4fb", color: "#1a5276", border: "#7fb3d3" },
+  Benefactor:          { bg: "#f3e8ff", color: "#6b21a8", border: "#c084fc" },
   "Leadership Circle": { bg: "#fff1f2", color: "#9f1239", border: "#fb7185" },
 };
-const DEFAULT_STYLE = { bg: "#f3f4f6", color: "#374151", border: "#d1d5db" };
+const DEFAULT_STYLE  = { bg: "#f3f4f6", color: "#374151", border: "#d1d5db" };
 const DONATION_TIERS = ["Benefactor", "Leadership Circle"];
 
 const fmt = dateStr => {
@@ -84,7 +84,7 @@ function validateProfile(form) {
 // Ticket Group Modal Component
 function TicketGroupModal({ tickets, onClose }) {
   const [userInfo, setUserInfo] = useState(null);
-
+  
   useEffect(() => {
     async function loadUserInfo() {
       try {
@@ -179,7 +179,7 @@ function TicketGroupModal({ tickets, onClose }) {
 // Donation Modal Component
 function DonationModal({ donation, onClose }) {
   const [userInfo, setUserInfo] = useState(null);
-
+  
   useEffect(() => {
     async function loadUserInfo() {
       try {
@@ -282,7 +282,7 @@ function OrderDetailModal({ order, onClose }) {
             return { ...item, item_name: giftItem?.item_name || `Item #${item.item_id}`, price: giftItem?.price || 0 };
           });
           setItems(itemsWithNames);
-
+          
           if (order.fulfillment_type === "shipping") {
             setFulfillmentDetails({ type: "shipping", address: order.shipping_address });
           } else {
@@ -312,14 +312,14 @@ function OrderDetailModal({ order, onClose }) {
           <div className="order-section"><h3>Order Details</h3><div className="order-info-grid"><div><span className="info-label">Order Date</span><span className="info-value">{formatDateTime(order.date)}</span></div>
             {order.order_type === "Cafe" && <div><span className="info-label">Pickup Time</span><span className="info-value">Estimated 10-20 minutes</span></div>}
             {order.order_type === "Gift Shop" && fulfillmentDetails && (<><div><span className="info-label">Fulfillment</span><span className="info-value">{fulfillmentDetails.type === "shipping" ? "Ship to Address" : "Pick Up In Store"}</span></div>
-              {fulfillmentDetails.type === "shipping" && fulfillmentDetails.address && (<div className="full-width"><span className="info-label">Shipping Address</span><span className="info-value">{fulfillmentDetails.address}</span></div>)}</>)}
+            {fulfillmentDetails.type === "shipping" && fulfillmentDetails.address && (<div className="full-width"><span className="info-label">Shipping Address</span><span className="info-value">{fulfillmentDetails.address}</span></div>)}</>)}
           </div></div>
 
           <div className="order-section"><h3>Items</h3>
             {loading ? <div className="order-loading">Loading items...</div> : items.length === 0 ? <div className="order-empty">No items found</div> : (
               <table className="order-items-table"><thead><tr><th>Item</th><th>Quantity</th><th>Price</th><th>Total</th></tr></thead>
-                <tbody>{items.map((item, idx) => (<tr key={idx}><td>{item.item_name}</td><td>{item.quantity}</td><td>${parseFloat(item.price || 0).toFixed(2)}</td><td>${parseFloat(item.subtotal || (item.quantity * (item.price || 0))).toFixed(2)}</td></tr>))}</tbody>
-                <tfoot><tr><td colSpan="3" className="order-total-label">Total</td><td className="order-total-amount">${parseFloat(order.total_amount || 0).toFixed(2)}</td></tr></tfoot></table>
+              <tbody>{items.map((item, idx) => (<tr key={idx}><td>{item.item_name}</td><td>{item.quantity}</td><td>${parseFloat(item.price || 0).toFixed(2)}</td><td>${parseFloat(item.subtotal || (item.quantity * (item.price || 0))).toFixed(2)}</td></tr>))}</tbody>
+              <tfoot><tr><td colSpan="3" className="order-total-label">Total</td><td className="order-total-amount">${parseFloat(order.total_amount || 0).toFixed(2)}</td></tr></tfoot></table>
             )}
           </div>
 
@@ -400,7 +400,7 @@ export default function MemberDashboard() {
             notify("Your membership has expired and been cancelled. You are now a visitor.", "error");
             setTimeout(() => navigate("/visitor-dashboard"), 3000);
           }
-        }).catch(() => { });
+        }).catch(() => {});
       }
     }
     load();
@@ -737,22 +737,6 @@ export default function MemberDashboard() {
             </div>
           ) : (
             <div className="purchase-list">
-<<<<<<< HEAD
-              {Object.entries(groupedByPurchase).map(([purchaseDate, purchaseTickets]) => {
-                const total = purchaseTickets.reduce((sum, t) => sum + parseFloat(t.final_price || 0), 0);
-                const hasDiscount = purchaseTickets.some(t => parseFloat(t.final_price) < parseFloat(t.base_price || t.final_price));
-                const hasFree = purchaseTickets.some(t => parseFloat(t.final_price) === 0);
-                return (
-                  <div key={purchaseDate} className="purchase-item">
-                    <div className="purchase-date">{fmt(purchaseDate)}</div>
-                    <div className="purchase-info">
-                      <span className="purchase-qty">{purchaseTickets.length} tickets</span>
-                      {hasFree && <span className="discount-badge" style={{ background: "#dcfce7", color: "#166534", fontSize: 11, padding: "2px 8px", borderRadius: 4, marginLeft: 8 }}>1st ticket free</span>}
-                      {hasDiscount && !hasFree && <span className="discount-badge" style={{ background: "#dbeafe", color: "#1e40af", fontSize: 11, padding: "2px 8px", borderRadius: 4, marginLeft: 8 }}>15% member discount</span>}
-                    </div>
-                    <div className="purchase-amount">${total.toFixed(2)}</div>
-                    <button className="view-ticket-btn" onClick={() => setSelectedPurchaseTickets(purchaseTickets)}>View Tickets</button>
-=======
               {Object.entries(groupedByTransaction).map(([transactionId, transactionTickets]) => {
                 const total = transactionTickets.reduce((sum, t) => sum + parseFloat(t.final_price || 0), 0);
                 const purchaseDate = transactionTickets[0]?.purchase_date;
@@ -771,7 +755,6 @@ export default function MemberDashboard() {
                     >
                       View Tickets
                     </button>
->>>>>>> c1e4684cb4758fbf5780c09f4c79660ede76c493
                   </div>
                 );
               })}

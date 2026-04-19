@@ -94,7 +94,7 @@ function ExhibitionCalendar({ exhibition, onClose }) {
         <div className="cal-body">
           {/* Paintings Section - Made prominent */}
           <div className="cal-paintings-section">
-            <h3 className="cal-paintings-heading">🎨 Works in this Exhibition</h3>
+            <h3 className="cal-paintings-heading">Works in this Exhibition</h3>
             {loadingArt ? (
               <p className="cal-paintings-loading">Loading artworks…</p>
             ) : paintings.length === 0 ? (
