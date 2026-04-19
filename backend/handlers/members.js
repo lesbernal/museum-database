@@ -7,7 +7,7 @@ module.exports = (req, res, parsedUrl) => {
   if (req.method === "GET" && urlParts.length === 1) {
     const sql = `
       SELECT m.user_id, u.first_name, u.last_name, u.email,
-             m.membership_level, m.join_date, m.expiration_date,
+             m.membership_level, m.join_date, m.expiration_date, m.pending_level,
              v.last_visit_date, v.total_visits
       FROM member m
       JOIN visitor v ON m.user_id = v.user_id
@@ -23,17 +23,16 @@ module.exports = (req, res, parsedUrl) => {
   else if (req.method === "GET" && urlParts.length === 2) {
     const sql = `
       SELECT m.user_id, u.first_name, u.last_name, u.email,
-             m.membership_level, m.join_date, m.expiration_date,
+             m.membership_level, m.join_date, m.expiration_date, m.pending_level,
              v.last_visit_date, v.total_visits
       FROM member m
       JOIN visitor v ON m.user_id = v.user_id
       JOIN user u ON v.user_id = u.user_id
-      WHERE m.user_id=?
+      WHERE m.user_id = ?
     `;
     db.query(sql, [urlParts[1]], (err, results) => {
       if (err) return sendError(res, err);
 
-      // ← key fix: return 404 instead of empty object
       if (!results[0]) {
         res.writeHead(404, { "Content-Type": "application/json" });
         return res.end(JSON.stringify({ error: "Member not found" }));
@@ -43,19 +42,20 @@ module.exports = (req, res, parsedUrl) => {
     });
   }
 
-  // POST member
+  // POST member - also include pending_level if needed
   else if (req.method === "POST") {
     parseBody(req, data => {
       const sql = `
         INSERT INTO member
-        (user_id, membership_level, join_date, expiration_date)
-        VALUES (?,?,?,?)
+        (user_id, membership_level, join_date, expiration_date, pending_level)
+        VALUES (?, ?, ?, ?, ?)
       `;
       db.query(sql, [
         data.user_id || null,
         data.membership_level || "",
         data.join_date || null,
-        data.expiration_date || null
+        data.expiration_date || null,
+        data.pending_level || null  // Add this
       ], err => {
         if (err) return sendError(res, err);
         sendJSON(res, { message: "Member added" }, 201);
@@ -63,18 +63,22 @@ module.exports = (req, res, parsedUrl) => {
     });
   }
 
-  // PUT member
+  // PUT member - update pending_level as well
   else if (req.method === "PUT" && urlParts.length === 2) {
     parseBody(req, data => {
       const sql = `
         UPDATE member SET
-        membership_level=?, join_date=?, expiration_date=?
-        WHERE user_id=?
+        membership_level = ?, 
+        join_date = ?, 
+        expiration_date = ?,
+        pending_level = ?
+        WHERE user_id = ?
       `;
       db.query(sql, [
         data.membership_level || "",
         data.join_date || null,
         data.expiration_date || null,
+        data.pending_level || null,  // Add this
         urlParts[1]
       ], err => {
         if (err) return sendError(res, err);
@@ -86,7 +90,7 @@ module.exports = (req, res, parsedUrl) => {
   // DELETE member
   else if (req.method === "DELETE" && urlParts.length === 2) {
     db.query(
-      "DELETE FROM member WHERE user_id=?",
+      "DELETE FROM member WHERE user_id = ?",
       [urlParts[1]],
       err => {
         if (err) return sendError(res, err);
