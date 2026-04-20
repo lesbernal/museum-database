@@ -9,11 +9,12 @@ export default function Navbar() {
   const role      = localStorage.getItem("role");
   const isLoggedIn = !!token;
 
-  // Check if we're on an admin page
+  // Hide navbar on admin AND employee dashboard pages
   const isAdminPage = location.pathname.startsWith("/admin");
-
-  // Don't render navbar on admin pages
-  if (isAdminPage) return null;
+  const isEmployeePage = location.pathname.startsWith("/employee-dashboard");
+  
+  // Don't render navbar on admin or employee pages
+  if (isAdminPage || isEmployeePage) return null;
 
   const handleLogout = () => {
     localStorage.clear();
@@ -30,9 +31,9 @@ export default function Navbar() {
 
   const dashboardLabel = {
     admin:    "Dashboard",
-    employee: "Staff Portal",
-    member:   "My Dashboard",
-    visitor:  "My Account",
+    employee: "Dashboard",
+    member:   "Dashboard",
+    visitor:  "Dashboard",
   }[role];
 
   return (

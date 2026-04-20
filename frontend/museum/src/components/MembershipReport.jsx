@@ -184,22 +184,6 @@ export default function MembershipReport() {
                 <div className="insight-subtext">visitors who became members</div>
               </div>
             </div>
-            <div className="summary-grid">
-              <div className="summary-card">
-                <div className="summary-label">Avg Member LTV</div>
-                <div className="summary-value">{formatCurrency(avgMemberLTV)}</div>
-                <div className="insight-subtext">annual spend per member</div>
-              </div>
-              <div className="summary-card">
-                <div className="summary-label">Pending Changes</div>
-                <div className="summary-value">{formatNumber(data.summary?.pending_changes)}</div>
-                <div className="insight-subtext">{formatNumber(data.summary?.pending_cancellations)} cancelling</div>
-              </div>
-              <div className="summary-card">
-                <div className="summary-label">Avg Membership Duration</div>
-                <div className="summary-value">{data.summary?.avg_membership_days || 0} days</div>
-              </div>
-            </div>
           </div>
 
           {/* Simplified Charts - Just 2 key visuals */}
@@ -257,7 +241,7 @@ export default function MembershipReport() {
           {/* ===== MAIN DATA TABLE ===== */}
           <div className="data-section">
             <div className="data-header">
-              <h3>📊 Member Analytics Data</h3>
+              <h3>Member Analytics Data</h3>
               <div className="pagination-controls">
                 <span>Rows per page:</span>
                 <select value={rowsPerPage} onChange={(e) => { setRowsPerPage(Number(e.target.value)); setCurrentPage(1); }}>
