@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { getGalleries } from "../services/api";
 import "../styles/EventManager.css";
 
-const EVENT_TYPES = ["General", "Lecture", "Tour", "Activity", "Workshop", "Exhibition", "Member Only"];
+const EVENT_TYPES = ["General", "Lecture", "Tour", "Activity", "Workshop", "Exhibition"];
 
 const TYPE_COLORS = {
   "General":     { bg: "#f3f4f6", color: "#374151" },

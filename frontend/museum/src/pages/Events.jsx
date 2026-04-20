@@ -88,13 +88,20 @@ export default function Events() {
   const isSignedUp = (eventId) => mySignups.some(s => s.event_id === eventId);
 
   const filteredEvents = events
-    .filter(e => {
-      if (typeFilter !== "All" && e.event_type !== typeFilter) return false;
-      if (availableOnly && (e.capacity - e.total_attendees) <= 0) return false;
-      if (dateFrom && new Date(e.event_date) < new Date(dateFrom)) return false;
-      if (dateTo   && new Date(e.event_date) > new Date(dateTo))   return false;
-      return true;
-    })
+  .filter(e => {
+    const isMemberOnly = e.member_only === 1 || e.member_only === true || e.event_type === "Member Only";
+    if (typeFilter !== "All") {
+      if (typeFilter === "Member Only") {
+        if (!isMemberOnly) return false;
+      } else {
+        if (e.event_type !== typeFilter) return false;
+      }
+    }
+    if (availableOnly && (e.capacity - e.total_attendees) <= 0) return false;
+    if (dateFrom && new Date(e.event_date) < new Date(dateFrom)) return false;
+    if (dateTo   && new Date(e.event_date) > new Date(dateTo))   return false;
+    return true;
+  })
     .sort((a, b) => {
       const da = new Date(a.event_date);
       const db = new Date(b.event_date);
@@ -274,7 +281,7 @@ export default function Events() {
           {filteredEvents.map(e => {
             const spotsLeft    = e.capacity - e.total_attendees;
             const isFull       = spotsLeft <= 0;
-            const isMemberOnly = e.member_only === 1 || e.member_only === true;
+            const isMemberOnly = e.member_only === 1 || e.member_only === true || e.event_type === "Member Only";
             const isLocked     = isMemberOnly && !isMember;
             const msg          = messages[e.event_id];
             const quantity     = quantities[e.event_id] || 1;
@@ -295,7 +302,7 @@ export default function Events() {
                         {e.event_type}
                       </span>
                     )}
-                    {isMemberOnly && (
+                    {isMemberOnly && e.event_type !== "Member Only" && (
                       <span className="event-type-badge" style={{ background: "#fef9c3", color: "#854d0e" }}>
                         Members Only
                       </span>

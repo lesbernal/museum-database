@@ -730,7 +730,9 @@ export default function AdminDashboard() {
       const matchesAvail = eventAvailFilter === "All" ||
         (eventAvailFilter === "Available" && (e.capacity - e.total_attendees) > 0) ||
         (eventAvailFilter === "Full" && (e.capacity - e.total_attendees) <= 0);
-      const matchesType = eventTypeFilter === "All" || e.event_type === eventTypeFilter;
+      const isMemberOnly = e.member_only === 1 || e.member_only === true || e.event_type === "Member Only";
+      const matchesType = eventTypeFilter === "All" ||
+        (eventTypeFilter === "Member Only" ? isMemberOnly : e.event_type === eventTypeFilter);
       return matchesSearch && matchesDate && matchesAvail && matchesType;
     })
     .sort((a, b) => {

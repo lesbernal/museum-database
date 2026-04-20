@@ -163,11 +163,8 @@ export default function Home() {
                               {event.event_type}
                             </span>
                           )}
-                          {event.member_only === 1 && (
-                            <span className="event-type-badge" style={{
-                              background: "#fef9c3",
-                              color: "#854d0e",
-                            }}>
+                          {event.member_only === 1 && event.event_type !== "Member Only" && (
+                            <span className="event-type-badge" style={{ background: "#fef9c3", color: "#854d0e" }}>
                               Members Only
                             </span>
                           )}
