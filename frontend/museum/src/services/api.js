@@ -62,6 +62,12 @@ export async function updateArtist(id, artist) {
 export async function deleteArtist(id) {
   return request(`/artists/${id}`, { method: "DELETE" }, "Failed to delete artist");
 }
+export async function archiveArtist(id) {
+  return request(`/artists/${id}/archive`, { method: "PATCH" }, "Failed to archive artist");
+}
+export async function restoreArtist(id) {
+  return request(`/artists/${id}/restore`, { method: "PATCH" }, "Failed to restore artist");
+}
 
 // ── ARTWORKS ──────────────────────────────────────────────────────────────────
 export async function getArtworks() {
