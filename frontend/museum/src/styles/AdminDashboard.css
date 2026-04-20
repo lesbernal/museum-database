@@ -634,3 +634,78 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     text-align: center;
   }
 }
+
+/* ============================================
+   FIX FOR SUCCESS TOAST (Update/Delete/Archive)
+   ============================================ */
+
+/* Target the success toast specifically */
+.success-toast,
+.toast.success {
+  position: fixed !important;
+  bottom: 20px !important;
+  right: 20px !important;
+  top: auto !important;
+  left: auto !important;
+  width: auto !important;
+  max-width: 320px !important;
+  min-width: 200px !important;
+  background: #c5a028 !important;
+  color: #000 !important;
+  padding: 10px 16px !important;
+  border-radius: 8px !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  z-index: 100000 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+  white-space: nowrap !important;
+}
+
+.success-toast span,
+.toast.success span {
+  white-space: normal !important;
+  line-height: 1.4 !important;
+}
+
+.success-toast button,
+.toast.success button {
+  background: none !important;
+  border: none !important;
+  color: #000 !important;
+  font-size: 16px !important;
+  cursor: pointer !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  opacity: 0.6 !important;
+}
+
+.success-toast button:hover,
+.toast.success button:hover {
+  opacity: 1 !important;
+}
+
+/* Make sure it doesn't get affected by other containers */
+.admin-main .success-toast,
+.admin-main .toast.success,
+.content-area .success-toast,
+.content-area .toast.success {
+  position: fixed !important;
+  bottom: 20px !important;
+  right: 20px !important;
+  left: auto !important;
+  top: auto !important;
+}
+
+@media (max-width: 480px) {
+  .success-toast,
+  .toast.success {
+    bottom: 10px !important;
+    right: 10px !important;
+    left: 10px !important;
+    max-width: none !important;
+    width: auto !important;
+  }
+}

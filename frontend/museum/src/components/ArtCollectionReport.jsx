@@ -547,7 +547,6 @@ export default function ArtCollectionReport() {
                   <th>Status</th>
                   <th>Value Category</th>
                   <th>Insurance Value</th>
-                  <th>Artist Age at Creation</th>
                   <th>Gallery</th>
                 </tr>
               </thead>
@@ -570,7 +569,6 @@ export default function ArtCollectionReport() {
                       </span>
                     </td>
                     <td className="value-cell">{formatCurrency(artwork.insurance_value)}</td>
-                    <td>{artwork.artist_age_at_creation || "—"}</td>
                     <td>{artwork.gallery_name || "Not Assigned"}</td>
                   </tr>
                 ))}

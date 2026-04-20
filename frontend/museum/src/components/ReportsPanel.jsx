@@ -34,7 +34,7 @@ export default function ReportsPanel() {
           className={activeReport === "membership" ? "active" : ""}
           onClick={() => setActiveReport("membership")}
         >
-          Membership & Donor
+          Membership
         </button>
       </div>
 
