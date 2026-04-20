@@ -126,13 +126,13 @@
 .cafe-filters-grid {
   display: flex;
   flex-wrap: wrap;
-  gap: 1rem;
+  gap: 1.25rem;
   align-items: flex-end;
 }
 
 .filter-group {
   flex: 1;
-  min-width: 140px;
+  min-width: 160px;
 }
 
 .filter-group label {
@@ -159,6 +159,11 @@
   border-color: #c5a028;
 }
 
+.price-range {
+  flex: 1.35;
+  min-width: 260px;
+}
+
 .price-range .price-inputs {
   display: flex;
   align-items: center;
@@ -166,11 +171,14 @@
 }
 
 .price-range .price-inputs input {
-  width: 100%;
+  flex: 1 1 0;
+  min-width: 0;
+  height: 39px;
 }
 
 .price-range .price-inputs span {
   color: #9ca3af;
+  flex: 0 0 auto;
 }
 
 .stock-filter {
