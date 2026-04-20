@@ -14,7 +14,7 @@ import ReportsPanel from "./ReportsPanel";
 import DepartmentManagement from "./DepartmentManagement";
 
 import {
-  getArtists, createArtist, updateArtist, deleteArtist,
+  getArtists, createArtist, updateArtist, deleteArtist, archiveArtist, restoreArtist,
   getArtworks, createArtwork, updateArtwork, deleteArtwork,
   getProvenance, createProvenance, updateProvenance, deleteProvenance,
   getExhibitions, createExhibition, updateExhibition, deleteExhibition,
@@ -69,14 +69,14 @@ function ArchiveReasonModal({ type, onConfirm, onCancel }) {
 // Success Toast Component
 const SuccessToast = ({ show, message, onClose }) => {
   if (!show) return null;
-  
+
   useEffect(() => {
     const timer = setTimeout(() => {
       onClose();
     }, 3000);
     return () => clearTimeout(timer);
   }, [show, onClose]);
-  
+
   return (
     <div className="success-toast">
       <span>✅ {message}</span>
@@ -159,11 +159,11 @@ export default function AdminDashboard() {
   const [gallerySort, setGallerySort] = useState("name");
 
   //Event states
-  const [eventDateFrom,    setEventDateFrom]    = useState("");
-  const [eventDateTo,      setEventDateTo]      = useState("");
+  const [eventDateFrom, setEventDateFrom] = useState("");
+  const [eventDateTo, setEventDateTo] = useState("");
   const [eventAvailFilter, setEventAvailFilter] = useState("All");
-  const [eventTypeFilter,  setEventTypeFilter]  = useState("All");
-  const [eventSort,        setEventSort]        = useState("name");
+  const [eventTypeFilter, setEventTypeFilter] = useState("All");
+  const [eventSort, setEventSort] = useState("name");
 
   // UI states
   const [searchTerm, setSearchTerm] = useState("");
@@ -275,18 +275,18 @@ export default function AdminDashboard() {
   const loadStockAlerts = async () => {
     try {
       const [cafeItems, giftShopItems] = await Promise.all([getCafeItems(), getGiftShopItems()]);
-      
+
       const cafeAlertsData = cafeItems
         .filter((item) => Number(item.low_stock_alert) === 1)
         .map((item) => ({ source: "Cafe", name: item.item_name, stock: Number(item.stock_quantity) }));
-      
+
       const giftShopAlertsData = giftShopItems
         .filter((item) => Number(item.low_stock_alert) === 1)
         .map((item) => ({ source: "Gift Shop", name: item.item_name, stock: Number(item.stock_quantity) }));
-      
+
       setCafeAlerts(cafeAlertsData);
       setGiftShopAlerts(giftShopAlertsData);
-      
+
       const allAlerts = [...cafeAlertsData, ...giftShopAlertsData];
       setStockAlerts(allAlerts);
       setShowStockToast(allAlerts.length > 0);
@@ -308,7 +308,7 @@ export default function AdminDashboard() {
       artwork: loadArtworks,
       events: loadEvents,
     };
-    
+
     // Display name mapping - THE FIX
     const displayNames = {
       exhibitions: "Exhibition",
@@ -316,22 +316,22 @@ export default function AdminDashboard() {
       artwork: "Artwork",
       events: "Event",
     };
-    
+
     try {
       const response = await fetch(`${API_BASE}${endpoints[type]}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ reason }),
       });
-      
+
       if (!response.ok) {
         throw new Error(`Failed to archive ${displayNames[type]}`);
       }
-      
+
       await reloaders[type]();
       setToastMessage(`${displayNames[type]} archived successfully`);
       setShowSuccessToast(true);
-      
+
     } catch (err) {
       console.error(err);
       alert(`Failed to archive ${displayNames[type]}`);
@@ -389,6 +389,8 @@ export default function AdminDashboard() {
       await loadArtists();
     }
   };
+  const handleArtistArchive = async (id) => { await archiveArtist(id); await loadArtists(); };
+  const handleArtistRestore = async (id) => { await restoreArtist(id); await loadArtists(); };
 
   // Artwork handlers
   const handleAddArtwork = async (artworkData) => {
@@ -571,13 +573,10 @@ export default function AdminDashboard() {
 
   // Filtered Artists
   const filteredArtists = artists.filter(artist => {
-    // Status filter
-    if (artistStatusFilter === "active" && artist.is_active === 0) return false;
-    if (artistStatusFilter === "archived" && artist.is_active !== 0) return false;
-    
+
     // Nationality filter
     if (artistNationalityFilter !== "All" && artist.nationality !== artistNationalityFilter) return false;
-    
+
     // Century filter (based on birth_year)
     if (artistCenturyFilter !== "All") {
       const year = artist.birth_year;
@@ -585,7 +584,7 @@ export default function AdminDashboard() {
       if (artistCenturyFilter === "20th" && (!year || year < 1900 || year > 1999)) return false;
       if (artistCenturyFilter === "21st" && (!year || year < 2000)) return false;
     }
-    
+
     // Search filter
     const searchLower = searchTerm.toLowerCase();
     return `${artist.first_name} ${artist.last_name}`.toLowerCase().includes(searchLower) ||
@@ -604,11 +603,11 @@ export default function AdminDashboard() {
   const filteredProvenance = provenance.filter(record => {
     // Method filter
     if (provenanceMethodFilter !== "All" && record.acquisition_method !== provenanceMethodFilter) return false;
-    
+
     // Price range filter
     if (provenanceMinPrice && (record.price_paid < parseFloat(provenanceMinPrice))) return false;
     if (provenanceMaxPrice && (record.price_paid > parseFloat(provenanceMaxPrice))) return false;
-    
+
     // Date range filter
     if (provenanceDateRange !== "All") {
       const date = new Date(record.acquisition_date);
@@ -626,7 +625,7 @@ export default function AdminDashboard() {
         if (date < oneYearAgo) return false;
       }
     }
-    
+
     // Search filter
     const searchLower = searchTerm.toLowerCase();
     return record.owner_name?.toLowerCase().includes(searchLower) ||
@@ -726,7 +725,7 @@ export default function AdminDashboard() {
         e.description?.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesDate =
         (!eventDateFrom || eventDate >= new Date(eventDateFrom)) &&
-        (!eventDateTo   || eventDate <= new Date(eventDateTo + "T23:59:59"));
+        (!eventDateTo || eventDate <= new Date(eventDateTo + "T23:59:59"));
       const matchesAvail = eventAvailFilter === "All" ||
         (eventAvailFilter === "Available" && (e.capacity - e.total_attendees) > 0) ||
         (eventAvailFilter === "Full" && (e.capacity - e.total_attendees) <= 0);
@@ -737,13 +736,13 @@ export default function AdminDashboard() {
     })
     .sort((a, b) => {
       switch (eventSort) {
-        case "name":      return (a.event_name || "").localeCompare(b.event_name || "");
+        case "name": return (a.event_name || "").localeCompare(b.event_name || "");
         case "name_desc": return (b.event_name || "").localeCompare(a.event_name || "");
-        case "date_asc":  return new Date(a.event_date) - new Date(b.event_date);
+        case "date_asc": return new Date(a.event_date) - new Date(b.event_date);
         case "date_desc": return new Date(b.event_date) - new Date(a.event_date);
         default: return 0;
       }
-  });
+    });
 
   const usesCustomManager = activeTab === "cafe" || activeTab === "giftshop";
 
@@ -774,7 +773,7 @@ export default function AdminDashboard() {
                 </div>
               </div>
               <div className="dashboard-toast-footer">
-                <button 
+                <button
                   className="toast-resolve-btn"
                   onClick={() => {
                     setActiveTab("cafe");
@@ -789,7 +788,7 @@ export default function AdminDashboard() {
                 >
                   Go to Cafe Inventory →
                 </button>
-                <button 
+                <button
                   className="toast-dismiss-btn"
                   onClick={() => setDismissedAlerts(prev => ({ ...prev, cafe: true }))}
                 >
@@ -824,7 +823,7 @@ export default function AdminDashboard() {
                 </div>
               </div>
               <div className="dashboard-toast-footer">
-                <button 
+                <button
                   className="toast-resolve-btn"
                   onClick={() => {
                     setActiveTab("giftshop");
@@ -839,7 +838,7 @@ export default function AdminDashboard() {
                 >
                   Go to Gift Shop Inventory →
                 </button>
-                <button 
+                <button
                   className="toast-dismiss-btn"
                   onClick={() => setDismissedAlerts(prev => ({ ...prev, gift: true }))}
                 >
@@ -874,7 +873,7 @@ export default function AdminDashboard() {
                 </div>
               </div>
               <div className="dashboard-toast-footer">
-                <button 
+                <button
                   className="toast-resolve-btn"
                   onClick={() => {
                     setActiveTab("exhibitions");
@@ -884,7 +883,7 @@ export default function AdminDashboard() {
                 >
                   Go to Exhibitions →
                 </button>
-                <button 
+                <button
                   className="toast-dismiss-btn"
                   onClick={() => setDismissedAlerts(prev => ({ ...prev, exhibitions: true }))}
                 >
@@ -895,51 +894,51 @@ export default function AdminDashboard() {
           </div>
         )}
 
-      {/* Events Ended Toast */}
-      {showEndedEvents && endedEvents.length > 0 && !dismissedAlerts.events && (
-        <div className="dashboard-toast exhibitions-toast">
-          <div className="dashboard-toast-content">
-            <div className="dashboard-toast-header">
-              <span className="toast-icon"></span>
-              <span className="toast-title">Events Have Ended</span>
-              <button className="toast-close" onClick={() => setDismissedAlerts(prev => ({ ...prev, events: true }))}>×</button>
-            </div>
-            <div className="dashboard-toast-body">
-              <p>{endedEvents.length} event{endedEvents.length !== 1 ? "s have" : " has"} ended and may need to be archived.</p>
-              <div className="toast-items-list">
-                {endedEvents.slice(0, 3).map(event => (
-                  <div key={event.event_id} className="toast-item">
-                    <span className="toast-item-name">{event.event_name}</span>
-                    <span className="toast-item-stock">ended {new Date(event.event_date).toLocaleDateString()}</span>
-                  </div>
-                ))}
-                {endedEvents.length > 3 && (
-                  <div className="toast-item-more">+{endedEvents.length - 3} more events</div>
-                )}
+        {/* Events Ended Toast */}
+        {showEndedEvents && endedEvents.length > 0 && !dismissedAlerts.events && (
+          <div className="dashboard-toast exhibitions-toast">
+            <div className="dashboard-toast-content">
+              <div className="dashboard-toast-header">
+                <span className="toast-icon"></span>
+                <span className="toast-title">Events Have Ended</span>
+                <button className="toast-close" onClick={() => setDismissedAlerts(prev => ({ ...prev, events: true }))}>×</button>
+              </div>
+              <div className="dashboard-toast-body">
+                <p>{endedEvents.length} event{endedEvents.length !== 1 ? "s have" : " has"} ended and may need to be archived.</p>
+                <div className="toast-items-list">
+                  {endedEvents.slice(0, 3).map(event => (
+                    <div key={event.event_id} className="toast-item">
+                      <span className="toast-item-name">{event.event_name}</span>
+                      <span className="toast-item-stock">ended {new Date(event.event_date).toLocaleDateString()}</span>
+                    </div>
+                  ))}
+                  {endedEvents.length > 3 && (
+                    <div className="toast-item-more">+{endedEvents.length - 3} more events</div>
+                  )}
+                </div>
+              </div>
+              <div className="dashboard-toast-footer">
+                <button
+                  className="toast-resolve-btn"
+                  onClick={() => {
+                    setActiveTab("events");
+                    setShowEndedEvents(false);
+                    setDismissedAlerts(prev => ({ ...prev, events: true }));
+                  }}
+                >
+                  Go to Events →
+                </button>
+                <button
+                  className="toast-dismiss-btn"
+                  onClick={() => setDismissedAlerts(prev => ({ ...prev, events: true }))}
+                >
+                  Dismiss
+                </button>
               </div>
             </div>
-            <div className="dashboard-toast-footer">
-              <button
-                className="toast-resolve-btn"
-                onClick={() => {
-                  setActiveTab("events");
-                  setShowEndedEvents(false);
-                  setDismissedAlerts(prev => ({ ...prev, events: true }));
-                }}
-              >
-                Go to Events →
-              </button>
-              <button
-                className="toast-dismiss-btn"
-                onClick={() => setDismissedAlerts(prev => ({ ...prev, events: true }))}
-              >
-                Dismiss
-              </button>
-            </div>
           </div>
-        </div>
-      )}
-    </div>
+        )}
+      </div>
 
       <div className="admin-dashboard">
         <button
@@ -1285,8 +1284,8 @@ export default function AdminDashboard() {
             </>
           )}
 
-            {/* Artist filter bar */}
-            {activeTab === "artists" && (
+          {/* Artist filter bar */}
+          {activeTab === "artists" && (
             <>
               <div className="exhibition-filters-bar">
                 <div className="ex-filter-group">
@@ -1441,6 +1440,8 @@ export default function AdminDashboard() {
                 onAdd={handleAddArtist}
                 onUpdate={handleUpdateArtist}
                 onDelete={handleDeleteArtist}
+                onArchive={handleArtistArchive}
+                onRestore={handleArtistRestore}
                 loading={loading}
                 error={artistsError}
               />
@@ -1462,7 +1463,7 @@ export default function AdminDashboard() {
             {activeTab === "artwork" && (
               <>
                 {showArtworkArchive && (
-                  <Archive type="artwork" onRestored={() => loadArtworks()} reloadTrigger={artworks.length}/>
+                  <Archive type="artwork" onRestored={() => loadArtworks()} reloadTrigger={artworks.length} />
                 )}
                 <ArtworkManager
                   artworks={filteredArtworks}
@@ -1480,7 +1481,7 @@ export default function AdminDashboard() {
             {activeTab === "exhibitions" && (
               <>
                 {showExhibitionArchive && (
-                  <Archive type="exhibitions" onRestored={() => loadExhibitions()} reloadTrigger={exhibitions.length}/>
+                  <Archive type="exhibitions" onRestored={() => loadExhibitions()} reloadTrigger={exhibitions.length} />
                 )}
                 <ExhibitionManager
                   exhibitions={filteredExhibitions}
@@ -1498,7 +1499,7 @@ export default function AdminDashboard() {
             {activeTab === "galleries" && (
               <>
                 {showGalleryArchive && (
-                  <Archive type="galleries" onRestored={() => loadGalleries()} reloadTrigger={galleries.length}/>
+                  <Archive type="galleries" onRestored={() => loadGalleries()} reloadTrigger={galleries.length} />
                 )}
                 <GalleryManager
                   galleries={filteredGalleries}
@@ -1516,7 +1517,7 @@ export default function AdminDashboard() {
             {activeTab === "events" && (
               <>
                 {showEventArchive && (
-                  <Archive type="events" onRestored={() => loadEvents()} reloadTrigger={events.length}/>
+                  <Archive type="events" onRestored={() => loadEvents()} reloadTrigger={events.length} />
                 )}
                 <EventManager
                   events={filteredEvents}
@@ -1640,10 +1641,10 @@ export default function AdminDashboard() {
       )}
 
       {/* Success Toast */}
-      <SuccessToast 
-        show={showSuccessToast} 
-        message={toastMessage} 
-        onClose={() => setShowSuccessToast(false)} 
+      <SuccessToast
+        show={showSuccessToast}
+        message={toastMessage}
+        onClose={() => setShowSuccessToast(false)}
       />
     </>
   );

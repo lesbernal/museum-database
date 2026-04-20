@@ -1,8 +1,6 @@
 // handlers/artists_artwork_provenance.js
-// ALTER TABLE artwork ADD COLUMN archive_reason VARCHAR(500) NULL;
 
 const db = require("../db");
-const { verifyToken } = require("./authHelpers");
 
 module.exports = (req, res, parsedUrl) => {
   const urlParts = parsedUrl.pathname.split("/").filter(Boolean);
@@ -10,64 +8,123 @@ module.exports = (req, res, parsedUrl) => {
   // ============================ ARTISTS ============================
   if (urlParts[0] === "artists") {
 
+    // GET all artists (with artwork count)
     if (req.method === "GET" && urlParts.length === 1) {
-      db.query("SELECT * FROM artist", (err, results) => {
+      const sql = `
+        SELECT a.*,
+               COUNT(aw.artwork_id) AS artwork_count
+        FROM artist a
+        LEFT JOIN artwork aw ON a.artist_id = aw.artist_id AND aw.is_active = 1
+        GROUP BY a.artist_id
+        ORDER BY a.artist_id
+      `;
+      db.query(sql, (err, results) => {
         if (err) return sendError(res, err);
         sendJSON(res, results);
       });
+      return;
     }
 
+    // GET single artist by id
     else if (req.method === "GET" && urlParts.length === 2) {
-      db.query("SELECT * FROM artist WHERE artist_id=?", [urlParts[1]], (err, results) => {
+      const sql = `
+        SELECT a.*,
+               COUNT(aw.artwork_id) AS artwork_count
+        FROM artist a
+        LEFT JOIN artwork aw ON a.artist_id = aw.artist_id AND aw.is_active = 1
+        WHERE a.artist_id = ?
+        GROUP BY a.artist_id
+      `;
+      db.query(sql, [urlParts[1]], (err, results) => {
         if (err) return sendError(res, err);
         sendJSON(res, results[0] || {});
       });
+      return;
     }
 
+    // POST — add new artist
     else if (req.method === "POST") {
       parseBody(req, data => {
         const sql = `
           INSERT INTO artist
-          (first_name, last_name, birth_year, death_year, nationality, biography, image_url)
+            (first_name, last_name, birth_year, death_year, nationality, biography, image_url)
           VALUES (?, ?, ?, ?, ?, ?, ?)
         `;
         db.query(sql, [
-          data.first_name || "", data.last_name || "",
-          data.birth_year || null, data.death_year || null,
-          data.nationality || "", data.biography || "",
-          data.image_url || null
+          data.first_name  || "",
+          data.last_name   || "",
+          data.birth_year  || null,
+          data.death_year  || null,
+          data.nationality || "",
+          data.biography   || "",
+          data.image_url   || null,
         ], err => {
           if (err) return sendError(res, err);
           sendJSON(res, { message: "Artist added" }, 201);
         });
       });
+      return;
     }
 
+    // PUT — update artist
     else if (req.method === "PUT" && urlParts.length === 2) {
       parseBody(req, data => {
         const sql = `
           UPDATE artist SET
-          first_name=?, last_name=?, birth_year=?, death_year=?,
-          nationality=?, biography=?, image_url=?
+            first_name=?, last_name=?, birth_year=?, death_year=?,
+            nationality=?, biography=?, image_url=?
           WHERE artist_id=?
         `;
         db.query(sql, [
-          data.first_name || "", data.last_name || "",
-          data.birth_year || null, data.death_year || null,
-          data.nationality || "", data.biography || "",
-          data.image_url || null, urlParts[1]
+          data.first_name  || "",
+          data.last_name   || "",
+          data.birth_year  || null,
+          data.death_year  || null,
+          data.nationality || "",
+          data.biography   || "",
+          data.image_url   || null,
+          urlParts[1],
         ], err => {
           if (err) return sendError(res, err);
           sendJSON(res, { message: "Artist updated" });
         });
       });
+      return;
     }
 
+    // PATCH /artists/:id/archive — soft archive
+    else if (req.method === "PATCH" && urlParts.length === 3 && urlParts[2] === "archive") {
+      db.query(
+        "UPDATE artist SET is_active = 0 WHERE artist_id = ?",
+        [urlParts[1]],
+        err => {
+          if (err) return sendError(res, err);
+          sendJSON(res, { message: "Artist archived" });
+        }
+      );
+      return;
+    }
+
+    // PATCH /artists/:id/restore — restore archived artist
+    else if (req.method === "PATCH" && urlParts.length === 3 && urlParts[2] === "restore") {
+      db.query(
+        "UPDATE artist SET is_active = 1 WHERE artist_id = ?",
+        [urlParts[1]],
+        err => {
+          if (err) return sendError(res, err);
+          sendJSON(res, { message: "Artist restored" });
+        }
+      );
+      return;
+    }
+
+    // DELETE — hard delete artist
     else if (req.method === "DELETE" && urlParts.length === 2) {
       db.query("DELETE FROM artist WHERE artist_id=?", [urlParts[1]], err => {
         if (err) return sendError(res, err);
         sendJSON(res, { message: "Artist deleted" });
       });
+      return;
     }
   }
 
@@ -78,9 +135,9 @@ module.exports = (req, res, parsedUrl) => {
     if (req.method === "GET" && urlParts.length === 1) {
       const sql = `
         SELECT a.*,
-              ar.first_name, ar.last_name,
-              CONCAT(ar.first_name, ' ', ar.last_name) AS artist_name,
-              DATE(a.acquisition_date) as acquisition_date
+               ar.first_name, ar.last_name,
+               CONCAT(ar.first_name, ' ', ar.last_name) AS artist_name,
+               DATE(a.acquisition_date) AS acquisition_date
         FROM artwork a
         LEFT JOIN artist ar ON a.artist_id = ar.artist_id
         WHERE a.is_active = 1
@@ -97,9 +154,9 @@ module.exports = (req, res, parsedUrl) => {
     else if (req.method === "GET" && urlParts.length === 2 && urlParts[1] === "archived") {
       const sql = `
         SELECT a.*,
-              ar.first_name, ar.last_name,
-              CONCAT(ar.first_name, ' ', ar.last_name) AS artist_name,
-              DATE(a.acquisition_date) as acquisition_date
+               ar.first_name, ar.last_name,
+               CONCAT(ar.first_name, ' ', ar.last_name) AS artist_name,
+               DATE(a.acquisition_date) AS acquisition_date
         FROM artwork a
         LEFT JOIN artist ar ON a.artist_id = ar.artist_id
         WHERE a.is_active = 0
@@ -116,9 +173,9 @@ module.exports = (req, res, parsedUrl) => {
     else if (req.method === "GET" && urlParts.length === 2) {
       const sql = `
         SELECT a.*,
-              ar.first_name, ar.last_name,
-              CONCAT(ar.first_name, ' ', ar.last_name) AS artist_name,
-              DATE(a.acquisition_date) as acquisition_date
+               ar.first_name, ar.last_name,
+               CONCAT(ar.first_name, ' ', ar.last_name) AS artist_name,
+               DATE(a.acquisition_date) AS acquisition_date
         FROM artwork a
         LEFT JOIN artist ar ON a.artist_id = ar.artist_id
         WHERE a.artwork_id = ?
@@ -130,27 +187,27 @@ module.exports = (req, res, parsedUrl) => {
       return;
     }
 
-    // POST artwork
+    // POST — add artwork
     else if (req.method === "POST") {
       parseBody(req, data => {
         const sql = `
           INSERT INTO artwork
-          (artist_id, title, description, creation_year,
-          medium, dimensions, acquisition_date,
-          insurance_value, current_display_status, image_url, is_active)
+            (artist_id, title, description, creation_year,
+             medium, dimensions, acquisition_date,
+             insurance_value, current_display_status, image_url, is_active)
           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
         `;
         db.query(sql, [
-          data.artist_id || null,
-          data.title || "",
-          data.description || "",
-          data.creation_year || null,
-          data.medium || "",
-          data.dimensions || "",
-          data.acquisition_date || null,
-          data.insurance_value || null,
+          data.artist_id             || null,
+          data.title                 || "",
+          data.description           || "",
+          data.creation_year         || null,
+          data.medium                || "",
+          data.dimensions            || "",
+          data.acquisition_date      || null,
+          data.insurance_value       || null,
           data.current_display_status || "On Display",
-          data.image_url || null
+          data.image_url             || null,
         ], (err, result) => {
           if (err) return sendError(res, err);
           sendJSON(res, { message: "Artwork added", artwork_id: result.insertId }, 201);
@@ -159,28 +216,28 @@ module.exports = (req, res, parsedUrl) => {
       return;
     }
 
-    // PUT artwork
+    // PUT — update artwork
     else if (req.method === "PUT" && urlParts.length === 2) {
       parseBody(req, data => {
         const sql = `
           UPDATE artwork SET
-          artist_id=?, title=?, description=?, creation_year=?,
-          medium=?, dimensions=?, acquisition_date=?,
-          insurance_value=?, current_display_status=?, image_url=?
+            artist_id=?, title=?, description=?, creation_year=?,
+            medium=?, dimensions=?, acquisition_date=?,
+            insurance_value=?, current_display_status=?, image_url=?
           WHERE artwork_id=?
         `;
         db.query(sql, [
-          data.artist_id || null,
-          data.title || "",
-          data.description || "",
-          data.creation_year || null,
-          data.medium || "",
-          data.dimensions || "",
-          data.acquisition_date || null,
-          data.insurance_value || null,
+          data.artist_id             || null,
+          data.title                 || "",
+          data.description           || "",
+          data.creation_year         || null,
+          data.medium                || "",
+          data.dimensions            || "",
+          data.acquisition_date      || null,
+          data.insurance_value       || null,
           data.current_display_status || "On Display",
-          data.image_url || null,
-          urlParts[1]
+          data.image_url             || null,
+          urlParts[1],
         ], err => {
           if (err) return sendError(res, err);
           sendJSON(res, { message: "Artwork updated" });
@@ -191,7 +248,7 @@ module.exports = (req, res, parsedUrl) => {
 
     // PATCH /artwork/:id/deactivate — archive with optional reason
     else if (req.method === "PATCH" && urlParts.length === 3 && urlParts[2] === "deactivate") {
-      parseBody(req, (data) => {
+      parseBody(req, data => {
         db.query(
           "UPDATE artwork SET is_active = 0, archive_reason = ? WHERE artwork_id = ?",
           [data.reason || null, urlParts[1]],
@@ -234,88 +291,98 @@ module.exports = (req, res, parsedUrl) => {
   // ============================ PROVENANCE ============================
   else if (urlParts[0] === "provenance") {
 
+    // GET all provenance records
     if (req.method === "GET" && urlParts.length === 1) {
       const sql = `
         SELECT p.*,
                a.title AS artwork_title,
                CONCAT(ar.first_name, ' ', ar.last_name) AS artist_name
         FROM provenance p
-        LEFT JOIN artwork a ON p.artwork_id = a.artwork_id
-        LEFT JOIN artist ar ON a.artist_id = ar.artist_id
+        LEFT JOIN artwork a  ON p.artwork_id  = a.artwork_id
+        LEFT JOIN artist  ar ON a.artist_id   = ar.artist_id
         ORDER BY p.provenance_id
       `;
       db.query(sql, (err, results) => {
         if (err) return sendError(res, err);
         sendJSON(res, results);
       });
+      return;
     }
 
+    // GET single provenance record
     else if (req.method === "GET" && urlParts.length === 2) {
       const sql = `
         SELECT p.*,
                a.title AS artwork_title,
                CONCAT(ar.first_name, ' ', ar.last_name) AS artist_name
         FROM provenance p
-        LEFT JOIN artwork a ON p.artwork_id = a.artwork_id
-        LEFT JOIN artist ar ON a.artist_id = ar.artist_id
+        LEFT JOIN artwork a  ON p.artwork_id  = a.artwork_id
+        LEFT JOIN artist  ar ON a.artist_id   = ar.artist_id
         WHERE p.provenance_id = ?
       `;
       db.query(sql, [urlParts[1]], (err, results) => {
         if (err) return sendError(res, err);
         sendJSON(res, results[0] || {});
       });
+      return;
     }
 
+    // POST — add provenance record
     else if (req.method === "POST") {
       parseBody(req, data => {
         const sql = `
           INSERT INTO provenance
-          (artwork_id, owner_name, acquisition_date,
-           acquisition_method, price_paid, transfer_date)
-          VALUES (?,?,?,?,?,?)
+            (artwork_id, owner_name, acquisition_date,
+             acquisition_method, price_paid, transfer_date)
+          VALUES (?, ?, ?, ?, ?, ?)
         `;
         db.query(sql, [
-          data.artwork_id || null,
-          data.owner_name || "",
-          data.acquisition_date || null,
+          data.artwork_id         || null,
+          data.owner_name         || "",
+          data.acquisition_date   || null,
           data.acquisition_method || "",
-          data.price_paid || null,
-          data.transfer_date || null
+          data.price_paid         || null,
+          data.transfer_date      || null,
         ], err => {
           if (err) return sendError(res, err);
           sendJSON(res, { message: "Provenance added" }, 201);
         });
       });
+      return;
     }
 
+    // PUT — update provenance record
     else if (req.method === "PUT" && urlParts.length === 2) {
       parseBody(req, data => {
         const sql = `
           UPDATE provenance SET
-          artwork_id=?, owner_name=?, acquisition_date=?,
-          acquisition_method=?, price_paid=?, transfer_date=?
+            artwork_id=?, owner_name=?, acquisition_date=?,
+            acquisition_method=?, price_paid=?, transfer_date=?
           WHERE provenance_id=?
         `;
         db.query(sql, [
-          data.artwork_id || null,
-          data.owner_name || "",
-          data.acquisition_date || null,
+          data.artwork_id         || null,
+          data.owner_name         || "",
+          data.acquisition_date   || null,
           data.acquisition_method || "",
-          data.price_paid || null,
-          data.transfer_date || null,
-          urlParts[1]
+          data.price_paid         || null,
+          data.transfer_date      || null,
+          urlParts[1],
         ], err => {
           if (err) return sendError(res, err);
           sendJSON(res, { message: "Provenance updated" });
         });
       });
+      return;
     }
 
+    // DELETE provenance record
     else if (req.method === "DELETE" && urlParts.length === 2) {
       db.query("DELETE FROM provenance WHERE provenance_id=?", [urlParts[1]], err => {
         if (err) return sendError(res, err);
         sendJSON(res, { message: "Provenance deleted" });
       });
+      return;
     }
   }
 
@@ -326,6 +393,7 @@ module.exports = (req, res, parsedUrl) => {
   }
 };
 
+// ── Helpers ──────────────────────────────────────────────────
 function parseBody(req, callback) {
   let body = "";
   req.on("data", chunk => (body += chunk.toString()));
