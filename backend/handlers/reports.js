@@ -281,12 +281,17 @@ module.exports = (req, res, parsedUrl) => {
     return;
   }
 
-  // ==================== REPORT 3: MEMBERSHIP ANALYTICS (REFINED) ====================
+  // ==================== REPORT 3: MEMBERSHIP ANALYTICS (SIMPLIFIED & WORKING) ====================
   if (parsedUrl.pathname === "/reports/membership-analytics") {
-    const startDate = query.startDate || "1900-01-01";
-    const endDate = query.endDate || new Date().toISOString().split('T')[0];
+    let startDate = query.startDate;
+    let endDate = query.endDate;
     
-    // 1. MEMBERSHIP SUMMARY (with upgrade_rate calculation)
+    const safeStartDate = (startDate && startDate !== "") ? startDate : "1900-01-01";
+    const safeEndDate = (endDate && endDate !== "") ? endDate : "2099-12-31";
+    
+    console.log("Membership analytics with dates:", safeStartDate, safeEndDate);
+    
+    // 1. MEMBERSHIP SUMMARY
     const summarySql = `
       SELECT 
         COUNT(*) as total_members,
@@ -298,7 +303,7 @@ module.exports = (req, res, parsedUrl) => {
       FROM member
     `;
     
-    // 1b. Calculate upgrade rate separately
+    // 2. UPGRADE RATE
     const upgradeRateSql = `
       SELECT 
         COUNT(*) as total_transactions,
@@ -307,28 +312,17 @@ module.exports = (req, res, parsedUrl) => {
       WHERE transaction_date BETWEEN ? AND ?
     `;
     
-    // 2. MEMBERSHIP LEVEL BREAKDOWN WITH VALUE
+    // 3. MEMBERSHIP LEVEL BREAKDOWN
     const levelBreakdownSql = `
       SELECT 
-        m.membership_level,
+        membership_level,
         COUNT(*) as count,
-        ROUND(AVG(DATEDIFF(m.expiration_date, m.join_date)), 0) as avg_duration_days,
-        COUNT(CASE WHEN m.pending_level = 'cancelled' THEN 1 END) as cancelling,
-        COUNT(CASE WHEN m.pending_level IS NOT NULL AND m.pending_level != 'cancelled' THEN 1 END) as changing_level,
-        SUM(CASE 
-          WHEN m.membership_level = 'Bronze' THEN 75
-          WHEN m.membership_level = 'Silver' THEN 150
-          WHEN m.membership_level = 'Gold' THEN 300
-          WHEN m.membership_level = 'Platinum' THEN 600
-          WHEN m.membership_level = 'Benefactor' THEN 1500
-          WHEN m.membership_level = 'Leadership Circle' THEN 5000
-          ELSE 0
-        END) as potential_annual_revenue
-      FROM member m
-      WHERE m.expiration_date >= CURDATE()
-      GROUP BY m.membership_level
+        ROUND(AVG(DATEDIFF(expiration_date, join_date)), 0) as avg_duration_days
+      FROM member
+      WHERE expiration_date >= CURDATE()
+      GROUP BY membership_level
       ORDER BY 
-        CASE m.membership_level
+        CASE membership_level
           WHEN 'Bronze' THEN 1
           WHEN 'Silver' THEN 2
           WHEN 'Gold' THEN 3
@@ -339,7 +333,7 @@ module.exports = (req, res, parsedUrl) => {
         END
     `;
     
-    // 3. MEMBERSHIP TRANSACTION TRENDS
+    // 4. TRANSACTION TRENDS
     const transactionTrendsSql = `
       SELECT 
         DATE_FORMAT(transaction_date, '%Y-%m') as month,
@@ -356,7 +350,7 @@ module.exports = (req, res, parsedUrl) => {
       ORDER BY month ASC
     `;
     
-    // 4. MEMBERSHIP CONVERSION FUNNEL
+    // 5. CONVERSION FUNNEL
     const conversionFunnelSql = `
       SELECT 
         'Visitors with tickets' as stage,
@@ -391,7 +385,7 @@ module.exports = (req, res, parsedUrl) => {
         AND mt.transaction_date BETWEEN ? AND ?
     `;
     
-    // 5. MEMBERSHIP LIFECYCLE
+    // 6. LIFECYCLE
     const lifecycleSql = `
       SELECT 
         DATE_FORMAT(join_date, '%Y-%m') as cohort,
@@ -413,7 +407,7 @@ module.exports = (req, res, parsedUrl) => {
       ORDER BY cohort ASC
     `;
     
-    // 6. MEMBER ENGAGEMENT
+    // 7. MEMBER ENGAGEMENT
     const memberEngagementSql = `
       SELECT 
         m.membership_level,
@@ -441,7 +435,7 @@ module.exports = (req, res, parsedUrl) => {
         END
     `;
     
-    // 7. ALL ACTIVE MEMBERS (not just at-risk)
+    // 8. ACTIVE MEMBERS
     const activeMembersSql = `
       SELECT 
         m.user_id,
@@ -464,30 +458,33 @@ module.exports = (req, res, parsedUrl) => {
       ORDER BY m.expiration_date ASC
     `;
     
-    // 8. MEMBERSHIP VALUE TIER ANALYSIS
+    // 9. VALUE TIER ANALYSIS - SIMPLIFIED WITHOUT COMPLEX SUBQUERIES
     const valueTierSql = `
       SELECT 
         m.membership_level,
         COUNT(DISTINCT m.user_id) as member_count,
-        COALESCE(ROUND(AVG(
-          (SELECT COALESCE(SUM(final_price), 0) 
-          FROM ticket 
-          WHERE user_id = m.user_id 
-          AND purchase_date >= DATE_SUB(CURDATE(), INTERVAL 1 YEAR)
-          )), 2), 0) as avg_ticket_spend,
-        COALESCE(ROUND(AVG(
-          (SELECT COALESCE(SUM(total_amount), 0) 
-          FROM cafetransaction 
-          WHERE user_id = m.user_id 
-          AND transaction_datetime >= DATE_SUB(CURDATE(), INTERVAL 1 YEAR)
-          )), 2), 0) as avg_cafe_spend,
-        COALESCE(ROUND(AVG(
-          (SELECT COALESCE(SUM(total_amount), 0) 
-          FROM giftshoptransaction 
-          WHERE user_id = m.user_id 
-          AND transaction_datetime >= DATE_SUB(CURDATE(), INTERVAL 1 YEAR)
-          )), 2), 0) as avg_shop_spend
+        COALESCE(ROUND(AVG(t.ticket_total), 2), 0) as avg_ticket_spend,
+        COALESCE(ROUND(AVG(c.cafe_total), 2), 0) as avg_cafe_spend,
+        COALESCE(ROUND(AVG(g.gift_total), 2), 0) as avg_shop_spend
       FROM member m
+      LEFT JOIN (
+        SELECT user_id, COALESCE(SUM(final_price), 0) as ticket_total
+        FROM ticket
+        WHERE purchase_date BETWEEN ? AND ?
+        GROUP BY user_id
+      ) t ON m.user_id = t.user_id
+      LEFT JOIN (
+        SELECT user_id, COALESCE(SUM(total_amount), 0) as cafe_total
+        FROM cafetransaction
+        WHERE DATE(transaction_datetime) BETWEEN ? AND ?
+        GROUP BY user_id
+      ) c ON m.user_id = c.user_id
+      LEFT JOIN (
+        SELECT user_id, COALESCE(SUM(total_amount), 0) as gift_total
+        FROM giftshoptransaction
+        WHERE DATE(transaction_datetime) BETWEEN ? AND ?
+        GROUP BY user_id
+      ) g ON m.user_id = g.user_id
       WHERE m.expiration_date >= CURDATE()
       GROUP BY m.membership_level
       ORDER BY 
@@ -502,7 +499,7 @@ module.exports = (req, res, parsedUrl) => {
         END
     `;
     
-    // 9. RECENT MEMBERSHIP ACTIVITY (for the frontend)
+    // 10. RECENT ACTIVITY
     const recentActivitySql = `
       SELECT 
         mt.transaction_id,
@@ -521,24 +518,22 @@ module.exports = (req, res, parsedUrl) => {
     
     Promise.all([
       new Promise((res, rej) => db.query(summarySql, (err, r) => err ? rej(err) : res(r[0]))),
-      new Promise((res, rej) => db.query(upgradeRateSql, [startDate, endDate], (err, r) => err ? rej(err) : res(r[0]))),
+      new Promise((res, rej) => db.query(upgradeRateSql, [safeStartDate, safeEndDate], (err, r) => err ? rej(err) : res(r[0]))),
       new Promise((res, rej) => db.query(levelBreakdownSql, (err, r) => err ? rej(err) : res(r))),
-      new Promise((res, rej) => db.query(transactionTrendsSql, [startDate, endDate], (err, r) => err ? rej(err) : res(r))),
-      new Promise((res, rej) => db.query(conversionFunnelSql, [startDate, endDate, startDate, endDate, startDate, endDate], (err, r) => err ? rej(err) : res(r))),
-      new Promise((res, rej) => db.query(lifecycleSql, [startDate, endDate], (err, r) => err ? rej(err) : res(r))),
+      new Promise((res, rej) => db.query(transactionTrendsSql, [safeStartDate, safeEndDate], (err, r) => err ? rej(err) : res(r))),
+      new Promise((res, rej) => db.query(conversionFunnelSql, [safeStartDate, safeEndDate, safeStartDate, safeEndDate, safeStartDate, safeEndDate], (err, r) => err ? rej(err) : res(r))),
+      new Promise((res, rej) => db.query(lifecycleSql, [safeStartDate, safeEndDate], (err, r) => err ? rej(err) : res(r))),
       new Promise((res, rej) => db.query(memberEngagementSql, (err, r) => err ? rej(err) : res(r))),
       new Promise((res, rej) => db.query(activeMembersSql, (err, r) => err ? rej(err) : res(r))),
-      new Promise((res, rej) => db.query(valueTierSql, (err, r) => err ? rej(err) : res(r))),
-      new Promise((res, rej) => db.query(recentActivitySql, [startDate, endDate], (err, r) => err ? rej(err) : res(r)))
+      new Promise((res, rej) => db.query(valueTierSql, [safeStartDate, safeEndDate, safeStartDate, safeEndDate, safeStartDate, safeEndDate], (err, r) => err ? rej(err) : res(r))),
+      new Promise((res, rej) => db.query(recentActivitySql, [safeStartDate, safeEndDate], (err, r) => err ? rej(err) : res(r)))
     ])
     .then(([summary, upgradeData, levelBreakdown, transactionTrends, conversionFunnel, lifecycle, memberEngagement, activeMembers, valueTier, recentActivity]) => {
 
-      // Calculate upgrade rate
       const totalTransactions = upgradeData.total_transactions || 0;
       const upgradeCount = upgradeData.upgrade_count || 0;
       const upgradeRate = totalTransactions > 0 ? ((upgradeCount / totalTransactions) * 100).toFixed(1) : 0;
       
-      // Add upgrade_rate to summary
       const enhancedSummary = {
         ...summary,
         upgrade_rate: upgradeRate
@@ -556,7 +551,10 @@ module.exports = (req, res, parsedUrl) => {
         recentActivity
       });
     })
-    .catch(err => sendError(res, err));
+    .catch(err => {
+      console.error("Membership analytics error:", err);
+      sendError(res, err);
+    });
     return;
   }
 
