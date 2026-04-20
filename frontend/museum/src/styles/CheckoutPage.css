@@ -1,3 +1,5 @@
+/* CheckoutPage.css */
+
 .checkout-page {
   min-height: 100vh;
   background: var(--color-cream);
@@ -17,7 +19,7 @@
   min-height: 100vh;
 }
 
-/* ── Left summary panel (dark background) ── */
+/* ── Left summary panel ──────────────────────────────────────────────────── */
 .checkout-summary {
   background: #000;
   color: #fff;
@@ -27,39 +29,59 @@
   gap: 1.5rem;
 }
 
-.checkout-eyebrow {
+/*
+  ROOT CAUSE FIX:
+  Vite's index.css sets:
+    @media (prefers-color-scheme: light) { :root { color: #213547 } }
+  This dark navy cascades down through every element that doesn't have an
+  explicit color rule — including <span> elements inside .summary-total.
+  Because :root specificity is (0,0,0) and our .checkout-summary rules are
+  (0,1,0), the cascade order (index.css loads before component CSS) means
+  the inherited dark color wins on bare span/p text nodes in some browsers.
+  Using !important on the panel-specific rules is the correct and safe fix —
+  .checkout-summary is already the most specific dark context on this page
+  and these rules will not bleed anywhere else.
+*/
+.checkout-summary,
+.checkout-summary p,
+.checkout-summary span,
+.checkout-summary div {
+  color: #fff !important;
+}
+
+/* Re-apply gold for the eyebrow after the wildcard */
+.checkout-summary .checkout-eyebrow {
+  color: var(--color-gold, #c9a84c) !important;
   font-size: 0.72rem;
   text-transform: uppercase;
   letter-spacing: 0.12em;
-  color: var(--color-gold);
   margin: 0;
 }
 
 .checkout-summary-title {
   font-size: 1.5rem;
   font-weight: 300;
-  color: #fff;
   margin: 0;
   letter-spacing: -0.02em;
+}
+
+/* Dimmed labels */
+.checkout-summary .summary-label {
+  color: rgba(255, 255, 255, 0.5) !important;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin: 0 0 0.25rem;
+}
+
+.checkout-summary .summary-value {
+  font-size: 0.95rem;
+  margin: 0;
 }
 
 .summary-section {
   border-bottom: 1px solid rgba(255,255,255,0.1);
   padding-bottom: 1rem;
-}
-
-.summary-label {
-  font-size: 0.72rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: rgba(255,255,255,0.5);
-  margin: 0 0 0.25rem;
-}
-
-.summary-value {
-  font-size: 0.95rem;
-  color: #fff;
-  margin: 0;
 }
 
 .summary-items {
@@ -70,34 +92,35 @@
   padding-bottom: 1rem;
 }
 
-.summary-item {
-  display: flex;
-  justify-content: space-between;
-  font-size: 0.88rem;
-  color: rgba(255,255,255,0.85);
+/* Slightly dimmed line items */
+.checkout-summary .summary-item span {
+  color: rgba(255, 255, 255, 0.85) !important;
 }
 
-/* ── FIX: scoped to checkout-summary so it does NOT bleed into Tickets page ── */
+/* Gold for discount line */
+.checkout-summary .summary-discount,
+.checkout-summary .summary-discount span {
+  color: var(--color-gold, #c9a84c) !important;
+}
+
+/* Total row — explicit white on both label and value spans */
 .checkout-summary .summary-total {
   display: flex;
   justify-content: space-between;
   font-size: 1rem;
   font-weight: 600;
-  color: #fff;           /* explicit white — dark panel */
   padding-top: 0.5rem;
   border-top: 1px solid rgba(255,255,255,0.15);
   margin-top: 0.25rem;
+  color: #fff !important;
 }
 
 .checkout-summary .summary-total span {
-  color: #fff;           /* both label and value always white */
+  color: #fff !important;
+  font-weight: 600;
 }
 
-.summary-discount {
-  color: var(--color-gold);
-}
-
-/* ── Right form panel ── */
+/* ── Right form panel ──────────────────────────────────────────────────────── */
 .checkout-form-section {
   padding: 4rem 5rem;
 }
