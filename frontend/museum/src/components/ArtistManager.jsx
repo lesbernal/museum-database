@@ -12,7 +12,6 @@ const SuccessToast = ({ show, message, onClose }) => {
 // ── Form Modal ───────────────────────────────────────────────
 const ArtistFormModal = ({ isOpen, editingArtist, form, errors, isSubmitting, onSubmit, onCancel, onChange }) => {
   if (!isOpen) return null;
-
   return (
     <div className="modal-overlay" onClick={onCancel}>
       <div className="modal-content" onClick={e => e.stopPropagation()}>
@@ -20,96 +19,44 @@ const ArtistFormModal = ({ isOpen, editingArtist, form, errors, isSubmitting, on
           <h2>{editingArtist ? "Edit Artist" : "Add New Artist"}</h2>
           <button className="close-btn" onClick={onCancel}>&times;</button>
         </div>
-
         <form onSubmit={onSubmit} className="artist-form">
           <div className="form-fields">
             <div className="form-row">
               <div className="form-group">
                 <label>First Name *</label>
-                <input
-                  type="text"
-                  name="first_name"
-                  value={form.first_name}
-                  onChange={onChange}
-                  className={errors.first_name ? "error" : ""}
-                  placeholder="e.g., Frida"
-                />
+                <input type="text" name="first_name" value={form.first_name} onChange={onChange} className={errors.first_name ? "error" : ""} placeholder="e.g., Frida" />
                 {errors.first_name && <span className="error-message">{errors.first_name}</span>}
               </div>
-
               <div className="form-group">
                 <label>Last Name *</label>
-                <input
-                  type="text"
-                  name="last_name"
-                  value={form.last_name}
-                  onChange={onChange}
-                  className={errors.last_name ? "error" : ""}
-                  placeholder="e.g., Kahlo"
-                />
+                <input type="text" name="last_name" value={form.last_name} onChange={onChange} className={errors.last_name ? "error" : ""} placeholder="e.g., Kahlo" />
                 {errors.last_name && <span className="error-message">{errors.last_name}</span>}
               </div>
             </div>
-
             <div className="form-row">
               <div className="form-group">
                 <label>Birth Year</label>
-                <input
-                  type="number"
-                  name="birth_year"
-                  value={form.birth_year}
-                  onChange={onChange}
-                  className={errors.birth_year ? "error" : ""}
-                  placeholder="1907"
-                  min="0"
-                  max={new Date().getFullYear()}
-                />
+                <input type="number" name="birth_year" value={form.birth_year} onChange={onChange} className={errors.birth_year ? "error" : ""} placeholder="1907" min="0" max={new Date().getFullYear()} />
                 {errors.birth_year && <span className="error-message">{errors.birth_year}</span>}
               </div>
-
               <div className="form-group">
                 <label>Death Year</label>
-                <input
-                  type="number"
-                  name="death_year"
-                  value={form.death_year}
-                  onChange={onChange}
-                  className={errors.death_year ? "error" : ""}
-                  placeholder="1954"
-                  min="0"
-                />
+                <input type="number" name="death_year" value={form.death_year} onChange={onChange} className={errors.death_year ? "error" : ""} placeholder="1954" min="0" />
                 {errors.death_year && <span className="error-message">{errors.death_year}</span>}
               </div>
             </div>
-
             <div className="form-group">
               <label>Nationality *</label>
-              <input
-                type="text"
-                name="nationality"
-                value={form.nationality}
-                onChange={onChange}
-                placeholder="e.g., Mexican, American, French"
-                className={errors.nationality ? "error" : ""}
-              />
+              <input type="text" name="nationality" value={form.nationality} onChange={onChange} placeholder="e.g., Mexican, American, French" className={errors.nationality ? "error" : ""} />
               {errors.nationality && <span className="error-message">{errors.nationality}</span>}
             </div>
-
             <div className="form-group">
               <label>Biography</label>
-              <textarea
-                name="biography"
-                value={form.biography}
-                onChange={onChange}
-                placeholder="Write a biography of the artist..."
-                rows="5"
-              />
+              <textarea name="biography" value={form.biography} onChange={onChange} placeholder="Write a biography of the artist..." rows="5" />
               <div className="char-counter">{form.biography.length} characters</div>
             </div>
           </div>
-
           {errors.submit && <div className="error-message submit-error">{errors.submit}</div>}
-
           <div className="form-actions">
             <button type="button" className="cancel-btn" onClick={onCancel}>Cancel</button>
             <button type="submit" className="submit-btn" disabled={isSubmitting}>
@@ -131,6 +78,7 @@ export default function ArtistManager({
   onRestore,
   loading: externalLoading,
   error: externalError,
+  canDelete = true, // gates Archive/Restore — managers only
 }) {
   const [isFormOpen,       setIsFormOpen]       = useState(false);
   const [editingArtist,    setEditingArtist]    = useState(null);
@@ -139,17 +87,16 @@ export default function ArtistManager({
   const [toastMessage,     setToastMessage]     = useState("");
   const [isSubmitting,     setIsSubmitting]     = useState(false);
   const [errors,           setErrors]           = useState({});
-  const [archiveError,     setArchiveError]     = useState(null);
-  const [restoreTarget,    setRestoreTarget]    = useState(null);
+  const [archiveError,     setArchiveError]     = useState(null); // { artist, count }
+  const [restoreTarget,    setRestoreTarget]    = useState(null); // artist to restore
 
   const emptyForm = {
     first_name: "", last_name: "", birth_year: "",
     death_year: "", nationality: "", biography: "",
   };
-
   const [form, setForm] = useState(emptyForm);
 
-  // ArtistManager owns the active/archived split — always use the full list
+  // ArtistManager owns the active/archived split — always receive the full list
   const activeArtists   = externalArtists.filter(a => a.is_active !== 0);
   const archivedArtists = externalArtists.filter(a => a.is_active === 0);
 
@@ -182,20 +129,17 @@ export default function ArtistManager({
     if (!form.first_name.trim())  newErrors.first_name  = "First name is required";
     if (!form.last_name.trim())   newErrors.last_name   = "Last name is required";
     if (!form.nationality.trim()) newErrors.nationality = "Nationality is required";
-
     if (form.birth_year) {
       const y = parseInt(form.birth_year);
       if (isNaN(y) || y < 0 || y > new Date().getFullYear())
         newErrors.birth_year = "Please enter a valid birth year";
     }
-
     if (form.death_year && form.birth_year) {
       const d = parseInt(form.death_year);
       const b = parseInt(form.birth_year);
       if (!isNaN(d) && !isNaN(b) && d <= b)
         newErrors.death_year = "Death year must be after birth year";
     }
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -231,6 +175,7 @@ export default function ArtistManager({
     }
   };
 
+  // Block archive if artist has active artworks — show red toast instead
   const handleArchive = async (artist) => {
     const count = artist.artwork_count ?? 0;
     if (count > 0) {
@@ -259,7 +204,6 @@ export default function ArtistManager({
   const ArtistTable = ({ artists }) => {
     if (artists.length === 0)
       return <div className="empty-state">No artists found</div>;
-
     return (
       <div className="artist-table-container">
         <table className="artist-table">
@@ -289,8 +233,10 @@ export default function ArtistManager({
                 <td>{artist.death_year || "—"}</td>
                 <td>{artist.artwork_count ?? 0}</td>
                 <td className="actions">
-                  <button className="edit-btn"    onClick={() => handleEditClick(artist)}>Edit</button>
-                  <button className="archive-btn" onClick={() => handleArchive(artist)}>Archive</button>
+                  <button className="edit-btn" onClick={() => handleEditClick(artist)}>Edit</button>
+                  {canDelete && (
+                    <button className="archive-btn" onClick={() => handleArchive(artist)}>Archive</button>
+                  )}
                 </td>
               </tr>
             ))}
@@ -320,7 +266,9 @@ export default function ArtistManager({
               </div>
               <div className="actions">
                 <button className="edit-btn"    onClick={() => handleEditClick(artist)}>Edit</button>
-                <button className="btn-restore" onClick={() => handleRestore(artist)}>Restore</button>
+                {canDelete && (
+                  <button className="btn-restore" onClick={() => handleRestore(artist)}>Restore</button>
+                )}
               </div>
             </div>
           ))}
