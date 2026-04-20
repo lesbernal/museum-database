@@ -25,7 +25,7 @@ async function fetchExhibitionPaintings(exhibitionId) {
 
 function ExhibitionCalendar({ exhibition, onClose }) {
   const start = new Date(exhibition.start_date);
-  const end   = new Date(exhibition.end_date);
+  const end = new Date(exhibition.end_date);
   const isOngoing = end.getFullYear() >= 2099;
 
   const [paintings, setPaintings] = useState([]);
@@ -63,7 +63,7 @@ function ExhibitionCalendar({ exhibition, onClose }) {
           {exhibition.gallery_name && (
             <p className="cal-gallery">📍 {exhibition.gallery_name}</p>
           )}
-          
+
           {/* Improved Date Info with Countdown */}
           <div className="cal-date-info">
             <div className="cal-date-card">
@@ -160,17 +160,17 @@ function PaintingBanner({ exhibitionId, accentColor }) {
 // ─── Main Exhibitions page ────────────────────────────────────────────────────
 
 export default function Exhibitions() {
-  const [exhibitions,        setExhibitions] = useState([]);
-  const [loading,            setLoading]     = useState(true);
-  const [selectedExhibition, setSelected]    = useState(null);
-  const [openDropdown,       setOpenDropdown] = useState(null);
-  const [searchTerm,         setSearchTerm]  = useState("");
-  const [sortBy,             setSortBy]      = useState("name");
+  const [exhibitions, setExhibitions] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedExhibition, setSelected] = useState(null);
+  const [openDropdown, setOpenDropdown] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [sortBy, setSortBy] = useState("name");
 
   // Multi-select filter state
-  const [selectedTypes,      setSelectedTypes]    = useState([]);
-  const [selectedGalleries,  setSelectedGalleries] = useState([]);
-  const [selectedStatuses,   setSelectedStatuses]  = useState([]);
+  const [selectedTypes, setSelectedTypes] = useState([]);
+  const [selectedGalleries, setSelectedGalleries] = useState([]);
+  const [selectedStatuses, setSelectedStatuses] = useState([]);
 
   useEffect(() => {
     setLoading(true);
@@ -183,7 +183,7 @@ export default function Exhibitions() {
   const getDateStatus = (start, end) => {
     const now = new Date();
     if (now < new Date(start)) return "Upcoming";
-    if (now > new Date(end))   return "Ended";
+    if (now > new Date(end)) return "Ended";
     return "Now On";
   };
 
@@ -205,19 +205,19 @@ export default function Exhibitions() {
 
   const statusClass = (start, end) => {
     const s = getDateStatus(start, end);
-    if (s === "Now On")   return "status-active";
+    if (s === "Now On") return "status-active";
     if (s === "Upcoming") return "status-upcoming";
     return "status-ended";
   };
 
   // Unique filter options derived from data
   const galleryOptions = [...new Set(exhibitions.map(e => e.gallery_name).filter(Boolean))].sort();
-  const typeOptions    = ["Permanent", "Temporary", "Traveling"];
-  const statusOptions  = ["Now On", "Upcoming"];
+  const typeOptions = ["Permanent", "Temporary", "Traveling"];
+  const statusOptions = ["Now On", "Upcoming"];
 
-  const toggleType    = t => setSelectedTypes(p    => p.includes(t) ? p.filter(x => x !== t) : [...p, t]);
+  const toggleType = t => setSelectedTypes(p => p.includes(t) ? p.filter(x => x !== t) : [...p, t]);
   const toggleGallery = g => setSelectedGalleries(p => p.includes(g) ? p.filter(x => x !== g) : [...p, g]);
-  const toggleStatus  = s => setSelectedStatuses(p  => p.includes(s) ? p.filter(x => x !== s) : [...p, s]);
+  const toggleStatus = s => setSelectedStatuses(p => p.includes(s) ? p.filter(x => x !== s) : [...p, s]);
 
   const clearAllFilters = () => {
     setSelectedTypes([]);
@@ -252,10 +252,10 @@ export default function Exhibitions() {
     filtered = filtered.filter(e => selectedStatuses.includes(getDateStatus(e.start_date, e.end_date)));
   filtered.sort((a, b) => {
     switch (sortBy) {
-      case "name":       return (a.exhibition_name || "").localeCompare(b.exhibition_name || "");
-      case "name_desc":  return (b.exhibition_name || "").localeCompare(a.exhibition_name || "");
-      case "date_asc":   return new Date(a.start_date) - new Date(b.start_date);
-      case "date_desc":  return new Date(b.start_date) - new Date(a.start_date);
+      case "name": return (a.exhibition_name || "").localeCompare(b.exhibition_name || "");
+      case "name_desc": return (b.exhibition_name || "").localeCompare(a.exhibition_name || "");
+      case "date_asc": return new Date(a.start_date) - new Date(b.start_date);
+      case "date_desc": return new Date(b.start_date) - new Date(a.start_date);
       default: return 0;
     }
   });
@@ -311,10 +311,16 @@ export default function Exhibitions() {
               {openDropdown === "types" && (
                 <div className="filter-dropdown">
                   {typeOptions.map(t => (
-                    <label key={t} className="filter-option">
-                      <input type="checkbox" checked={selectedTypes.includes(t)} onChange={() => toggleType(t)} />
-                      <span>{t}</span>
-                    </label>
+                    <div
+                      key={t}
+                      className={`filter-option ${selectedTypes.includes(t) ? "selected" : ""}`}
+                      onClick={() => toggleType(t)}
+                    >
+                      <span className="filter-option-check">
+                        {selectedTypes.includes(t) ? "✓" : ""}
+                      </span>
+                      <span style={{ paddingLeft: selectedTypes.includes(t) ? 0 : 18 }}>{t}</span>
+                    </div>
                   ))}
                 </div>
               )}
@@ -335,10 +341,16 @@ export default function Exhibitions() {
               {openDropdown === "galleries" && (
                 <div className="filter-dropdown">
                   {galleryOptions.map(g => (
-                    <label key={g} className="filter-option">
-                      <input type="checkbox" checked={selectedGalleries.includes(g)} onChange={() => toggleGallery(g)} />
-                      <span>{g}</span>
-                    </label>
+                    <div
+                      key={g}
+                      className={`filter-option ${selectedGalleries.includes(g) ? "selected" : ""}`}
+                      onClick={() => toggleGallery(g)}
+                    >
+                      <span className="filter-option-check">
+                        {selectedGalleries.includes(g) ? "✓" : ""}
+                      </span>
+                      <span style={{ paddingLeft: selectedGalleries.includes(g) ? 0 : 18 }}>{g}</span>
+                    </div>
                   ))}
                 </div>
               )}
@@ -359,10 +371,16 @@ export default function Exhibitions() {
               {openDropdown === "statuses" && (
                 <div className="filter-dropdown">
                   {statusOptions.map(s => (
-                    <label key={s} className="filter-option">
-                      <input type="checkbox" checked={selectedStatuses.includes(s)} onChange={() => toggleStatus(s)} />
-                      <span>{s}</span>
-                    </label>
+                    <div
+                      key={s}
+                      className={`filter-option ${selectedStatuses.includes(s) ? "selected" : ""}`}
+                      onClick={() => toggleStatus(s)}
+                    >
+                      <span className="filter-option-check">
+                        {selectedStatuses.includes(s) ? "✓" : ""}
+                      </span>
+                      <span style={{ paddingLeft: selectedStatuses.includes(s) ? 0 : 18 }}>{s}</span>
+                    </div>
                   ))}
                 </div>
               )}
@@ -408,7 +426,7 @@ export default function Exhibitions() {
       ) : (
         <div className="exhibitions-grid">
           {filtered.map((e, i) => {
-            const status      = getDateStatus(e.start_date, e.end_date);
+            const status = getDateStatus(e.start_date, e.end_date);
             const accentColor = cardAccents[i % cardAccents.length];
             return (
               <div

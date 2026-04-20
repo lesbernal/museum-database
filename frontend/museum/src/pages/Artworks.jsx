@@ -153,7 +153,7 @@ export default function Artworks() {
       setGalleries(galleriesData);
       setExhibitions(exhibitionsData);
       setFilteredArtworks(artworksData);
-      
+
       console.log("Buildings data:", buildingsData);
       console.log("Galleries data:", galleriesData);
     } catch (err) {
@@ -166,9 +166,9 @@ export default function Artworks() {
   // Helper to get current location for an artwork
   const getArtworkLocation = (artwork) => {
     console.log("Getting location for artwork:", artwork);
-    
+
     if (!artwork) return { building: null, gallery: null };
-    
+
     // If artwork has a gallery_id directly
     if (artwork.gallery_id) {
       const gallery = galleries.find(g => g.gallery_id === artwork.gallery_id);
@@ -179,9 +179,9 @@ export default function Artworks() {
         return { building, gallery };
       }
     }
-    
+
     // You can add exhibition-based location lookup here if needed
-    
+
     return { building: null, gallery: null };
   };
 
@@ -287,10 +287,18 @@ export default function Artworks() {
               {openDropdown === "artists" && (
                 <div className="filter-dropdown">
                   {artists.map(artist => (
-                    <label key={artist.artist_id} className="filter-option">
-                      <input type="checkbox" checked={selectedArtists.includes(artist.artist_id)} onChange={() => toggleArtist(artist.artist_id)} />
-                      <span>{artist.first_name} {artist.last_name}</span>
-                    </label>
+                    <div
+                      key={artist.artist_id}
+                      className={`filter-option ${selectedArtists.includes(artist.artist_id) ? "selected" : ""}`}
+                      onClick={() => toggleArtist(artist.artist_id)}
+                    >
+                      <span className="filter-option-check">
+                        {selectedArtists.includes(artist.artist_id) ? "✓" : ""}
+                      </span>
+                      <span style={{ paddingLeft: selectedArtists.includes(artist.artist_id) ? 0 : 18 }}>
+                        {artist.first_name} {artist.last_name}
+                      </span>
+                    </div>
                   ))}
                 </div>
               )}
@@ -308,10 +316,18 @@ export default function Artworks() {
               {openDropdown === "mediums" && (
                 <div className="filter-dropdown">
                   {mediums.map(medium => (
-                    <label key={medium} className="filter-option">
-                      <input type="checkbox" checked={selectedMediums.includes(medium)} onChange={() => toggleMedium(medium)} />
-                      <span>{medium}</span>
-                    </label>
+                    <div
+                      key={medium}
+                      className={`filter-option ${selectedMediums.includes(medium) ? "selected" : ""}`}
+                      onClick={() => toggleMedium(medium)}
+                    >
+                      <span className="filter-option-check">
+                        {selectedMediums.includes(medium) ? "✓" : ""}
+                      </span>
+                      <span style={{ paddingLeft: selectedMediums.includes(medium) ? 0 : 18 }}>
+                        {medium}
+                      </span>
+                    </div>
                   ))}
                 </div>
               )}
@@ -329,10 +345,18 @@ export default function Artworks() {
               {openDropdown === "centuries" && (
                 <div className="filter-dropdown">
                   {centuries.map(century => (
-                    <label key={century} className="filter-option">
-                      <input type="checkbox" checked={selectedCenturies.includes(century)} onChange={() => toggleCentury(century)} />
-                      <span>{century}th Century</span>
-                    </label>
+                    <div
+                      key={century}
+                      className={`filter-option ${selectedCenturies.includes(century) ? "selected" : ""}`}
+                      onClick={() => toggleCentury(century)}
+                    >
+                      <span className="filter-option-check">
+                        {selectedCenturies.includes(century) ? "✓" : ""}
+                      </span>
+                      <span style={{ paddingLeft: selectedCenturies.includes(century) ? 0 : 18 }}>
+                        {century}th Century
+                      </span>
+                    </div>
                   ))}
                 </div>
               )}

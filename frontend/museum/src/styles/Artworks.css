@@ -100,6 +100,14 @@
   justify-content: space-between;
   align-items: center;
   text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.filter-select-btn span:first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .filter-select-btn:hover {
@@ -128,26 +136,39 @@
 .filter-option {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.625rem 1rem;
+  gap: 0.6rem;
+  padding: 0.55rem 0.875rem;
   cursor: pointer;
   font-size: 0.85rem;
-  color: #4b5563;
-  transition: background 0.2s ease;
+  color: #6b7280;
+  border-left: 3px solid transparent;
+  transition: all 0.12s;
+  white-space: nowrap;
 }
 
 .filter-option:hover {
-  background: #f9fafb;
+  background: #faf9f8;
+  border-left-color: #c5a028;
+  color: #111827;
 }
 
-.filter-option input {
-  width: 16px;
-  height: 16px;
-  margin: 0 0.75rem 0 0;
-  padding: 0;
-  cursor: pointer;
-  accent-color: #c5a028;
+.filter-option.selected {
+  background: #fef9ec;
+  border-left-color: #c5a028;
+  color: #111827;
+  font-weight: 500;
+}
+
+.filter-option-check {
+  width: 14px;
+  font-size: 11px;
+  color: #c5a028;
   flex-shrink: 0;
+  text-align: center;
+}
+
+.filter-option-label {
+  padding-left: 0;
 }
 
 .filter-option span {
@@ -683,4 +704,10 @@
   border-bottom: none;
   margin-bottom: 0;
   padding-bottom: 0;
+}
+
+.filter-option .filter-option-label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }

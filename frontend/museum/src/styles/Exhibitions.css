@@ -672,6 +672,14 @@
   justify-content: space-between;
   align-items: center;
   transition: border-color 0.15s;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.filter-select-btn span:first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .filter-select-btn:hover { border-color: #c5a028; }
@@ -701,21 +709,38 @@
   display: flex;
   align-items: center;
   gap: 0.6rem;
-  padding: 0.5rem 0.875rem;
+  padding: 0.55rem 0.875rem;
   cursor: pointer;
   font-size: 0.85rem;
-  color: #374151;
-  transition: background 0.1s;
+  color: #6b7280;
+  border-left: 3px solid transparent;
+  transition: all 0.12s;
+  white-space: nowrap;
 }
 
-.filter-option:hover { background: #faf9f8; }
+.filter-option:hover {
+  background: #faf9f8;
+  border-left-color: #c5a028;
+  color: #111827;
+}
 
-.filter-option input[type="checkbox"] {
-  width: 15px;
-  height: 15px;
-  accent-color: #c5a028;
+.filter-option.selected {
+  background: #fef9ec;
+  border-left-color: #c5a028;
+  color: #111827;
+  font-weight: 500;
+}
+
+.filter-option-check {
+  width: 14px;
+  font-size: 11px;
+  color: #c5a028;
   flex-shrink: 0;
-  cursor: pointer;
+  text-align: center;
+}
+
+.filter-option-label {
+  padding-left: 0;
 }
 
 /* Sort select */
@@ -960,6 +985,12 @@
   font-size: 0.65rem;
   color: #6b7280;
   margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.filter-option .filter-option-label {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
