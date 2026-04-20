@@ -100,6 +100,33 @@ const fmt = dateStr => {
 const currency = v => v==null?"—":`$${parseFloat(v).toFixed(2)}`;
 
 // ── Simple reusable table ─────────────────────────────────────────────────────
+function validateProfile(form) {
+  const required = [
+    { key: "first_name", label: "First name" },
+    { key: "last_name", label: "Last name" },
+    { key: "email", label: "Email" },
+    { key: "phone_number", label: "Phone number" },
+    { key: "street_address", label: "Street address" },
+    { key: "city", label: "City" },
+    { key: "state", label: "State" },
+    { key: "zip_code", label: "Zip code" },
+  ];
+
+  for (const field of required) {
+    if (!(form[field.key] || "").trim()) return `${field.label} is required.`;
+  }
+
+  if ((form.phone_number || "").replace(/\D/g, "").length !== 10) {
+    return "Phone number must be exactly 10 digits.";
+  }
+
+  if (!/^\d{5}$/.test((form.zip_code || "").trim())) {
+    return "Zip code must be exactly 5 digits.";
+  }
+
+  return null;
+}
+
 function DataTable({ columns, rows, keyField, onEdit, canEdit=false }) {
   if (!rows?.length) return <div className="ss-empty">No records found.</div>;
   return (
@@ -317,7 +344,6 @@ export default function EmployeeDashboard() {
 
   const notify = (msg, type="success") => {
     setFeedback({ msg, type });
-    setTimeout(()=>setFeedback(null), 7000);
   };
 
   const token   = localStorage.getItem("token");
@@ -436,10 +462,18 @@ export default function EmployeeDashboard() {
   }
 
   async function handleProfileSave(e) {
-    e.preventDefault(); setSaving(true);
+    e.preventDefault();
+    const validationError = validateProfile(form);
+    if (validationError) {
+      notify(validationError,"error");
+      return;
+    }
+    setSaving(true);
     try {
-      await updateMyProfile({ first_name:form.first_name?.trim(), last_name:form.last_name?.trim(), email:form.email?.trim(), phone_number:form.phone_number, street_address:form.street_address?.trim(), city:form.city?.trim(), state:form.state, zip_code:form.zip_code?.trim(), date_of_birth:form.date_of_birth?.slice(0,10) });
-      setProfile(prev=>({...prev,...form}));
+      const nextProfile = { first_name:form.first_name?.trim(), last_name:form.last_name?.trim(), email:form.email?.trim(), phone_number:form.phone_number, street_address:form.street_address?.trim(), city:form.city?.trim(), state:form.state, zip_code:form.zip_code?.trim(), date_of_birth:form.date_of_birth?.slice(0,10) };
+      await updateMyProfile(nextProfile);
+      setProfile(prev=>({...prev,...nextProfile}));
+      setForm(prev=>({...prev,...nextProfile}));
       notify("Profile updated successfully");
     } catch(e){ notify(e.message,"error"); }
     finally { setSaving(false); }
