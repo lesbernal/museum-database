@@ -99,14 +99,21 @@ const ExhibitionFormModal = ({
                 {errors.start_date && <span className="error-message">{errors.start_date}</span>}
               </div>
               <div className="form-group">
-                <label>End Date *</label>
+                <label>End Date {formData.exhibition_type !== "Permanent" && "*"}</label>
                 <input
                   type="date"
                   name="end_date"
-                  value={formData.end_date}
+                  value={formData.exhibition_type === "Permanent" ? "" : formData.end_date}
                   onChange={onChange}
+                  disabled={formData.exhibition_type === "Permanent"}
+                  placeholder={formData.exhibition_type === "Permanent" ? "Ongoing" : ""}
                   className={errors.end_date ? "error" : ""}
                 />
+                {formData.exhibition_type === "Permanent" && (
+                  <span style={{ fontSize: 11, color: "#9ca3af", marginTop: 4, display: "block" }}>
+                    Permanent exhibitions are ongoing
+                  </span>
+                )}
                 {errors.end_date && <span className="error-message">{errors.end_date}</span>}
               </div>
             </div>
@@ -317,9 +324,12 @@ export default function ExhibitionManager({
     if (!formData.gallery_id) newErrors.gallery_id = "Gallery is required";
     if (!formData.exhibition_name.trim()) newErrors.exhibition_name = "Title is required";
     if (!formData.start_date) newErrors.start_date = "Start date is required";
-    if (!formData.end_date) newErrors.end_date = "End date is required";
+    if (!formData.end_date && formData.exhibition_type !== "Permanent")
+      newErrors.end_date = "End date is required";
     if (!formData.exhibition_type) newErrors.exhibition_type = "Exhibition type is required";
-    if (formData.start_date && formData.end_date && formData.end_date < formData.start_date) {
+    if (formData.start_date && formData.end_date &&
+      formData.exhibition_type !== "Permanent" &&
+      formData.end_date < formData.start_date) {
       newErrors.end_date = "End date must be after start date";
     }
     const artworkErrors = {};
@@ -338,6 +348,28 @@ export default function ExhibitionManager({
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+
+    if (name === "exhibition_type") {
+      if (value === "Permanent") {
+        const today = new Date().toISOString().split("T")[0];
+        const farFuture = "2099-12-31";
+        setFormData(prev => ({
+          ...prev,
+          exhibition_type: value,
+          start_date: prev.start_date || today,
+          end_date: farFuture,
+        }));
+      } else {
+        // Switching away from Permanent — clear the far future end date
+        setFormData(prev => ({
+          ...prev,
+          exhibition_type: value,
+          end_date: prev.end_date === "2099-12-31" ? "" : prev.end_date,
+        }));
+      }
+      return;
+    }
+
     setFormData(prev => ({ ...prev, [name]: value }));
     if (errors[name]) setErrors(prev => ({ ...prev, [name]: null }));
   };
